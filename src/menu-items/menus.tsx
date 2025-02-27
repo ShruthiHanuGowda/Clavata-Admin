@@ -3,17 +3,16 @@ import { FormattedMessage } from 'react-intl';
 
 // assets
 
-
 // type
 import { NavItemType } from 'types/menu';
-import { BankOutlined  ,FormOutlined,SettingOutlined,UserOutlined,ProductOutlined } from '@ant-design/icons';
+import { BankOutlined, FormOutlined, SettingOutlined, UserOutlined, ProductOutlined } from '@ant-design/icons';
 // icons
 const icons = {
-  BankOutlined  ,
+  BankOutlined,
   FormOutlined,
   SettingOutlined,
   UserOutlined,
-  ProductOutlined 
+  ProductOutlined
 };
 
 // ==============================|| MENU ITEMS - SUPPORT ||============================== //
@@ -28,7 +27,7 @@ const allMenu: NavItemType = {
       title: <FormattedMessage id="Dashboard" />,
       type: 'item',
       url: '/dashboard',
-      icon: icons.ProductOutlined 
+      icon: icons.ProductOutlined
     },
     {
       id: 'user',
@@ -42,7 +41,7 @@ const allMenu: NavItemType = {
       title: <FormattedMessage id="Companies" />,
       type: 'item',
       url: '/companies',
-      icon: icons.BankOutlined 
+      icon: icons.BankOutlined
     },
     {
       id: 'registries',
@@ -58,7 +57,6 @@ const allMenu: NavItemType = {
       url: '/setting',
       icon: icons.SettingOutlined
     }
-
   ]
 };
 

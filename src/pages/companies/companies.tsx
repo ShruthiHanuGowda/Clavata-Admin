@@ -1,14 +1,5 @@
-
-
-
-
-function  companies(){
-  return (
-    <>
-    Demo Companies
-    </>
-  )
+function companies() {
+  return <>Demo Companies</>;
 }
 
-
-export default companies
+export default companies;

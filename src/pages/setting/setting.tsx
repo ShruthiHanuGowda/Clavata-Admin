@@ -1,10 +1,5 @@
-
-function  setting(){
-  return (
-    <>
-    Setting Demo
-    </>
-  )
+function setting() {
+  return <>Setting Demo</>;
 }
 
 export default setting;

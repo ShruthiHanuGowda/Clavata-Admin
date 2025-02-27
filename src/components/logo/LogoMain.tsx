@@ -17,7 +17,6 @@ import { ThemeMode } from 'config';
 export default function LogoMain({ reverse }: { reverse?: boolean }) {
   const theme = useTheme();
   return (
-   
     <img src={logo} alt="d_energy_logo" width="100%" />
 
     // <>

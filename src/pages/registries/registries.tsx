@@ -1,12 +1,5 @@
-
-function  registries(){
-  return (
-    <>
-      registries demo
-
-    </>
-  )
+function registries() {
+  return <>registries demo</>;
 }
 
-
-export  default  registries
+export default registries;
