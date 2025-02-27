@@ -14,8 +14,13 @@ const MaintenanceComingSoon = Loadable(lazy(() => import('pages/maintenance/comi
 
 const AppContactUS = Loadable(lazy(() => import('pages/contact-us')));
 // render - sample page
-const SamplePage = Loadable(lazy(() => import('pages/extra-pages/sample-page')));
 
+
+const Dashboard = Loadable(lazy(() => import('pages/extra-pages/Dashboard')));
+const User = Loadable(lazy(() => import('pages/user/user')));
+const Companies = Loadable(lazy(() => import('pages/companies/companies')));
+const Registries = Loadable(lazy(() => import('pages/registries/registries')));
+const Setting = Loadable(lazy(() => import('pages/setting/setting')));
 // ==============================|| MAIN ROUTING ||============================== //
 
 const MainRoutes = {
@@ -26,8 +31,24 @@ const MainRoutes = {
       element: <DashboardLayout />,
       children: [
         {
-          path: 'sample-page',
-          element: <SamplePage />
+          path: 'dashboard',
+          element: <Dashboard/>
+        }
+        , {
+          path:'/user',
+          element: <User />
+        },
+        {
+          path:'/companies',
+          element: <Companies />
+        },
+        {
+          path:'/registries',
+          element: <Registries />
+        },
+        {
+          path:'setting',
+          element: <Setting />,
         }
       ]
     },
