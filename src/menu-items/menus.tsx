@@ -27,6 +27,7 @@ const allMenu: NavItemType = {
       title: <FormattedMessage id="Dashboard" />,
       type: 'item',
       url: '/dashboard',
+      breadcrumbs: false,
       icon: icons.ProductOutlined
     },
     {

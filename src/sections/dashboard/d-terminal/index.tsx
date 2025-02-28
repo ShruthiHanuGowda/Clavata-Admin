@@ -1,0 +1,33 @@
+// material-ui
+import Grid from '@mui/material/Grid';
+import Typography from '@mui/material/Typography';
+
+// project import
+import MainCard from 'components/MainCard';
+import AnalyticCard from 'components/dashboard/AnalyticCard';
+import LineChartCard from 'components/dashboard/LineChartCard';
+
+export default function DTerminal() {
+  return (
+    <MainCard>
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <Typography variant="h5">D Terminal</Typography>
+        </Grid>
+        <Grid item xs={12} md={7} lg={8}>
+          <LineChartCard title="Daily New User Accounts" />
+        </Grid>
+        <Grid item xs={12} md={7} lg={4}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <AnalyticCard title="Total Page Views" count="4,42,236" percentage={59.3} extra="35,000" />
+            </Grid>
+            <Grid item xs={12}>
+              <AnalyticCard title="Total Page Views" count="4,42,236" percentage={59.3} extra="35,000" />
+            </Grid>
+          </Grid>
+        </Grid>
+      </Grid>
+    </MainCard>
+  );
+}
