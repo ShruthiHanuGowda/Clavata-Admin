@@ -1,8 +1,8 @@
 import { useContext } from 'react';
 
 // auth provider
-import AuthContext from 'contexts/JWTContext';
-
+// import AuthContext from 'contexts/JWTContext';
+import AuthContext from 'contexts/AWSCognitoContext';
 // ==============================|| AUTH HOOKS ||============================== //
 
 export default function useAuth() {
