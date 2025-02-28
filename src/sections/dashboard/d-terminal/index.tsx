@@ -12,7 +12,7 @@ export default function DTerminal() {
     <MainCard>
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          <Typography variant="h5">D Terminal</Typography>
+          <Typography variant="h3">D Terminal</Typography>
         </Grid>
         <Grid item xs={12} md={7} lg={8}>
           <LineChartCard title="Daily New User Accounts" />

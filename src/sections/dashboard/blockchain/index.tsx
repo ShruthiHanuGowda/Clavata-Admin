@@ -12,7 +12,7 @@ export default function Blockchain() {
     <MainCard>
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          <Typography variant="h5">Blockchain</Typography>
+          <Typography variant="h3">Blockchain</Typography>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <AnalyticCard title="Total transaction" count="4,42,236" percentage={59.3} extra="35,000" />

@@ -19,7 +19,7 @@ const icons = {
 
 const allMenu: NavItemType = {
   id: 'allMenu',
-  // title: <FormattedMessage id="allMenu" />,
+  title: <FormattedMessage id="All Menu" />,
   type: 'group',
   children: [
     {
