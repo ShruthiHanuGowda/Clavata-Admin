@@ -1,5 +1,7 @@
+import PaginationTable from 'pages/tables/react-table/pagination';
+
 function companies() {
-  return <>Demo Companies</>;
+  return <PaginationTable />;
 }
 
 export default companies;

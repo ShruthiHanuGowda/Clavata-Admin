@@ -31,7 +31,10 @@ export enum ThemeDirection {
   LTR = 'ltr',
   RTL = 'rtl'
 }
-
+export enum Gender {
+  MALE = 'Male',
+  FEMALE = 'Female'
+}
 export enum NavActionType {
   FUNCTION = 'function',
   LINK = 'link'
