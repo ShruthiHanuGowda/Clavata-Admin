@@ -110,3 +110,6 @@ dist
 .idea
 
 .DS_Store
+
+# yarn file
+.yarn/install-state.gz

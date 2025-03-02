@@ -31,15 +31,30 @@ import App from './App';
 import { ConfigProvider } from 'contexts/ConfigContext';
 import reportWebVitals from './reportWebVitals';
 
+import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
+
 const container = document.getElementById('root');
 const root = createRoot(container!);
+
+const API_Key = "da2-wjepl4a6ezexfcqzry4xl4htji"
+
+const client = new ApolloClient({
+  uri: 'https://gh6hwmywzjfvlghrmqctqmo42u.appsync-api.me-central-1.amazonaws.com/graphql/', // Your AppSync endpoint
+  cache: new InMemoryCache(),
+  headers: {
+    // If you're using AWS IAM or API Key for authentication, you need to add proper headers
+    'x-api-key': API_Key,
+  },
+});
 
 // ==============================|| MAIN - REACT DOM RENDER ||============================== //
 
 root.render(
-  <ConfigProvider>
-    <App />
-  </ConfigProvider>
+  <ApolloProvider client={client}>
+    <ConfigProvider>
+      <App />
+    </ConfigProvider>
+  </ApolloProvider>
 );
 
 // If you want to start measuring performance in your app, pass a function
