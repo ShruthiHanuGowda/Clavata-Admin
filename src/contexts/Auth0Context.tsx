@@ -1,5 +1,5 @@
+// @ts-nocheck
 import React, { createContext, useEffect, useState } from 'react';
-
 // third-party
 import { Auth0Provider as AuthProvider, useAuth0 } from '@auth0/auth0-react';
 

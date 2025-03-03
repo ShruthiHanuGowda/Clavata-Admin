@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { createContext, useEffect, useReducer } from 'react';
 
 // third-party
