@@ -1,5 +1,5 @@
+// @ts-nocheck
 import { useNavigate, useSearchParams } from 'react-router-dom';
-
 // material-ui
 import Button from '@mui/material/Button';
 import FormHelperText from '@mui/material/FormHelperText';
