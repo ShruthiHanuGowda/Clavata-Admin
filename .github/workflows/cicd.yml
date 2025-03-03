@@ -1,0 +1,83 @@
+name: Deploy to AWS Amplify
+
+on:
+  push:
+    branches:
+      - main  # Deploy when pushing to the main branch
+  workflow_dispatch:  # Allow manual deployment from GitHub Actions UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'  # Adjust based on your project
+      
+      - name: Clean up previous build files
+        run: |
+          # Remove package-lock.json if it exists
+          rm -f package-lock.json || true
+
+          # Remove dist/ folder if it exists
+          rm -rf dist || true
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build project
+        run: npm run build 
+
+      - name: Verify build output
+        run: ls -la ./dist  # Ensure build files exist
+
+      - name: Deploy to AWS Amplify
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AMPLIFY_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
+          AMPLIFY_BRANCH: staging  # Change if deploying to a different branch
+        run: |
+          # Install AWS CLI & Amplify CLI
+          npm install -g @aws-amplify/cli
+          aws configure set region $AWS_REGION
+
+          # Get the last job status
+          LAST_JOB_STATUS=$(aws amplify list-jobs --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH --query "jobSummaries[0].status" --output text)
+          LAST_JOB_ID=$(aws amplify list-jobs --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH --query "jobSummaries[0].jobId" --output text)
+
+          # If the last job is still running, stop it before proceeding
+          if [[ "$LAST_JOB_STATUS" == "PENDING" || "$LAST_JOB_STATUS" == "RUNNING" ]]; then
+            echo "Stopping previous unfinished job: $LAST_JOB_ID"
+            aws amplify stop-job --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH --job-id $LAST_JOB_ID
+            sleep 10  # Wait a bit for the job to stop
+          fi
+
+          # Create a new deployment
+          DEPLOYMENT=$(aws amplify create-deployment --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH)
+          
+          # Extract job ID and Upload URL
+          JOB_ID=$(echo $DEPLOYMENT | jq -r '.jobId')
+          UPLOAD_URL=$(echo $DEPLOYMENT | jq -r '.zipUploadUrl')
+
+          # Zip only the contents inside dist/ (not the dist folder itself)
+          cd dist && zip -r -FS ../dist.zip * && cd ..
+
+          # Verify ZIP structure
+          mkdir build && unzip dist.zip -d build
+          ls -la build
+
+          # Upload ZIP file to AWS Amplify
+          curl -X PUT -T dist.zip "$UPLOAD_URL"
+
+          # Start deployment
+          aws amplify start-deployment --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH --job-id $JOB_ID
+
+          # Show deployment status
+          aws amplify list-jobs --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH --query "jobSummaries[*].{Status:status, JobId:jobId}"
