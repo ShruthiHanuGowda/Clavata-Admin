@@ -11,7 +11,8 @@ import Snackbar from 'components/@extended/Snackbar';
 import Notistack from 'components/third-party/Notistack';
 
 // auth-provider
-import { JWTProvider as AuthProvider } from 'contexts/JWTContext';
+// import { JWTProvider as AuthProvider } from 'contexts/JWTContext';
+import { AWSCognitoProvider as AuthProvider } from 'contexts/AWSCognitoContext';
 
 // ==============================|| APP - THEME, ROUTER, LOCAL ||============================== //
 
