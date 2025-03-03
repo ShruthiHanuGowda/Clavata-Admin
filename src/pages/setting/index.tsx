@@ -1,5 +1,5 @@
-function setting() {
+function Setting() {
   return <>Setting Demo</>;
 }
 
-export default setting;
+export default Setting;

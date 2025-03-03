@@ -19,7 +19,14 @@ const Dashboard = Loadable(lazy(() => import('pages/dashboard')));
 const User = Loadable(lazy(() => import('pages/user/user')));
 const Companies = Loadable(lazy(() => import('pages/companies/companies')));
 const Registries = Loadable(lazy(() => import('pages/registries/registries')));
-const Setting = Loadable(lazy(() => import('pages/setting/setting')));
+const Roles = Loadable(lazy(() => import('pages/roles')));
+const Permissions = Loadable(lazy(() => import('pages/permissions')));
+const Setting = Loadable(lazy(() => import('pages/setting')));
+
+const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
+const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRole')));
+const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/TabSettings')));
+
 // ==============================|| MAIN ROUTING ||============================== //
 
 const MainRoutes = {
@@ -46,8 +53,35 @@ const MainRoutes = {
           element: <Registries />
         },
         {
-          path: 'setting',
+          path: '/roles',
+          element: <Roles />
+        },
+        {
+          path: '/permissions',
+          element: <Permissions />
+        },
+        {
+          path: '/setting',
           element: <Setting />
+        },
+        {
+          path: 'profiles',
+          children: [
+            {
+              path: 'account',
+              element: <AccountProfile />,
+              children: [
+                {
+                  path: '/profiles/account/user-permissions',
+                  element: <AccountTabRole />
+                },
+                {
+                  path: '/profiles/account/settings',
+                  element: <AccountTabSettings />
+                }
+              ]
+            }
+          ]
         }
       ]
     },
