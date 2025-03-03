@@ -15,7 +15,7 @@ const MaintenanceComingSoon = Loadable(lazy(() => import('pages/maintenance/comi
 const AppContactUS = Loadable(lazy(() => import('pages/contact-us')));
 // render - sample page
 
-const Dashboard = Loadable(lazy(() => import('pages/extra-pages/Dashboard')));
+const Dashboard = Loadable(lazy(() => import('pages/dashboard')));
 const User = Loadable(lazy(() => import('pages/user/user')));
 const Companies = Loadable(lazy(() => import('pages/companies/companies')));
 const Registries = Loadable(lazy(() => import('pages/registries/registries')));
