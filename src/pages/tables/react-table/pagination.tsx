@@ -28,9 +28,15 @@ import makeData from 'data/react-table';
 import { TableDataProps } from 'types/table';
 import { LabelKeyObject } from 'react-csv/lib/core';
 
+//query
+import { LIST_COMPANY_WALLETS } from "../../../graphql/queries";
+import { useQuery } from "@apollo/client";
+
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
+  console.log("company data", data)
+  console.log("column", columns)
   const table = useReactTable({
     data,
     columns,
@@ -49,8 +55,9 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
   );
 
   return (
+    <>
     <MainCard
-      title={'Pagination at Bottom'}
+      title={'Company User Data'}
       content={false}
       secondary={<CSVExport {...{ data, headers, filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
     >
@@ -64,8 +71,7 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                   setPageIndex: table.setPageIndex,
                   getState: table.getState,
                   getPageCount: table.getPageCount
-                }}
-              />
+                }} />
             </Box>
           )}
 
@@ -106,21 +112,44 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                     setPageIndex: table.setPageIndex,
                     getState: table.getState,
                     getPageCount: table.getPageCount
-                  }}
-                />
+                  }} />
               </Box>
             </>
           )}
         </Stack>
       </ScrollX>
     </MainCard>
+ </>
   );
 }
 
 // ==============================|| REACT TABLE - PAGINATION ||============================== //
 
 export default function PaginationTable() {
-  const data: TableDataProps[] = makeData(100);
+  // const data: TableDataProps[] = makeData(100);
+  
+  const { loading, error, data, fetchMore } = useQuery(LIST_COMPANY_WALLETS, {
+    variables: { nextToken: null },
+  });
+
+  console.log("Query Response:", { loading, error, data });
+
+  if (error) {
+    console.error("GraphQL Error:", error);
+  }
+
+  // Transform company data to fit column structure
+  const transformedData = data?.listUserWallets?.items.map((item: any) => ({
+    email: item.userAddress,
+    fullName: item.applicantId,
+    ethereumWallet: item.ethereumWallet,
+    denergyWallet: item.denergyWallet,
+    status: item.reviewStatus,
+    progress: 0, // Replace this with the actual KYC status if available
+    date: item.date,
+  })) || [];
+
+  console.log("new company data", data)
 
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
@@ -146,22 +175,22 @@ export default function PaginationTable() {
       {
         header: 'Review Status',
         accessorKey: 'status',
-        cell: (cell) => {
-          switch (cell.getValue()) {
-            case 'Complicated':
-              return <Chip color="error" label="Complicated" size="small" variant="light" />;
-            case 'Relationship':
-              return <Chip color="success" label="Relationship" size="small" variant="light" />;
-            case 'Single':
-            default:
-              return <Chip color="info" label="Single" size="small" variant="light" />;
-          }
-        }
+        // cell: (cell) => {
+        //   switch (cell.getValue()) {
+        //     case 'Complicated':
+        //       return <Chip color="error" label="Complicated" size="small" variant="light" />;
+        //     case 'Relationship':
+        //       return <Chip color="success" label="Relationship" size="small" variant="light" />;
+        //     case 'Single':
+        //     default:
+        //       return <Chip color="info" label="Single" size="small" variant="light" />;
+        //   }
+        // }
       },
       {
         header: 'KYC status',
         accessorKey: 'progress',
-        cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
+        // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
       },
       {
         header: 'Date Registered',
@@ -177,7 +206,7 @@ export default function PaginationTable() {
         <ReactTable {...{ data, columns, top: true }} />
       </Grid> */}
       <Grid item xs={12}>
-        <ReactTable {...{ data, columns }} />
+        <ReactTable {...{ data: transformedData, columns }} />
       </Grid>
     </Grid>
   );
