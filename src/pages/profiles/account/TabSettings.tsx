@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 // material-ui
 import Button from '@mui/material/Button';
@@ -14,11 +14,14 @@ import Typography from '@mui/material/Typography';
 
 // project import
 import MainCard from 'components/MainCard';
+import DefaultThemeMode from 'layout/Dashboard/Header/HeaderContent/Customization/ThemeMode';
 
 // ==============================|| ACCOUNT PROFILE - SETTINGS ||============================== //
 
 export default function TabSettings() {
   const [checked, setChecked] = useState(['en', 'email-1', 'email-3', 'order-1', 'order-3']);
+
+  const themeMode = useMemo(() => <DefaultThemeMode />, []);
 
   const handleToggle = (value: string) => () => {
     const currentIndex = checked.indexOf(value);
@@ -37,6 +40,9 @@ export default function TabSettings() {
     <Grid container spacing={3}>
       <Grid item xs={12} sm={6}>
         <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <MainCard title="Theme Mode">{themeMode}</MainCard>
+          </Grid>
           <Grid item xs={12}>
             <MainCard title="Email Settings">
               <Stack spacing={2.5}>

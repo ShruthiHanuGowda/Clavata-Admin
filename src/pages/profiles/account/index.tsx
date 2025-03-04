@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, Link, Outlet } from 'react-router-dom';
 
 // material-ui
@@ -12,12 +12,8 @@ import Breadcrumbs from 'components/@extended/Breadcrumbs';
 import { APP_DEFAULT_PATH } from 'config';
 
 // assets
-import ContainerOutlined from '@ant-design/icons/ContainerOutlined';
-import FileTextOutlined from '@ant-design/icons/FileTextOutlined';
-import LockOutlined from '@ant-design/icons/LockOutlined';
 import SettingOutlined from '@ant-design/icons/SettingOutlined';
 import TeamOutlined from '@ant-design/icons/TeamOutlined';
-import UserOutlined from '@ant-design/icons/UserOutlined';
 
 // ==============================|| PROFILE - ACCOUNT ||============================== //
 
@@ -48,15 +44,12 @@ export default function AccountProfile() {
 
   let breadcrumbLinks = [
     { title: 'Home', to: APP_DEFAULT_PATH },
-    { title: 'Account Profile', to: '/apps/profiles/account/basic' },
+    { title: 'Account Profile', to: '/profiles/account/user-permissions' },
     { title: breadcrumbTitle }
   ];
-  if (selectedTab === 0) {
-    breadcrumbLinks = [{ title: 'Home', to: APP_DEFAULT_PATH }, { title: 'Account Profile' }];
-  }
 
   useEffect(() => {
-    if (pathname === '/apps/profiles/account/basic') {
+    if (pathname === '/profiles/account/user-permissions') {
       setValue(0);
     }
   }, [pathname]);

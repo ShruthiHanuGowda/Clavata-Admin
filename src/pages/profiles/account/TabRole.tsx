@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
+
+import { LabelKeyObject } from 'react-csv/lib/core';
+
+import { ColumnDef, flexRender, getCoreRowModel, getPaginationRowModel, HeaderGroup, useReactTable } from '@tanstack/react-table';
 
 // material-ui
+import Box from '@mui/material/Box';
+import Tooltip from '@mui/material/Tooltip';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
-import InputLabel from '@mui/material/InputLabel';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -15,150 +17,127 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
+
+import EditTwoTone from '@ant-design/icons/EditTwoTone';
+import CloseOutlined from '@ant-design/icons/CloseOutlined';
 
 // project import
 import MainCard from 'components/MainCard';
-import Avatar from 'components/@extended/Avatar';
 import IconButton from 'components/@extended/IconButton';
-import { getImageUrl, ImagePath } from 'utils/getImageUrl';
+import ScrollX from 'components/ScrollX';
+import { TablePagination } from 'components/third-party/react-table';
 
-// assets
-import EllipsisOutlined from '@ant-design/icons/EllipsisOutlined';
+import { TableDataProps } from 'types/table';
 
-// table data
-function createData(name: string, avatar: string, email: string, role: number, status: boolean) {
-  return { name, avatar, email, role, status };
-}
-
-const rows = [
-  createData('Frozen Tek', 'avatar-1.png', 'owner@company.com', 1, true),
-  createData('Eclair Dues', 'avatar-3.png', 'manager@company.com', 2, true),
-  createData('Schem Lein', 'avatar-2.png', 'sl@company.com', 3, false),
-  createData('Jhon Doe', 'avatar-4.png', 'jd@company.com', 3, true),
-  createData('Tevoni Wug', 'avatar-5.png', 'tw@company.com', 0, false)
+const data = [
+  { name: 'Super Admin', description: 'Super Admin' },
+  { name: 'Admin', description: 'Admin' },
+  { name: 'Manager', description: 'Manager' },
+  { name: 'User', description: 'User' }
 ];
 
-// ==============================|| ACCOUNT PROFILE - ROLE ||============================== //
-
 export default function TabRole() {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const openMenu = Boolean(anchorEl);
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+  const columns: any = useMemo<ColumnDef<TableDataProps>[]>(
+    () => [
+      {
+        header: 'Name',
+        accessorKey: 'name'
+      },
+      {
+        header: 'Description',
+        accessorKey: 'description'
+      },
+      {
+        header: 'Actions',
+        id: 'edit',
+        cell: () => {
+          return (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Tooltip title="Edit">
+                <IconButton color="primary" sx={{ '&::after': { content: 'none' } }}>
+                  <EditTwoTone />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Cancel">
+                <IconButton color="error" name="cancel">
+                  <CloseOutlined />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          );
+        },
+        meta: {
+          className: 'cell-center'
+        }
+      }
+    ],
+    []
+  );
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    debugTable: true
+  });
+
+  let headers: LabelKeyObject[] = [];
+  table.getAllColumns().map((columns) =>
+    headers.push({
+      label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
+      // @ts-ignore
+      key: columns.columnDef.accessorKey
+    })
+  );
 
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <MainCard title="Invite Team Members" content={false}>
-          <Stack spacing={2.5} sx={{ p: 2.5 }}>
-            <Typography variant="h4">
-              5/10{' '}
-              <Typography variant="subtitle1" component="span">
-                members available in your plan.
-              </Typography>
-            </Typography>
-            <Divider />
-            <Stack
-              spacing={3}
-              direction="row"
-              justifyContent="space-between"
-              alignItems="flex-end"
-              sx={{ width: { xs: 1, md: '80%', lg: '60%' } }}
-            >
-              <Stack spacing={1} sx={{ width: `calc(100% - 110px)` }}>
-                <InputLabel htmlFor="outlined-email">Email Address</InputLabel>
-                <TextField fullWidth id="outlined-email" variant="outlined" placeholder="Enter your email address" />
-              </Stack>
-              <Button variant="contained" size="large">
-                Send
-              </Button>
+        <MainCard title="Roles" content={false} secondary={<Button>Add New Role</Button>}>
+          <ScrollX>
+            <Stack>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <TableCell key={header.id} {...header.column.columnDef.meta}>
+                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableHead>
+                  <TableBody>
+                    {table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <Divider />
+              <Box sx={{ p: 2 }}>
+                <TablePagination
+                  {...{
+                    setPageSize: table.setPageSize,
+                    setPageIndex: table.setPageIndex,
+                    getState: table.getState,
+                    getPageCount: table.getPageCount
+                  }}
+                />
+              </Box>
             </Stack>
-          </Stack>
-          <TableContainer>
-            <Table sx={{ minWidth: 350 }} aria-label="simple table">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ pl: 3 }}>Member</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell align="right">Status</TableCell>
-                  <TableCell align="right" />
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow hover key={row.name}>
-                    <TableCell sx={{ pl: 3 }}>
-                      <Stack direction="row" alignItems="center" spacing={1.25}>
-                        <Avatar alt="Avatar 1" src={getImageUrl(`${row.avatar}`, ImagePath.USERS)} />
-                        <Stack spacing={0}>
-                          <Typography variant="subtitle1">{row.name}</Typography>
-                          <Typography variant="caption" color="secondary">
-                            {row.email}
-                          </Typography>
-                        </Stack>
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      {row.role === 1 && <Chip size="small" color="primary" label="Owner" />}
-                      {row.role === 2 && <Chip size="small" variant="light" color="info" label="Manager" />}
-                      {row.role === 3 && <Chip size="small" variant="light" color="warning" label="Staff" />}
-                      {row.role === 0 && <Chip size="small" variant="light" color="success" label="Customer" />}
-                    </TableCell>
-                    <TableCell align="right">
-                      {!row.status && (
-                        <Stack direction="row" alignItems="center" spacing={1.25} justifyContent="flex-end">
-                          <Button size="small" color="error">
-                            Resend
-                          </Button>
-                          <Chip size="small" color="info" variant="outlined" label="Invited" />
-                        </Stack>
-                      )}
-                      {row.status && <Chip size="small" color="success" label="Joined" />}
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton size="small" color="secondary" onClick={handleMenuClick}>
-                        <EllipsisOutlined style={{ fontSize: '1.15rem' }} />
-                      </IconButton>
-                      <Menu
-                        id="fade-menu"
-                        MenuListProps={{
-                          'aria-labelledby': 'fade-button'
-                        }}
-                        anchorEl={anchorEl}
-                        open={openMenu}
-                        onClose={handleMenuClose}
-                        anchorOrigin={{
-                          vertical: 'bottom',
-                          horizontal: 'right'
-                        }}
-                        transformOrigin={{
-                          vertical: 'top',
-                          horizontal: 'right'
-                        }}
-                      >
-                        <MenuItem>Edit</MenuItem>
-                        <MenuItem>Delete</MenuItem>
-                      </Menu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          </ScrollX>
         </MainCard>
-      </Grid>
-      <Grid item xs={12}>
-        <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={2}>
-          <Button color="error">Cancel</Button>
-          <Button variant="contained">Update Profile</Button>
-        </Stack>
       </Grid>
     </Grid>
   );
