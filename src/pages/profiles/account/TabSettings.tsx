@@ -19,21 +19,52 @@ import DefaultThemeMode from 'layout/Dashboard/Header/HeaderContent/Customizatio
 // ==============================|| ACCOUNT PROFILE - SETTINGS ||============================== //
 
 export default function TabSettings() {
-  const [checked, setChecked] = useState(['en', 'email-1', 'email-3', 'order-1', 'order-3']);
+  // const [checked, setChecked] = useState(['en', 'email-1', 'email-3', 'order-1', 'order-3']);
+
+  const [myChecked, setMyChecked] = useState({
+    email_notification: true,
+    send_copy_to_personal_email: true,
+    have_new_notifications: true,
+    youre_sent_a_direct_message: true,
+    someone_adds_you_as_a_connection: true,
+    Upon_new_order: true,
+    new_membership_approval: true,
+    member_registration: true,
+    news_about_pct_themes_products_and_feature_updates: true,
+    tips_on_getting_more_out_of_pct_themes: true,
+    things_you_missed_since_you_last_logged_into_pct_themes: true,
+    news_about_products_and_other_services: true,
+    tips_and_document_business_products: true
+  });
 
   const themeMode = useMemo(() => <DefaultThemeMode />, []);
 
-  const handleToggle = (value: string) => () => {
-    const currentIndex = checked.indexOf(value);
-    const newChecked = [...checked];
+  // const handleToggle = (value: string) => () => {
+  //   const currentIndex = checked.indexOf(value);
+  //   const newChecked = [...checked];
+  //
+  //   if (currentIndex === -1) {
+  //     newChecked.push(value);
+  //   } else {
+  //     newChecked.splice(currentIndex, 1);
+  //   }
+  //
+  //   setChecked(newChecked);
+  // };
+  //
 
-    if (currentIndex === -1) {
-      newChecked.push(value);
-    } else {
-      newChecked.splice(currentIndex, 1);
-    }
+  const myToggle = (e: any) => {
+    console.log(e.target.name);
+    let { checked, name } = e.target;
 
-    setChecked(newChecked);
+    setMyChecked((pre) => ({
+      ...pre,
+      [name]: checked
+    }));
+  };
+
+  const handleUpdate = () => {
+    console.log(myChecked);
   };
 
   return (
@@ -52,8 +83,9 @@ export default function TabSettings() {
                     <ListItemText id="switch-list-label-en" primary={<Typography color="secondary">Email Notification</Typography>} />
                     <Switch
                       edge="end"
-                      onChange={handleToggle('en')}
-                      checked={checked.indexOf('en') !== -1}
+                      onChange={myToggle}
+                      checked={myChecked.email_notification}
+                      name="email_notification"
                       inputProps={{
                         'aria-labelledby': 'switch-list-label-en'
                       }}
@@ -66,8 +98,9 @@ export default function TabSettings() {
                     />
                     <Switch
                       edge="end"
-                      onChange={handleToggle('sctp')}
-                      checked={checked.indexOf('sctp') !== -1}
+                      onChange={myToggle}
+                      checked={myChecked.send_copy_to_personal_email}
+                      name="send_copy_to_personal_email"
                       inputProps={{
                         'aria-labelledby': 'switch-list-label-sctp'
                       }}
@@ -84,25 +117,45 @@ export default function TabSettings() {
                 <List sx={{ p: 0, '& .MuiListItem-root': { p: 0, py: 0.25 } }}>
                   <ListItem>
                     <ListItemText primary={<Typography color="secondary">News about PCT-themes products and feature updates</Typography>} />
-                    <Checkbox defaultChecked />
+                    <Checkbox
+                      name="news_about_pct_themes_products_and_feature_updates"
+                      checked={myChecked.news_about_pct_themes_products_and_feature_updates}
+                      onChange={myToggle}
+                    />
                   </ListItem>
                   <ListItem>
                     <ListItemText primary={<Typography color="secondary">Tips on getting more out of PCT-themes</Typography>} />
-                    <Checkbox defaultChecked />
+                    <Checkbox
+                      name="tips_on_getting_more_out_of_pct_themes"
+                      checked={myChecked.tips_on_getting_more_out_of_pct_themes}
+                      onChange={myToggle}
+                    />
                   </ListItem>
                   <ListItem>
                     <ListItemText
                       primary={<Typography color="secondary">Things you missed since you last logged into PCT-themes</Typography>}
                     />
-                    <Checkbox />
+                    <Checkbox
+                      name="things_you_missed_since_you_last_logged_into_pct_themes"
+                      checked={myChecked.things_you_missed_since_you_last_logged_into_pct_themes}
+                      onChange={myToggle}
+                    />
                   </ListItem>
                   <ListItem>
                     <ListItemText primary={<Typography color="secondary">News about products and other services</Typography>} />
-                    <Checkbox />
+                    <Checkbox
+                      name="news_about_products_and_other_services"
+                      checked={myChecked.news_about_products_and_other_services}
+                      onChange={myToggle}
+                    />
                   </ListItem>
                   <ListItem>
                     <ListItemText primary={<Typography color="secondary">Tips and Document business products</Typography>} />
-                    <Checkbox />
+                    <Checkbox
+                      name="tips_and_document_business_products"
+                      onChange={myToggle}
+                      checked={myChecked.tips_and_document_business_products}
+                    />
                   </ListItem>
                 </List>
               </Stack>
@@ -119,8 +172,9 @@ export default function TabSettings() {
                 <ListItemText id="switch-list-label-email-1" primary={<Typography color="secondary">Have new notifications</Typography>} />
                 <Switch
                   edge="end"
-                  onChange={handleToggle('email-1')}
-                  checked={checked.indexOf('email-1') !== -1}
+                  onChange={myToggle}
+                  checked={myChecked.have_new_notifications}
+                  name="have_new_notifications"
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-email-1'
                   }}
@@ -133,8 +187,9 @@ export default function TabSettings() {
                 />
                 <Switch
                   edge="end"
-                  onChange={handleToggle('email-2')}
-                  checked={checked.indexOf('email-2') !== -1}
+                  onChange={myToggle}
+                  checked={myChecked.youre_sent_a_direct_message}
+                  name="youre_sent_a_direct_message"
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-email-2'
                   }}
@@ -147,8 +202,9 @@ export default function TabSettings() {
                 />
                 <Switch
                   edge="end"
-                  onChange={handleToggle('email-3')}
-                  checked={checked.indexOf('email-3') !== -1}
+                  onChange={myToggle}
+                  checked={myChecked.someone_adds_you_as_a_connection}
+                  name="someone_adds_you_as_a_connection"
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-email-3'
                   }}
@@ -162,8 +218,9 @@ export default function TabSettings() {
                 <ListItemText id="switch-list-label-order-1" primary={<Typography color="secondary.light">Upon new order</Typography>} />
                 <Switch
                   edge="end"
-                  onChange={handleToggle('order-1')}
-                  checked={checked.indexOf('order-1') !== -1}
+                  onChange={myToggle}
+                  checked={myChecked.Upon_new_order}
+                  name="upon_new_order"
                   disabled
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-order-1'
@@ -178,8 +235,9 @@ export default function TabSettings() {
                 <Switch
                   edge="end"
                   disabled
-                  onChange={handleToggle('order-2')}
-                  checked={checked.indexOf('order-2') !== -1}
+                  onChange={myToggle}
+                  checked={myChecked.new_membership_approval}
+                  name="new_membership_approval"
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-order-2'
                   }}
@@ -189,8 +247,9 @@ export default function TabSettings() {
                 <ListItemText id="switch-list-label-order-3" primary={<Typography color="secondary">Member registration</Typography>} />
                 <Switch
                   edge="end"
-                  onChange={handleToggle('order-3')}
-                  checked={checked.indexOf('order-3') !== -1}
+                  onChange={myToggle}
+                  checked={myChecked.member_registration}
+                  name="member_registration"
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-order-3'
                   }}
@@ -205,7 +264,9 @@ export default function TabSettings() {
           <Button variant="outlined" color="secondary">
             Cancel
           </Button>
-          <Button variant="contained">Update Profile</Button>
+          <Button variant="contained" onClick={handleUpdate}>
+            Update Profile
+          </Button>
         </Stack>
       </Grid>
     </Grid>
