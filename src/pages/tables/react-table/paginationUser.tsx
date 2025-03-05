@@ -30,13 +30,29 @@ import { LabelKeyObject } from 'react-csv/lib/core';
 
 //query
 import { LIST_COMPANY_WALLETS } from "../../../graphql/queries";
-import { useQuery } from "@apollo/client";
+import { ApolloClient, ApolloProvider, InMemoryCache, HttpLink, useQuery } from '@apollo/client';
+import { LIST_USER_WALLETS } from 'graphql/queries';
+
+
+const API_Key2 = 'da2-n5rv7b7ipngvvff25xfs3xlufi'; // API key for second URI
+const uri2 = 'https://tvmbdqb7gvfnhfggz6liar6ylm.appsync-api.me-central-1.amazonaws.com/graphql';
+
+const client2 = new ApolloClient({
+  link: new HttpLink({
+    uri: uri2,
+    headers: {
+      'x-api-key': API_Key2,
+    },
+  }),
+  cache: new InMemoryCache(),
+});
+
 
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
-  console.log("company data", data)
-  console.log("column", columns)
+  console.log("user data", data)
+  console.log("user column", columns)
   const table = useReactTable({
     data,
     columns,
@@ -125,22 +141,15 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 
 // ==============================|| REACT TABLE - PAGINATION ||============================== //
 
-export default function PaginationTable() {
-  // const data: TableDataProps[] = makeData(100);
-  
-  const { loading, error, data, fetchMore } = useQuery(LIST_COMPANY_WALLETS, {
-    variables: { nextToken: null },
-  });
-
+export default function PaginationUserTable() {
+  const { data, loading, error } = useQuery(LIST_USER_WALLETS, { client: client2 });
   console.log("Query Response:", { loading, error, data });
-
   if (error) {
     console.error("GraphQL Error:", error);
   }
-
   // Transform company data to fit column structure
-  const transformedData = data?.listUserWallets?.items.map((item: any) => ({
-    email: item.userAddress,
+  const transformedData = data?.listUserWalletAddresses?.items.map((item: any) => ({
+    email: item.walletAddress,
     // fullName: item.applicantId,
     ethereumWallet: item.ethereumWallet,
     denergyWallet: item.denergyWallet,
@@ -163,11 +172,11 @@ export default function PaginationTable() {
       },
       {
         header: 'Ethereum Wallet',
-        accessorKey: 'email'
+        accessorKey: 'ethereumWallet'
       },
       {
         header: 'Denergy Wallet',
-        accessorKey: 'age',
+        accessorKey: 'denergyWallet',
         meta: {
           className: 'cell-right'
         }

@@ -31,26 +31,56 @@ import App from './App';
 import { ConfigProvider } from 'contexts/ConfigContext';
 import reportWebVitals from './reportWebVitals';
 
-import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
+import { ApolloClient, ApolloProvider, InMemoryCache, HttpLink} from '@apollo/client';
 
 const container = document.getElementById('root');
 const root = createRoot(container!);
 
-const API_Key = "da2-wjepl4a6ezexfcqzry4xl4htji"
+// const API_Key = "da2-wjepl4a6ezexfcqzry4xl4htji"
 
+// API Keys
+const API_Key = 'da2-wjepl4a6ezexfcqzry4xl4htji'; // API key for first URI
+const API_Key2 = 'da2-n5rv7b7ipngvvff25xfs3xlufi'; // API key for second URI
+
+// GraphQL URIs
+const uri1 = 'https://gh6hwmywzjfvlghrmqctqmo42u.appsync-api.me-central-1.amazonaws.com/graphql/';
+const uri2 = 'https://tvmbdqb7gvfnhfggz6liar6ylm.appsync-api.me-central-1.amazonaws.com/graphql';
+
+
+// const client = new ApolloClient({
+//   uri: uri1, // Your AppSync endpoint
+//   cache: new InMemoryCache(),
+//   headers: {
+//     // If you're using AWS IAM or API Key for authentication, you need to add proper headers
+//     'x-api-key': API_Key,
+//   },
+// });
+
+// Create Apollo Client instances for each GraphQL endpoint
 const client = new ApolloClient({
-  uri: 'https://gh6hwmywzjfvlghrmqctqmo42u.appsync-api.me-central-1.amazonaws.com/graphql/', // Your AppSync endpoint
+  link: new HttpLink({
+    uri: uri1,
+    headers: {
+      'x-api-key': API_Key,
+    },
+  }),
   cache: new InMemoryCache(),
-  headers: {
-    // If you're using AWS IAM or API Key for authentication, you need to add proper headers
-    'x-api-key': API_Key,
-  },
+});
+
+const client2 = new ApolloClient({
+  link: new HttpLink({
+    uri: uri2,
+    headers: {
+      'x-api-key': API_Key2,
+    },
+  }),
+  cache: new InMemoryCache(),
 });
 
 // ==============================|| MAIN - REACT DOM RENDER ||============================== //
 
 root.render(
-  <ApolloProvider client={client}>
+  <ApolloProvider client={client} >
     <ConfigProvider>
       <App />
     </ConfigProvider>
