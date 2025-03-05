@@ -20,10 +20,10 @@ export default function DTerminal() {
         <Grid item xs={12} md={7} lg={4}>
           <Grid container spacing={2}>
             <Grid item xs={12}>
-              <AnalyticCard title="Total Page Views" count="4,42,236" percentage={59.3} extra="35,000" />
+              <AnalyticCard title="Number user accounts" count="4,42,236" percentage={59.3}/>
             </Grid>
             <Grid item xs={12}>
-              <AnalyticCard title="Total Page Views" count="4,42,236" percentage={59.3} extra="35,000" />
+              <AnalyticCard title="New User accounts in 24 hours" count="4,42,236" percentage={59.3} />
             </Grid>
           </Grid>
         </Grid>
