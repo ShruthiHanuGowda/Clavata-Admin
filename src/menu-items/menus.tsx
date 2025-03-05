@@ -55,7 +55,7 @@ const allMenu: NavItemType = {
       id: 'setting',
       title: <FormattedMessage id="Setting" />,
       type: 'item',
-      url: '/setting',
+      url: '/profiles/account/user-permissions',
       icon: icons.SettingOutlined
     }
   ]

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 // material-ui
 import { Theme } from '@mui/material/styles';
@@ -24,6 +24,8 @@ import { handlerDrawerOpen, useGetMenuMaster } from 'api/menu';
 // ==============================|| MAIN LAYOUT ||============================== //
 
 export default function DashboardLayout() {
+  const { pathname } = useLocation();
+
   const { menuMasterLoading } = useGetMenuMaster();
   const downXL = useMediaQuery((theme: Theme) => theme.breakpoints.down('xl'));
   const downLG = useMediaQuery((theme: Theme) => theme.breakpoints.down('lg'));
@@ -41,6 +43,8 @@ export default function DashboardLayout() {
   }, [downXL]);
 
   if (menuMasterLoading) return <Loader />;
+
+  console.log('===>', pathname.includes('/profiles/account/'));
 
   return (
     <AuthGuard>
@@ -60,7 +64,7 @@ export default function DashboardLayout() {
               flexDirection: 'column'
             }}
           >
-            <Breadcrumbs />
+            {!pathname.includes('/profiles/account/') && <Breadcrumbs />}
             <Outlet />
             <Footer />
           </Container>
