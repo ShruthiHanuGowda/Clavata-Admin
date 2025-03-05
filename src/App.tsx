@@ -13,6 +13,8 @@ import Notistack from 'components/third-party/Notistack';
 // auth-provider
 // import { JWTProvider as AuthProvider } from 'contexts/JWTContext';
 import { AWSCognitoProvider as AuthProvider } from 'contexts/AWSCognitoContext';
+import { LIST_USER_WALLETS } from 'graphql/queries';
+import { useQuery } from '@apollo/client';
 
 // ==============================|| APP - THEME, ROUTER, LOCAL ||============================== //
 
