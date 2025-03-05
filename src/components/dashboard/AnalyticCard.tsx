@@ -22,7 +22,7 @@ interface Props {
   percentage?: number;
   isLoss?: boolean;
   color?: ChipProps['color'];
-  extra: string;
+  extra?: string;
 }
 
 export default function AnalyticCard({ color = 'primary', title, count, percentage, isLoss, extra }: Props) {
