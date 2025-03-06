@@ -29,14 +29,14 @@ import { TableDataProps } from 'types/table';
 import { LabelKeyObject } from 'react-csv/lib/core';
 
 //query
-import { LIST_COMPANY_WALLETS } from "../../../graphql/queries";
-import { useQuery } from "@apollo/client";
+import { LIST_COMPANY_WALLETS } from '../../../graphql/queries';
+import { useQuery } from '@apollo/client';
 
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
-  console.log("company data", data)
-  console.log("column", columns)
+  console.log('company data', data);
+  console.log('column', columns);
   const table = useReactTable({
     data,
     columns,
@@ -56,55 +56,14 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 
   return (
     <>
-    <MainCard
-      title={'Company User Data'}
-      content={false}
-      secondary={<CSVExport {...{ data, headers, filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
-    >
-      <ScrollX>
-        <Stack>
-          {top && (
-            <Box sx={{ p: 2 }}>
-              <TablePagination
-                {...{
-                  setPageSize: table.setPageSize,
-                  setPageIndex: table.setPageIndex,
-                  getState: table.getState,
-                  getPageCount: table.getPageCount
-                }} />
-            </Box>
-          )}
-
-          <TableContainer>
-            <Table>
-              <TableHead>
-                {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableCell key={header.id} {...header.column.columnDef.meta}>
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHead>
-              <TableBody>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {!top && (
-            <>
-              <Divider />
+      <MainCard
+        title={'Company User Data'}
+        content={false}
+        secondary={<CSVExport {...{ data, headers, filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
+      >
+        <ScrollX>
+          <Stack>
+            {top && (
               <Box sx={{ p: 2 }}>
                 <TablePagination
                   {...{
@@ -112,14 +71,57 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                     setPageIndex: table.setPageIndex,
                     getState: table.getState,
                     getPageCount: table.getPageCount
-                  }} />
+                  }}
+                />
               </Box>
-            </>
-          )}
-        </Stack>
-      </ScrollX>
-    </MainCard>
- </>
+            )}
+
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableCell key={header.id} {...header.column.columnDef.meta}>
+                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHead>
+                <TableBody>
+                  {table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {!top && (
+              <>
+                <Divider />
+                <Box sx={{ p: 2 }}>
+                  <TablePagination
+                    {...{
+                      setPageSize: table.setPageSize,
+                      setPageIndex: table.setPageIndex,
+                      getState: table.getState,
+                      getPageCount: table.getPageCount
+                    }}
+                  />
+                </Box>
+              </>
+            )}
+          </Stack>
+        </ScrollX>
+      </MainCard>
+    </>
   );
 }
 
@@ -127,29 +129,30 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 
 export default function PaginationTable() {
   // const data: TableDataProps[] = makeData(100);
-  
+
   const { loading, error, data, fetchMore } = useQuery(LIST_COMPANY_WALLETS, {
-    variables: { nextToken: null },
+    variables: { nextToken: null }
   });
 
-  console.log("Query Response:", { loading, error, data });
+  console.log('Query Response:', { loading, error, data });
 
   if (error) {
-    console.error("GraphQL Error:", error);
+    console.error('GraphQL Error:', error);
   }
 
   // Transform company data to fit column structure
-  const transformedData = data?.listUserWallets?.items.map((item: any) => ({
-    email: item.userAddress,
-    // fullName: item.applicantId,
-    ethereumWallet: item.ethereumWallet,
-    denergyWallet: item.denergyWallet,
-    status: item.is_verified,
-    // progress: 0, // Replace this with the actual KYC status if available
-    date: item.date,
-  })) || [];
+  const transformedData =
+    data?.listUserWallets?.items.map((item: any) => ({
+      email: item.userAddress,
+      // fullName: item.applicantId,
+      ethereumWallet: item.ethereumWallet,
+      denergyWallet: item.denergyWallet,
+      status: item.is_verified,
+      // progress: 0, // Replace this with the actual KYC status if available
+      date: item.date
+    })) || [];
 
-  console.log("new company data", data)
+  console.log('new company data', data);
 
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
@@ -174,7 +177,7 @@ export default function PaginationTable() {
       },
       {
         header: 'Review Status',
-        accessorKey: 'status',
+        accessorKey: 'status'
         // cell: (cell) => {
         //   switch (cell.getValue()) {
         //     case 'Complicated':
@@ -189,7 +192,7 @@ export default function PaginationTable() {
       },
       {
         header: 'KYC status',
-        accessorKey: 'progress',
+        accessorKey: 'progress'
         // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
       },
       {

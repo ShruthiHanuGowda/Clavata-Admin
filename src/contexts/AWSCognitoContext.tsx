@@ -139,10 +139,19 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
 
   const logout = () => {
     const loggedInUser = userPool.getCurrentUser();
+
     if (loggedInUser) {
       setSession(null);
+      localStorage.removeItem('email');
+      localStorage.removeItem('serviceToken');
+      console.log('Email cleared:', localStorage.getItem('email'));
+      console.log('ServiceToken cleared:', localStorage.getItem('serviceToken'));
       loggedInUser.signOut();
       dispatch({ type: LOGOUT });
+      sessionStorage.clear();
+      console.log('Session cleared:', sessionStorage);
+    } else {
+      console.log('No logged in user found.');
     }
   };
 
