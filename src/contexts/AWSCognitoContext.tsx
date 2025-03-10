@@ -1,7 +1,8 @@
 import { ReactElement, createContext, useEffect, useReducer } from 'react';
+import { CognitoUserAttribute } from 'amazon-cognito-identity-js';
 
 // third-party
-import { CognitoUser, CognitoUserPool, CognitoUserSession, CognitoUserAttribute, AuthenticationDetails } from 'amazon-cognito-identity-js';
+import { CognitoUser, CognitoUserPool, CognitoUserSession, AuthenticationDetails } from 'amazon-cognito-identity-js';
 
 // project imports
 import Loader from 'components/Loader';
@@ -66,7 +67,23 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
       }
     };
 
+    // Add the storage event listener to handle logout across tabs
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'serviceToken' && !event.newValue) {
+        // If the serviceToken is removed, log out the user
+        dispatch({ type: LOGOUT });
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Initialize the app state on mount
     init();
+
+    // Cleanup the event listener when the component is unmounted
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
@@ -101,15 +118,7 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
           reject(err);
         },
         newPasswordRequired: () => {
-          // User was signed up by an admin and must provide new
-          // password and required attributes, if any, to complete
-          // authentication.
-          // the api doesn't accept this field back
-          // delete userAttributes.email_verified;
-          // unsure about this field, but I don't send this back
-          // delete userAttributes.phone_number_verified;
-          // Get these details and call
-          // usr.completeNewPasswordChallenge(password, userAttributes, requiredAttributes);
+          // Handle the new password challenge (optional, based on your flow)
         }
       });
     });
@@ -150,8 +159,13 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
       dispatch({ type: LOGOUT });
       sessionStorage.clear();
       console.log('Session cleared:', sessionStorage);
+
+      // Only trigger the storage event if the serviceToken is cleared (avoid re-triggering when it's already cleared)
+      if (localStorage.getItem('serviceToken')) {
+        localStorage.setItem('serviceToken', ''); // This will fire the storage event
+      }
     } else {
-      console.log('No logged in user found.');
+      console.log('No logged-in user found.');
     }
   };
 
