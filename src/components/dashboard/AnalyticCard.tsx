@@ -22,7 +22,7 @@ interface Props {
   percentage?: number;
   isLoss?: boolean;
   color?: ChipProps['color'];
-  extra: string;
+  extra?: string;
 }
 
 export default function AnalyticCard({ color = 'primary', title, count, percentage, isLoss, extra }: Props) {
@@ -52,7 +52,8 @@ export default function AnalyticCard({ color = 'primary', title, count, percenta
           )}
         </Grid>
       </Stack>
-      <Box sx={{ pt: 2.25 }}>
+      {extra && (
+        <Box sx={{ pt: 2.25 }}>
         <Typography variant="caption" color="text.secondary">
           You made an extra{' '}
           <Typography variant="caption" sx={{ color: `${color || 'primary'}.main` }}>
@@ -61,6 +62,7 @@ export default function AnalyticCard({ color = 'primary', title, count, percenta
           this year
         </Typography>
       </Box>
+      )}
     </MainCard>
   );
 }
