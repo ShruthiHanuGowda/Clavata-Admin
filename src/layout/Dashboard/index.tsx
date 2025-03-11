@@ -11,7 +11,7 @@ import Toolbar from '@mui/material/Toolbar';
 // project import
 import Drawer from './Drawer';
 import Header from './Header';
-import Footer from './Footer';
+// import Footer from './Footer';
 import HorizontalBar from './Drawer/HorizontalBar';
 import Loader from 'components/Loader';
 import Breadcrumbs from 'components/@extended/Breadcrumbs';
@@ -66,7 +66,6 @@ export default function DashboardLayout() {
           >
             {!pathname.includes('/profiles/account/') && <Breadcrumbs />}
             <Outlet />
-            <Footer />
           </Container>
         </Box>
       </Box>
