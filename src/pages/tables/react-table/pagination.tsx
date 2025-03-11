@@ -144,6 +144,7 @@ export default function PaginationTable() {
   const transformedData =
     data?.listUserWallets?.items.map((item: any) => ({
       email: item.userAddress,
+      wallet_address: item.userWallet,
       applicantId: item.applicantId,
       is_verified: item.is_verified,
       // ethereumWallet: item.ethereumWallet,
@@ -162,7 +163,11 @@ export default function PaginationTable() {
         accessorKey: 'email'
       },
       {
-        header: 'Applicant ID',
+        header: 'User Wallet Address',
+        accessorKey: 'wallet_address'
+      },
+      {
+        header: 'KYB Applicant ID',
         accessorKey: 'applicantId'
       },
       {
