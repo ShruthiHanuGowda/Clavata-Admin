@@ -134,7 +134,7 @@ export default function PaginationTable() {
     variables: { nextToken: null }
   });
 
-  console.log('Query Response:', { loading, error, data });
+  console.log('Query company Response:', { loading, error, data });
 
   if (error) {
     console.error('GraphQL Error:', error);
@@ -144,10 +144,11 @@ export default function PaginationTable() {
   const transformedData =
     data?.listUserWallets?.items.map((item: any) => ({
       email: item.userAddress,
-      // fullName: item.applicantId,
-      ethereumWallet: item.ethereumWallet,
-      denergyWallet: item.denergyWallet,
-      status: item.is_verified,
+      applicantId: item.applicantId,
+      is_verified: item.is_verified,
+      // ethereumWallet: item.ethereumWallet,
+      // denergyWallet: item.denergyWallet,
+      reviewStatus: item.reviewStatus,
       // progress: 0, // Replace this with the actual KYC status if available
       date: item.date
     })) || [];
@@ -162,22 +163,22 @@ export default function PaginationTable() {
       },
       {
         header: 'Applicant ID',
-        accessorKey: 'fullName'
+        accessorKey: 'applicantId'
       },
       {
-        header: 'Ethereum Wallet',
-        accessorKey: 'email'
+        header: 'KYB Verified',
+        accessorKey: 'is_verified'
       },
+      // {
+      //   header: 'Denergy Wallet',
+      //   accessorKey: 'age',
+      //   meta: {
+      //     className: 'cell-right'
+      //   }
+      // },
       {
-        header: 'Denergy Wallet',
-        accessorKey: 'age',
-        meta: {
-          className: 'cell-right'
-        }
-      },
-      {
-        header: 'Review Status',
-        accessorKey: 'status'
+        header: 'KYB Review Status',
+        accessorKey: 'reviewStatus'
         // cell: (cell) => {
         //   switch (cell.getValue()) {
         //     case 'Complicated':
@@ -190,11 +191,11 @@ export default function PaginationTable() {
         //   }
         // }
       },
-      {
-        header: 'KYC status',
-        accessorKey: 'progress'
-        // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
-      },
+      // {
+      //   header: 'KYC status',
+      //   accessorKey: 'progress'
+      //   // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
+      // },
       {
         header: 'Date Registered',
         accessorKey: 'date'

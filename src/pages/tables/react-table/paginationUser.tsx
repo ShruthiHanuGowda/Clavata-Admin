@@ -171,17 +171,17 @@ export default function PaginationUserTable() {
         header: 'Applicant ID',
         accessorKey: 'fullName'
       },
-      {
-        header: 'Ethereum Wallet',
-        accessorKey: 'ethereumWallet'
-      },
-      {
-        header: 'Denergy Wallet',
-        accessorKey: 'denergyWallet',
-        meta: {
-          className: 'cell-right'
-        }
-      },
+      // {
+      //   header: 'Ethereum Wallet',
+      //   accessorKey: 'ethereumWallet'
+      // },
+      // {
+      //   header: 'Denergy Wallet',
+      //   accessorKey: 'denergyWallet',
+      //   meta: {
+      //     className: 'cell-right'
+      //   }
+      // },
       {
         header: 'Review Status',
         accessorKey: 'status'
