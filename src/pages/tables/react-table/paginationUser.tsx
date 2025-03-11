@@ -143,7 +143,7 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 
 export default function PaginationUserTable() {
   const { data, loading, error } = useQuery(LIST_USER_WALLETS, { client: client2 });
-  console.log('Query Response:', { loading, error, data });
+  console.log('Query user Response:', { loading, error, data });
   if (error) {
     console.error('GraphQL Error:', error);
   }
@@ -151,10 +151,12 @@ export default function PaginationUserTable() {
   const transformedData =
     data?.listUserWalletAddresses?.items.map((item: any) => ({
       email: item.walletAddress,
-      // fullName: item.applicantId,
-      ethereumWallet: item.ethereumWallet,
-      denergyWallet: item.denergyWallet,
-      status: item.is_verified,
+      wallet_address: item.userWallet,
+      applicantId: item.applicantId,
+      is_verified: item.is_verified,
+      // ethereumWallet: item.ethereumWallet,
+      // denergyWallet: item.denergyWallet,
+      reviewStatus: item.reviewStatus,
       // progress: 0, // Replace this with the actual KYC status if available
       date: item.date
     })) || [];
@@ -168,8 +170,16 @@ export default function PaginationUserTable() {
         accessorKey: 'email'
       },
       {
-        header: 'Applicant ID',
-        accessorKey: 'fullName'
+        header: 'User Wallet Address',
+        accessorKey: 'wallet_address'
+      },
+      {
+        header: 'KYC Applicant ID',
+        accessorKey: 'applicantId'
+      },
+      {
+        header: 'KYC Verified',
+        accessorKey: 'is_verified'
       },
       // {
       //   header: 'Ethereum Wallet',
@@ -183,8 +193,8 @@ export default function PaginationUserTable() {
       //   }
       // },
       {
-        header: 'Review Status',
-        accessorKey: 'status'
+        header: 'KYC Review Status',
+        accessorKey: 'reviewStatus'
         // cell: (cell) => {
         //   switch (cell.getValue()) {
         //     case 'Complicated':
@@ -197,11 +207,11 @@ export default function PaginationUserTable() {
         //   }
         // }
       },
-      {
-        header: 'KYC status',
-        accessorKey: 'progress'
-        // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
-      },
+      // {
+      //   header: 'KYC status',
+      //   accessorKey: 'progress'
+      //   // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
+      // },
       {
         header: 'Date Registered',
         accessorKey: 'date'
