@@ -15,10 +15,17 @@ import Typography from '@mui/material/Typography';
 // project import
 import MainCard from 'components/MainCard';
 import DefaultThemeMode from 'layout/Dashboard/Header/HeaderContent/Customization/ThemeMode';
+import useAuth from 'hooks/useAuth';
 
 // ==============================|| ACCOUNT PROFILE - SETTINGS ||============================== //
 
 export default function TabSettings() {
+  const auth = useAuth();
+
+  useEffect(() => {
+    console.log('===> auth', auth);
+  }, [auth]);
+
   const [settings, setSettings] = useState({
     email_notification: true,
     send_copy_to_personal_email: true,
