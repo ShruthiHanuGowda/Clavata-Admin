@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 // material-ui
 import Button from '@mui/material/Button';
@@ -19,15 +19,13 @@ import DefaultThemeMode from 'layout/Dashboard/Header/HeaderContent/Customizatio
 // ==============================|| ACCOUNT PROFILE - SETTINGS ||============================== //
 
 export default function TabSettings() {
-  // const [checked, setChecked] = useState(['en', 'email-1', 'email-3', 'order-1', 'order-3']);
-
-  const [myChecked, setMyChecked] = useState({
+  const [settings, setSettings] = useState({
     email_notification: true,
     send_copy_to_personal_email: true,
     have_new_notifications: true,
-    youre_sent_a_direct_message: true,
+    your_sent_a_direct_message: true,
     someone_adds_you_as_a_connection: true,
-    Upon_new_order: true,
+    upon_new_order: true,
     new_membership_approval: true,
     member_registration: true,
     news_about_pct_themes_products_and_feature_updates: true,
@@ -37,34 +35,49 @@ export default function TabSettings() {
     tips_and_document_business_products: true
   });
 
+  useEffect(() => {
+    const requestOptions: RequestInit = {
+      method: 'GET',
+      redirect: 'follow'
+    };
+
+    fetch('https://11rysti5l2.execute-api.me-central-1.amazonaws.com/test/getUserSettings?userId=user123', requestOptions)
+      .then((response) => response.json())
+      .then((result) => result.data?.settings && setSettings(result.data?.settings))
+      .catch((error) => console.error(error));
+  }, []);
+
   const themeMode = useMemo(() => <DefaultThemeMode />, []);
 
-  // const handleToggle = (value: string) => () => {
-  //   const currentIndex = checked.indexOf(value);
-  //   const newChecked = [...checked];
-  //
-  //   if (currentIndex === -1) {
-  //     newChecked.push(value);
-  //   } else {
-  //     newChecked.splice(currentIndex, 1);
-  //   }
-  //
-  //   setChecked(newChecked);
-  // };
-  //
-
   const myToggle = (e: any) => {
-    console.log(e.target.name);
     let { checked, name } = e.target;
 
-    setMyChecked((pre) => ({
+    setSettings((pre) => ({
       ...pre,
       [name]: checked
     }));
   };
 
   const handleUpdate = () => {
-    console.log(myChecked);
+    const myHeaders = new Headers();
+    myHeaders.append('Content-Type', 'application/json');
+
+    const raw = JSON.stringify({
+      userId: 'user123',
+      settings: settings
+    });
+
+    const requestOptions: RequestInit = {
+      method: 'POST',
+      headers: myHeaders,
+      body: raw,
+      redirect: 'follow'
+    };
+
+    fetch('https://11rysti5l2.execute-api.me-central-1.amazonaws.com/test/userSettings', requestOptions)
+      .then((response) => response.text())
+      .then((result) => console.log(result))
+      .catch((error) => console.error(error));
   };
 
   return (
@@ -84,7 +97,7 @@ export default function TabSettings() {
                     <Switch
                       edge="end"
                       onChange={myToggle}
-                      checked={myChecked.email_notification}
+                      checked={settings.email_notification}
                       name="email_notification"
                       inputProps={{
                         'aria-labelledby': 'switch-list-label-en'
@@ -99,7 +112,7 @@ export default function TabSettings() {
                     <Switch
                       edge="end"
                       onChange={myToggle}
-                      checked={myChecked.send_copy_to_personal_email}
+                      checked={settings.send_copy_to_personal_email}
                       name="send_copy_to_personal_email"
                       inputProps={{
                         'aria-labelledby': 'switch-list-label-sctp'
@@ -119,7 +132,7 @@ export default function TabSettings() {
                     <ListItemText primary={<Typography color="secondary">News about PCT-themes products and feature updates</Typography>} />
                     <Checkbox
                       name="news_about_pct_themes_products_and_feature_updates"
-                      checked={myChecked.news_about_pct_themes_products_and_feature_updates}
+                      checked={settings.news_about_pct_themes_products_and_feature_updates}
                       onChange={myToggle}
                     />
                   </ListItem>
@@ -127,7 +140,7 @@ export default function TabSettings() {
                     <ListItemText primary={<Typography color="secondary">Tips on getting more out of PCT-themes</Typography>} />
                     <Checkbox
                       name="tips_on_getting_more_out_of_pct_themes"
-                      checked={myChecked.tips_on_getting_more_out_of_pct_themes}
+                      checked={settings.tips_on_getting_more_out_of_pct_themes}
                       onChange={myToggle}
                     />
                   </ListItem>
@@ -137,7 +150,7 @@ export default function TabSettings() {
                     />
                     <Checkbox
                       name="things_you_missed_since_you_last_logged_into_pct_themes"
-                      checked={myChecked.things_you_missed_since_you_last_logged_into_pct_themes}
+                      checked={settings.things_you_missed_since_you_last_logged_into_pct_themes}
                       onChange={myToggle}
                     />
                   </ListItem>
@@ -145,7 +158,7 @@ export default function TabSettings() {
                     <ListItemText primary={<Typography color="secondary">News about products and other services</Typography>} />
                     <Checkbox
                       name="news_about_products_and_other_services"
-                      checked={myChecked.news_about_products_and_other_services}
+                      checked={settings.news_about_products_and_other_services}
                       onChange={myToggle}
                     />
                   </ListItem>
@@ -154,7 +167,7 @@ export default function TabSettings() {
                     <Checkbox
                       name="tips_and_document_business_products"
                       onChange={myToggle}
-                      checked={myChecked.tips_and_document_business_products}
+                      checked={settings.tips_and_document_business_products}
                     />
                   </ListItem>
                 </List>
@@ -173,7 +186,7 @@ export default function TabSettings() {
                 <Switch
                   edge="end"
                   onChange={myToggle}
-                  checked={myChecked.have_new_notifications}
+                  checked={settings.have_new_notifications}
                   name="have_new_notifications"
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-email-1'
@@ -188,7 +201,7 @@ export default function TabSettings() {
                 <Switch
                   edge="end"
                   onChange={myToggle}
-                  checked={myChecked.youre_sent_a_direct_message}
+                  checked={settings.your_sent_a_direct_message}
                   name="youre_sent_a_direct_message"
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-email-2'
@@ -203,7 +216,7 @@ export default function TabSettings() {
                 <Switch
                   edge="end"
                   onChange={myToggle}
-                  checked={myChecked.someone_adds_you_as_a_connection}
+                  checked={settings.someone_adds_you_as_a_connection}
                   name="someone_adds_you_as_a_connection"
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-email-3'
@@ -219,7 +232,7 @@ export default function TabSettings() {
                 <Switch
                   edge="end"
                   onChange={myToggle}
-                  checked={myChecked.Upon_new_order}
+                  checked={settings.upon_new_order}
                   name="upon_new_order"
                   disabled
                   inputProps={{
@@ -236,7 +249,7 @@ export default function TabSettings() {
                   edge="end"
                   disabled
                   onChange={myToggle}
-                  checked={myChecked.new_membership_approval}
+                  checked={settings.new_membership_approval}
                   name="new_membership_approval"
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-order-2'
@@ -248,7 +261,7 @@ export default function TabSettings() {
                 <Switch
                   edge="end"
                   onChange={myToggle}
-                  checked={myChecked.member_registration}
+                  checked={settings.member_registration}
                   name="member_registration"
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-order-3'
