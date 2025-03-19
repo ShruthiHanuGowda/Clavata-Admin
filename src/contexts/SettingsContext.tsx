@@ -118,9 +118,6 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     try {
       const requestOptions: RequestInit = {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({
           userId,
           settings
@@ -128,7 +125,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         redirect: 'follow'
       };
 
-      const response = await fetch('https://11rysti5l2.execute-api.me-central-1.amazonaws.com/test/updateUserSettings', requestOptions);
+      const response = await fetch('https://11rysti5l2.execute-api.me-central-1.amazonaws.com/test/userSettings', requestOptions);
 
       const result = await response.json();
 
