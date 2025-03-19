@@ -146,10 +146,11 @@ export default function TabSettings() {
               <ListItem>
                 <ListItemText
                   id="switch-list-label-email-2"
-                  primary={<Typography color="secondary">You&apos;re sent a direct message</Typography>}
+                  primary={<Typography color="secondary.light">You&apos;re sent a direct message</Typography>}
                 />
                 <Switch
                   edge="end"
+                  disabled
                   onChange={myToggle}
                   checked={settings.your_sent_a_direct_message}
                   name="youre_sent_a_direct_message"
