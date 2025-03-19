@@ -1,8 +1,11 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, ReactNode, useEffect, useState } from 'react';
 import useAuth from 'hooks/useAuth';
+import useConfig from 'hooks/useConfig';
+import { ThemeMode } from 'config';
 
 // Define the settings interface
 interface Settings {
+  theme_mode: ThemeMode;
   email_notification: boolean;
   send_copy_to_personal_email: boolean;
   have_new_notifications: boolean;
@@ -20,6 +23,7 @@ interface Settings {
 
 // Default settings
 const defaultSettings: Settings = {
+  theme_mode: ThemeMode.LIGHT,
   email_notification: true,
   send_copy_to_personal_email: true,
   have_new_notifications: true,
@@ -54,12 +58,19 @@ interface SettingsProviderProps {
 
 export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
   const { user } = useAuth();
+  const { onChangeMode } = useConfig();
 
   const userId = user?.email ?? 'kiran@d.energy';
 
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { theme_mode } = settings;
+
+  useEffect(() => {
+    onChangeMode(theme_mode);
+  }, [theme_mode]);
 
   // Fetch user settings on mount
   useEffect(() => {
@@ -81,7 +92,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         const result = await response.json();
 
         if (result.data?.settings) {
-          setSettings(result.data.settings);
+          setSettings({ ...settings, ...result.data.settings });
         }
       } catch (err) {
         setError('Failed to fetch settings');

@@ -19,6 +19,7 @@ import useConfig from 'hooks/useConfig';
 // assets
 import defaultLayout from 'assets/images/customization/default.svg';
 import darkLayout from 'assets/images/customization/dark.svg';
+import useSettings from 'hooks/useSettings';
 
 // ==============================|| CUSTOMIZATION - MODE ||============================== //
 
@@ -27,7 +28,10 @@ export default function ThemeModeLayout() {
 
   const { mode, onChangeMode } = useConfig();
 
+  const { updateSetting } = useSettings();
+
   const handleModeChange = (event: ChangeEvent<HTMLInputElement>) => {
+    updateSetting('theme_mode', event.target.value);
     onChangeMode(event.target.value as ThemeMode);
   };
 
