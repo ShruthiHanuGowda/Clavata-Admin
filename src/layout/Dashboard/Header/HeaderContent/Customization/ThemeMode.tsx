@@ -26,13 +26,12 @@ import useSettings from 'hooks/useSettings';
 export default function ThemeModeLayout() {
   const theme = useTheme();
 
-  const { mode, onChangeMode } = useConfig();
+  const { mode } = useConfig();
 
   const { updateSetting } = useSettings();
 
   const handleModeChange = (event: ChangeEvent<HTMLInputElement>) => {
     updateSetting('theme_mode', event.target.value);
-    onChangeMode(event.target.value as ThemeMode);
   };
 
   return (
