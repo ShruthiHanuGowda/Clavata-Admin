@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 // material-ui
 import Button from '@mui/material/Button';
@@ -15,76 +15,19 @@ import Typography from '@mui/material/Typography';
 // project import
 import MainCard from 'components/MainCard';
 import DefaultThemeMode from 'layout/Dashboard/Header/HeaderContent/Customization/ThemeMode';
-import useAuth from 'hooks/useAuth';
+import useSettings from 'hooks/useSettings';
 
 // ==============================|| ACCOUNT PROFILE - SETTINGS ||============================== //
 
 export default function TabSettings() {
-  const auth = useAuth();
-
-  useEffect(() => {
-    console.log('===> auth', auth);
-  }, [auth]);
-
-  const [settings, setSettings] = useState({
-    email_notification: true,
-    send_copy_to_personal_email: true,
-    have_new_notifications: true,
-    your_sent_a_direct_message: true,
-    someone_adds_you_as_a_connection: true,
-    upon_new_order: true,
-    new_membership_approval: true,
-    member_registration: true,
-    news_about_pct_themes_products_and_feature_updates: true,
-    tips_on_getting_more_out_of_pct_themes: true,
-    things_you_missed_since_you_last_logged_into_pct_themes: true,
-    news_about_products_and_other_services: true,
-    tips_and_document_business_products: true
-  });
-
-  useEffect(() => {
-    const requestOptions: RequestInit = {
-      method: 'GET',
-      redirect: 'follow'
-    };
-
-    fetch('https://11rysti5l2.execute-api.me-central-1.amazonaws.com/test/getUserSettings?userId=user123', requestOptions)
-      .then((response) => response.json())
-      .then((result) => result.data?.settings && setSettings(result.data?.settings))
-      .catch((error) => console.error(error));
-  }, []);
+  const { settings, updateSetting, saveSettings } = useSettings();
 
   const themeMode = useMemo(() => <DefaultThemeMode />, []);
 
   const myToggle = (e: any) => {
-    let { checked, name } = e.target;
+    let { name, checked } = e.target;
 
-    setSettings((pre) => ({
-      ...pre,
-      [name]: checked
-    }));
-  };
-
-  const handleUpdate = () => {
-    const myHeaders = new Headers();
-    myHeaders.append('Content-Type', 'application/json');
-
-    const raw = JSON.stringify({
-      userId: 'user123',
-      settings: settings
-    });
-
-    const requestOptions: RequestInit = {
-      method: 'POST',
-      headers: myHeaders,
-      body: raw,
-      redirect: 'follow'
-    };
-
-    fetch('https://11rysti5l2.execute-api.me-central-1.amazonaws.com/test/userSettings', requestOptions)
-      .then((response) => response.text())
-      .then((result) => console.log(result))
-      .catch((error) => console.error(error));
+    updateSetting(name, checked);
   };
 
   return (
@@ -284,7 +227,7 @@ export default function TabSettings() {
           <Button variant="outlined" color="secondary">
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleUpdate}>
+          <Button variant="contained" onClick={saveSettings}>
             Update Profile
           </Button>
         </Stack>
