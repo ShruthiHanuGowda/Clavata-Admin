@@ -43,17 +43,20 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
     const init = async () => {
       try {
         const serviceToken = window.localStorage.getItem('serviceToken');
-        if (serviceToken) {
+        const storedUsername = window.localStorage.getItem('username');
+
+        if (serviceToken && storedUsername) {
           setSession(serviceToken);
           dispatch({
             type: LOGIN,
             payload: {
               isLoggedIn: true,
               user: {
-                name: 'Betty'
+                email: storedUsername
               }
             }
           });
+          console.log('Initialized username from localStorage:', storedUsername);
         } else {
           dispatch({
             type: LOGOUT
@@ -67,7 +70,6 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
       }
     };
 
-    // Add the storage event listener to handle logout across tabs
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'serviceToken' && !event.newValue) {
         // If the serviceToken is removed, log out the user
@@ -101,14 +103,14 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
       usr.authenticateUser(authData, {
         onSuccess: (session: CognitoUserSession) => {
           setSession(session.getAccessToken().getJwtToken());
-
+          localStorage.setItem('username', authData.getUsername()); // Store the username in localStorage
           dispatch({
             type: LOGIN,
             payload: {
               isLoggedIn: true,
               user: {
-                email: authData.getUsername(),
-                name: 'John AWS'
+                email: authData.getUsername()
+                // name: 'John AWS'
               }
             }
           });
@@ -153,6 +155,7 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
       setSession(null);
       localStorage.removeItem('email');
       localStorage.removeItem('serviceToken');
+      localStorage.removeItem('username'); // Clear username from localStorage
       console.log('Email cleared:', localStorage.getItem('email'));
       console.log('ServiceToken cleared:', localStorage.getItem('serviceToken'));
       loggedInUser.signOut();
