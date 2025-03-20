@@ -18,14 +18,16 @@ import { useQuery } from '@apollo/client';
 import { createContext, useContext, useState } from 'react';
 import { ApolloClient, ApolloProvider, InMemoryCache, HttpLink} from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
+import { SettingsProvider } from 'contexts/SettingsContext';
+
 // ==============================|| APP - THEME, ROUTER, LOCAL ||============================== //
 
 // API Keys
-const API_Key = 'da2-wjepl4a6ezexfcqzry4xl4htji'; // API key for first URI
+const API_Key = 'da2-buffjyccqnewbbtaqcfr3ohhx4'; // API key for first URI
 const API_Key2 = 'da2-n5rv7b7ipngvvff25xfs3xlufi'; // API key for second URI
 
 // GraphQL URIs
-const uri1 = 'https://gh6hwmywzjfvlghrmqctqmo42u.appsync-api.me-central-1.amazonaws.com/graphql/';
+const uri1 = 'https://wsvnmylznfczlbxhhj7ytcwebi.appsync-api.me-central-1.amazonaws.com/graphql';
 const uri2 = 'https://tvmbdqb7gvfnhfggz6liar6ylm.appsync-api.me-central-1.amazonaws.com/graphql';
 
 // Define the shape of your context data (state)
@@ -52,6 +54,16 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
+// Apollo Client with dynamic headers
+const client = new ApolloClient({
+  link: authLink.concat(
+    new HttpLink({
+      uri: uri1,
+    })
+  ),
+  cache: new InMemoryCache(),
+});
+
 // Create Apollo Client instances for each GraphQL endpoint
 // const client = new ApolloClient({
 //   link: new HttpLink({
@@ -63,26 +75,15 @@ const authLink = setContext((_, { headers }) => {
 //   cache: new InMemoryCache(),
 // });
 
-// Apollo Client with dynamic headers
-const client = new ApolloClient({
-  link: authLink.concat(
-    new HttpLink({
-      uri: uri1,
-    })
-  ),
-  cache: new InMemoryCache(),
-});
-
-
-const client2 = new ApolloClient({
-  link: new HttpLink({
-    uri: uri2,
-    headers: {
-      'x-api-key': API_Key2,
-    },
-  }),
-  cache: new InMemoryCache(),
-});
+// const client2 = new ApolloClient({
+//   link: new HttpLink({
+//     uri: uri2,
+//     headers: {
+//       'x-api-key': API_Key2,
+//     },
+//   }),
+//   cache: new InMemoryCache(),
+// });
 
 export default function App() {
   // const context = useContext(Context);
@@ -97,12 +98,12 @@ export default function App() {
         <Locales>
           <ScrollTop>
             <AuthProvider>
-              <>
+            <SettingsProvider>
                 <Notistack>
                   <RouterProvider router={router} />
                   <Snackbar />
                 </Notistack>
-              </>
+                </SettingsProvider>
             </AuthProvider>
           </ScrollTop>
         </Locales>
