@@ -11,6 +11,8 @@ import authReducer from 'contexts/auth-reducer/auth';
 
 // types
 import { AWSCognitoContextType, InitialLoginContextProps } from 'types/auth';
+import { useContext } from 'react';
+import { Context } from 'App';
 
 // constant
 const initialState: InitialLoginContextProps = {
@@ -37,6 +39,8 @@ const setSession = (serviceToken?: string | null) => {
 const AWSCognitoContext = createContext<AWSCognitoContextType | null>(null);
 
 export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => {
+  const context = useContext(Context);
+  const { authenticationToken, setAuthenticationToken }: any = context;
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   useEffect(() => {
@@ -100,8 +104,10 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
     await new Promise<void>((resolve, reject) => {
       usr.authenticateUser(authData, {
         onSuccess: (session: CognitoUserSession) => {
-          setSession(session.getAccessToken().getJwtToken());
-
+          const accessToken = session.getAccessToken().getJwtToken();
+          // console.log("Access Token: ", accessToken);
+          setSession(accessToken);
+          setAuthenticationToken(accessToken)
           dispatch({
             type: LOGIN,
             payload: {
@@ -175,8 +181,8 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
       Pool: userPool
     });
     user.forgotPassword({
-      onSuccess: () => {},
-      onFailure: () => {}
+      onSuccess: () => { },
+      onFailure: () => { }
     });
   };
 
@@ -244,7 +250,7 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
     });
   };
 
-  const updateProfile = () => {};
+  const updateProfile = () => { };
 
   if (state.isInitialized !== undefined && !state.isInitialized) {
     return <Loader />;
