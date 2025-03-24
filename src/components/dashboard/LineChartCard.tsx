@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 // material-ui
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -12,13 +10,16 @@ import Typography from '@mui/material/Typography';
 import MainCard from 'components/MainCard';
 import LineChart from 'components/dashboard/LineChart';
 
-export default function LineChartCard({ title, data = [] }: { title: string; data: number[] }) {
-  const [slot, setSlot] = useState<'month' | 'week'>('week');
+import { TimeSlot } from 'hooks/useLineChart';
 
-  const handleSlot = (e: SelectChangeEvent) => {
-    setSlot(e.target.value as 'month' | 'week');
-  };
+interface LineChartCardProps {
+  title: string;
+  slot: TimeSlot;
+  data: number[];
+  handleSlotChange: (slot: TimeSlot) => void;
+}
 
+export default function LineChartCard({ title, slot = 'week', data, handleSlotChange }: LineChartCardProps) {
   return (
     <MainCard content={false}>
       <Grid item>
@@ -36,7 +37,7 @@ export default function LineChartCard({ title, data = [] }: { title: string; dat
               justifyContent={{ xs: 'center', sm: 'flex-end' }}
               sx={{ mt: 2, mr: { xs: 0, sm: 2 } }}
             >
-              <Select value={slot} onChange={handleSlot} size="small">
+              <Select value={slot} onChange={(e: SelectChangeEvent) => handleSlotChange(e.target.value as 'month' | 'week')} size="small">
                 <MenuItem value="week">Week</MenuItem>
                 <MenuItem value="month">Month</MenuItem>
               </Select>

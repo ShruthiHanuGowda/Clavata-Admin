@@ -6,8 +6,12 @@ import Typography from '@mui/material/Typography';
 import MainCard from 'components/MainCard';
 import AnalyticCard from 'components/dashboard/AnalyticCard';
 import LineChartCard from 'components/dashboard/LineChartCard';
+import useLineChart from '../../../hooks/useLineChart';
 
 export default function DWallet() {
+  const { slot: userSlot, data: userData, handleSlotChange: handleUserSlotChange } = useLineChart();
+  const { slot: appSlot, data: appData, handleSlotChange: handleAppSlotChange } = useLineChart();
+
   return (
     <MainCard>
       <Grid container spacing={2}>
@@ -24,10 +28,10 @@ export default function DWallet() {
           <AnalyticCard title="Total App Download" count="18,800" percentage={27.4} isLoss color="warning" extra="1,943" />
         </Grid>
         <Grid item xs={12} md={7} lg={8}>
-          <LineChartCard title="Daily New User Accounts" />
+          <LineChartCard title="Daily New User Accounts" slot={userSlot} data={userData} handleSlotChange={handleUserSlotChange} />
         </Grid>
         <Grid item xs={12} md={5} lg={4}>
-          <LineChartCard title="Daily App Downloads" />
+          <LineChartCard title="Daily App Downloads" slot={appSlot} data={appData} handleSlotChange={handleAppSlotChange} />
         </Grid>
       </Grid>
     </MainCard>

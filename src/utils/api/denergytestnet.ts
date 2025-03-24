@@ -7,7 +7,7 @@ export const getStats = async () => {
   return data;
 };
 
-export const getChartData = async () => {
-  const { data } = await api.get('/stats-api/api/v1/lines/newTxns?resolution=WEEK');
+export const getTransactionChartData = async (slot: string) => {
+  const { data } = await api.get(`/stats-api/api/v1/lines/newTxns?resolution=${slot.toUpperCase()}`);
   return data;
 };

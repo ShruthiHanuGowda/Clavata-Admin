@@ -6,8 +6,11 @@ import Typography from '@mui/material/Typography';
 import MainCard from 'components/MainCard';
 import AnalyticCard from 'components/dashboard/AnalyticCard';
 import LineChartCard from 'components/dashboard/LineChartCard';
+import useLineChart from '../../../hooks/useLineChart';
 
 export default function WattCoin() {
+  const { slot: coinSlot, data: coinData, handleSlotChange: handleCoinSlotChange } = useLineChart();
+
   return (
     <MainCard>
       <Grid container spacing={2}>
@@ -18,7 +21,7 @@ export default function WattCoin() {
           <AnalyticCard title="$Watt coin price" count="4,42,236" percentage={59.3} extra="35,000" />
         </Grid>
         <Grid item xs={12}>
-          <LineChartCard title="$Watt Coin Price" />
+          <LineChartCard title="$Watt Coin Price" slot={coinSlot} data={coinData} handleSlotChange={handleCoinSlotChange} />
         </Grid>
       </Grid>
     </MainCard>

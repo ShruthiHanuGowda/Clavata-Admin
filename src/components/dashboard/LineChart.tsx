@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
 import { LineChart } from '@mui/x-charts';
 
-interface IncomeChartProps {
+interface ChartProps {
   slot: 'week' | 'month';
   data: number[];
 }
@@ -34,7 +34,7 @@ const formatYAxisLabel = (value: number): string => {
   return value.toString();
 };
 
-export default function Chart({ slot, data = [] }: IncomeChartProps) {
+export default function Chart({ slot, data = [] }: ChartProps) {
   const theme = useTheme();
 
   const [labels, setLabels] = useState<string[]>(monthLabels);
@@ -85,9 +85,9 @@ export default function Chart({ slot, data = [] }: IncomeChartProps) {
           data,
           showMark: false,
           area: true,
-          id: 'IncomeChart',
+          id: 'chart',
           color: theme.palette.primary.main,
-          label: 'Txn',
+          label: 'No. Data',
           valueFormatter: (value: number | null) => (value !== null ? formatYAxisLabel(value) : '')
         }
       ]}
@@ -96,7 +96,7 @@ export default function Chart({ slot, data = [] }: IncomeChartProps) {
       margin={{ top: 30, bottom: 50, left: 45, right: 22 }}
       sx={{
         '& .MuiLineElement-root': { strokeDasharray: '0', strokeWidth: 1 },
-        '& .MuiAreaElement-series-IncomeChart': { fill: `url('#myGradient3')`, paintOrder: 'stroke' },
+        '& .MuiAreaElement-series-chart': { fill: `url('#myGradient3')`, paintOrder: 'stroke' },
         '& .MuiChartsAxis-directionX .MuiChartsAxis-tick': { stroke: line }
       }}
     >
