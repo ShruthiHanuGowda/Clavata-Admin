@@ -11,12 +11,14 @@ export default function Blockchain({
   totalTransaction,
   totalTransaction24,
   totalWallets,
-  totalWallets24
+  totalWallets24,
+  chartTransactions
 }: {
   totalTransaction: string;
   totalTransaction24: string;
   totalWallets: string;
   totalWallets24: string;
+  chartTransactions: number[];
 }) {
   return (
     <MainCard>
@@ -44,10 +46,10 @@ export default function Blockchain({
           />
         </Grid>
         <Grid item xs={12} md={7} lg={8}>
-          <LineChartCard title="Daily transactions" />
+          <LineChartCard title="Daily transactions" data={chartTransactions} />
         </Grid>
         <Grid item xs={12} md={5} lg={4}>
-          <LineChartCard title="Daily New Wallets" />
+          <LineChartCard title="Daily New Wallets" data={chartTransactions} />
         </Grid>
       </Grid>
     </MainCard>

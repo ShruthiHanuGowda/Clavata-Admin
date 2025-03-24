@@ -12,7 +12,7 @@ import Typography from '@mui/material/Typography';
 import MainCard from 'components/MainCard';
 import LineChart from 'components/dashboard/LineChart';
 
-export default function LineChartCard({ title }: { title: string }) {
+export default function LineChartCard({ title, data = [] }: { title: string; data: number[] }) {
   const [slot, setSlot] = useState<'month' | 'week'>('week');
 
   const handleSlot = (e: SelectChangeEvent) => {
@@ -45,7 +45,7 @@ export default function LineChartCard({ title }: { title: string }) {
         </Grid>
       </Grid>
       <Box width={1}>
-        <LineChart slot={slot} quantity="By volume" />
+        <LineChart slot={slot} data={data} />
       </Box>
     </MainCard>
   );
