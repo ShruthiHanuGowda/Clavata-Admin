@@ -4,59 +4,91 @@ import { useState, useEffect } from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
 import { LineChart } from '@mui/x-charts';
 
-interface IncomeChartProps {
+interface ChartProps {
   slot: 'week' | 'month';
-  quantity: 'By margin' | 'By sales' | 'By volume';
+  data: number[];
 }
 
 const weekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const byWeekVolume = [100, 20, 60, 20, 20, 80, 20];
-const byWeekMargin = [51, 40, 28, 51, 42, 109, 100];
-const byWeekSales = [21, 40, 28, 51, 42, 109, 100];
+// Format large numbers with K, M, etc. suffix
+const formatYAxisLabel = (value: number): string => {
+  // Make sure we have a number
+  if (value === undefined || value === null || isNaN(value)) {
+    return '';
+  }
 
-const byMonthVolume = [100, 40, 60, 40, 40, 40, 80, 40, 40, 50, 40, 40];
-const byMonthSales = [90, 85, 101, 98, 87, 105, 91, 114, 94, 86, 115, 35];
-const byMonthMargin = [120, 85, 101, 98, 87, 105, 91, 114, 94, 86, 115, 35];
+  // Handle zero case
+  if (value === 0) {
+    return '0';
+  }
 
-export default function Chart({ slot, quantity }: IncomeChartProps) {
+  // Format based on magnitude
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`;
+  } else if (value >= 1000) {
+    return `${(value / 1000).toFixed(0)}K`;
+  }
+
+  return value.toString();
+};
+
+export default function Chart({ slot, data = [] }: ChartProps) {
   const theme = useTheme();
 
-  const [data, setData] = useState<number[]>(byMonthVolume);
   const [labels, setLabels] = useState<string[]>(monthLabels);
 
   useEffect(() => {
     switch (slot) {
       case 'week':
-        setData(quantity === 'By margin' ? byWeekMargin : quantity === 'By sales' ? byWeekSales : byWeekVolume);
         setLabels(weekLabels);
         break;
       case 'month':
-        setData(quantity === 'By margin' ? byMonthMargin : quantity === 'By sales' ? byMonthSales : byMonthVolume);
         setLabels(monthLabels);
         break;
     }
-  }, [slot, quantity]);
+  }, [slot]);
 
   const axisFonstyle = { fontSize: 10, fill: theme.palette.text.secondary };
   const line = theme.palette.divider;
 
+  // Calculate chart parameters
+  const maxValue = Math.max(...data, 1); // Ensure at least 1 to avoid division by zero
+  const chartMax = maxValue * 1.1; // Add 10% padding
+
   return (
     <LineChart
       grid={{ horizontal: true, vertical: true }}
-      xAxis={[{ data: labels, scaleType: 'point', disableLine: true, tickLabelStyle: { ...axisFonstyle, fontSize: 12 } }]}
-      yAxis={[{ disableLine: true, disableTicks: true, tickLabelStyle: axisFonstyle, tickMaxStep: 10 }]}
+      xAxis={[
+        {
+          data: labels,
+          scaleType: 'point',
+          disableLine: true,
+          tickLabelStyle: { ...axisFonstyle, fontSize: 12 }
+        }
+      ]}
+      yAxis={[
+        {
+          disableLine: true,
+          disableTicks: true,
+          tickLabelStyle: axisFonstyle,
+          min: 0,
+          max: chartMax,
+          scaleType: 'linear',
+          valueFormatter: (value) => formatYAxisLabel(value)
+        }
+      ]}
       series={[
         {
           curve: 'linear',
           data,
           showMark: false,
           area: true,
-          id: 'IncomeChart',
+          id: 'chart',
           color: theme.palette.primary.main,
-          label: 'Income',
-          valueFormatter: (value: number | null) => `$ ${value}`
+          label: 'No. Data',
+          valueFormatter: (value: number | null) => (value !== null ? formatYAxisLabel(value) : '')
         }
       ]}
       slotProps={{ legend: { hidden: true } }}
@@ -64,7 +96,7 @@ export default function Chart({ slot, quantity }: IncomeChartProps) {
       margin={{ top: 30, bottom: 50, left: 45, right: 22 }}
       sx={{
         '& .MuiLineElement-root': { strokeDasharray: '0', strokeWidth: 1 },
-        '& .MuiAreaElement-series-IncomeChart': { fill: `url('#myGradient3')`, paintOrder: 'stroke' },
+        '& .MuiAreaElement-series-chart': { fill: `url('#myGradient3')`, paintOrder: 'stroke' },
         '& .MuiChartsAxis-directionX .MuiChartsAxis-tick': { stroke: line }
       }}
     >
