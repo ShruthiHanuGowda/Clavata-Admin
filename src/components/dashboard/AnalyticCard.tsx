@@ -35,7 +35,7 @@ export default function AnalyticCard({ color = 'primary', title, count, percenta
         <Grid container alignItems="center">
           <Grid item>
             <Typography variant="h4" color="inherit">
-              {count}
+              {count ?? 0}
             </Typography>
           </Grid>
           {percentage && (

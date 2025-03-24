@@ -28,11 +28,11 @@ export default function Dashboard() {
           totalTransaction={stats?.total_transactions}
           totalTransaction24={stats?.transactions_today}
           totalWallets={stats?.total_addresses}
-          totalWallets24="500"
+          totalWallets24="0"
         />
       </Grid>
       <Grid item xs={12} lg={12}>
-        <WattCoin />
+        <WattCoin coinPrice={stats?.coin_price} />
       </Grid>
       <Grid item xs={12} lg={12}>
         <DWallet />

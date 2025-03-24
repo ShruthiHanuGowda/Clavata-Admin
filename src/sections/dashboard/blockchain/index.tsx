@@ -10,7 +10,7 @@ import AnalyticCard from 'components/dashboard/AnalyticCard';
 import LineChartCard from 'components/dashboard/LineChartCard';
 
 import useLineChart from 'hooks/useLineChart';
-import { getTransactionChartData } from 'utils/api/denergytestnet';
+import { getTransactionChartData, getWalletChartData } from 'utils/api/denergytestnet';
 
 export default function Blockchain({
   totalTransaction,
@@ -24,11 +24,15 @@ export default function Blockchain({
   totalWallets24: string;
 }) {
   const { slot: txnSlot, data: txnData, setData: setTxnData, handleSlotChange: handleTxnSlotChange } = useLineChart();
-  const { slot: walletSlot, data: walletData, handleSlotChange: handleWalletSlotChange } = useLineChart();
+  const { slot: walletSlot, data: walletData, setData: setWalletData, handleSlotChange: handleWalletSlotChange } = useLineChart();
 
   useEffect(() => {
     getTransactionChartData(txnSlot).then((data) => setTxnData(data.chart.map(({ value }: { value: string }) => value)));
   }, [txnSlot, setTxnData]);
+
+  useEffect(() => {
+    getWalletChartData(walletSlot).then((data) => setWalletData(data.chart.map(({ value }: { value: string }) => value)));
+  }, [walletSlot, setWalletData]);
 
   return (
     <MainCard>
@@ -37,23 +41,16 @@ export default function Blockchain({
           <Typography variant="h3">Blockchain</Typography>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <AnalyticCard title="Total transaction" count={totalTransaction} percentage={59.3} extra="35,000" />
+          <AnalyticCard title="Total transaction" count={totalTransaction} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <AnalyticCard title="Transactions in last 24 hours" count={totalTransaction24} percentage={70.5} extra="8,900" />
+          <AnalyticCard title="Transactions in last 24 hours" count={totalTransaction24} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <AnalyticCard title="Total Wallets" count={totalWallets} percentage={27.4} isLoss color="warning" extra="1,943" />
+          <AnalyticCard title="Total Wallets" count={totalWallets} isLoss color="warning" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <AnalyticCard
-            title="New Wallets in last 24 hours"
-            count={totalWallets24}
-            percentage={27.4}
-            isLoss
-            color="warning"
-            extra="$20,395"
-          />
+          <AnalyticCard title="New Wallets in last 24 hours" count={totalWallets24} isLoss color="warning" />
         </Grid>
         <Grid item xs={12} md={7} lg={8}>
           <LineChartCard title="Daily transactions" slot={txnSlot} data={txnData} handleSlotChange={handleTxnSlotChange} />
