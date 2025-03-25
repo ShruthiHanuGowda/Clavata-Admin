@@ -25,7 +25,7 @@ export default function HeaderContent() {
   return (
     <>
       {menuOrientation === MenuOrientation.HORIZONTAL && !downLG && <DrawerHeader open={true} />}
-      {!downLG && <Search />}
+      {!downLG && <Box sx={{ width: '100%', ml: { xs: 0, md: 1 } }} />}
       {downLG && <Box sx={{ width: '100%', ml: 1 }} />}
 
       <Notification />
