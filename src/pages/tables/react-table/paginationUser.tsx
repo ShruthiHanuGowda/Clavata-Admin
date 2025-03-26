@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useContext, useMemo, useState } from 'react';
 
 // material-ui
 import Chip from '@mui/material/Chip';
@@ -41,6 +41,7 @@ import { LIST_COMPANY_WALLETS } from '../../../graphql/queries';
 import { ApolloClient, ApolloProvider, InMemoryCache, HttpLink, useQuery } from '@apollo/client';
 import { LIST_USER_WALLETS } from 'graphql/queries';
 import { CardContent } from '@mui/material';
+import { Context } from 'App';
 
 const API_Key2 = 'da2-n5rv7b7ipngvvff25xfs3xlufi'; // API key for second URI
 const uri2 = 'https://tvmbdqb7gvfnhfggz6liar6ylm.appsync-api.me-central-1.amazonaws.com/graphql';
@@ -58,6 +59,8 @@ const client2 = new ApolloClient({
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
+  const context = useContext(Context);
+  const { searchTerm, setSearchTerm }: any = context;
   console.log('user data', data);
   console.log('user column', columns);
   const table = useReactTable({
@@ -78,17 +81,21 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
     })
   );
 
+  const handleSearch = (term: any) => {
+    setSearchTerm(term);
+  };
+
   return (
     <>
       <MainCard
-        title={'User Data'}
+        title={' '}
         content={false}
         secondary={<CSVExport {...{ data, headers, filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
       >
         <CardContent sx={{ p: 2 }}>
           {/* Add Search component below the title */}
           <Box sx={{ mb: 2 }}>
-            <Search />
+            <Search onSearch={handleSearch} />
           </Box>
           <ScrollX>
             <Stack>
@@ -167,6 +174,8 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 // ==============================|| REACT TABLE - PAGINATION ||============================== //
 
 export default function PaginationUserTable() {
+  const context = useContext(Context);
+  const { searchTerm, setSearchTerm }: any = context;
   const { data, loading, error } = useQuery(LIST_USER_WALLETS, { client: client2 });
   console.log('Query user Response:', { loading, error, data });
   if (error) {
@@ -179,12 +188,20 @@ export default function PaginationUserTable() {
       wallet_address: item.userWallet,
       applicantId: item.applicantId,
       is_verified: item.is_verified,
-      // ethereumWallet: item.ethereumWallet,
-      // denergyWallet: item.denergyWallet,
       reviewStatus: item.reviewStatus,
-      // progress: 0, // Replace this with the actual KYC status if available
       date: item.date
     })) || [];
+
+  // Filter data based on search term
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return transformedData;
+    return transformedData.filter((item: any) =>
+      (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [searchTerm, transformedData]);
 
   console.log('new company data', data);
 
@@ -210,38 +227,11 @@ export default function PaginationUserTable() {
         accessorKey: 'is_verified',
         enableSorting: true
       },
-      // {
-      //   header: 'Ethereum Wallet',
-      //   accessorKey: 'ethereumWallet'
-      // },
-      // {
-      //   header: 'Denergy Wallet',
-      //   accessorKey: 'denergyWallet',
-      //   meta: {
-      //     className: 'cell-right'
-      //   }
-      // },
       {
         header: 'KYC Review Status',
         accessorKey: 'reviewStatus',
         enableSorting: true
-        // cell: (cell) => {
-        //   switch (cell.getValue()) {
-        //     case 'Complicated':
-        //       return <Chip color="error" label="Complicated" size="small" variant="light" />;
-        //     case 'Relationship':
-        //       return <Chip color="success" label="Relationship" size="small" variant="light" />;
-        //     case 'Single':
-        //     default:
-        //       return <Chip color="info" label="Single" size="small" variant="light" />;
-        //   }
-        // }
       },
-      // {
-      //   header: 'KYC status',
-      //   accessorKey: 'progress'
-      //   // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
-      // },
       {
         header: 'Date Registered',
         accessorKey: 'date',
@@ -250,14 +240,10 @@ export default function PaginationUserTable() {
     ],
     []
   );
-
   return (
     <Grid container spacing={3}>
-      {/* <Grid item xs={12}>
-        <ReactTable {...{ data, columns, top: true }} />
-      </Grid> */}
       <Grid item xs={12}>
-        <ReactTable {...{ data: transformedData, columns }} />
+        <ReactTable {...{ data: filteredData, columns }} />
       </Grid>
     </Grid>
   );

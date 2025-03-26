@@ -33,7 +33,9 @@ const uri2 = 'https://tvmbdqb7gvfnhfggz6liar6ylm.appsync-api.me-central-1.amazon
 // Define the shape of your context data (state)
 interface ContextType {
   authenticationToken: string,
-  setAuthenticationToken: (newValue: string) => void;
+  setAuthenticationToken: (newValue: string) => void,
+  searchTerm: any, 
+  setSearchTerm: any
 }
 
 // Create the Context
@@ -89,10 +91,11 @@ export default function App() {
   // const context = useContext(Context);
   // const { authenticationToken }: any = context;
   const [authenticationToken, setAuthenticationToken] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   console.log("authenticationToken", authenticationToken)
   return (
     <ApolloProvider client={client} >
-    <Context.Provider value={{ authenticationToken, setAuthenticationToken }}>
+    <Context.Provider value={{ authenticationToken, setAuthenticationToken, searchTerm, setSearchTerm }}>
       <ThemeCustomization>
         {/* <RTLLayout> */}
         <Locales>

@@ -14,7 +14,7 @@ import TableRow from '@mui/material/TableRow';
 import Stack from '@mui/material/Stack';
 import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
 // third-party
-import { useReactTable, getCoreRowModel, getPaginationRowModel, ColumnDef, HeaderGroup, flexRender } from '@tanstack/react-table';
+import { useReactTable, getCoreRowModel, getPaginationRowModel, ColumnDef, HeaderGroup, flexRender, getSortedRowModel } from '@tanstack/react-table';
 
 // project-import
 import ScrollX from 'components/ScrollX';
@@ -43,7 +43,8 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    debugTable: true
+    debugTable: true,
+    getSortedRowModel: getSortedRowModel(),
   });
 
   let headers: LabelKeyObject[] = [];
@@ -58,7 +59,7 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
   return (
     <>
       <MainCard
-        title={'Company User Data'}
+        title={' '}
         content={false}
         secondary={<CSVExport {...{ data, headers, filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
       >
@@ -89,7 +90,16 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                       <TableRow key={headerGroup.id}>
                         {headerGroup.headers.map((header) => (
                           <TableCell key={header.id} {...header.column.columnDef.meta}>
-                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                            <span
+                              onClick={header.column.getToggleSortingHandler()} // Handle sorting when clicked
+                              style={{ cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                              {{
+                                asc: ' 🔼',
+                                desc: ' 🔽'
+                              }[header.column.getIsSorted() as string] ?? null}
+                            </span>
                           </TableCell>
                         ))}
                       </TableRow>
