@@ -29,12 +29,7 @@ import { TablePagination } from 'components/third-party/react-table';
 
 import { TableDataProps } from 'types/table';
 
-const data = [
-  { name: 'Super Admin', description: 'Super Admin' },
-  { name: 'Admin', description: 'Admin' },
-  { name: 'Manager', description: 'Manager' },
-  { name: 'User', description: 'User' }
-];
+const data: any[] = [];
 
 export default function TabRole() {
   const columns: any = useMemo<ColumnDef<TableDataProps>[]>(
@@ -120,6 +115,7 @@ export default function TabRole() {
                         ))}
                       </TableRow>
                     ))}
+                    {table.getRowModel().rows.length === 0 && <TableCell colSpan={3}>No data</TableCell>}
                   </TableBody>
                 </Table>
               </TableContainer>

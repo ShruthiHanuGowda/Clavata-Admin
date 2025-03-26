@@ -52,7 +52,7 @@ export const FirebaseProvider = ({ children }: { children: React.ReactElement })
                 id: user.uid,
                 email: user.email!,
                 name: user.displayName || 'Stebin Ben',
-                role: 'UI/UX Designer'
+                role: 'Admin'
               }
             }
           });

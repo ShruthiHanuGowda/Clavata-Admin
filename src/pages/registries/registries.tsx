@@ -1,5 +1,5 @@
 function registries() {
-  return <>registries demo</>;
+  return <></>;
 }
 
 export default registries;

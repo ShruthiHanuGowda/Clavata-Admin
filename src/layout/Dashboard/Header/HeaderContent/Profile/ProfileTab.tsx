@@ -27,26 +27,42 @@ export default function ProfileTab({ handleLogout }: Props) {
 
   return (
     <List component="nav" sx={{ p: 0, '& .MuiListItemIcon-root': { minWidth: 32 } }}>
-      <ListItemButton selected={selectedIndex === 0} onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 0)}>
+      <ListItemButton
+        disabled
+        selected={selectedIndex === 0}
+        onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 0)}
+      >
         <ListItemIcon>
           <EditOutlined />
         </ListItemIcon>
         <ListItemText primary="Edit Profile" />
       </ListItemButton>
-      <ListItemButton selected={selectedIndex === 1} onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 1)}>
+      <ListItemButton
+        disabled
+        selected={selectedIndex === 1}
+        onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 1)}
+      >
         <ListItemIcon>
           <UserOutlined />
         </ListItemIcon>
         <ListItemText primary="View Profile" />
       </ListItemButton>
 
-      <ListItemButton selected={selectedIndex === 3} onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 3)}>
+      <ListItemButton
+        disabled
+        selected={selectedIndex === 3}
+        onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 3)}
+      >
         <ListItemIcon>
           <ProfileOutlined />
         </ListItemIcon>
         <ListItemText primary="Social Profile" />
       </ListItemButton>
-      <ListItemButton selected={selectedIndex === 4} onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 4)}>
+      <ListItemButton
+        disabled
+        selected={selectedIndex === 4}
+        onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 4)}
+      >
         <ListItemIcon>
           <WalletOutlined />
         </ListItemIcon>

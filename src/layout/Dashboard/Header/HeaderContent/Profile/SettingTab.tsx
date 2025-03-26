@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router';
 
 // material-ui
 import List from '@mui/material/List';
-import Link from '@mui/material/Link';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
@@ -31,15 +30,18 @@ export default function SettingTab() {
 
   return (
     <List component="nav" sx={{ p: 0, '& .MuiListItemIcon-root': { minWidth: 32 } }}>
-      <Link underline="none" sx={{ color: 'inherit' }} target="_blank" href="https://codedthemes.support-hub.io/">
-        <ListItemButton selected={selectedIndex === 0} onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 0)}>
-          <ListItemIcon>
-            <QuestionCircleOutlined />
-          </ListItemIcon>
-          <ListItemText primary="Support" />
-        </ListItemButton>
-      </Link>
       <ListItemButton
+        disabled
+        selected={selectedIndex === 0}
+        onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 0)}
+      >
+        <ListItemIcon>
+          <QuestionCircleOutlined />
+        </ListItemIcon>
+        <ListItemText primary="Support" />
+      </ListItemButton>
+      <ListItemButton
+        disabled
         selected={selectedIndex === 1}
         onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 1, '#')}
       >
@@ -48,21 +50,31 @@ export default function SettingTab() {
         </ListItemIcon>
         <ListItemText primary="Account Settings" />
       </ListItemButton>
-      <ListItemButton selected={selectedIndex === 2} onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 2)}>
+      <ListItemButton
+        disabled
+        selected={selectedIndex === 2}
+        onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 2)}
+      >
         <ListItemIcon>
           <LockOutlined />
         </ListItemIcon>
         <ListItemText primary="Privacy Center" />
       </ListItemButton>
-      <Link underline="none" style={{ color: 'inherit' }} target="_blank" href="https://codedthemes.support-hub.io/">
-        <ListItemButton selected={selectedIndex === 3} onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 3)}>
-          <ListItemIcon>
-            <CommentOutlined />
-          </ListItemIcon>
-          <ListItemText primary="Feedback" />
-        </ListItemButton>
-      </Link>
-      <ListItemButton selected={selectedIndex === 4} onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 4)}>
+      <ListItemButton
+        disabled
+        selected={selectedIndex === 3}
+        onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 3)}
+      >
+        <ListItemIcon>
+          <CommentOutlined />
+        </ListItemIcon>
+        <ListItemText primary="Feedback" />
+      </ListItemButton>
+      <ListItemButton
+        disabled
+        selected={selectedIndex === 4}
+        onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 4)}
+      >
         <ListItemIcon>
           <UnorderedListOutlined />
         </ListItemIcon>
