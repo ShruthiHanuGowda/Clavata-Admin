@@ -12,9 +12,9 @@ import Box from '@mui/material/Box';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Stack from '@mui/material/Stack';
-
+import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
 // third-party
-import { useReactTable, getCoreRowModel, getPaginationRowModel, ColumnDef, HeaderGroup, flexRender } from '@tanstack/react-table';
+import { useReactTable, getCoreRowModel, getPaginationRowModel, ColumnDef, HeaderGroup, flexRender, getSortedRowModel } from '@tanstack/react-table';
 
 // project-import
 import ScrollX from 'components/ScrollX';
@@ -31,6 +31,7 @@ import { LabelKeyObject } from 'react-csv/lib/core';
 //query
 import { LIST_COMPANY_WALLETS } from '../../../graphql/queries';
 import { useQuery } from '@apollo/client';
+import { CardContent } from '@mui/material';
 
 // ==============================|| REACT TABLE ||============================== //
 
@@ -42,7 +43,8 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    debugTable: true
+    debugTable: true,
+    getSortedRowModel: getSortedRowModel(),
   });
 
   let headers: LabelKeyObject[] = [];
@@ -57,55 +59,18 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
   return (
     <>
       <MainCard
-        title={'Company User Data'}
+        title={' '}
         content={false}
         secondary={<CSVExport {...{ data, headers, filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
       >
-        <ScrollX>
-          <Stack>
-            {top && (
-              <Box sx={{ p: 2 }}>
-                <TablePagination
-                  {...{
-                    setPageSize: table.setPageSize,
-                    setPageIndex: table.setPageIndex,
-                    getState: table.getState,
-                    getPageCount: table.getPageCount
-                  }}
-                />
-              </Box>
-            )}
-
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableCell key={header.id} {...header.column.columnDef.meta}>
-                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHead>
-                <TableBody>
-                  {table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {!top && (
-              <>
-                <Divider />
+        <CardContent sx={{ p: 2 }}>
+          {/* Add Search component below the title */}
+          <Box sx={{ mb: 2 }}>
+            <Search />
+          </Box>
+          <ScrollX>
+            <Stack>
+              {top && (
                 <Box sx={{ p: 2 }}>
                   <TablePagination
                     {...{
@@ -116,10 +81,62 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                     }}
                   />
                 </Box>
-              </>
-            )}
-          </Stack>
-        </ScrollX>
+              )}
+
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <TableCell key={header.id} {...header.column.columnDef.meta}>
+                            <span
+                              onClick={header.column.getToggleSortingHandler()} // Handle sorting when clicked
+                              style={{ cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                              {{
+                                asc: ' 🔼',
+                                desc: ' 🔽'
+                              }[header.column.getIsSorted() as string] ?? null}
+                            </span>
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableHead>
+                  <TableBody>
+                    {table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {!top && (
+                <>
+                  <Divider />
+                  <Box sx={{ p: 2 }}>
+                    <TablePagination
+                      {...{
+                        setPageSize: table.setPageSize,
+                        setPageIndex: table.setPageIndex,
+                        getState: table.getState,
+                        getPageCount: table.getPageCount
+                      }}
+                    />
+                  </Box>
+                </>
+              )}
+            </Stack>
+          </ScrollX>
+        </CardContent>
       </MainCard>
     </>
   );

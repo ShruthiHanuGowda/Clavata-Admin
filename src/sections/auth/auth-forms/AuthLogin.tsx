@@ -35,7 +35,6 @@ import EyeInvisibleOutlined from '@ant-design/icons/EyeInvisibleOutlined';
 
 export default function AuthLogin({ isDemo = false }: { isDemo?: boolean }) {
   const [checked, setChecked] = React.useState(false);
-
   const { login } = useAuth();
 
   const [showPassword, setShowPassword] = React.useState(false);
