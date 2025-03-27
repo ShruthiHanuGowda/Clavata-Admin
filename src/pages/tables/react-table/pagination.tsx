@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 
 // material-ui
 import Chip from '@mui/material/Chip';
@@ -32,10 +32,13 @@ import { LabelKeyObject } from 'react-csv/lib/core';
 import { LIST_COMPANY_WALLETS } from '../../../graphql/queries';
 import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
+import { Context } from 'App';
 
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
+  const context = useContext(Context);
+  const { searchTerm, setSearchTerm }: any = context;
   console.log('company data', data);
   console.log('column', columns);
   const table = useReactTable({
@@ -56,6 +59,10 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
     })
   );
 
+  const handleSearch = (term: any) => {
+    setSearchTerm(term);
+  };
+
   return (
     <>
       <MainCard
@@ -66,7 +73,7 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
         <CardContent sx={{ p: 2 }}>
           {/* Add Search component below the title */}
           <Box sx={{ mb: 2 }}>
-            <Search />
+            <Search onSearch={handleSearch} />
           </Box>
           <ScrollX>
             <Stack>
@@ -146,7 +153,8 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 
 export default function PaginationTable() {
   // const data: TableDataProps[] = makeData(100);
-
+  const context = useContext(Context);
+  const { searchTerm, setSearchTerm }: any = context;
   const { loading, error, data, fetchMore } = useQuery(LIST_COMPANY_WALLETS, {
     variables: { nextToken: null }
   });
@@ -164,12 +172,20 @@ export default function PaginationTable() {
       wallet_address: item.userWallet,
       applicantId: item.applicantId,
       is_verified: item.is_verified,
-      // ethereumWallet: item.ethereumWallet,
-      // denergyWallet: item.denergyWallet,
       reviewStatus: item.reviewStatus,
-      // progress: 0, // Replace this with the actual KYC status if available
       date: item.date
     })) || [];
+
+  // Filter data based on search term
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return transformedData;
+    return transformedData.filter((item: any) =>
+      (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [searchTerm, transformedData]);
 
   console.log('new company data', data);
 
@@ -232,7 +248,7 @@ export default function PaginationTable() {
         <ReactTable {...{ data, columns, top: true }} />
       </Grid> */}
       <Grid item xs={12}>
-        <ReactTable {...{ data: transformedData, columns }} />
+        <ReactTable {...{ data: filteredData, columns }} />
       </Grid>
     </Grid>
   );
