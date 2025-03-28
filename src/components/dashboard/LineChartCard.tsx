@@ -14,12 +14,13 @@ import { TimeSlot } from 'hooks/useLineChart';
 
 interface LineChartCardProps {
   title: string;
+  description?: string;
   slot: TimeSlot;
   data: number[];
   handleSlotChange: (slot: TimeSlot) => void;
 }
 
-export default function LineChartCard({ title, slot = 'week', data, handleSlotChange }: LineChartCardProps) {
+export default function LineChartCard({ title, description = '', slot = 'week', data, handleSlotChange }: LineChartCardProps) {
   return (
     <MainCard content={false}>
       <Grid item>
@@ -27,6 +28,11 @@ export default function LineChartCard({ title, slot = 'week', data, handleSlotCh
           <Grid item xs={12} sm={6}>
             <Stack sx={{ ml: { xs: 0, sm: 2 }, mt: 2 }} alignItems={{ xs: 'center', sm: 'flex-start' }}>
               <Typography variant="h5">{title}</Typography>
+              {description && (
+                <Typography variant="h6" color="text.secondary">
+                  {description}
+                </Typography>
+              )}
             </Stack>
           </Grid>
           <Grid item xs={12} sm={6}>

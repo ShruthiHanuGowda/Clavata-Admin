@@ -9,13 +9,16 @@ import Blockchain from 'sections/dashboard/blockchain';
 import WattCoin from 'sections/dashboard/watt-coin';
 import DWallet from 'sections/dashboard/d-wallet';
 import DTerminal from 'sections/dashboard/d-terminal';
-import { getStats } from 'utils/api/denergytestnet';
+import StatisticsCard from 'sections/dashboard';
+import { getCharts, getStats } from 'utils/api/denergytestnet';
 
 export default function Dashboard() {
   const [stats, setStats] = useState<any>({});
+  const [charts, setCharts] = useState<{ id: string; title: string; charts: Array<any> }[]>([]);
 
   useEffect(() => {
     getStats().then((data) => setStats(data));
+    getCharts().then((data) => setCharts(data.sections));
   }, []);
 
   return (
@@ -23,6 +26,11 @@ export default function Dashboard() {
       <Grid item xs={12} sx={{ mb: -2.25 }}>
         <Typography variant="h5">Dashboard</Typography>
       </Grid>
+      {charts.map(({ id, title, charts }, index) => (
+        <Grid key={`${id}-${index}`} item xs={12} lg={12}>
+          <StatisticsCard title={title} charts={charts} />
+        </Grid>
+      ))}
       <Grid item xs={12} lg={12}>
         <Blockchain
           totalTransaction={stats?.total_transactions}
