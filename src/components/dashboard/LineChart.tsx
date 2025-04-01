@@ -38,23 +38,44 @@ export default function Chart({ slot, data = [] }: ChartProps) {
   const theme = useTheme();
 
   const [labels, setLabels] = useState<string[]>(monthLabels);
+  const [paddedData, setPaddedData] = useState<number[]>(data);
 
   useEffect(() => {
+    let currentLabels: string[];
     switch (slot) {
       case 'week':
-        setLabels(weekLabels);
+        currentLabels = weekLabels;
         break;
       case 'month':
-        setLabels(monthLabels);
+        currentLabels = monthLabels;
         break;
+      default:
+        currentLabels = monthLabels;
     }
-  }, [slot]);
+
+    setLabels(currentLabels);
+
+    // Pad or truncate data to match the number of labels
+    if (data.length < currentLabels.length) {
+      // Pad with zeros or null values
+      const newData = [...data];
+      while (newData.length < currentLabels.length) {
+        newData.push(0); // or use null if your chart supports it
+      }
+      setPaddedData(newData);
+    } else if (data.length > currentLabels.length) {
+      // Truncate data to match labels
+      setPaddedData(data.slice(0, currentLabels.length));
+    } else {
+      setPaddedData(data);
+    }
+  }, [slot, data]);
 
   const axisFonstyle = { fontSize: 10, fill: theme.palette.text.secondary };
   const line = theme.palette.divider;
 
   // Calculate chart parameters
-  const maxValue = Math.max(...data, 1); // Ensure at least 1 to avoid division by zero
+  const maxValue = Math.max(...paddedData.filter((v) => v !== null && !isNaN(v)), 1); // Ensure at least 1 to avoid division by zero
   const chartMax = maxValue * 1.1; // Add 10% padding
 
   return (
@@ -82,7 +103,7 @@ export default function Chart({ slot, data = [] }: ChartProps) {
       series={[
         {
           curve: 'linear',
-          data,
+          data: paddedData,
           showMark: false,
           area: true,
           id: 'chart',

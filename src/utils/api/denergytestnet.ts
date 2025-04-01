@@ -7,6 +7,11 @@ export const getStats = async () => {
   return data;
 };
 
+export const getCounters = async () => {
+  const { data } = await api.get('/stats-api/api/v1/counters');
+  return data;
+};
+
 export const getCharts = async () => {
   const { data } = await api.get('/stats-api/api/v1/lines');
   return data;
