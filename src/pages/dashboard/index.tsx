@@ -9,13 +9,37 @@ import Blockchain from 'sections/dashboard/blockchain';
 import WattCoin from 'sections/dashboard/watt-coin';
 import DWallet from 'sections/dashboard/d-wallet';
 import DTerminal from 'sections/dashboard/d-terminal';
-import { getStats } from 'utils/api/denergytestnet';
+import StatisticsCard from 'sections/dashboard';
+import { getStats, getCounters, getCharts } from 'utils/api/denergytestnet';
+
+const countersToAnalytics: any = {
+  accounts: ['totalAccounts', 'totalAddresses'],
+  transactions: ['totalTxns', 'pendingTxns30m', 'completedTxns', 'newTxns24h'],
+  blocks: ['averageBlockTime', 'totalBlocks', 'totalTokens', ''],
+  tokens: [],
+  gas: ['averageTxnFee24h', 'txnsFee24h'],
+  contracts: ['totalContracts', 'totalVerifiedContracts', 'lastNewVerifiedContracts'],
+  wattCoin: ['totalNativeCoinTransfers']
+};
 
 export default function Dashboard() {
   const [stats, setStats] = useState<any>({});
+  const [counters, setCounters] = useState<any>([]);
+  const [charts, setCharts] = useState<{ id: string; title: string; charts: Array<any> }[]>([]);
 
   useEffect(() => {
     getStats().then((data) => setStats(data));
+    getCounters().then((data) =>
+      setCounters(
+        data.counters.map((counter: any) => ({
+          id: counter.id,
+          title: counter.title,
+          info: counter.description,
+          count: parseFloat(parseFloat(counter.value).toFixed(3))
+        }))
+      )
+    );
+    getCharts().then((data) => setCharts(data.sections));
   }, []);
 
   return (
@@ -40,6 +64,19 @@ export default function Dashboard() {
       <Grid item xs={12} lg={12}>
         <DTerminal />
       </Grid>
+      {charts.map(({ id, title, charts }, index) => (
+        <Grid key={`${id}-${index}`} item xs={12} lg={12}>
+          <StatisticsCard
+            title={title}
+            charts={charts}
+            analytics={
+              countersToAnalytics[id]
+                ?.map((counterId: string) => counters.find((counter: any) => counter.id === counterId))
+                .filter(Boolean) || []
+            }
+          />
+        </Grid>
+      ))}
     </Grid>
   );
 }

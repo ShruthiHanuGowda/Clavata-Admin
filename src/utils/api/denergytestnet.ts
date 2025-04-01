@@ -7,6 +7,21 @@ export const getStats = async () => {
   return data;
 };
 
+export const getCounters = async () => {
+  const { data } = await api.get('/stats-api/api/v1/counters');
+  return data;
+};
+
+export const getCharts = async () => {
+  const { data } = await api.get('/stats-api/api/v1/lines');
+  return data;
+};
+
+export const getChartDataById = async (id: string, slot: string) => {
+  const { data } = await api.get(`/stats-api/api/v1/lines/${id}?resolution=${slot.toUpperCase()}`);
+  return data;
+};
+
 export const getTransactionChartData = async (slot: string) => {
   const { data } = await api.get(`/stats-api/api/v1/lines/newTxns?resolution=${slot.toUpperCase()}`);
   return data;
