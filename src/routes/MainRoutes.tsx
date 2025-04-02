@@ -19,6 +19,7 @@ const Dashboard = Loadable(lazy(() => import('pages/dashboard')));
 const User = Loadable(lazy(() => import('pages/user/user')));
 const Companies = Loadable(lazy(() => import('pages/companies/companies')));
 const Registries = Loadable(lazy(() => import('pages/registries/registries')));
+const NFT = Loadable(lazy(() => import('pages/nft/nft')));
 const Setting = Loadable(lazy(() => import('pages/setting')));
 
 const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
@@ -49,6 +50,10 @@ const MainRoutes = {
         {
           path: '/registries',
           element: <Registries />
+        },
+        {
+          path: '/nft',
+          element: <NFT />
         },
         {
           path: '/setting',
