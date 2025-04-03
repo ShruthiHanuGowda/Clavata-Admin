@@ -14,7 +14,6 @@ import TableBody from '@mui/material/TableBody';
 import Divider from '@mui/material/Divider';
 import { LabelKeyObject } from 'react-csv/lib/core';
 import { useMemo } from 'react';
-import { TableDataProps } from '../../types/table';
 
 import { ApolloClient, InMemoryCache, HttpLink, useQuery } from '@apollo/client';
 import { LIST_EVIDENT_ITEMS } from 'graphql/queries';
@@ -40,7 +39,7 @@ export default function EvidentItems() {
     if (listEvidentResponse.data?.listEvidentItems?.items) setData(listEvidentResponse.data.listEvidentItems.items);
   }, [listEvidentResponse]);
 
-  const columns: any = useMemo<ColumnDef<TableDataProps>[]>(
+  const columns: any = useMemo<ColumnDef<any>[]>(
     () => [
       {
         header: 'Id',
@@ -86,7 +85,7 @@ export default function EvidentItems() {
           <TableContainer>
             <Table>
               <TableHead>
-                {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
+                {table.getHeaderGroups().map((headerGroup: HeaderGroup<never>) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <TableCell key={header.id} {...header.column.columnDef.meta}>
