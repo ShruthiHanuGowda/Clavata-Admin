@@ -25,6 +25,8 @@ const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
 const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRole')));
 const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/TabSettings')));
 
+const EvidentItems = Loadable(lazy(() => import('pages/evident-items')));
+
 // ==============================|| MAIN ROUTING ||============================== //
 
 const MainRoutes = {
@@ -72,6 +74,10 @@ const MainRoutes = {
               ]
             }
           ]
+        },
+        {
+          path: '/evident-items',
+          element: <EvidentItems />
         }
       ]
     },
