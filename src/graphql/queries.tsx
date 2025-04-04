@@ -35,4 +35,19 @@ export const LIST_USER_WALLETS = gql`
 }
 `;
 
+export const LIST_NFT_WALLETS = gql`
+  query {
+  listMintedNfts(limit: 100) {
+    items {
+      assetId
+      contractAddress
+      createdAt
+      mintedVolume
+      tokenId
+    }
+    nextToken
+  }
+}
+`
+
 
