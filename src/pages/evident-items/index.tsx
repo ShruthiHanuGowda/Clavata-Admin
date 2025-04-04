@@ -39,23 +39,55 @@ export default function EvidentItems() {
     if (listEvidentResponse.data?.listEvidentItems?.items) setData(listEvidentResponse.data.listEvidentItems.items);
   }, [listEvidentResponse]);
 
+  useEffect(() => {
+    data.forEach((d: any) => {
+      console.log(JSON.parse(d.asset)?.issue?.deviceDetails?.deviceType?.deviceGroup);
+    });
+  }, [data]);
+
   const columns: any = useMemo<ColumnDef<any>[]>(
     () => [
       {
-        header: 'Id',
-        accessorKey: 'uid'
+        header: 'Energy Type',
+        cell: ({ row }: any) => {
+          return row.original.asset ? JSON.parse(row.original.asset)?.issue?.deviceDetails?.deviceType?.deviceGroup : '';
+        }
       },
       {
-        header: 'AssetId',
-        accessorKey: 'assetId'
+        header: 'Country',
+        cell: ({ row }: any) => {
+          return row.original.asset ? JSON.parse(row.original.asset)?.country?.name : '';
+        }
       },
       {
-        header: 'Available Volume',
-        accessorKey: 'availableVolume'
+        header: 'Facility Name',
+        cell: ({ row }: any) => {
+          return row.original.asset ? JSON.parse(row.original.asset)?.issue?.deviceDetails?.name : '';
+        }
       },
       {
-        header: 'Volume',
-        accessorKey: 'volume'
+        header: 'Volume (MWh)',
+        cell: ({ row }: any) => {
+          return parseFloat(row.original?.volume || '0');
+        }
+      },
+      {
+        header: 'Production Start Date',
+        cell: ({ row }: any) => {
+          return row.original.asset ? JSON.parse(row.original.asset)?.startDate : '';
+        }
+      },
+      {
+        header: 'Production End Date',
+        cell: ({ row }: any) => {
+          return row.original.asset ? JSON.parse(row.original.asset)?.endDate : '';
+        }
+      },
+      {
+        header: 'Facility Commissioning Date',
+        cell: ({ row }: any) => {
+          return row.original.asset ? JSON.parse(row.original.asset)?.issue?.deviceDetails?.commissioningDate : '';
+        }
       }
     ],
     []
