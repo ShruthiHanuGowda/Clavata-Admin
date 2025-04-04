@@ -1,4 +1,4 @@
-import NftTable from 'pages/tables/react-table/nftTable';
+import NftTable from 'pages/tables/react-table/NftTable';
 function nft() {
     return <NftTable />;
   }
