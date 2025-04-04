@@ -59,6 +59,7 @@ export const LIST_EVIDENT_ITEMS = gql`
         assetId
         availableVolume
         volume
+        asset
       }
     }
   }
