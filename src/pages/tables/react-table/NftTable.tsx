@@ -143,14 +143,14 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                 <>
                   <Divider />
                   <Box sx={{ p: 2 }}>
-                    {/* <TablePagination
+                    <TablePagination
                       {...{
                         setPageSize: table.setPageSize,
                         setPageIndex: table.setPageIndex,
                         getState: table.getState,
                         getPageCount: table.getPageCount
                       }}
-                    /> */}
+                    />
                   </Box>
                 </>
               )}
