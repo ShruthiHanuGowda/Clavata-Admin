@@ -20,6 +20,7 @@ const User = Loadable(lazy(() => import('pages/user/user')));
 const Companies = Loadable(lazy(() => import('pages/companies/companies')));
 const Registries = Loadable(lazy(() => import('pages/registries/registries')));
 const NFT = Loadable(lazy(() => import('pages/nft/nft')));
+const TransactionHistory = Loadable(lazy(() => import('pages/transaction-history/TransactionHistory')));
 const Setting = Loadable(lazy(() => import('pages/setting')));
 
 const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
@@ -56,6 +57,10 @@ const MainRoutes = {
         {
           path: '/nft',
           element: <NFT />
+        },
+        {
+          path: '/transaction',
+          element: <TransactionHistory />
         },
         {
           path: '/setting',

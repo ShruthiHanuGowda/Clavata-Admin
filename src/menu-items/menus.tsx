@@ -66,6 +66,13 @@ const allMenu: NavItemType = {
       icon: icons.FormOutlined
     },
     {
+      id: 'transaction',
+      title: <FormattedMessage id="Transaction" />,
+      type: 'item',
+      url: '/transaction',
+      icon: icons.FormOutlined
+    },
+    {
       id: 'setting',
       title: <FormattedMessage id="Setting" />,
       type: 'item',

@@ -64,3 +64,20 @@ export const LIST_EVIDENT_ITEMS = gql`
     }
   }
 `;
+
+export const LIST_TRANSACTION_HISTORY  = gql`
+query ListTransactionsHistories {
+  listTransactionsHistories(limit: 10) {
+    items {
+      transactionId
+      amount
+      destinationAccount
+      sourceAccount
+      status
+      timestamp
+      transactionType
+    }
+    nextToken
+  }
+}
+`;
