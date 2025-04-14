@@ -1,22 +1,112 @@
-import { useEffect, useState } from 'react';
-import MainCard from '../../components/MainCard';
-import { TablePagination } from '../../components/third-party/react-table';
-import ScrollX from '../../components/ScrollX';
-import Stack from '@mui/material/Stack';
-import Box from '@mui/material/Box';
-import TableContainer from '@mui/material/TableContainer';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import TableBody from '@mui/material/TableBody';
-import Divider from '@mui/material/Divider';
-import { LabelKeyObject } from 'react-csv/lib/core';
-import { useMemo } from 'react';
-import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
+import React, { useContext, useMemo } from 'react';
+import { ApolloClient, HttpLink, InMemoryCache, useQuery } from '@apollo/client';
+import { Grid, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, Box, Divider, CardContent, Stack } from '@mui/material';
+import { useReactTable, getCoreRowModel, getPaginationRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
+import { Context } from 'App';
+import MainCard from 'components/MainCard';
+import TablePagination from 'components/third-party/react-table/TablePagination';
+import ScrollX from 'components/ScrollX';
+import CSVExport from 'components/third-party/react-table/CSVExport';
+import Search from 'layout/Dashboard/Header/HeaderContent/Search';
+import { LIST_NFT_COLLECTIONS } from 'graphql/queries';
 
-import { ApolloClient, InMemoryCache, HttpLink, useQuery } from '@apollo/client';
-import { LIST_NFT_COLLECTIONS } from 'graphql/queries'; // Assuming your query is in this file
+function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
+  const context = useContext(Context);
+  const { setSearchTerm }: any = context;
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel()
+  });
+
+  let headers: any[] = [];
+  table.getAllColumns().map((col: any) =>
+    headers.push({
+      label: col.columnDef.header,
+      key: col.columnDef.accessorKey
+    })
+  );
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  return (
+    <>
+      <MainCard title="NFT Collections" content={false} secondary={<CSVExport {...{ data, headers, filename: 'nft-collections.csv' }} />}>
+        <CardContent sx={{ p: 2 }}>
+          <Box sx={{ mb: 2 }}>
+            <Search onSearch={handleSearch} />
+          </Box>
+          <ScrollX>
+            <Stack>
+              {top && (
+                <Box sx={{ p: 2 }}>
+                  <TablePagination
+                    setPageSize={table.setPageSize}
+                    setPageIndex={table.setPageIndex}
+                    getState={table.getState}
+                    getPageCount={table.getPageCount}
+                  />
+                </Box>
+              )}
+
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <TableCell key={header.id} {...header.column.columnDef.meta}>
+                            <span onClick={header.column.getToggleSortingHandler()} style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                              {{
+                                asc: ' 🔼',
+                                desc: ' 🔽'
+                              }[header.column.getIsSorted() as string] ?? null}
+                            </span>
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableHead>
+                  <TableBody>
+                    {table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {!top && (
+                <>
+                  <Divider />
+                  <Box sx={{ p: 2 }}>
+                    <TablePagination
+                      setPageSize={table.setPageSize}
+                      setPageIndex={table.setPageIndex}
+                      getState={table.getState}
+                      getPageCount={table.getPageCount}
+                    />
+                  </Box>
+                </>
+              )}
+            </Stack>
+          </ScrollX>
+        </CardContent>
+      </MainCard>
+    </>
+  );
+}
 
 const client = new ApolloClient({
   link: new HttpLink({
@@ -28,123 +118,49 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 });
 
-export default function NftCollections() {
-  const [data, setData] = useState([]);
-  const { data: listNftCollections, error } = useQuery(LIST_NFT_COLLECTIONS, {
-    client,
-    notifyOnNetworkStatusChange: true
-  });
+export default function NftCollectionTable() {
+  const context = useContext(Context);
+  const { searchTerm } = context as any;
 
-  console.log(error);
+  // Query for NFT collections
+  const { error, data } = useQuery(LIST_NFT_COLLECTIONS);
 
-  useEffect(() => {
-    if (listNftCollections?.data?.listNftCollections?.items) {
-      setData(listNftCollections?.data.listNftCollections.items);
-    }
-  }, [data]);
+  if (error) {
+    console.error('Error fetching NFT collections:', error);
+  }
 
-  const columns: any = useMemo(
+  const transformedData = data?.listNftCollections?.items || [];
+
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return transformedData;
+    return transformedData.filter(
+      (item: any) =>
+        item.collectionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.contractAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.ownerAddress.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm, transformedData]);
+
+  const columns = useMemo<ColumnDef<any>[]>(
     () => [
-      {
-        header: 'Collection Name',
-        cell: ({ row }: any) => row.original.collectionName || ''
-      },
-      {
-        header: 'Contract Address',
-        cell: ({ row }: any) => row.original.contractAddress || ''
-      },
-      {
-        header: 'Symbol',
-        cell: ({ row }: any) => row.original.symbol || ''
-      },
-      {
-        header: 'Year',
-        cell: ({ row }: any) => row.original.year || ''
-      },
-      {
-        header: 'Country',
-        cell: ({ row }: any) => row.original.country || ''
-      },
-      {
-        header: 'Owner Address',
-        cell: ({ row }: any) => row.original.ownerAddress || ''
-      },
-      {
-        header: 'Type',
-        cell: ({ row }: any) => row.original.type || ''
-      },
-      {
-        header: 'Created At',
-        cell: ({ row }: any) => row.original.createdAt || ''
-      },
-      {
-        header: 'Updated At',
-        cell: ({ row }: any) => row.original.updatedAt || ''
-      }
+      { header: 'Contract Address', accessorKey: 'contractAddress' },
+      { header: 'Collection Name', accessorKey: 'collectionName' },
+      { header: 'Symbol', accessorKey: 'symbol' },
+      { header: 'Year', accessorKey: 'year' },
+      { header: 'Country', accessorKey: 'country' },
+      { header: 'Owner Address', accessorKey: 'ownerAddress' },
+      { header: 'Type', accessorKey: 'type' },
+      { header: 'Created At', accessorKey: 'createdAt' },
+      { header: 'Updated At', accessorKey: 'updatedAt' }
     ],
     []
   );
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    debugTable: true
-  });
-
-  let headers: LabelKeyObject[] = [];
-  table.getAllColumns().map((columns: any) =>
-    headers.push({
-      label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
-      key: columns.columnDef.accessorKey
-    })
-  );
-
   return (
-    <MainCard title="NFT Collections" content={false}>
-      <ScrollX>
-        <Stack>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                {table.getHeaderGroups().map((headerGroup: any) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header: any) => (
-                      <TableCell key={header.id} {...header.column.columnDef.meta}>
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHead>
-              <TableBody>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <Divider />
-          <Box sx={{ p: 2 }}>
-            <TablePagination
-              {...{
-                setPageSize: table.setPageSize,
-                setPageIndex: table.setPageIndex,
-                getState: table.getState,
-                getPageCount: table.getPageCount
-              }}
-            />
-          </Box>
-        </Stack>
-      </ScrollX>
-    </MainCard>
+    <Grid container spacing={3}>
+      <Grid item xs={12}>
+        <ReactTable {...{ data: filteredData, columns }} />
+      </Grid>
+    </Grid>
   );
 }

@@ -66,6 +66,13 @@ const allMenu: NavItemType = {
       icon: icons.FormOutlined
     },
     {
+      id: 'nft',
+      title: <FormattedMessage id="NFT Collections" />,
+      type: 'item',
+      url: '/nft-collection',
+      icon: icons.FormOutlined
+    },
+    {
       id: 'transaction',
       title: <FormattedMessage id="Transaction" />,
       type: 'item',
