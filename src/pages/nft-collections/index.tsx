@@ -123,7 +123,10 @@ export default function NftCollectionTable() {
   const { searchTerm } = context as any;
 
   // Query for NFT collections
-  const { error, data } = useQuery(LIST_NFT_COLLECTIONS);
+  const { error, data } = useQuery(LIST_NFT_COLLECTIONS, {
+    client: client,
+    variables: { nextToken: null }
+  });
 
   if (error) {
     console.error('Error fetching NFT collections:', error);
