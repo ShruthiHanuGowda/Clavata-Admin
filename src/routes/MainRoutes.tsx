@@ -6,6 +6,7 @@ import DashboardLayout from 'layout/Dashboard';
 import PagesLayout from 'layout/Pages';
 import SimpleLayout from 'layout/Simple';
 import { SimpleLayoutType } from 'config';
+import NftCollections from '../pages/nft-collections';
 
 const MaintenanceError = Loadable(lazy(() => import('pages/maintenance/404')));
 const MaintenanceError500 = Loadable(lazy(() => import('pages/maintenance/500')));
@@ -57,6 +58,10 @@ const MainRoutes = {
         {
           path: '/nft',
           element: <NFT />
+        },
+        {
+          path: '/nft-collection',
+          element: <NftCollections />
         },
         {
           path: '/transaction',

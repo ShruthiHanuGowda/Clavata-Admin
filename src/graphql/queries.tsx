@@ -37,19 +37,18 @@ export const LIST_USER_WALLETS = gql`
 
 export const LIST_NFT_WALLETS = gql`
   query {
-  listMintedNfts(limit: 100) {
-    items {
-      assetId
-      contractAddress
-      createdAt
-      mintedVolume
-      tokenId
+    listMintedNfts(limit: 100) {
+      items {
+        assetId
+        contractAddress
+        createdAt
+        mintedVolume
+        tokenId
+      }
+      nextToken
     }
-    nextToken
   }
-}
-`
-
+`;
 
 export const LIST_EVIDENT_ITEMS = gql`
   query ListEvidentItems {
@@ -65,19 +64,37 @@ export const LIST_EVIDENT_ITEMS = gql`
   }
 `;
 
-export const LIST_TRANSACTION_HISTORY  = gql`
-query ListTransactionsHistories {
-  listTransactionsHistories(limit: 10) {
-    items {
-      transactionId
-      amount
-      destinationAccount
-      sourceAccount
-      status
-      timestamp
-      transactionType
+export const LIST_TRANSACTION_HISTORY = gql`
+  query ListTransactionsHistories {
+    listTransactionsHistories(limit: 10) {
+      items {
+        transactionId
+        amount
+        destinationAccount
+        sourceAccount
+        status
+        timestamp
+        transactionType
+      }
+      nextToken
     }
-    nextToken
   }
-}
+`;
+
+export const LIST_NFT_COLLECTIONS = gql`
+  query listNftCollections {
+    listNftCollections {
+      items {
+        contractAddress
+        collectionName
+        symbol
+        year
+        country
+        ownerAddress
+        type
+        createdAt
+        updatedAt
+      }
+    }
+  }
 `;
