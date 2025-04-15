@@ -39,7 +39,7 @@ import { Context } from 'App';
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
   const context = useContext(Context);
   const { searchTerm, setSearchTerm }: any = context;
-  console.log('company data', data);
+  console.log('company kyc data', data);
   console.log('column', columns);
   const table = useReactTable({
     data,
@@ -170,6 +170,8 @@ export default function PaginationTable() {
     data?.listUserWallets?.items.map((item: any) => ({
       email: item.userAddress,
       wallet_address: item.userWallet,
+      denergyWallet: item.denergyWallet,
+      ethereumWallet: item.ethereumWallet,
       applicantId: item.applicantId,
       is_verified: item.is_verified,
       reviewStatus: item.reviewStatus,
@@ -182,6 +184,8 @@ export default function PaginationTable() {
     return transformedData.filter((item: any) =>
       (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.ethereumWallet && item.ethereumWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -200,6 +204,14 @@ export default function PaginationTable() {
         accessorKey: 'wallet_address'
       },
       {
+        header: 'Denergy Wallet Address',
+        accessorKey: 'denergyWallet'
+      },
+      {
+        header: 'Ethereum Wallet Address',
+        accessorKey: 'ethereumWallet'
+      },
+      {
         header: 'KYB Applicant ID',
         accessorKey: 'applicantId'
       },
@@ -207,33 +219,10 @@ export default function PaginationTable() {
         header: 'KYB Verified',
         accessorKey: 'is_verified'
       },
-      // {
-      //   header: 'Denergy Wallet',
-      //   accessorKey: 'age',
-      //   meta: {
-      //     className: 'cell-right'
-      //   }
-      // },
       {
         header: 'KYB Review Status',
         accessorKey: 'reviewStatus'
-        // cell: (cell) => {
-        //   switch (cell.getValue()) {
-        //     case 'Complicated':
-        //       return <Chip color="error" label="Complicated" size="small" variant="light" />;
-        //     case 'Relationship':
-        //       return <Chip color="success" label="Relationship" size="small" variant="light" />;
-        //     case 'Single':
-        //     default:
-        //       return <Chip color="info" label="Single" size="small" variant="light" />;
-        //   }
-        // }
       },
-      // {
-      //   header: 'KYC status',
-      //   accessorKey: 'progress'
-      //   // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
-      // },
       {
         header: 'Date Registered',
         accessorKey: 'date'
@@ -244,9 +233,6 @@ export default function PaginationTable() {
 
   return (
     <Grid container spacing={3}>
-      {/* <Grid item xs={12}>
-        <ReactTable {...{ data, columns, top: true }} />
-      </Grid> */}
       <Grid item xs={12}>
         <ReactTable {...{ data: filteredData, columns }} />
       </Grid>

@@ -37,8 +37,7 @@ import { TableDataProps } from 'types/table';
 import { LabelKeyObject } from 'react-csv/lib/core';
 
 //query
-import { LIST_COMPANY_WALLETS } from '../../../graphql/queries';
-import { ApolloClient, ApolloProvider, InMemoryCache, HttpLink, useQuery } from '@apollo/client';
+import { ApolloClient, InMemoryCache, HttpLink, useQuery } from '@apollo/client';
 import { LIST_USER_WALLETS } from 'graphql/queries';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
@@ -186,6 +185,8 @@ export default function PaginationUserTable() {
     data?.listUserWalletAddresses?.items.map((item: any) => ({
       email: item.walletAddress,
       wallet_address: item.userWallet,
+      denergyWallet: item.denergyWallet,
+      ethereumWallet: item.ethereumWallet,
       applicantId: item.applicantId,
       is_verified: item.is_verified,
       reviewStatus: item.reviewStatus,
@@ -198,6 +199,8 @@ export default function PaginationUserTable() {
     return transformedData.filter((item: any) =>
       (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.ethereumWallet && item.ethereumWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -215,6 +218,16 @@ export default function PaginationUserTable() {
       {
         header: 'User Wallet Address',
         accessorKey: 'wallet_address',
+        enableSorting: true
+      },
+      {
+        header: 'Denergy Wallet Address',
+        accessorKey: 'denergyWallet',
+        enableSorting: true
+      },
+      {
+        header: 'Ethereum Wallet Address',
+        accessorKey: 'ethereumWallet',
         enableSorting: true
       },
       {
