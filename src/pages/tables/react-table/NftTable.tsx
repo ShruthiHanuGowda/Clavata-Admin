@@ -1,7 +1,6 @@
-import { useContext, useMemo } from 'react';
-
+import { useContext, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 // material-ui
-import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import Divider from '@mui/material/Divider';
 import Table from '@mui/material/Table';
@@ -14,14 +13,22 @@ import TableRow from '@mui/material/TableRow';
 import Stack from '@mui/material/Stack';
 import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
 // third-party
-import { useReactTable, getCoreRowModel, getPaginationRowModel, ColumnDef, HeaderGroup, flexRender, getSortedRowModel } from '@tanstack/react-table';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  ColumnDef,
+  HeaderGroup,
+  flexRender,
+  getSortedRowModel
+} from '@tanstack/react-table';
 
 // project-import
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
-import LinearWithLabel from 'components/@extended/progress/LinearWithLabel';
+// import LinearWithLabel from 'components/@extended/progress/LinearWithLabel';
 import { CSVExport, TablePagination } from 'components/third-party/react-table';
-import makeData from 'data/react-table';
+// import makeData from 'data/react-table';
 
 // types
 import { TableDataProps } from 'types/table';
@@ -46,12 +53,11 @@ const client3 = new ApolloClient({
   cache: new InMemoryCache()
 });
 
-
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
   const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
+  const { setSearchTerm }: any = context;
   console.log('company data', data);
   console.log('column', columns);
   const table = useReactTable({
@@ -60,7 +66,7 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     debugTable: true,
-    getSortedRowModel: getSortedRowModel(),
+    getSortedRowModel: getSortedRowModel()
   });
 
   let headers: LabelKeyObject[] = [];
@@ -167,8 +173,9 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 export default function NftTable() {
   // const data: TableDataProps[] = makeData(100);
   const context = useContext(Context);
+  const location = useLocation();
   const { searchTerm, setSearchTerm }: any = context;
-  const { loading, error, data, fetchMore } = useQuery(LIST_NFT_WALLETS, {
+  const { loading, error, data } = useQuery(LIST_NFT_WALLETS, {
     client: client3,
     variables: { nextToken: null }
   });
@@ -179,25 +186,39 @@ export default function NftTable() {
     console.error('GraphQL Error:', error);
   }
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search); // Parse the URL query
+    const searchParam = params.get('search');
+    if (searchParam) {
+      setSearchTerm(searchParam); // Set the search term from URL
+    }
+    return () => {
+      setSearchTerm('');
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
   // Transform company data to fit column structure
-  const transformedData =
-    data?.listMintedNfts?.items.map((item: any) => ({
-        assetId: item.assetId,
-        contractAddress: item.contractAddress,
-        createdAt: item.createdAt,
-        mintedVolume: item.mintedVolume,
-        tokenId: item.tokenId,
-    })) || [];
+  const transformedData = useMemo(() => {
+    return (data?.listMintedNfts?.items || []).map((item: any) => ({
+      assetId: item.assetId,
+      contractAddress: item.contractAddress,
+      createdAt: item.createdAt,
+      mintedVolume: item.mintedVolume,
+      tokenId: item.tokenId
+    }));
+  }, [data]);
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
     if (!searchTerm) return transformedData;
-    return transformedData.filter((item: any) =>
-      (item.assetId && item.assetId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.contractAddress && item.contractAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.createdAt && item.createdAt.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.mintedVolume && item.mintedVolume.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.tokenId && item.tokenId.toLowerCase().includes(searchTerm.toLowerCase()))
+    return transformedData.filter(
+      (item: any) =>
+        (item.assetId && item.assetId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.contractAddress && item.contractAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.createdAt && item.createdAt.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.mintedVolume && item.mintedVolume.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.tokenId && item.tokenId.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, transformedData]);
 
@@ -242,16 +263,16 @@ export default function NftTable() {
         //       return <Chip color="info" label="Single" size="small" variant="light" />;
         //   }
         // }
-      },
+      }
       // {
       //   header: 'KYC status',
       //   accessorKey: 'progress'
       //   // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
       // },
-    //   {
-    //     header: 'Date Registered',
-    //     accessorKey: 'date'
-    //   }
+      //   {
+      //     header: 'Date Registered',
+      //     accessorKey: 'date'
+      //   }
     ],
     []
   );

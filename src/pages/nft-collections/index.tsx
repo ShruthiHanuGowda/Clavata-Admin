@@ -9,10 +9,12 @@ import ScrollX from 'components/ScrollX';
 import CSVExport from 'components/third-party/react-table/CSVExport';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { LIST_NFT_COLLECTIONS } from 'graphql/queries';
+import { useNavigate } from 'react-router';
 
 function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
+  const navigate = useNavigate();
 
   const table = useReactTable({
     data,
@@ -32,6 +34,10 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+  };
+
+  const handleContractAddressClick = (contractAddress: string) => {
+    navigate(`/nft?search=${contractAddress}`); // Navigate to the desired URL with search parameter
   };
 
   return (
@@ -76,8 +82,18 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
                   <TableBody>
                     {table.getRowModel().rows.map((row) => (
                       <TableRow key={row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                        {row.getVisibleCells().map((cell: any) => (
+                          <TableCell
+                            key={cell.id}
+                            {...cell.column.columnDef.meta}
+                            onClick={() => {
+                              // Only trigger navigation when contractAddress cell is clicked
+                              if (cell.column.columnDef?.accessorKey === 'contractAddress') {
+                                handleContractAddressClick(cell.getValue());
+                              }
+                            }}
+                            style={{ cursor: cell.column.columnDef.accessorKey === 'contractAddress' ? 'pointer' : 'default' }}
+                          >
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </TableCell>
                         ))}
