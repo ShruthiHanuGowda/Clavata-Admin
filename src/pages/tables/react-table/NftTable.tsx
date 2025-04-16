@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 // material-ui
 import Grid from '@mui/material/Grid';
@@ -172,12 +172,15 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 
 export default function NftTable() {
   // const data: TableDataProps[] = makeData(100);
+
+  const [contractAddress, setContractAddress] = useState('');
+
   const context = useContext(Context);
   const location = useLocation();
   const { searchTerm, setSearchTerm }: any = context;
   const { loading, error, data } = useQuery(LIST_NFT_WALLETS, {
     client: client3,
-    variables: { nextToken: null }
+    variables: { nextToken: null, contractAddress }
   });
 
   console.log('Query nft Response:', { loading, error, data });
@@ -190,10 +193,10 @@ export default function NftTable() {
     const params = new URLSearchParams(location.search); // Parse the URL query
     const searchParam = params.get('search');
     if (searchParam) {
-      setSearchTerm(searchParam); // Set the search term from URL
+      setContractAddress(searchParam); // Set the search term from URL
     }
     return () => {
-      setSearchTerm('');
+      setContractAddress('');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
