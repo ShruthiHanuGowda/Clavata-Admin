@@ -132,7 +132,7 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                     ))}
                   </TableHead>
                   <TableBody>
-                    {table.getRowModel().rows.map((row) => (
+                    {table.getRowModel().rows?.length>0 ? table.getRowModel().rows.map((row) =>(
                       <TableRow key={row.id}>
                         {row.getVisibleCells().map((cell) => (
                           <TableCell key={cell.id} {...cell.column.columnDef.meta}>
@@ -140,7 +140,14 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                           </TableCell>
                         ))}
                       </TableRow>
-                    ))}
+                    ))
+                    :
+                    (
+                    <TableRow key={0}>
+                     No data found!
+                     </TableRow>
+                    )
+                  }
                   </TableBody>
                 </Table>
               </TableContainer>
