@@ -80,7 +80,7 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
                     ))}
                   </TableHead>
                   <TableBody>
-                    {table.getRowModel().rows.map((row) => (
+                    {table.getRowModel().rows?.length>0 ? table.getRowModel().rows.map((row) => (
                       <TableRow key={row.id}>
                         {row.getVisibleCells().map((cell: any) => (
                           <TableCell
@@ -98,7 +98,13 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
                           </TableCell>
                         ))}
                       </TableRow>
-                    ))}
+                    ))
+                    :
+                    (
+                    <TableRow key={0}>
+                     No data found!
+                     </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
