@@ -98,3 +98,18 @@ export const LIST_NFT_COLLECTIONS = gql`
     }
   }
 `;
+
+export const LIST_AIRDROP_COLLECTIONS = gql`
+  query ListAirdropClaims {
+  listAirdropClaims {
+    items {
+      walletAddress
+      amount
+      claimedAt
+	    txHash
+    }
+    nextToken
+  }
+}
+`;
+

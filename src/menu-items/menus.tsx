@@ -66,7 +66,7 @@ const allMenu: NavItemType = {
       icon: icons.FormOutlined
     },
     {
-      id: 'nft',
+      id: 'collection',
       title: <FormattedMessage id="NFT Collections" />,
       type: 'item',
       url: '/nft-collection',
@@ -77,6 +77,13 @@ const allMenu: NavItemType = {
       title: <FormattedMessage id="Transaction" />,
       type: 'item',
       url: '/transaction',
+      icon: icons.FormOutlined
+    },
+    {
+      id: 'airdrop',
+      title: <FormattedMessage id="Airdrop claims" />,
+      type: 'item',
+      url: '/airdrop-claims',
       icon: icons.FormOutlined
     },
     {
