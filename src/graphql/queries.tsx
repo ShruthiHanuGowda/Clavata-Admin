@@ -36,8 +36,8 @@ export const LIST_USER_WALLETS = gql`
 `;
 
 export const LIST_NFT_WALLETS = gql`
-  query {
-    listMintedNfts(limit: 100) {
+  query listNft($contractAddress: String) {
+    listMintedNfts(filter: { contractAddress: { contains: $contractAddress } }) {
       items {
         assetId
         contractAddress
