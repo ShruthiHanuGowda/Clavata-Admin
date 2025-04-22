@@ -43,8 +43,8 @@ import { Context } from 'App';
 import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 
-const API_Key5 = 'da2-i3cu5ertjbghzlwldf4mu2rsjq'; // API key for second URI
-const uri5 = 'https://h4t7dkxxabb7hdciflifuq7y5y.appsync-api.me-central-1.amazonaws.com/graphql';
+const API_Key5 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_AIR_DROP_CLAIM_KEY; // API key for second URI
+const uri5 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_AIR_DROP_CLAIM_URL;
 
 const client4 = new ApolloClient({
   link: new HttpLink({
@@ -224,7 +224,12 @@ export default function transactionTable() {
       },
       {
         header: 'Wallet Address',
-        accessorKey: 'walletAddress'
+        accessorKey: 'walletAddress',
+        cell: (cell) => (
+          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
+            {cell.getValue() as string}
+          </Link>
+        )
       },
       {
         header: 'Claimed At',

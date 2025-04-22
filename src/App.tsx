@@ -16,26 +16,24 @@ import { AWSCognitoProvider as AuthProvider } from 'contexts/AWSCognitoContext';
 import { LIST_USER_WALLETS } from 'graphql/queries';
 import { useQuery } from '@apollo/client';
 import { createContext, useContext, useState } from 'react';
-import { ApolloClient, ApolloProvider, InMemoryCache, HttpLink} from '@apollo/client';
+import { ApolloClient, ApolloProvider, InMemoryCache, HttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { SettingsProvider } from 'contexts/SettingsContext';
 
 // ==============================|| APP - THEME, ROUTER, LOCAL ||============================== //
 
 // API Keys
-const API_Key = 'da2-buffjyccqnewbbtaqcfr3ohhx4'; // API key for first URI
-const API_Key2 = 'da2-n5rv7b7ipngvvff25xfs3xlufi'; // API key for second URI
+const API_Key = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_APP_KEY;
 
 // GraphQL URIs
-const uri1 = 'https://wsvnmylznfczlbxhhj7ytcwebi.appsync-api.me-central-1.amazonaws.com/graphql';
-const uri2 = 'https://tvmbdqb7gvfnhfggz6liar6ylm.appsync-api.me-central-1.amazonaws.com/graphql';
+const uri1 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_USER_KEY;
 
 // Define the shape of your context data (state)
 interface ContextType {
-  authenticationToken: string,
-  setAuthenticationToken: (newValue: string) => void,
-  searchTerm: any, 
-  setSearchTerm: any
+  authenticationToken: string;
+  setAuthenticationToken: (newValue: string) => void;
+  searchTerm: any;
+  setSearchTerm: any;
 }
 
 // Create the Context
@@ -51,8 +49,8 @@ const authLink = setContext((_, { headers }) => {
     headers: {
       ...headers,
       'x-api-key': API_Key,
-      Authorization: token ? `Bearer ${token}` : '',
-    },
+      Authorization: token ? `Bearer ${token}` : ''
+    }
   };
 });
 
@@ -60,10 +58,10 @@ const authLink = setContext((_, { headers }) => {
 const client = new ApolloClient({
   link: authLink.concat(
     new HttpLink({
-      uri: uri1,
+      uri: uri1
     })
   ),
-  cache: new InMemoryCache(),
+  cache: new InMemoryCache()
 });
 
 // Create Apollo Client instances for each GraphQL endpoint
@@ -90,29 +88,29 @@ const client = new ApolloClient({
 export default function App() {
   // const context = useContext(Context);
   // const { authenticationToken }: any = context;
-  const [authenticationToken, setAuthenticationToken] = useState("");
+  const [authenticationToken, setAuthenticationToken] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  console.log("authenticationToken", authenticationToken)
+  console.log('authenticationToken', authenticationToken);
   return (
-    <ApolloProvider client={client} >
-    <Context.Provider value={{ authenticationToken, setAuthenticationToken, searchTerm, setSearchTerm }}>
-      <ThemeCustomization>
-        {/* <RTLLayout> */}
-        <Locales>
-          <ScrollTop>
-            <AuthProvider>
-            <SettingsProvider>
-                <Notistack>
-                  <RouterProvider router={router} />
-                  <Snackbar />
-                </Notistack>
+    <ApolloProvider client={client}>
+      <Context.Provider value={{ authenticationToken, setAuthenticationToken, searchTerm, setSearchTerm }}>
+        <ThemeCustomization>
+          {/* <RTLLayout> */}
+          <Locales>
+            <ScrollTop>
+              <AuthProvider>
+                <SettingsProvider>
+                  <Notistack>
+                    <RouterProvider router={router} />
+                    <Snackbar />
+                  </Notistack>
                 </SettingsProvider>
-            </AuthProvider>
-          </ScrollTop>
-        </Locales>
-        {/* </RTLLayout> */}
-      </ThemeCustomization>
-    </Context.Provider>
+              </AuthProvider>
+            </ScrollTop>
+          </Locales>
+          {/* </RTLLayout> */}
+        </ThemeCustomization>
+      </Context.Provider>
     </ApolloProvider>
   );
 }
