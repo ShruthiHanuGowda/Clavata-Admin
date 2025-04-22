@@ -10,6 +10,8 @@ import CSVExport from 'components/third-party/react-table/CSVExport';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { LIST_NFT_COLLECTIONS } from 'graphql/queries';
 import { useNavigate } from 'react-router';
+import { Link } from 'react-router-dom';
+import { getBlockExploreLink } from 'utils/explorer';
 
 function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
   const context = useContext(Context);
@@ -80,30 +82,28 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
                     ))}
                   </TableHead>
                   <TableBody>
-                    {table.getRowModel().rows?.length>0 ? table.getRowModel().rows.map((row) => (
-                      <TableRow key={row.id}>
-                        {row.getVisibleCells().map((cell: any) => (
-                          <TableCell
-                            key={cell.id}
-                            {...cell.column.columnDef.meta}
-                            onClick={() => {
-                              // Only trigger navigation when contractAddress cell is clicked
-                              if (cell.column.columnDef?.accessorKey === 'contractAddress') {
-                                handleContractAddressClick(cell.getValue());
-                              }
-                            }}
-                            style={{ cursor: cell.column.columnDef.accessorKey === 'contractAddress' ? 'pointer' : 'default' }}
-                          >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                    :
-                    (
-                    <TableRow key={0}>
-                     No data found!
-                     </TableRow>
+                    {table.getRowModel().rows?.length > 0 ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id}>
+                          {row.getVisibleCells().map((cell: any) => (
+                            <TableCell
+                              key={cell.id}
+                              {...cell.column.columnDef.meta}
+                              onClick={() => {
+                                // Only trigger navigation when contractAddress cell is clicked
+                                if (cell.column.columnDef?.accessorKey === 'contractAddress') {
+                                  handleContractAddressClick(cell.getValue());
+                                }
+                              }}
+                              style={{ cursor: cell.column.columnDef.accessorKey === 'contractAddress' ? 'pointer' : 'default' }}
+                            >
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow key={0}>No data found!</TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -173,7 +173,15 @@ export default function NftCollectionTable() {
       { header: 'Symbol', accessorKey: 'symbol' },
       { header: 'Year', accessorKey: 'year' },
       { header: 'Country', accessorKey: 'country' },
-      { header: 'Owner Address', accessorKey: 'ownerAddress' },
+      {
+        header: 'Owner Address',
+        accessorKey: 'ownerAddress',
+        cell: (cell) => (
+          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
+            {cell.getValue() as string}
+          </Link>
+        )
+      },
       { header: 'Type', accessorKey: 'type' },
       { header: 'Created At', accessorKey: 'createdAt' },
       { header: 'Updated At', accessorKey: 'updatedAt' }

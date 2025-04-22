@@ -41,6 +41,8 @@ import { ApolloClient, InMemoryCache, HttpLink, useQuery } from '@apollo/client'
 import { LIST_USER_WALLETS } from 'graphql/queries';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
+import { Link } from 'react-router-dom';
+import { getBlockExploreLink } from 'utils/explorer';
 
 const API_Key2 = 'da2-n5rv7b7ipngvvff25xfs3xlufi'; // API key for second URI
 const uri2 = 'https://tvmbdqb7gvfnhfggz6liar6ylm.appsync-api.me-central-1.amazonaws.com/graphql';
@@ -196,13 +198,14 @@ export default function PaginationUserTable() {
   // Filter data based on search term
   const filteredData = useMemo(() => {
     if (!searchTerm) return transformedData;
-    return transformedData.filter((item: any) =>
-      (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.ethereumWallet && item.ethereumWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
+    return transformedData.filter(
+      (item: any) =>
+        (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.ethereumWallet && item.ethereumWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, transformedData]);
 
@@ -218,17 +221,32 @@ export default function PaginationUserTable() {
       {
         header: 'User Wallet Address',
         accessorKey: 'wallet_address',
-        enableSorting: true
+        enableSorting: true,
+        cell: (cell) => (
+          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
+            {cell.getValue() as string}
+          </Link>
+        )
       },
       {
         header: 'Denergy Wallet Address',
         accessorKey: 'denergyWallet',
-        enableSorting: true
+        enableSorting: true,
+        cell: (cell) => (
+          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
+            {cell.getValue() as string}
+          </Link>
+        )
       },
       {
         header: 'Ethereum Wallet Address',
         accessorKey: 'ethereumWallet',
-        enableSorting: true
+        enableSorting: true,
+        cell: (cell) => (
+          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
+            {cell.getValue() as string}
+          </Link>
+        )
       },
       {
         header: 'KYC Applicant ID',

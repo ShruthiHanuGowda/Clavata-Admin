@@ -14,7 +14,15 @@ import TableRow from '@mui/material/TableRow';
 import Stack from '@mui/material/Stack';
 import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
 // third-party
-import { useReactTable, getCoreRowModel, getPaginationRowModel, ColumnDef, HeaderGroup, flexRender, getSortedRowModel } from '@tanstack/react-table';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  ColumnDef,
+  HeaderGroup,
+  flexRender,
+  getSortedRowModel
+} from '@tanstack/react-table';
 
 // project-import
 import ScrollX from 'components/ScrollX';
@@ -33,6 +41,8 @@ import { LIST_COMPANY_WALLETS } from '../../../graphql/queries';
 import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
+import { getBlockExploreLink } from 'utils/explorer';
+import { Link } from 'react-router-dom';
 
 // ==============================|| REACT TABLE ||============================== //
 
@@ -47,7 +57,7 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     debugTable: true,
-    getSortedRowModel: getSortedRowModel(),
+    getSortedRowModel: getSortedRowModel()
   });
 
   let headers: LabelKeyObject[] = [];
@@ -181,13 +191,14 @@ export default function PaginationTable() {
   // Filter data based on search term
   const filteredData = useMemo(() => {
     if (!searchTerm) return transformedData;
-    return transformedData.filter((item: any) =>
-      (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.ethereumWallet && item.ethereumWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
+    return transformedData.filter(
+      (item: any) =>
+        (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.ethereumWallet && item.ethereumWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, transformedData]);
 
@@ -201,15 +212,30 @@ export default function PaginationTable() {
       },
       {
         header: 'User Wallet Address',
-        accessorKey: 'wallet_address'
+        accessorKey: 'wallet_address',
+        cell: (cell) => (
+          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
+            {cell.getValue() as string}
+          </Link>
+        )
       },
       {
         header: 'Denergy Wallet Address',
-        accessorKey: 'denergyWallet'
+        accessorKey: 'denergyWallet',
+        cell: (cell) => (
+          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
+            {cell.getValue() as string}
+          </Link>
+        )
       },
       {
         header: 'Ethereum Wallet Address',
-        accessorKey: 'ethereumWallet'
+        accessorKey: 'ethereumWallet',
+        cell: (cell) => (
+          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
+            {cell.getValue() as string}
+          </Link>
+        )
       },
       {
         header: 'KYB Applicant ID',

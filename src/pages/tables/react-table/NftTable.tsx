@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 // material-ui
 import Grid from '@mui/material/Grid';
 import Divider from '@mui/material/Divider';
@@ -39,6 +39,7 @@ import { LIST_NFT_WALLETS } from '../../../graphql/queries';
 import { ApolloClient, HttpLink, InMemoryCache, useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
+import { getBlockExploreLink } from 'utils/explorer';
 
 const API_Key3 = 'da2-q2euzwxuvbejrcotsi4la4soea'; // API key for second URI
 const uri3 = 'https://mzx76ha42fgffmm7kw7j7scfvy.appsync-api.me-central-1.amazonaws.com/graphql';
@@ -132,22 +133,19 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                     ))}
                   </TableHead>
                   <TableBody>
-                    {table.getRowModel().rows?.length>0 ? table.getRowModel().rows.map((row) =>(
-                      <TableRow key={row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                    :
-                    (
-                    <TableRow key={0}>
-                     No data found!
-                     </TableRow>
-                    )
-                  }
+                    {table.getRowModel().rows?.length > 0 ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id}>
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow key={0}>No data found!</TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -242,7 +240,12 @@ export default function NftTable() {
       },
       {
         header: 'Contract Address',
-        accessorKey: 'contractAddress'
+        accessorKey: 'contractAddress',
+        cell: (cell) => (
+          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
+            {cell.getValue() as string}
+          </Link>
+        )
       },
       {
         header: 'Created At',
