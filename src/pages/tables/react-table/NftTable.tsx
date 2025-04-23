@@ -41,8 +41,8 @@ import { CardContent } from '@mui/material';
 import { Context } from 'App';
 import { getBlockExploreLink } from 'utils/explorer';
 
-const API_Key3 = 'da2-q2euzwxuvbejrcotsi4la4soea'; // API key for second URI
-const uri3 = 'https://mzx76ha42fgffmm7kw7j7scfvy.appsync-api.me-central-1.amazonaws.com/graphql';
+const API_Key3 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_NFT_API_KEY; // API key for second URI
+const uri3 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_NFT_URL; // API
 
 const client3 = new ApolloClient({
   link: new HttpLink({

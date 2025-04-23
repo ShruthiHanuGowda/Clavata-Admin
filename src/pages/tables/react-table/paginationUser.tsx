@@ -44,8 +44,8 @@ import { Context } from 'App';
 import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 
-const API_Key2 = 'da2-n5rv7b7ipngvvff25xfs3xlufi'; // API key for second URI
-const uri2 = 'https://tvmbdqb7gvfnhfggz6liar6ylm.appsync-api.me-central-1.amazonaws.com/graphql';
+const API_Key2 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_USER_KEY;
+const uri2 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_USER_URL;
 
 const client2 = new ApolloClient({
   link: new HttpLink({

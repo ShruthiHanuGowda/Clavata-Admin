@@ -41,8 +41,6 @@ import { LIST_COMPANY_WALLETS } from '../../../graphql/queries';
 import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
-import { getBlockExploreLink } from 'utils/explorer';
-import { Link } from 'react-router-dom';
 
 // ==============================|| REACT TABLE ||============================== //
 
@@ -212,30 +210,15 @@ export default function PaginationTable() {
       },
       {
         header: 'User Wallet Address',
-        accessorKey: 'wallet_address',
-        cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
-            {cell.getValue() as string}
-          </Link>
-        )
+        accessorKey: 'wallet_address'
       },
       {
         header: 'Denergy Wallet Address',
-        accessorKey: 'denergyWallet',
-        cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
-            {cell.getValue() as string}
-          </Link>
-        )
+        accessorKey: 'denergyWallet'
       },
       {
         header: 'Ethereum Wallet Address',
-        accessorKey: 'ethereumWallet',
-        cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
-            {cell.getValue() as string}
-          </Link>
-        )
+        accessorKey: 'ethereumWallet'
       },
       {
         header: 'KYB Applicant ID',
