@@ -81,6 +81,24 @@ export const LIST_TRANSACTION_HISTORY = gql`
   }
 `;
 
+export const LIST_DTERMINAL_TRANSACTION_HISTORY = gql`
+  query ListAllTransactions {
+    listDterminalTransactionHistories(limit: 10) {
+      items {
+        transactionHash
+        method
+        block
+        age
+        from
+        to
+        amount
+        txnFee
+      }
+      nextToken
+    }
+  }
+`;
+
 export const LIST_NFT_COLLECTIONS = gql`
   query listNftCollections {
     listNftCollections {
@@ -101,15 +119,14 @@ export const LIST_NFT_COLLECTIONS = gql`
 
 export const LIST_AIRDROP_COLLECTIONS = gql`
   query ListAirdropClaims {
-  listAirdropClaims {
-    items {
-      walletAddress
-      amount
-      claimedAt
-	    txHash
+    listAirdropClaims {
+      items {
+        walletAddress
+        amount
+        claimedAt
+        txHash
+      }
+      nextToken
     }
-    nextToken
   }
-}
 `;
-
