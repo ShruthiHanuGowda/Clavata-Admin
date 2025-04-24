@@ -80,6 +80,13 @@ const allMenu: NavItemType = {
       icon: icons.FormOutlined
     },
     {
+      id: 'dterminal',
+      title: <FormattedMessage id="DTerminal" />,
+      type: 'item',
+      url: '/dterminal',
+      icon: icons.FormOutlined
+    },
+    {
       id: 'airdrop',
       title: <FormattedMessage id="Airdrop claims" />,
       type: 'item',
