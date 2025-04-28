@@ -15,23 +15,12 @@ import Divider from '@mui/material/Divider';
 import { LabelKeyObject } from 'react-csv/lib/core';
 import { useMemo } from 'react';
 
-import { ApolloClient, InMemoryCache, HttpLink, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { LIST_EVIDENT_ITEMS } from 'graphql/queries';
-
-const client = new ApolloClient({
-  link: new HttpLink({
-    uri: import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_EVIDENT_ITEMS_URL,
-    headers: {
-      'x-api-key': import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_EVIDENT_ITEMS_API_KEY
-    }
-  }),
-  cache: new InMemoryCache()
-});
 
 export default function EvidentItems() {
   const [data, setData] = useState([]);
   const listEvidentResponse = useQuery(LIST_EVIDENT_ITEMS, {
-    client,
     notifyOnNetworkStatusChange: true
   });
 

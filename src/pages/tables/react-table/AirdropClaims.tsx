@@ -1,7 +1,6 @@
 import { useContext, useMemo } from 'react';
 
 // material-ui
-import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import Divider from '@mui/material/Divider';
 import Table from '@mui/material/Table';
@@ -27,9 +26,7 @@ import {
 // project-import
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
-import LinearWithLabel from 'components/@extended/progress/LinearWithLabel';
 import { CSVExport, TablePagination } from 'components/third-party/react-table';
-import makeData from 'data/react-table';
 
 // types
 import { TableDataProps } from 'types/table';
@@ -37,30 +34,17 @@ import { LabelKeyObject } from 'react-csv/lib/core';
 
 //query
 import { LIST_AIRDROP_COLLECTIONS } from '../../../graphql/queries';
-import { ApolloClient, HttpLink, InMemoryCache, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
 import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 
-const API_Key5 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_AIR_DROP_CLAIM_KEY; // API key for second URI
-const uri5 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_AIR_DROP_CLAIM_URL;
-
-const client4 = new ApolloClient({
-  link: new HttpLink({
-    uri: uri5,
-    headers: {
-      'x-api-key': API_Key5
-    }
-  }),
-  cache: new InMemoryCache()
-});
-
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
   const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
+  const { setSearchTerm }: any = context;
   console.log('company data', data);
   console.log('column', columns);
   const table = useReactTable({
@@ -178,7 +162,6 @@ export default function transactionTable() {
   const context = useContext(Context);
   const { searchTerm, setSearchTerm }: any = context;
   const { loading, error, data, fetchMore } = useQuery(LIST_AIRDROP_COLLECTIONS, {
-    client: client4,
     variables: { nextToken: null }
   });
 

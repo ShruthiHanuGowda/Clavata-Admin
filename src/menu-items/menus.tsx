@@ -87,6 +87,13 @@ const allMenu: NavItemType = {
       icon: icons.FormOutlined
     },
     {
+      id: 'transaction-history-mobile',
+      title: <FormattedMessage id="Transaction History Mobile" />,
+      type: 'item',
+      url: '/transaction-history-mobile',
+      icon: icons.FormOutlined
+    },
+    {
       id: 'airdrop',
       title: <FormattedMessage id="Airdrop claims" />,
       type: 'item',

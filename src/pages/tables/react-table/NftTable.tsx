@@ -36,23 +36,10 @@ import { LabelKeyObject } from 'react-csv/lib/core';
 
 //query
 import { LIST_NFT_WALLETS } from '../../../graphql/queries';
-import { ApolloClient, HttpLink, InMemoryCache, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
 import { getBlockExploreLink } from 'utils/explorer';
-
-const API_Key3 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_NFT_API_KEY; // API key for second URI
-const uri3 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_NFT_URL; // API
-
-const client3 = new ApolloClient({
-  link: new HttpLink({
-    uri: uri3,
-    headers: {
-      'x-api-key': API_Key3
-    }
-  }),
-  cache: new InMemoryCache()
-});
 
 // ==============================|| REACT TABLE ||============================== //
 
@@ -184,7 +171,6 @@ export default function NftTable() {
   const location = useLocation();
   const { searchTerm, setSearchTerm }: any = context;
   const { loading, error, data } = useQuery(LIST_NFT_WALLETS, {
-    client: client3,
     variables: { nextToken: null, contractAddress }
   });
 

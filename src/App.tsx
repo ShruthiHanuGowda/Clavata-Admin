@@ -56,11 +56,12 @@ const authLink = setContext((_, { headers }) => {
 
 // Apollo Client with dynamic headers
 const client = new ApolloClient({
-  link: authLink.concat(
-    new HttpLink({
-      uri: uri1
-    })
-  ),
+  link: new HttpLink({
+    uri: import.meta.env.VITE_APP_GRAPHQL_URL,
+    headers: {
+      'x-api-key': import.meta.env.VITE_APP_GRAPHQL_API_KEY
+    }
+  }),
   cache: new InMemoryCache()
 });
 

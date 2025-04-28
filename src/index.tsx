@@ -31,19 +31,15 @@ import App from './App';
 import { ConfigProvider } from 'contexts/ConfigContext';
 import reportWebVitals from './reportWebVitals';
 
-import { ApolloClient, ApolloProvider, InMemoryCache, HttpLink } from '@apollo/client';
-
 const container = document.getElementById('root');
 const root = createRoot(container!);
 
 // ==============================|| MAIN - REACT DOM RENDER ||============================== //
 
 root.render(
-  // <ApolloProvider client={client} >
   <ConfigProvider>
     <App />
   </ConfigProvider>
-  // </ApolloProvider>
 );
 
 // If you want to start measuring performance in your app, pass a function

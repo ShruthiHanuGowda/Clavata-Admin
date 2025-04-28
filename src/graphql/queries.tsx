@@ -130,3 +130,21 @@ export const LIST_AIRDROP_COLLECTIONS = gql`
     }
   }
 `;
+
+export const LIST_TRANSACTION_HISTORY_MOBILE = gql`
+  query ListTransactionsHistories {
+    listTransactionHistoryMobiles {
+      items {
+        amount
+        coinCode
+        createdAt
+        from
+        method
+        to
+        transactionHash
+        transactionStatus
+        txnFee
+      }
+    }
+  }
+`;

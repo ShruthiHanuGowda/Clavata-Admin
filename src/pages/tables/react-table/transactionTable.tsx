@@ -39,19 +39,6 @@ import { ApolloClient, HttpLink, InMemoryCache, useQuery } from '@apollo/client'
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
 
-const API_Key4 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_TRANSACTION_KEY;
-const uri4 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_TRANSACTION_URL;
-
-const client4 = new ApolloClient({
-  link: new HttpLink({
-    uri: uri4,
-    headers: {
-      'x-api-key': API_Key4
-    }
-  }),
-  cache: new InMemoryCache()
-});
-
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
@@ -174,7 +161,6 @@ export default function transactionTable() {
   const context = useContext(Context);
   const { searchTerm, setSearchTerm }: any = context;
   const { loading, error, data, fetchMore } = useQuery(LIST_TRANSACTION_HISTORY, {
-    client: client4,
     variables: { nextToken: null }
   });
 
