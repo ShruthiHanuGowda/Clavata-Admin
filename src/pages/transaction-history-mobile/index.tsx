@@ -1,5 +1,5 @@
-import React, { useContext, useMemo } from 'react';
-import { ApolloClient, HttpLink, InMemoryCache, useQuery } from '@apollo/client';
+import { useContext, useMemo } from 'react';
+import { useQuery } from '@apollo/client';
 import { Grid, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, Box, Divider, CardContent, Stack } from '@mui/material';
 import { useReactTable, getCoreRowModel, getPaginationRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
 import { Context } from 'App';
@@ -8,12 +8,12 @@ import TablePagination from 'components/third-party/react-table/TablePagination'
 import ScrollX from 'components/ScrollX';
 import CSVExport from 'components/third-party/react-table/CSVExport';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
-import { LIST_NFT_COLLECTIONS } from 'graphql/queries';
+import { LIST_TRANSACTION_HISTORY_MOBILE } from 'graphql/queries'; // Define the query for transaction history
 import { useNavigate } from 'react-router';
 import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 
-function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
+function TransactionHistoryMobilePage({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
   const navigate = useNavigate();
@@ -38,13 +38,17 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
     setSearchTerm(term);
   };
 
-  const handleContractAddressClick = (contractAddress: string) => {
-    navigate(`/nft?search=${contractAddress}`); // Navigate to the desired URL with search parameter
+  const handleTransactionClick = (transactionHash: string) => {
+    navigate(`/transaction?hash=${transactionHash}`); // Navigate to the transaction page
   };
 
   return (
     <>
-      <MainCard title="NFT Collections" content={false} secondary={<CSVExport {...{ data, headers, filename: 'nft-collections.csv' }} />}>
+      <MainCard
+        title="Mobile Transactions"
+        content={false}
+        secondary={<CSVExport {...{ data, headers, filename: 'mobile-transactions.csv' }} />}
+      >
         <CardContent sx={{ p: 2 }}>
           <Box sx={{ mb: 2 }}>
             <Search onSearch={handleSearch} />
@@ -89,13 +93,7 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
                             <TableCell
                               key={cell.id}
                               {...cell.column.columnDef.meta}
-                              onClick={() => {
-                                // Only trigger navigation when contractAddress cell is clicked
-                                if (cell.column.columnDef?.accessorKey === 'contractAddress') {
-                                  handleContractAddressClick(cell.getValue());
-                                }
-                              }}
-                              style={{ cursor: cell.column.columnDef.accessorKey === 'contractAddress' ? 'pointer' : 'default' }}
+                              style={{ cursor: cell.column.columnDef.accessorKey === 'transactionHash' ? 'pointer' : 'default' }}
                             >
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </TableCell>
@@ -130,50 +128,48 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
   );
 }
 
-export default function NftCollectionTable() {
+export default function MobileTransactionHistory() {
   const context = useContext(Context);
   const { searchTerm } = context as any;
 
-  // Query for NFT collections
-  const { error, data } = useQuery(LIST_NFT_COLLECTIONS, {
-    variables: { nextToken: null }
-  });
+  const { error, data } = useQuery(LIST_TRANSACTION_HISTORY_MOBILE);
 
   if (error) {
-    console.error('Error fetching NFT collections:', error);
+    console.error('Error fetching mobile transaction history:', error);
   }
 
-  const transformedData = data?.listNftCollections?.items || [];
+  const transformedData = data?.listTransactionHistoryMobiles?.items || [];
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return transformedData;
     return transformedData.filter(
       (item: any) =>
-        item.collectionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.contractAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.ownerAddress.toLowerCase().includes(searchTerm.toLowerCase())
+        item.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.to.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.transactionHash.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [searchTerm, transformedData]);
 
   const columns = useMemo<ColumnDef<any>[]>(
     () => [
-      { header: 'Contract Address', accessorKey: 'contractAddress' },
-      { header: 'Collection Name', accessorKey: 'collectionName' },
-      { header: 'Symbol', accessorKey: 'symbol' },
-      { header: 'Year', accessorKey: 'year' },
-      { header: 'Country', accessorKey: 'country' },
       {
-        header: 'Owner Address',
-        accessorKey: 'ownerAddress',
+        header: 'Transaction Hash',
+        accessorKey: 'transactionHash',
         cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
+          <Link to={getBlockExploreLink(cell.getValue() as string, 'transaction')} target="_blank">
             {cell.getValue() as string}
           </Link>
         )
       },
-      { header: 'Type', accessorKey: 'type' },
-      { header: 'Created At', accessorKey: 'createdAt' },
-      { header: 'Updated At', accessorKey: 'updatedAt' }
+      { header: 'From', accessorKey: 'from' },
+      { header: 'To', accessorKey: 'to' },
+      { header: 'Amount', accessorKey: 'amount' },
+      { header: 'Coin Code', accessorKey: 'coinCode' },
+      { header: 'Method', accessorKey: 'method' },
+      { header: 'Status', accessorKey: 'transactionStatus' },
+      { header: 'Transaction Fee', accessorKey: 'txnFee' },
+      { header: 'Created At', accessorKey: 'createdAt' }
     ],
     []
   );
@@ -181,7 +177,7 @@ export default function NftCollectionTable() {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <ReactTable {...{ data: filteredData, columns }} />
+        <TransactionHistoryMobilePage {...{ data: filteredData, columns }} />
       </Grid>
     </Grid>
   );

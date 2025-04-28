@@ -1,7 +1,6 @@
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useMemo } from 'react';
 
 // material-ui
-import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import Divider from '@mui/material/Divider';
 import Table from '@mui/material/Table';
@@ -27,41 +26,25 @@ import {
 // project-import
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
-import LinearWithLabel from 'components/@extended/progress/LinearWithLabel';
 import { CSVExport, TablePagination } from 'components/third-party/react-table';
-
-import makeData from 'data/react-table';
 
 // types
 import { TableDataProps } from 'types/table';
 import { LabelKeyObject } from 'react-csv/lib/core';
 
 //query
-import { ApolloClient, InMemoryCache, HttpLink, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { LIST_USER_WALLETS } from 'graphql/queries';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
 import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 
-const API_Key2 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_USER_KEY;
-const uri2 = import.meta.env.VITE_APP_AWS_APP_SYNC_GRAPHQL_USER_URL;
-
-const client2 = new ApolloClient({
-  link: new HttpLink({
-    uri: uri2,
-    headers: {
-      'x-api-key': API_Key2
-    }
-  }),
-  cache: new InMemoryCache()
-});
-
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
   const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
+  const { setSearchTerm }: any = context;
   console.log('user data', data);
   console.log('user column', columns);
   const table = useReactTable({
@@ -177,7 +160,7 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 export default function PaginationUserTable() {
   const context = useContext(Context);
   const { searchTerm, setSearchTerm }: any = context;
-  const { data, loading, error } = useQuery(LIST_USER_WALLETS, { client: client2 });
+  const { data, loading, error } = useQuery(LIST_USER_WALLETS);
   console.log('Query user Response:', { loading, error, data });
   if (error) {
     console.error('GraphQL Error:', error);

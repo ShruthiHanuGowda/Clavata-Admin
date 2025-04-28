@@ -7,6 +7,7 @@ import PagesLayout from 'layout/Pages';
 import SimpleLayout from 'layout/Simple';
 import { SimpleLayoutType } from 'config';
 import NftCollections from '../pages/nft-collections';
+import MobileTransactionHistory from 'pages/transaction-history-mobile';
 
 const MaintenanceError = Loadable(lazy(() => import('pages/maintenance/404')));
 const MaintenanceError500 = Loadable(lazy(() => import('pages/maintenance/500')));
@@ -72,6 +73,10 @@ const MainRoutes = {
         {
           path: '/dterminal',
           element: <DTerminalTransactionHistory />
+        },
+        {
+          path: '/transaction-history-mobile',
+          element: <MobileTransactionHistory />
         },
         {
           path: '/airdrop-claims',
