@@ -44,6 +44,11 @@ import { Context } from 'App';
 
 // ==============================|| REACT TABLE ||============================== //
 
+interface CompanyDetail {
+  companyName?: string;
+  registrationNumber?: string;
+}
+
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
   const context = useContext(Context);
   const { searchTerm, setSearchTerm }: any = context;
@@ -175,16 +180,35 @@ export default function PaginationTable() {
 
   // Transform company data to fit column structure
   const transformedData =
-    data?.listUserWallets?.items.map((item: any) => ({
-      email: item.userAddress,
-      wallet_address: item.userWallet,
-      denergyWallet: item.denergyWallet,
-      ethereumWallet: item.ethereumWallet,
-      applicantId: item.applicantId,
-      is_verified: item.is_verified,
-      reviewStatus: item.reviewStatus,
-      date: item.date
-    })) || [];
+    data?.listUserWallets?.items.map((item: any) => {
+      let parsedCompanyDetail = null;
+
+      try {
+        parsedCompanyDetail =
+          typeof item.company_detail === 'string'
+            ? JSON.parse(item.company_detail)
+            : item.company_detail;
+      } catch (e) {
+        console.error('Invalid JSON in company_detail:', e);
+      }
+
+      const companyInfo =
+        parsedCompanyDetail?.fullResponse?.fixedInfo?.companyInfo;
+
+      return {
+        email: item.userAddress,
+        wallet_address: item.userWallet,
+        denergyWallet: item.denergyWallet,
+        ethereumWallet: item.ethereumWallet,
+        applicantId: item.applicantId,
+        is_verified_kyb: item.is_verified,
+        reviewStatus: item.reviewStatus,
+        date: item.date,
+        company_detail: companyInfo || null,
+      };
+    }) || [];
+
+
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
@@ -235,6 +259,37 @@ export default function PaginationTable() {
       {
         header: 'Date Registered',
         accessorKey: 'date'
+      },
+      {
+        header: 'Company Detail',
+        accessorKey: 'company_detail',
+        cell: (info) => {
+          const detail = info.getValue() as {
+            companyName?: string;
+            registrationNumber?: string;
+            country?: string;
+            legalAddress?: string;
+            website?: string;
+            incorporatedOn?: string;
+            type?: string;
+            registrationLocation?: string;
+          };
+
+          if (!detail) return '—';
+
+          return (
+            <div>
+              <div><strong>Company Name:</strong> {detail.companyName || 'N/A'}</div>
+              <div><strong>Registration Number:</strong> {detail.registrationNumber || 'N/A'}</div>
+              <div><strong>Country:</strong> {detail.country || 'N/A'}</div>
+              <div><strong>Address:</strong> {detail.legalAddress || 'N/A'}</div>
+              <div><strong>Website:</strong> {detail.website || 'N/A'}</div>
+              <div><strong>Incorporated On:</strong> {detail.incorporatedOn || 'N/A'}</div>
+              <div><strong>Type:</strong> {detail.type || 'N/A'}</div>
+              <div><strong>Registration Location:</strong> {detail.registrationLocation || 'N/A'}</div>
+            </div>
+          );
+        }
       }
     ],
     []

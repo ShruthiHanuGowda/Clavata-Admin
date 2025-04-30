@@ -238,7 +238,7 @@ export default function PaginationUserTable() {
       },
       {
         header: 'KYC Verified',
-        accessorKey: 'is_verified',
+        accessorKey: 'is_verified_kyb',
         enableSorting: true
       },
       {
