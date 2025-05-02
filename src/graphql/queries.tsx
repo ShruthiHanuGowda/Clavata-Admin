@@ -2,24 +2,23 @@ import { gql } from '@apollo/client';
 
 export const LIST_COMPANY_WALLETS = gql`
   query ListUserWallets($nextToken: String) {
-  listUserWallets(limit: 25, nextToken: $nextToken) {
-    items {
-      userAddress
-      applicantId
-      accessToken
-      reviewStatus
-      date
-      denergyWallet
-      ethereumWallet
-      userWallet
-      is_verified_kyb
-      company_detail
+    listUserWallets(limit: 25, nextToken: $nextToken) {
+      items {
+        userAddress
+        applicantId
+        accessToken
+        reviewStatus
+        date
+        denergyWallet
+        ethereumWallet
+        userWallet
+        is_verified_kyb
+        company_detail
+      }
+      nextToken
     }
-    nextToken
   }
-}
 `;
-
 
 export const LIST_USER_WALLETS = gql`
   query ListUserWallets($filter: TableUserWalletAddressFilterInput, $limit: Int) {
@@ -147,6 +146,25 @@ export const LIST_TRANSACTION_HISTORY_MOBILE = gql`
         transactionStatus
         txnFee
       }
+    }
+  }
+`;
+
+export const LIST_NON_MINTED_NFTS = gql`
+  query ListNonMintedNfts($nextToken: String) {
+    listNonMintedNfts(nextToken: $nextToken) {
+      items {
+        itemId
+        assetId
+        commissioningDate
+        country
+        startDate
+        endDate
+        facilityName
+        volume
+        year
+      }
+      nextToken
     }
   }
 `;
