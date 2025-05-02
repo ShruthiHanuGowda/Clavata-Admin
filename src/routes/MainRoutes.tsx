@@ -26,6 +26,7 @@ const TransactionHistory = Loadable(lazy(() => import('pages/transaction-history
 const DTerminalTransactionHistory = Loadable(lazy(() => import('pages/dterminal/TransactionHistory')));
 const Airdrop = Loadable(lazy(() => import('pages/airdrop/Airdrop')));
 const Setting = Loadable(lazy(() => import('pages/setting')));
+const NonMintedNFT = Loadable(lazy(() => import('pages/non-minted-nfts/index')));
 
 const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
 const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRole')));
@@ -65,6 +66,10 @@ const MainRoutes = {
         {
           path: '/nft-collection',
           element: <NftCollections />
+        },
+        {
+          path: '/non-minted-nfts',
+          element: <NonMintedNFT />
         },
         {
           path: '/transaction',
