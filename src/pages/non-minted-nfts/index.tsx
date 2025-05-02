@@ -84,16 +84,7 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
                       table.getRowModel().rows.map((row) => (
                         <TableRow key={row.id}>
                           {row.getVisibleCells().map((cell: any) => (
-                            <TableCell
-                              key={cell.id}
-                              {...cell.column.columnDef.meta}
-                              onClick={() => {
-                                if (cell.column.columnDef?.accessorKey === 'itemId') {
-                                  handleItemIdClick(cell.getValue());
-                                }
-                              }}
-                              style={{ cursor: cell.column.columnDef.accessorKey === 'itemId' ? 'pointer' : 'default' }}
-                            >
+                            <TableCell key={cell.id} {...cell.column.columnDef.meta}>
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </TableCell>
                           ))}
