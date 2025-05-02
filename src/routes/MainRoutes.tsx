@@ -68,7 +68,7 @@ const MainRoutes = {
           element: <NftCollections />
         },
         {
-          path: '/non-minted-nfts',
+          path: '/non-minted-nft',
           element: <NonMintedNFT />
         },
         {
