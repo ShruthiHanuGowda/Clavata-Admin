@@ -39,14 +39,13 @@ import { CardContent } from '@mui/material';
 import { Context } from 'App';
 import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
+import { shortenAddress } from 'utils/shortenAddress';
 
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
-  console.log('company data', data);
-  console.log('column', columns);
   const table = useReactTable({
     data,
     columns,
@@ -119,15 +118,19 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                     ))}
                   </TableHead>
                   <TableBody>
-                    {table.getRowModel().rows.map((row) => (
-                      <TableRow key={row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
+                    {table.getRowModel().rows?.length > 0 ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id}>
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow key={0}>No data found!</TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -161,7 +164,7 @@ export default function transactionTable() {
   // const data: TableDataProps[] = makeData(100);
   const context = useContext(Context);
   const { searchTerm, setSearchTerm }: any = context;
-  const { loading, error, data, fetchMore } = useQuery(LIST_AIRDROP_COLLECTIONS, {
+  const { loading, error, data } = useQuery(LIST_AIRDROP_COLLECTIONS, {
     variables: { nextToken: null }
   });
 
@@ -199,20 +202,26 @@ export default function transactionTable() {
       {
         header: 'Transaction Hash',
         accessorKey: 'txHash',
-        cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string, 'transaction')} target="_blank">
-            {cell.getValue() as string}
-          </Link>
-        )
+        cell: (cell) => {
+          const hash = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank">
+              {shortenAddress(hash)}
+            </Link>
+          );
+        }
       },
       {
         header: 'Wallet Address',
         accessorKey: 'walletAddress',
-        cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
-            {cell.getValue() as string}
-          </Link>
-        )
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       {
         header: 'Claimed At',

@@ -1,7 +1,6 @@
 import { useContext, useMemo } from 'react';
 
 // material-ui
-import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import Divider from '@mui/material/Divider';
 import Table from '@mui/material/Table';
@@ -35,16 +34,18 @@ import { LabelKeyObject } from 'react-csv/lib/core';
 
 //query
 import { LIST_DTERMINAL_TRANSACTION_HISTORY } from '../../../graphql/queries';
-import { ApolloClient, HttpLink, InMemoryCache, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
+import { Link } from 'react-router-dom';
+import { getBlockExploreLink } from 'utils/explorer';
+import { shortenAddress } from 'utils/shortenAddress';
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
   const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
-  console.log('company data', data);
-  console.log('column', columns);
+  const { setSearchTerm }: any = context;
+
   const table = useReactTable({
     data,
     columns,
@@ -158,12 +159,10 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 export default function transactionTable() {
   // const data: TableDataProps[] = makeData(100);
   const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
-  const { loading, error, data, fetchMore } = useQuery(LIST_DTERMINAL_TRANSACTION_HISTORY, {
+  const { searchTerm }: any = context;
+  const { loading, error, data } = useQuery(LIST_DTERMINAL_TRANSACTION_HISTORY, {
     variables: { nextToken: null }
   });
-
-  console.log('Query transaction Response:', { loading, error, data });
 
   if (error) {
     console.error('GraphQL Error:', error);
@@ -204,15 +203,39 @@ export default function transactionTable() {
     () => [
       {
         header: 'Transaction Hash',
-        accessorKey: 'transactionHash'
+        accessorKey: 'transactionHash',
+        cell: (cell) => {
+          const hash = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank">
+              {shortenAddress(hash)}
+            </Link>
+          );
+        }
       },
       {
         header: 'From',
-        accessorKey: 'from'
+        accessorKey: 'from',
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       {
         header: 'To',
-        accessorKey: 'to'
+        accessorKey: 'to',
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       {
         header: 'Method',

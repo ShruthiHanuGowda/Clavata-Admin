@@ -1,7 +1,6 @@
 import { useContext, useMemo } from 'react';
 
 // material-ui
-import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import Divider from '@mui/material/Divider';
 import Table from '@mui/material/Table';
@@ -27,10 +26,7 @@ import {
 // project-import
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
-import LinearWithLabel from 'components/@extended/progress/LinearWithLabel';
 import { CSVExport, TablePagination } from 'components/third-party/react-table';
-
-import makeData from 'data/react-table';
 
 // types
 import { TableDataProps } from 'types/table';
@@ -41,19 +37,20 @@ import { LIST_COMPANY_WALLETS } from '../../../graphql/queries';
 import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
+import { Link } from 'react-router-dom';
+import { shortenAddress } from 'utils/shortenAddress';
+import { getBlockExploreLink } from 'utils/explorer';
 
 // ==============================|| REACT TABLE ||============================== //
 
-interface CompanyDetail {
-  companyName?: string;
-  registrationNumber?: string;
-}
+// interface CompanyDetail {
+//   companyName?: string;
+//   registrationNumber?: string;
+// }
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
   const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
-  console.log('company kyc data', data);
-  console.log('column', columns);
+  const { setSearchTerm }: any = context;
   const table = useReactTable({
     data,
     columns,
@@ -167,8 +164,8 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 export default function PaginationTable() {
   // const data: TableDataProps[] = makeData(100);
   const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
-  const { loading, error, data, fetchMore } = useQuery(LIST_COMPANY_WALLETS, {
+  const { searchTerm }: any = context;
+  const { loading, error, data } = useQuery(LIST_COMPANY_WALLETS, {
     variables: { nextToken: null }
   });
 
@@ -184,16 +181,12 @@ export default function PaginationTable() {
       let parsedCompanyDetail = null;
 
       try {
-        parsedCompanyDetail =
-          typeof item.company_detail === 'string'
-            ? JSON.parse(item.company_detail)
-            : item.company_detail;
+        parsedCompanyDetail = typeof item.company_detail === 'string' ? JSON.parse(item.company_detail) : item.company_detail;
       } catch (e) {
         console.error('Invalid JSON in company_detail:', e);
       }
 
-      const companyInfo =
-        parsedCompanyDetail?.fullResponse?.fixedInfo?.companyInfo;
+      const companyInfo = parsedCompanyDetail?.fullResponse?.fixedInfo?.companyInfo;
 
       return {
         email: item.userAddress,
@@ -204,11 +197,9 @@ export default function PaginationTable() {
         is_verified_kyb: item.is_verified,
         reviewStatus: item.reviewStatus,
         date: item.date,
-        company_detail: companyInfo || null,
+        company_detail: companyInfo || null
       };
     }) || [];
-
-
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
@@ -234,15 +225,39 @@ export default function PaginationTable() {
       },
       {
         header: 'User Wallet Address',
-        accessorKey: 'wallet_address'
+        accessorKey: 'wallet_address',
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       {
         header: 'Denergy Wallet Address',
-        accessorKey: 'denergyWallet'
+        accessorKey: 'denergyWallet',
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       {
         header: 'Ethereum Wallet Address',
-        accessorKey: 'ethereumWallet'
+        accessorKey: 'ethereumWallet',
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       {
         header: 'KYB Applicant ID',
@@ -279,14 +294,30 @@ export default function PaginationTable() {
 
           return (
             <div>
-              <div><strong>Company Name:</strong> {detail.companyName || 'N/A'}</div>
-              <div><strong>Registration Number:</strong> {detail.registrationNumber || 'N/A'}</div>
-              <div><strong>Country:</strong> {detail.country || 'N/A'}</div>
-              <div><strong>Address:</strong> {detail.legalAddress || 'N/A'}</div>
-              <div><strong>Website:</strong> {detail.website || 'N/A'}</div>
-              <div><strong>Incorporated On:</strong> {detail.incorporatedOn || 'N/A'}</div>
-              <div><strong>Type:</strong> {detail.type || 'N/A'}</div>
-              <div><strong>Registration Location:</strong> {detail.registrationLocation || 'N/A'}</div>
+              <div>
+                <strong>Company Name:</strong> {detail.companyName || 'N/A'}
+              </div>
+              <div>
+                <strong>Registration Number:</strong> {detail.registrationNumber || 'N/A'}
+              </div>
+              <div>
+                <strong>Country:</strong> {detail.country || 'N/A'}
+              </div>
+              <div>
+                <strong>Address:</strong> {detail.legalAddress || 'N/A'}
+              </div>
+              <div>
+                <strong>Website:</strong> {detail.website || 'N/A'}
+              </div>
+              <div>
+                <strong>Incorporated On:</strong> {detail.incorporatedOn || 'N/A'}
+              </div>
+              <div>
+                <strong>Type:</strong> {detail.type || 'N/A'}
+              </div>
+              <div>
+                <strong>Registration Location:</strong> {detail.registrationLocation || 'N/A'}
+              </div>
             </div>
           );
         }

@@ -12,6 +12,7 @@ import { LIST_TRANSACTION_HISTORY_MOBILE } from 'graphql/queries'; // Define the
 import { useNavigate } from 'react-router';
 import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
+import { shortenAddress } from 'utils/shortenAddress';
 
 function TransactionHistoryMobilePage({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
   const context = useContext(Context);
@@ -36,10 +37,6 @@ function TransactionHistoryMobilePage({ data, columns, top }: { data: any[]; col
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-  };
-
-  const handleTransactionClick = (transactionHash: string) => {
-    navigate(`/transaction?hash=${transactionHash}`); // Navigate to the transaction page
   };
 
   return (
@@ -156,14 +153,39 @@ export default function MobileTransactionHistory() {
       {
         header: 'Transaction Hash',
         accessorKey: 'transactionHash',
-        cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string, 'transaction')} target="_blank">
-            {cell.getValue() as string}
-          </Link>
-        )
+        cell: (cell) => {
+          const hash = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank">
+              {shortenAddress(hash)}
+            </Link>
+          );
+        }
       },
-      { header: 'From', accessorKey: 'from' },
-      { header: 'To', accessorKey: 'to' },
+      {
+        header: 'From',
+        accessorKey: 'from',
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
+      },
+      {
+        header: 'To',
+        accessorKey: 'to',
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
+      },
       { header: 'Amount', accessorKey: 'amount' },
       { header: 'Coin Code', accessorKey: 'coinCode' },
       { header: 'Method', accessorKey: 'method' },

@@ -1,7 +1,6 @@
 import { useContext, useMemo } from 'react';
 
 // material-ui
-import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import Divider from '@mui/material/Divider';
 import Table from '@mui/material/Table';
@@ -35,7 +34,7 @@ import { LabelKeyObject } from 'react-csv/lib/core';
 
 //query
 import { LIST_TRANSACTION_HISTORY } from '../../../graphql/queries';
-import { ApolloClient, HttpLink, InMemoryCache, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
 
@@ -43,9 +42,8 @@ import { Context } from 'App';
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
   const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
-  console.log('company data', data);
-  console.log('column', columns);
+  const { setSearchTerm }: any = context;
+
   const table = useReactTable({
     data,
     columns,
@@ -196,8 +194,6 @@ export default function transactionTable() {
         (item.transactionType && item.transactionType.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, transformedData]);
-
-  console.log('new company data', data);
 
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [

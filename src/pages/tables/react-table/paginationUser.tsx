@@ -39,6 +39,7 @@ import { CardContent } from '@mui/material';
 import { Context } from 'App';
 import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
+import { shortenAddress } from 'utils/shortenAddress';
 
 // ==============================|| REACT TABLE ||============================== //
 
@@ -159,7 +160,7 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
 
 export default function PaginationUserTable() {
   const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
+  const { searchTerm }: any = context;
   const { data, loading, error } = useQuery(LIST_USER_WALLETS);
   console.log('Query user Response:', { loading, error, data });
   if (error) {
@@ -192,8 +193,6 @@ export default function PaginationUserTable() {
     );
   }, [searchTerm, transformedData]);
 
-  console.log('new company data', data);
-
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
       {
@@ -205,31 +204,40 @@ export default function PaginationUserTable() {
         header: 'User Wallet Address',
         accessorKey: 'wallet_address',
         enableSorting: true,
-        cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
-            {cell.getValue() as string}
-          </Link>
-        )
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       {
         header: 'Denergy Wallet Address',
         accessorKey: 'denergyWallet',
         enableSorting: true,
-        cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
-            {cell.getValue() as string}
-          </Link>
-        )
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       {
         header: 'Ethereum Wallet Address',
         accessorKey: 'ethereumWallet',
         enableSorting: true,
-        cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
-            {cell.getValue() as string}
-          </Link>
-        )
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       {
         header: 'KYC Applicant ID',

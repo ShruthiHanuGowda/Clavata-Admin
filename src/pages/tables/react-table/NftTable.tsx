@@ -40,14 +40,13 @@ import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
 import { getBlockExploreLink } from 'utils/explorer';
+import { shortenAddress } from 'utils/shortenAddress';
 
 // ==============================|| REACT TABLE ||============================== //
 
 function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
-  console.log('company data', data);
-  console.log('column', columns);
   const table = useReactTable({
     data,
     columns,
@@ -169,7 +168,7 @@ export default function NftTable() {
 
   const context = useContext(Context);
   const location = useLocation();
-  const { searchTerm, setSearchTerm }: any = context;
+  const { searchTerm }: any = context;
   const { loading, error, data } = useQuery(LIST_NFT_WALLETS, {
     variables: { nextToken: null, contractAddress }
   });
@@ -216,8 +215,6 @@ export default function NftTable() {
     );
   }, [searchTerm, transformedData]);
 
-  console.log('new company data', data);
-
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
       {
@@ -227,11 +224,14 @@ export default function NftTable() {
       {
         header: 'Contract Address',
         accessorKey: 'contractAddress',
-        cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
-            {cell.getValue() as string}
-          </Link>
-        )
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       {
         header: 'Created At',
