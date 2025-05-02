@@ -1,5 +1,5 @@
-import React, { useContext, useMemo } from 'react';
-import { ApolloClient, HttpLink, InMemoryCache, useQuery } from '@apollo/client';
+import { useContext, useMemo } from 'react';
+import { useQuery } from '@apollo/client';
 import { Grid, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, Box, Divider, CardContent, Stack } from '@mui/material';
 import { useReactTable, getCoreRowModel, getPaginationRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
 import { Context } from 'App';
@@ -12,6 +12,7 @@ import { LIST_NFT_COLLECTIONS } from 'graphql/queries';
 import { useNavigate } from 'react-router';
 import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
+import { shortenAddress } from 'utils/shortenAddress';
 
 function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
   const context = useContext(Context);
@@ -157,7 +158,14 @@ export default function NftCollectionTable() {
 
   const columns = useMemo<ColumnDef<any>[]>(
     () => [
-      { header: 'Contract Address', accessorKey: 'contractAddress' },
+      {
+        header: 'Contract Address',
+        accessorKey: 'contractAddress',
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return <>{shortenAddress(address)}</>;
+        }
+      },
       { header: 'Collection Name', accessorKey: 'collectionName' },
       { header: 'Symbol', accessorKey: 'symbol' },
       { header: 'Year', accessorKey: 'year' },
@@ -165,11 +173,14 @@ export default function NftCollectionTable() {
       {
         header: 'Owner Address',
         accessorKey: 'ownerAddress',
-        cell: (cell) => (
-          <Link to={getBlockExploreLink(cell.getValue() as string)} target="_blank">
-            {cell.getValue() as string}
-          </Link>
-        )
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       { header: 'Type', accessorKey: 'type' },
       { header: 'Created At', accessorKey: 'createdAt' },
