@@ -8,13 +8,11 @@ import TablePagination from 'components/third-party/react-table/TablePagination'
 import ScrollX from 'components/ScrollX';
 import CSVExport from 'components/third-party/react-table/CSVExport';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
-import { LIST_NON_MINTED_NFTS } from 'graphql/queries'; // Assuming this is your GraphQL query for NonMintedNFTs
-import { useNavigate } from 'react-router';
+import { LIST_NON_MINTED_NFTS } from 'graphql/queries';
 
 function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
-  const navigate = useNavigate();
 
   const table = useReactTable({
     data,
@@ -34,10 +32,6 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-  };
-
-  const handleItemIdClick = (itemId: string) => {
-    navigate(`/nft/non-minted/${itemId}`); // Navigate to Non-Minted NFT details page
   };
 
   return (
