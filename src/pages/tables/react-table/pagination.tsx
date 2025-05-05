@@ -40,6 +40,7 @@ import { Context } from 'App';
 import { Link } from 'react-router-dom';
 import { shortenAddress } from 'utils/shortenAddress';
 import { getBlockExploreLink } from 'utils/explorer';
+import { formatDate } from 'utils/date';
 
 // ==============================|| REACT TABLE ||============================== //
 
@@ -273,7 +274,8 @@ export default function PaginationTable() {
       },
       {
         header: 'Date Registered',
-        accessorKey: 'date'
+        accessorKey: 'date',
+        cell: (cell) => formatDate(cell.getValue() as string)
       },
       {
         header: 'Company Detail',

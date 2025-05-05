@@ -9,6 +9,7 @@ import ScrollX from 'components/ScrollX';
 import CSVExport from 'components/third-party/react-table/CSVExport';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { LIST_NON_MINTED_NFTS } from 'graphql/queries';
+import { formatDate } from 'utils/date';
 
 function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
   const context = useContext(Context);
@@ -144,8 +145,8 @@ export default function NonMintedNftsTable() {
       { header: 'Asset ID', accessorKey: 'assetId' },
       { header: 'Commissioning Date', accessorKey: 'commissioningDate' },
       { header: 'Country', accessorKey: 'country' },
-      { header: 'Start Date', accessorKey: 'startDate' },
-      { header: 'End Date', accessorKey: 'endDate' },
+      { header: 'Start Date', accessorKey: 'startDate', cell: (cell) => formatDate(cell.getValue() as string) },
+      { header: 'End Date', accessorKey: 'endDate', cell: (cell) => formatDate(cell.getValue() as string) },
       { header: 'Facility Name', accessorKey: 'facilityName' },
       { header: 'Volume', accessorKey: 'volume' },
       { header: 'Year', accessorKey: 'year' }

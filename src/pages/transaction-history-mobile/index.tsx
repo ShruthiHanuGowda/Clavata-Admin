@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router';
 import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
+import { formatDate } from 'utils/date';
 
 function TransactionHistoryMobilePage({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
   const context = useContext(Context);
@@ -191,7 +192,7 @@ export default function MobileTransactionHistory() {
       { header: 'Method', accessorKey: 'method' },
       { header: 'Status', accessorKey: 'transactionStatus' },
       { header: 'Transaction Fee', accessorKey: 'txnFee' },
-      { header: 'Created At', accessorKey: 'createdAt' }
+      { header: 'Created At', accessorKey: 'createdAt', cell: (cell) => formatDate(cell.getValue() as string) }
     ],
     []
   );

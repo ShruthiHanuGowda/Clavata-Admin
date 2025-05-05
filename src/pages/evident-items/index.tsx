@@ -17,6 +17,7 @@ import { useMemo } from 'react';
 
 import { useQuery } from '@apollo/client';
 import { LIST_EVIDENT_ITEMS } from 'graphql/queries';
+import { formatDate } from 'utils/date';
 
 export default function EvidentItems() {
   const [data, setData] = useState([]);
@@ -69,13 +70,13 @@ export default function EvidentItems() {
       {
         header: 'Production End Date',
         cell: ({ row }: any) => {
-          return row.original.asset ? JSON.parse(row.original.asset)?.endDate : '';
+          return row.original.asset ? formatDate(JSON.parse(row.original.asset)?.endDate) : '';
         }
       },
       {
         header: 'Facility Commissioning Date',
         cell: ({ row }: any) => {
-          return row.original.asset ? JSON.parse(row.original.asset)?.issue?.deviceDetails?.commissioningDate : '';
+          return row.original.asset ? formatDate(JSON.parse(row.original.asset)?.issue?.deviceDetails?.commissioningDate) : '';
         }
       }
     ],

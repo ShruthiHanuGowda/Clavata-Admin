@@ -37,6 +37,7 @@ import { LIST_TRANSACTION_HISTORY } from '../../../graphql/queries';
 import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
+import { formatDate } from 'utils/date';
 
 // ==============================|| REACT TABLE ||============================== //
 
@@ -215,7 +216,8 @@ export default function transactionTable() {
       },
       {
         header: 'Timestamp',
-        accessorKey: 'timestamp'
+        accessorKey: 'timestamp',
+        cell: (cell) => formatDate(cell.getValue() as string)
       },
       {
         header: 'Transaction Id',

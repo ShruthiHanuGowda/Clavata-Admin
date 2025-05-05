@@ -5,14 +5,35 @@ import { FormattedMessage } from 'react-intl';
 
 // type
 import { NavItemType } from 'types/menu';
-import { BankOutlined, FormOutlined, SettingOutlined, UserOutlined, ProductOutlined } from '@ant-design/icons';
+import {
+  DashboardOutlined,
+  TeamOutlined,
+  HomeOutlined,
+  FileTextOutlined,
+  AppstoreOutlined,
+  PictureOutlined,
+  TagsOutlined,
+  HistoryOutlined,
+  SettingOutlined,
+  GiftOutlined,
+  MobileOutlined,
+  UsbOutlined
+} from '@ant-design/icons';
+
 // icons
 const icons = {
-  BankOutlined,
-  FormOutlined,
+  DashboardOutlined,
+  TeamOutlined,
+  HomeOutlined,
+  FileTextOutlined,
+  AppstoreOutlined,
+  PictureOutlined,
+  TagsOutlined,
+  HistoryOutlined,
   SettingOutlined,
-  UserOutlined,
-  ProductOutlined
+  GiftOutlined,
+  MobileOutlined,
+  UsbOutlined
 };
 
 // ==============================|| MENU ITEMS - SUPPORT ||============================== //
@@ -28,84 +49,84 @@ const allMenu: NavItemType = {
       type: 'item',
       url: '/dashboard',
       breadcrumbs: false,
-      icon: icons.ProductOutlined
+      icon: icons.DashboardOutlined
     },
     {
       id: 'user',
       title: <FormattedMessage id="Users" />,
       type: 'item',
       url: '/user',
-      icon: icons.UserOutlined
+      icon: icons.TeamOutlined
     },
     {
       id: 'Companies',
       title: <FormattedMessage id="Companies" />,
       type: 'item',
       url: '/companies',
-      icon: icons.BankOutlined
+      icon: icons.HomeOutlined
     },
     {
       id: 'registries',
       title: <FormattedMessage id="Registries" />,
       type: 'item',
       url: '/registries',
-      icon: icons.FormOutlined
+      icon: icons.FileTextOutlined
     },
     {
       id: 'evident-items',
       title: <FormattedMessage id="Evident Items" />,
       type: 'item',
       url: '/evident-items',
-      icon: icons.FormOutlined
+      icon: icons.AppstoreOutlined
     },
     {
       id: 'nft',
       title: <FormattedMessage id="Minted NFTs" />,
       type: 'item',
       url: '/nft',
-      icon: icons.FormOutlined
+      icon: icons.PictureOutlined
     },
     {
       id: 'collection',
       title: <FormattedMessage id="NFT Collections" />,
       type: 'item',
       url: '/nft-collection',
-      icon: icons.FormOutlined
+      icon: icons.TagsOutlined
     },
     {
       id: 'non-minted-nft',
       title: <FormattedMessage id="Non-Minted NFTs" />,
       type: 'item',
       url: '/non-minted-nft',
-      icon: icons.FormOutlined
+      icon: icons.FileTextOutlined
     },
     {
       id: 'transaction',
       title: <FormattedMessage id="Transaction" />,
       type: 'item',
       url: '/transaction',
-      icon: icons.FormOutlined
+      icon: icons.HistoryOutlined
     },
     {
       id: 'dterminal',
       title: <FormattedMessage id="DTerminal" />,
       type: 'item',
       url: '/dterminal',
-      icon: icons.FormOutlined
+      icon: icons.UsbOutlined
     },
     {
       id: 'transaction-history-mobile',
       title: <FormattedMessage id="Transaction History Mobile" />,
       type: 'item',
       url: '/transaction-history-mobile',
-      icon: icons.FormOutlined
+      icon: icons.MobileOutlined
     },
     {
       id: 'airdrop',
       title: <FormattedMessage id="Airdrop claims" />,
       type: 'item',
       url: '/airdrop-claims',
-      icon: icons.FormOutlined
+      icon: icons.GiftOutlined
     },
     {
       id: 'setting',

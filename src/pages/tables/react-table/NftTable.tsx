@@ -41,6 +41,7 @@ import { CardContent } from '@mui/material';
 import { Context } from 'App';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
+import { formatDate } from 'utils/date';
 
 // ==============================|| REACT TABLE ||============================== //
 
@@ -235,7 +236,8 @@ export default function NftTable() {
       },
       {
         header: 'Created At',
-        accessorKey: 'createdAt'
+        accessorKey: 'createdAt',
+        cell: (cell) => formatDate(cell.getValue() as string)
       },
       {
         header: 'Minted Volume',
