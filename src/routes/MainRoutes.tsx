@@ -34,6 +34,8 @@ const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/Ta
 
 const EvidentItems = Loadable(lazy(() => import('pages/evident-items')));
 
+const Beneficiary = Loadable(lazy(() => import('pages/beneficiary')));
+
 // ==============================|| MAIN ROUTING ||============================== //
 
 const MainRoutes = {
@@ -86,6 +88,10 @@ const MainRoutes = {
         {
           path: '/airdrop-claims',
           element: <Airdrop />
+        },
+        {
+          path: '/beneficiary',
+          element: <Beneficiary />
         },
         {
           path: '/setting',

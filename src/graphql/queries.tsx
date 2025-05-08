@@ -132,6 +132,18 @@ export const LIST_AIRDROP_COLLECTIONS = gql`
   }
 `;
 
+export const LIST_BENEFICIARIES = gql`
+  query listBeneficiaries {
+    listBeneficiaries {
+      items {
+        name
+        wallet
+        chain
+      }
+    }
+  }
+`;
+
 export const LIST_TRANSACTION_HISTORY_MOBILE = gql`
   query ListTransactionsHistories {
     listTransactionHistoryMobiles {

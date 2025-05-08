@@ -17,7 +17,8 @@ import {
   SettingOutlined,
   GiftOutlined,
   MobileOutlined,
-  UsbOutlined
+  UsbOutlined,
+  UsergroupAddOutlined
 } from '@ant-design/icons';
 
 // icons
@@ -33,7 +34,8 @@ const icons = {
   SettingOutlined,
   GiftOutlined,
   MobileOutlined,
-  UsbOutlined
+  UsbOutlined,
+  UsergroupAddOutlined
 };
 
 // ==============================|| MENU ITEMS - SUPPORT ||============================== //
@@ -127,6 +129,13 @@ const allMenu: NavItemType = {
       type: 'item',
       url: '/airdrop-claims',
       icon: icons.GiftOutlined
+    },
+    {
+      id: 'beneficiary',
+      title: <FormattedMessage id="Beneficiary" />,
+      type: 'item',
+      url: '/beneficiary',
+      icon: icons.UsergroupAddOutlined
     },
     {
       id: 'setting',
