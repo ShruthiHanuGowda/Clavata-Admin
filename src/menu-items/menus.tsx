@@ -143,6 +143,13 @@ const allMenu: NavItemType = {
       type: 'item',
       url: '/profiles/account/settings',
       icon: icons.SettingOutlined
+    },
+    {
+      id: 'blog',
+      title: <FormattedMessage id="Blog" />,
+      type: 'item',
+      url: '/blog',
+      icon: icons.SettingOutlined
     }
   ]
 };

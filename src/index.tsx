@@ -31,6 +31,9 @@ import App from './App';
 import { ConfigProvider } from 'contexts/ConfigContext';
 import reportWebVitals from './reportWebVitals';
 
+//blog
+import 'react-quill/dist/quill.snow.css';
+
 const container = document.getElementById('root');
 const root = createRoot(container!);
 

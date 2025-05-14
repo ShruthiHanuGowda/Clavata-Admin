@@ -13,10 +13,8 @@ const MaintenanceError = Loadable(lazy(() => import('pages/maintenance/404')));
 const MaintenanceError500 = Loadable(lazy(() => import('pages/maintenance/500')));
 const MaintenanceUnderConstruction = Loadable(lazy(() => import('pages/maintenance/under-construction')));
 const MaintenanceComingSoon = Loadable(lazy(() => import('pages/maintenance/coming-soon')));
-
 const AppContactUS = Loadable(lazy(() => import('pages/contact-us')));
 // render - sample page
-
 const Dashboard = Loadable(lazy(() => import('pages/dashboard')));
 const User = Loadable(lazy(() => import('pages/user/user')));
 const Companies = Loadable(lazy(() => import('pages/companies/companies')));
@@ -27,14 +25,12 @@ const DTerminalTransactionHistory = Loadable(lazy(() => import('pages/dterminal/
 const Airdrop = Loadable(lazy(() => import('pages/airdrop/Airdrop')));
 const Setting = Loadable(lazy(() => import('pages/setting')));
 const NonMintedNFT = Loadable(lazy(() => import('pages/non-minted-nfts/index')));
-
 const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
 const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRole')));
 const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/TabSettings')));
-
 const EvidentItems = Loadable(lazy(() => import('pages/evident-items')));
-
 const Beneficiary = Loadable(lazy(() => import('pages/beneficiary')));
+const BlogContainer = Loadable(lazy(() => import('pages/blog/BlogContainer')));
 
 // ==============================|| MAIN ROUTING ||============================== //
 
@@ -96,6 +92,10 @@ const MainRoutes = {
         {
           path: '/setting',
           element: <Setting />
+        },
+        {
+          path: '/blog',
+          element: <BlogContainer />
         },
         {
           path: 'profiles',
