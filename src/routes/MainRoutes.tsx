@@ -31,6 +31,7 @@ const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/Ta
 const EvidentItems = Loadable(lazy(() => import('pages/evident-items')));
 const Beneficiary = Loadable(lazy(() => import('pages/beneficiary')));
 const Blog = Loadable(lazy(() => import('pages/blog')));
+const BlogDetails = Loadable(lazy(() => import('pages/blogDetails')));
 
 // ==============================|| MAIN ROUTING ||============================== //
 
@@ -96,6 +97,10 @@ const MainRoutes = {
         {
           path: '/blog',
           element: <Blog />
+        },
+        {
+          path: '/blog/:id',
+          element: <BlogDetails />
         },
         {
           path: 'profiles',

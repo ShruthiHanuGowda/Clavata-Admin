@@ -26,6 +26,7 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useQuery, useMutation, ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
 import { LIST_BLOGS, CREATE_BLOG, UPDATE_BLOG, DELETE_BLOG } from 'graphql/queries';
+import { useNavigate } from 'react-router';
 
 const initialFormState = {
   id: '',
@@ -66,6 +67,8 @@ export default function BlogManager() {
   const [selectedBlogId, setSelectedBlogId] = useState<string | null>(null);
 
   const blogs = data?.listBlogs?.items || [];
+
+  const navigate = useNavigate();
 
   const handleOpen = (blog?: any) => {
     if (blog) {
@@ -145,6 +148,9 @@ export default function BlogManager() {
                 </TableCell>
                 <TableCell>
                   <Stack direction="row" spacing={1}>
+                    <Button size="small" onClick={() => navigate(`/blog/${blog.id}`)}>
+                      View
+                    </Button>
                     <Button size="small" onClick={() => handleOpen(blog)}>
                       Edit
                     </Button>
