@@ -18,7 +18,8 @@ import {
   GiftOutlined,
   MobileOutlined,
   UsbOutlined,
-  UsergroupAddOutlined
+  UsergroupAddOutlined,
+  ReadOutlined
 } from '@ant-design/icons';
 
 // icons
@@ -35,7 +36,8 @@ const icons = {
   GiftOutlined,
   MobileOutlined,
   UsbOutlined,
-  UsergroupAddOutlined
+  UsergroupAddOutlined,
+  ReadOutlined
 };
 
 // ==============================|| MENU ITEMS - SUPPORT ||============================== //
@@ -149,7 +151,7 @@ const allMenu: NavItemType = {
       title: <FormattedMessage id="Blog" />,
       type: 'item',
       url: '/blog',
-      icon: icons.SettingOutlined
+      icon: icons.ReadOutlined
     }
   ]
 };

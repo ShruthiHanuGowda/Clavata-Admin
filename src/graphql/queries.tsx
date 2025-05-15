@@ -180,3 +180,52 @@ export const LIST_NON_MINTED_NFTS = gql`
     }
   }
 `;
+
+export const LIST_BLOGS = gql`
+  query listBlogs {
+    listBlogs {
+      items {
+        id
+        title
+        content
+        author_name
+        tags
+        status
+      }
+    }
+  }
+`;
+
+export const CREATE_BLOG = gql`
+  mutation createBlogs($createblogsinput: CreateBlogsInput!) {
+    createBlogs(input: $createblogsinput) {
+      id
+      title
+      content
+      author_name
+      tags
+      status
+    }
+  }
+`;
+
+export const UPDATE_BLOG = gql`
+  mutation updateBlogs($updateblogsinput: UpdateBlogsInput!) {
+    updateBlogs(input: $updateblogsinput) {
+      id
+      title
+      content
+      author_name
+      tags
+      status
+    }
+  }
+`;
+
+export const DELETE_BLOG = gql`
+  mutation deleteBlogs($input: DeleteBlogsInput!) {
+    deleteBlogs(input: $input) {
+      id
+    }
+  }
+`;
