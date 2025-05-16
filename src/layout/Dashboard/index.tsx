@@ -44,7 +44,7 @@ export default function DashboardLayout() {
 
   if (menuMasterLoading) return <Loader />;
 
-  console.log('===>', pathname.includes('/profiles/account/'));
+  const shouldHideBreadcrumbs = pathname.includes('/profiles/account/') || /^\/blog\/[^/]+$/.test(pathname);
 
   return (
     <AuthGuard>
@@ -64,7 +64,7 @@ export default function DashboardLayout() {
               flexDirection: 'column'
             }}
           >
-            {!pathname.includes('/profiles/account/') && <Breadcrumbs />}
+            {!shouldHideBreadcrumbs && <Breadcrumbs />}
             <Outlet />
           </Container>
         </Box>
