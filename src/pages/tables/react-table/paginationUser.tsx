@@ -247,14 +247,14 @@ export default function PaginationUserTable() {
       },
       {
         header: 'KYC Verified',
-        accessorKey: 'is_verified_kyb',
+        accessorKey: 'is_verified',
         enableSorting: true
       },
-      {
-        header: 'KYC Review Status',
-        accessorKey: 'reviewStatus',
-        enableSorting: true
-      },
+      // {
+      //   header: 'KYC Review Status',
+      //   accessorKey: 'reviewStatus',
+      //   enableSorting: true
+      // },
       {
         header: 'Date Registered',
         accessorKey: 'date',

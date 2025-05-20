@@ -27,6 +27,7 @@ export const LIST_USER_WALLETS = gql`
         walletAddress
         denergyWallet
         ethereumWallet
+        applicantId
         userWallet
         is_verified
         date
@@ -88,7 +89,6 @@ export const LIST_DTERMINAL_TRANSACTION_HISTORY = gql`
       items {
         transactionHash
         method
-        block
         age
         from
         to

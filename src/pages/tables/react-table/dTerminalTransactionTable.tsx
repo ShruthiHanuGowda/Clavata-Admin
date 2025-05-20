@@ -173,7 +173,6 @@ export default function transactionTable() {
     data?.listDterminalTransactionHistories?.items.map((item: any) => ({
       transactionHash: item.transactionHash,
       method: item.method,
-      block: item.block,
       age: item.age,
       from: item.from,
       to: item.to,
@@ -190,14 +189,13 @@ export default function transactionTable() {
         (item.from && item.from.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.to && item.to.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.method && item.method.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.block && item.block.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.age && item.age.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.amount && item.amount.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.txnFee && item.txnFee.toString().toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, transformedData]);
 
-  console.log('new company data', data);
+  console.log('new company transaction data', data);
 
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
@@ -240,10 +238,6 @@ export default function transactionTable() {
       {
         header: 'Method',
         accessorKey: 'method'
-      },
-      {
-        header: 'Block',
-        accessorKey: 'block'
       },
       {
         header: 'Age',
