@@ -195,7 +195,7 @@ export default function PaginationTable() {
         denergyWallet: item.denergyWallet,
         ethereumWallet: item.ethereumWallet,
         applicantId: item.applicantId,
-        is_verified_kyb: item.is_verified,
+        is_verified_kyb: item.is_verified_kyb,
         reviewStatus: item.reviewStatus,
         date: item.date,
         company_detail: companyInfo || null
@@ -212,6 +212,7 @@ export default function PaginationTable() {
         (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.ethereumWallet && item.ethereumWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.is_verified_kyb && item.is_verified_kyb.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, transformedData]);
@@ -266,12 +267,12 @@ export default function PaginationTable() {
       },
       {
         header: 'KYB Verified',
-        accessorKey: 'is_verified'
+        accessorKey: 'is_verified_kyb'
       },
-      {
-        header: 'KYB Review Status',
-        accessorKey: 'reviewStatus'
-      },
+      // {
+      //   header: 'KYB Review Status',
+      //   accessorKey: 'reviewStatus'
+      // },
       {
         header: 'Date Registered',
         accessorKey: 'date',
