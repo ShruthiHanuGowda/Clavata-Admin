@@ -95,10 +95,6 @@ const MainRoutes = {
           element: <Setting />
         },
         {
-          path: '/blog',
-          element: <Blog />
-        },
-        {
           path: '/blog/:id',
           element: <BlogDetails />
         },
@@ -131,6 +127,10 @@ const MainRoutes = {
       path: '/',
       element: <SimpleLayout layout={SimpleLayoutType.SIMPLE} />,
       children: [
+        {
+          path: '/blog',
+          element: <Blog />
+        },
         {
           path: 'contact-us',
           element: <AppContactUS />
