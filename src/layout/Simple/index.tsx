@@ -13,9 +13,9 @@ const FooterBlock = lazy(() => import('./FooterBlock'));
 export default function SimpleLayout({ layout = SimpleLayoutType.SIMPLE }: { layout?: SimpleLayoutType }) {
   return (
     <Suspense fallback={<Loader />}>
-      <Header />
+      {/* <Header /> */}
       <Outlet />
-      <FooterBlock isFull={layout === SimpleLayoutType.LANDING} />
+      {/* <FooterBlock isFull={layout === SimpleLayoutType.LANDING} /> */}
     </Suspense>
   );
 }

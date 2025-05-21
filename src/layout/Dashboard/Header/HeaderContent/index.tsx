@@ -36,7 +36,8 @@ export default function HeaderContent() {
           variant="contained"
           color="primary"
           style={{ marginRight: '16px' }}
-          onClick={() => navigate('/blog')}
+          // onClick={() => navigate('/blog')}
+          onClick={() => window.open('/blog', '_blank')}
         >
           Blog
         </Button>
