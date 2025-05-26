@@ -2,12 +2,7 @@ import {
   Box,
   Button,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControl,
-  Grid,
   InputLabel,
   MenuItem,
   Select,
@@ -21,7 +16,7 @@ import {
   TextField,
   Typography
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useQuery, useMutation, ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
@@ -48,26 +43,18 @@ const client = new ApolloClient({
 });
 
 export default function BlogManager() {
-  const { data, refetch } = useQuery(LIST_BLOGS, {
-    client
-  });
-  const [createBlog] = useMutation(CREATE_BLOG, {
-    client
-  });
-  const [updateBlog] = useMutation(UPDATE_BLOG, {
-    client
-  });
+  const { data, refetch } = useQuery(LIST_BLOGS, { client });
+  const [createBlog] = useMutation(CREATE_BLOG, { client });
+  const [updateBlog] = useMutation(UPDATE_BLOG, { client });
   const [deleteBlog] = useMutation(DELETE_BLOG, { client });
 
   const [form, setForm] = useState(initialFormState);
-  const [open, setOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [tagInput, setTagInput] = useState('');
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [selectedBlogId, setSelectedBlogId] = useState<string | null>(null);
 
   const blogs = data?.listBlogs?.items || [];
-
   const navigate = useNavigate();
 
   const handleOpen = (blog?: any) => {
@@ -78,13 +65,7 @@ export default function BlogManager() {
       setForm(initialFormState);
       setIsEdit(false);
     }
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setForm(initialFormState);
-    setTagInput('');
-    setOpen(false);
+    setShowForm(true);
   };
 
   const handleSave = async () => {
@@ -103,7 +84,9 @@ export default function BlogManager() {
     }
 
     await refetch();
-    handleClose();
+    setForm(initialFormState);
+    setTagInput('');
+    setShowForm(false);
   };
 
   const handleTagAdd = () => {
@@ -120,75 +103,20 @@ export default function BlogManager() {
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" mb={2}>
-        <Typography variant="h5">Blog Manager</Typography>
-        <Button variant="contained" onClick={() => handleOpen()}>
-          Create Blog
-        </Button>
+        <Button variant="contained" onClick={() => handleOpen()}>Create Blog</Button>
       </Box>
 
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Title</TableCell>
-              <TableCell>Author</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Tags</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {blogs.map((blog: any) => (
-              <TableRow key={blog.id}>
-                <TableCell>{blog.title}</TableCell>
-                <TableCell>{blog.author_name}</TableCell>
-                <TableCell>{blog.status}</TableCell>
-                <TableCell>
-                  {blog.tags?.map((tag: string, i: number) => <Chip key={i} label={tag} size="small" sx={{ mr: 0.5 }} />)}
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <Button size="small" onClick={() => navigate(`/blog/${blog.id}`)}>
-                      View
-                    </Button>
-                    <Button size="small" onClick={() => handleOpen(blog)}>
-                      Edit
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() => {
-                        setSelectedBlogId(blog.id);
-                        setDeleteDialogOpen(true);
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-        <DialogTitle>{isEdit ? 'Edit Blog' : 'Create Blog'}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} mt={1}>
+      {showForm && (
+        <Box mb={4} p={2} border="1px solid #ccc" borderRadius={2}>
+          <Typography variant="h6" gutterBottom>{isEdit ? 'Edit Blog' : 'Create Blog'}</Typography>
+          <Stack spacing={2}>
             <TextField label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} fullWidth />
-
             <Box>
               <Box mb={1}>Content</Box>
               <ReactQuill theme="snow" value={form.content} onChange={(value) => setForm({ ...form, content: value })} />
             </Box>
 
-            <TextField
-              label="Author"
-              value={form.author_name}
-              onChange={(e) => setForm({ ...form, author_name: e.target.value })}
-              fullWidth
-            />
+            <TextField label="Author" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })} fullWidth />
 
             <Box>
               <InputLabel>Tags</InputLabel>
@@ -218,39 +146,63 @@ export default function BlogManager() {
                 <MenuItem value="Archived">Archived</MenuItem>
               </Select>
             </FormControl>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave}>
-            {isEdit ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to delete this blog?</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button
-            color="error"
-            variant="contained"
-            onClick={async () => {
-              if (selectedBlogId) {
-                await deleteBlog({ variables: { input: { id: selectedBlogId } } });
-                await refetch();
-              }
-              setDeleteDialogOpen(false);
-              setSelectedBlogId(null);
-            }}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <Stack direction="row" spacing={2}>
+              <Button variant="outlined" onClick={() => {
+                setShowForm(false);
+                setForm(initialFormState);
+                setTagInput('');
+              }}>Cancel</Button>
+              <Button variant="contained" onClick={handleSave}>{isEdit ? 'Update' : 'Create'}</Button>
+            </Stack>
+          </Stack>
+        </Box>
+      )}
+
+      <TableContainer>
+           <Typography variant="h5">Blog Manager</Typography>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Title</TableCell>
+              <TableCell>Author</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Tags</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {blogs.map((blog: any) => (
+              <TableRow key={blog.id}>
+                <TableCell>{blog.title}</TableCell>
+                <TableCell>{blog.author_name}</TableCell>
+                <TableCell>{blog.status}</TableCell>
+                <TableCell>
+                  {blog.tags?.map((tag: string, i: number) => (
+                    <Chip key={i} label={tag} size="small" sx={{ mr: 0.5 }} />
+                  ))}
+                </TableCell>
+                <TableCell>
+                  <Stack direction="row" spacing={1}>
+                    <Button size="small" onClick={() => navigate(`/blog/${blog.id}`)}>View</Button>
+                    <Button size="small" onClick={() => handleOpen(blog)}>Edit</Button>
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={async () => {
+                        await deleteBlog({ variables: { input: { id: blog.id } } });
+                        await refetch();
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </Box>
   );
 }
