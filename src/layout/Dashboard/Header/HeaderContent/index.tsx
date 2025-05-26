@@ -31,7 +31,7 @@ export default function HeaderContent() {
       {menuOrientation === MenuOrientation.HORIZONTAL && !downLG && <DrawerHeader open={true} />}
       {!downLG && <Box sx={{ width: '100%', ml: { xs: 0, md: 1 } }} />}
       {downLG && <Box sx={{ width: '100%', ml: 1 }} />}
-      <Tooltip title="Go to Blog">
+      {/* <Tooltip title="Go to Blog">
         <Button
           variant="contained"
           color="primary"
@@ -40,7 +40,7 @@ export default function HeaderContent() {
         >
           Blog
         </Button>
-      </Tooltip>
+      </Tooltip> */}
       <Notification />
       <Message />
       {!downLG && <FullScreen />}
