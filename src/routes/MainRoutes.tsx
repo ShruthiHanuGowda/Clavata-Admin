@@ -28,6 +28,7 @@ const NonMintedNFT = Loadable(lazy(() => import('pages/non-minted-nfts/index')))
 const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
 const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRole')));
 const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/TabSettings')));
+const PlatformSettings = Loadable(lazy(() => import('pages/profiles/account/PlatformSettings')));
 const EvidentItems = Loadable(lazy(() => import('pages/evident-items')));
 const Beneficiary = Loadable(lazy(() => import('pages/beneficiary')));
 const Blog = Loadable(lazy(() => import('pages/blog')));
@@ -116,6 +117,10 @@ const MainRoutes = {
                 {
                   path: '/profiles/account/settings',
                   element: <AccountTabSettings />
+                },
+                {
+                  path: '/profiles/account/platform-settings',
+                  element: <PlatformSettings />
                 }
               ]
             }

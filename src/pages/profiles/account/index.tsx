@@ -34,6 +34,12 @@ export default function AccountProfile() {
       breadcrumbTitle = 'User Permission';
       breadcrumbHeading = 'User Permission';
       selectedTab = 0;
+      break;
+    case '/profiles/account/platform-settings':
+      breadcrumbTitle = 'Platform Settings';
+      breadcrumbHeading = 'Platform Settings';
+      selectedTab = 2;
+      break;
   }
 
   const [value, setValue] = useState(selectedTab);
@@ -68,6 +74,13 @@ export default function AccountProfile() {
               iconPosition="start"
             />
             <Tab label="Settings" component={Link} to="/profiles/account/settings" icon={<SettingOutlined />} iconPosition="start" />
+            <Tab
+              label="Platform Settings"  // New tab for Platform Settings
+              component={Link}
+              to="/profiles/account/platform-settings"
+              icon={<SettingOutlined />}  // You can change the icon as per your needs
+              iconPosition="start"
+            />
           </Tabs>
         </Box>
         <Box sx={{ mt: 2.5 }}>

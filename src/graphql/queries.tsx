@@ -242,3 +242,15 @@ export const GET_BLOG_BY_ID = gql`
     }
   }
 `;
+
+export const LIST_PLATFORM_SETTINGS = gql`
+  query listPlatformSettings {
+    listPlatformSettings {
+      items {
+        pId
+        keyName
+        value
+      }
+    }
+  }
+`;
