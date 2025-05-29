@@ -254,3 +254,13 @@ export const LIST_PLATFORM_SETTINGS = gql`
     }
   }
 `;
+
+export const UPDATE_PLATFORM_SETTINGS = gql`
+  mutation UpdatePlatformSettings($input: UpdatePlatformSettingsInput!) {
+    updatePlatformSettings(input: $input) {
+      pId
+      keyName
+      value
+    }
+  }
+`;
