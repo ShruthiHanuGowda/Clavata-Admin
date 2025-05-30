@@ -71,7 +71,7 @@ function DWallet() {
               <AnalyticCard title={analytics.totalUsers.title} count={analytics.totalUsers.count} isLoss={analytics.totalUsers.isLoss} />
             </Grid>
             <Grid item xs={12} sm={6} md={6}>
-              <AnalyticCard title={analytics.dailyUsers.title} count={analytics.dailyUsers.count} isLoss={analytics.dailyUsers.isLoss} />
+              <AnalyticCard title={analytics.dailyUsers.title} count={analytics.dailyUsers.count} isLoss={analytics?.dailyUsers.isLoss} />
             </Grid>
           </>
         )}
