@@ -1,11 +1,25 @@
 import { useState, useEffect } from 'react';
 import { fetchDashboardData } from './dashboardApi';
 
+// Define interfaces for analytics data structure
+interface AnalyticItem {
+  title: string;
+  count: string;
+  percentage?: number;
+  extra?: string;
+  isLoss: boolean;
+}
+
+interface AnalyticsData {
+  totalUsers: AnalyticItem;
+  dailyUsers: AnalyticItem;
+}
+
 export const useDashboardData = (type = 'D_WALLET_API_BASE_URL') => {
-  const [analytics, setAnalytics] = useState(null);
-  const [chartData, setChartData] = useState([]);
+  const [analytics, setAnalytics] = useState<AnalyticsData>({} as AnalyticsData);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const [timeSlot, setTimeSlot] = useState('week');
 
   const loadDashboardData = async (slot = timeSlot) => {
@@ -18,14 +32,14 @@ export const useDashboardData = (type = 'D_WALLET_API_BASE_URL') => {
         setAnalytics({
           totalUsers: {
             title: 'New User accounts',
-            count: dashboardData.analytics.totalUsers,
+            count: String(dashboardData.analytics.totalUsers),
             percentage: dashboardData.analytics.totalUsersPercentage,
             extra: dashboardData.analytics.totalUsersExtra,
             isLoss: false
           },
           dailyUsers: {
             title: 'New User accounts in 24 hours',
-            count: dashboardData.analytics.dailyUsers,
+            count: String(dashboardData.analytics.dailyUsers),
             percentage: dashboardData.analytics.dailyUsersPercentage,
             extra: dashboardData.analytics.dailyUsersExtra,
             isLoss: false
@@ -33,15 +47,15 @@ export const useDashboardData = (type = 'D_WALLET_API_BASE_URL') => {
         });
         setChartData(dashboardData.chartData);
       }
-    } catch (err) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
     }
   };
 
   // Handle time slot change
-  const handleTimeSlotChange = async (newSlot) => {
+  const handleTimeSlotChange = async (newSlot: string) => {
     setTimeSlot(newSlot);
     await loadDashboardData(newSlot);
   };
