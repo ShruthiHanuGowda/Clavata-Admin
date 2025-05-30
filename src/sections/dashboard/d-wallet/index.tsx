@@ -12,7 +12,7 @@ import LineChartCard from 'components/dashboard/LineChartCard';
 import { useDashboardData } from 'pages/dashboard/useDashboardData';
 
 function DWallet() {
-  const { analytics, chartData, loading, error, timeSlot, handleTimeSlotChange, refetch } = useDashboardData();
+  const { analytics, chartData, loading, error, timeSlot, handleTimeSlotChange, refetch } = useDashboardData('D_WALLET_API_BASE_URL');
 
   if (loading) {
     return (
@@ -37,14 +37,17 @@ function DWallet() {
         <Alert
           severity="error"
           action={
-            <button onClick={refetch} style={{
-              background: 'none',
-              border: '1px solid #f44336',
-              color: '#f44336',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}>
+            <button
+              onClick={refetch}
+              style={{
+                background: 'none',
+                border: '1px solid #f44336',
+                color: '#f44336',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
               Retry
             </button>
           }
@@ -86,12 +89,7 @@ function DWallet() {
         )}
 
         <Grid item xs={12}>
-          <LineChartCard
-            title="Daily New User Accounts"
-            slot={timeSlot}
-            data={chartData}
-            handleSlotChange={handleTimeSlotChange}
-          />
+          <LineChartCard title="Daily New User Accounts" slot={timeSlot} data={chartData} handleSlotChange={handleTimeSlotChange} />
         </Grid>
       </Grid>
     </MainCard>
