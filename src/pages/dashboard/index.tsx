@@ -55,9 +55,9 @@ export default function Dashboard() {
           totalWallets24="0"
         />
       </Grid>
-      <Grid item xs={12} lg={12}>
+      {/* <Grid item xs={12} lg={12}>
         <WattCoin coinPrice={stats?.coin_price} />
-      </Grid>
+      </Grid> */}
       <Grid item xs={12} lg={12}>
         <DWallet />
       </Grid>
