@@ -68,22 +68,10 @@ function DWallet() {
         {analytics && (
           <>
             <Grid item xs={12} sm={6} md={6}>
-              <AnalyticCard
-                title={analytics.totalUsers.title}
-                count={analytics.totalUsers.count}
-                percentage={analytics.totalUsers.percentage}
-                extra={analytics.totalUsers.extra}
-                isLoss={analytics.totalUsers.isLoss}
-              />
+              <AnalyticCard title={analytics.totalUsers.title} count={analytics.totalUsers.count} isLoss={analytics.totalUsers.isLoss} />
             </Grid>
             <Grid item xs={12} sm={6} md={6}>
-              <AnalyticCard
-                title={analytics.dailyUsers.title}
-                count={analytics.dailyUsers.count}
-                percentage={analytics.dailyUsers.percentage}
-                extra={analytics.dailyUsers.extra}
-                isLoss={analytics.dailyUsers.isLoss}
-              />
+              <AnalyticCard title={analytics.dailyUsers.title} count={analytics.dailyUsers.count} isLoss={analytics.dailyUsers.isLoss} />
             </Grid>
           </>
         )}

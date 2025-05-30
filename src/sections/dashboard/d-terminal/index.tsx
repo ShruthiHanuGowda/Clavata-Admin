@@ -76,8 +76,6 @@ export default function DTerminal() {
                   <AnalyticCard
                     title={analytics.totalUsers.title}
                     count={analytics.totalUsers.count}
-                    percentage={analytics.totalUsers.percentage}
-                    extra={analytics.totalUsers.extra}
                     isLoss={analytics.totalUsers.isLoss}
                   />
                 </Grid>
@@ -85,8 +83,6 @@ export default function DTerminal() {
                   <AnalyticCard
                     title={analytics.dailyUsers.title}
                     count={analytics.dailyUsers.count}
-                    percentage={analytics.dailyUsers.percentage}
-                    extra={analytics.dailyUsers.extra}
                     isLoss={analytics.dailyUsers.isLoss}
                   />
                 </Grid>
