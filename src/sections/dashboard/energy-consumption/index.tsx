@@ -1,19 +1,19 @@
-// material-ui
+import React from 'react';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
 
 // project import
 import MainCard from 'components/MainCard';
 import AnalyticCard from 'components/dashboard/AnalyticCard';
 import LineChartCard from 'components/dashboard/LineChartCard';
-import { useDashboardData } from '../../../pages/dashboard/useDashboardData';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
-import React from 'react';
+import { useDashboardData } from 'pages/dashboard/useDashboardData';
 
-export default function DTerminal() {
-  const { analytics, chartData, loading, error, timeSlot, handleTimeSlotChange, refetch } = useDashboardData('D_TERMINAL_API_BASE_URL');
+function EnergyConsumption() {
+  const { analytics, chartData, loading, error, timeSlot, handleTimeSlotChange, refetch } =
+    useDashboardData('ENERGY_CONSUMPTION_API_BASE_URL');
 
   if (loading) {
     return (
@@ -63,26 +63,26 @@ export default function DTerminal() {
     <MainCard>
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          <Typography variant="h3">D Terminal</Typography>
+          <Typography variant="h3">Energy Consumption</Typography>
         </Grid>
-        <Grid item xs={12} md={7} lg={8}>
+
+        {analytics && (
+          <>
+            <Grid item xs={12} sm={6} md={6}>
+              <AnalyticCard title={analytics.total.title} count={analytics.total.count} isLoss={analytics.total.isLoss} />
+            </Grid>
+            <Grid item xs={12} sm={6} md={6}>
+              <AnalyticCard title={analytics.daily.title} count={analytics.daily.count} isLoss={analytics?.daily.isLoss} />
+            </Grid>
+          </>
+        )}
+
+        <Grid item xs={12}>
           <LineChartCard title="Daily New User Accounts" slot={timeSlot} data={chartData} handleSlotChange={handleTimeSlotChange} />
-        </Grid>
-        <Grid item xs={12} md={7} lg={4}>
-          <Grid container spacing={2}>
-            {analytics && (
-              <>
-                <Grid item xs={12}>
-                  <AnalyticCard title={analytics.total.title} count={analytics.total.count} isLoss={analytics.total.isLoss} />
-                </Grid>
-                <Grid item xs={12}>
-                  <AnalyticCard title={analytics.daily.title} count={analytics.daily.count} isLoss={analytics.daily.isLoss} />
-                </Grid>
-              </>
-            )}
-          </Grid>
         </Grid>
       </Grid>
     </MainCard>
   );
 }
+
+export default EnergyConsumption;
