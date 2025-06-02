@@ -11,8 +11,8 @@ interface AnalyticItem {
 }
 
 interface AnalyticsData {
-  totalUsers: AnalyticItem;
-  dailyUsers: AnalyticItem;
+  total: AnalyticItem;
+  daily: AnalyticItem;
 }
 
 export const useDashboardData = (type = 'D_WALLET_API_BASE_URL') => {
@@ -30,15 +30,15 @@ export const useDashboardData = (type = 'D_WALLET_API_BASE_URL') => {
         // Extract analytics data from combined response
         const dashboardData = response.data;
         setAnalytics({
-          totalUsers: {
-            title: 'New User accounts',
+          total: {
+            title: dashboardData.analytics.totalTitle ?? 'New User accounts',
             count: String(dashboardData.analytics.totalUsers),
             percentage: dashboardData.analytics.totalUsersPercentage,
             extra: dashboardData.analytics.totalUsersExtra,
             isLoss: false
           },
-          dailyUsers: {
-            title: 'New User accounts in 24 hours',
+          daily: {
+            title: dashboardData.analytics.dailyTitle ?? 'New User accounts',
             count: String(dashboardData.analytics.dailyUsers),
             percentage: dashboardData.analytics.dailyUsersPercentage,
             extra: dashboardData.analytics.dailyUsersExtra,

@@ -6,11 +6,12 @@ import Typography from '@mui/material/Typography';
 
 // project import
 import Blockchain from 'sections/dashboard/blockchain';
-import WattCoin from 'sections/dashboard/watt-coin';
+// import WattCoin from 'sections/dashboard/watt-coin';
 import DWallet from 'sections/dashboard/d-wallet';
 import DTerminal from 'sections/dashboard/d-terminal';
 import StatisticsCard from 'sections/dashboard';
 import { getStats, getCounters, getCharts } from 'utils/api/denergytestnet';
+import EnergyConsumption from 'sections/dashboard/energy-consumption';
 
 const countersToAnalytics: any = {
   accounts: ['totalAccounts', 'totalAddresses'],
@@ -58,6 +59,9 @@ export default function Dashboard() {
       {/* <Grid item xs={12} lg={12}>
         <WattCoin coinPrice={stats?.coin_price} />
       </Grid> */}
+      <Grid item xs={12} lg={12}>
+        <EnergyConsumption />
+      </Grid>
       <Grid item xs={12} lg={12}>
         <DWallet />
       </Grid>

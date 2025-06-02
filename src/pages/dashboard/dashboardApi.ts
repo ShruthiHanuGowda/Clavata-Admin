@@ -1,6 +1,7 @@
 const API_BASE_URL: any = {
   D_WALLET_API_BASE_URL: 'https://rtb4zcgmxf.execute-api.me-central-1.amazonaws.com/default/adminDashboardAnalytics',
-  D_TERMINAL_API_BASE_URL: 'https://7ygfwsucgd.execute-api.me-central-1.amazonaws.com/default/adminDashboardDTerminalAnalytics'
+  D_TERMINAL_API_BASE_URL: 'https://7ygfwsucgd.execute-api.me-central-1.amazonaws.com/default/adminDashboardDTerminalAnalytics',
+  ENERGY_CONSUMPTION_API_BASE_URL: 'https://ovecu7uou9.execute-api.me-central-1.amazonaws.com/default/adminDashboardEnergyConsumption'
 };
 
 // // Fetch analytics data
