@@ -279,7 +279,7 @@ export default function PaginationTable() {
         cell: (cell) => formatDate(cell.getValue() as string)
       },
       {
-        header: 'Company Detail',
+        header: 'KYB Company Detail',
         accessorKey: 'company_detail',
         cell: (info) => {
           const detail = info.getValue() as {

@@ -24,13 +24,14 @@ export const LIST_USER_WALLETS = gql`
   query ListUserWallets($filter: TableUserWalletAddressFilterInput, $limit: Int) {
     listUserWalletAddresses(filter: $filter, limit: $limit) {
       items {
-        walletAddress
+        emailAddress
         denergyWallet
         ethereumWallet
         applicantId
         userWallet
         is_verified
         date
+        kycDetails
       }
       nextToken
     }

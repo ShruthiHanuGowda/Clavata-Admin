@@ -110,7 +110,7 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                               style={{ cursor: 'pointer', fontWeight: 'bold' }}
                             >
                               {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                              {{
+                              { {
                                 asc: ' 🔼',
                                 desc: ' 🔽'
                               }[header.column.getIsSorted() as string] ?? null}
@@ -167,18 +167,38 @@ export default function PaginationUserTable() {
   if (error) {
     console.error('GraphQL Error:', error);
   }
+
   // Transform company data to fit column structure
-  const transformedData =
-    data?.listUserWalletAddresses?.items.map((item: any) => ({
-      email: item.walletAddress,
+  const transformedData = data?.listUserWalletAddresses?.items.map((item: any) => {
+    let parsedUserDetail = null;
+    try {
+      if (item.kycDetails) {
+        if (typeof item.kycDetails === 'string') {
+          parsedUserDetail = JSON.parse(item.kycDetails);
+        } else if (typeof item.kycDetails === 'object') {
+          parsedUserDetail = item.kycDetails;
+        }
+      } else {
+        console.warn('kycDetails is missing or null for:', item.emailAddress || item.userWallet);
+      }
+    } catch (e) {
+      console.error('Failed to parse kycDetails for:', item.emailAddress || item.userWallet, 'Error:', e);
+    }
+    // Log parsedUserDetail to debug
+    console.log('Parsed User Detail:', parsedUserDetail);
+
+    return {
+      email: item.emailAddress,
       wallet_address: item.userWallet,
       denergyWallet: item.denergyWallet,
       ethereumWallet: item.ethereumWallet,
       applicantId: item.applicantId,
       is_verified: item.is_verified,
       reviewStatus: item.reviewStatus,
-      date: item.date
-    })) || [];
+      date: item.date,
+      kycDetails: parsedUserDetail // Store the entire parsedUserDetail
+    };
+  }) || [];
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
@@ -194,76 +214,102 @@ export default function PaginationUserTable() {
     );
   }, [searchTerm, transformedData]);
 
-  const columns = useMemo<ColumnDef<TableDataProps>[]>(
-    () => [
-      {
-        header: 'Email',
-        accessorKey: 'email',
-        enableSorting: true
-      },
-      {
-        header: 'User Wallet Address',
-        accessorKey: 'wallet_address',
-        enableSorting: true,
-        cell: (cell) => {
-          const address = cell.getValue() as string;
-          return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
-              {shortenAddress(address)}
-            </Link>
-          );
-        }
-      },
-      {
-        header: 'Denergy Wallet Address',
-        accessorKey: 'denergyWallet',
-        enableSorting: true,
-        cell: (cell) => {
-          const address = cell.getValue() as string;
-          return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
-              {shortenAddress(address)}
-            </Link>
-          );
-        }
-      },
-      {
-        header: 'Ethereum Wallet Address',
-        accessorKey: 'ethereumWallet',
-        enableSorting: true,
-        cell: (cell) => {
-          const address = cell.getValue() as string;
-          return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
-              {shortenAddress(address)}
-            </Link>
-          );
-        }
-      },
-      {
-        header: 'KYC Applicant ID',
-        accessorKey: 'applicantId',
-        enableSorting: true
-      },
-      {
-        header: 'KYC Verified',
-        accessorKey: 'is_verified',
-        enableSorting: true
-      },
-      // {
-      //   header: 'KYC Review Status',
-      //   accessorKey: 'reviewStatus',
-      //   enableSorting: true
-      // },
-      {
-        header: 'Date Registered',
-        accessorKey: 'date',
-        enableSorting: true,
-        cell: (cell) => formatDate(cell.getValue() as string)
+  const columns = useMemo<ColumnDef<TableDataProps>[]>(() => [
+    {
+      header: 'Email',
+      accessorKey: 'email',
+      enableSorting: true
+    },
+    {
+      header: 'User Wallet Address',
+      accessorKey: 'wallet_address',
+      enableSorting: true,
+      cell: (cell) => {
+        const address = cell.getValue() as string;
+        return (
+          <Link to={getBlockExploreLink(address)} target="_blank">
+            {shortenAddress(address)}
+          </Link>
+        );
       }
-    ],
-    []
-  );
+    },
+    {
+      header: 'Denergy Wallet Address',
+      accessorKey: 'denergyWallet',
+      enableSorting: true,
+      cell: (cell) => {
+        const address = cell.getValue() as string;
+        return (
+          <Link to={getBlockExploreLink(address)} target="_blank">
+            {shortenAddress(address)}
+          </Link>
+        );
+      }
+    },
+    {
+      header: 'Ethereum Wallet Address',
+      accessorKey: 'ethereumWallet',
+      enableSorting: true,
+      cell: (cell) => {
+        const address = cell.getValue() as string;
+        return (
+          <Link to={getBlockExploreLink(address)} target="_blank">
+            {shortenAddress(address)}
+          </Link>
+        );
+      }
+    },
+    {
+      header: 'KYC Applicant ID',
+      accessorKey: 'applicantId',
+      enableSorting: true
+    },
+    {
+      header: 'KYC Verified',
+      accessorKey: 'is_verified',
+      enableSorting: true
+    },
+    {
+      header: 'Date Registered',
+      accessorKey: 'date',
+      enableSorting: true,
+      cell: (cell) => formatDate(cell.getValue() as string)
+    },
+    {
+      header: 'KYC User Detail',
+      accessorKey: 'kycDetails', // This is now the entire object
+      cell: (info) => {
+        const detail = info.getValue() as any;
+        console.log("Rendering KYC Details:", detail);
+
+        // If no detail exists, return a placeholder or "N/A"
+        if (!detail) return '—'; // Placeholder for missing data
+
+        // Destructure the values you're looking for
+        const { fullResponse } = detail || {};
+        const infoSection = fullResponse?.info || {};  
+        const fixedInfo = fullResponse?.fixedInfo || {};
+        const review = fullResponse?.review || {};
+
+        // Additional logs for full response inspection
+        console.log("Full Response:", fullResponse);
+
+        return (
+          <Box>
+            <div><strong>First Name:</strong> {infoSection.firstName || 'N/A'}</div>
+            <div><strong>Last Name:</strong> {infoSection.lastName || 'N/A'}</div>
+            <div><strong>Date of Birth:</strong> {infoSection.dob || 'N/A'}</div>
+            <div><strong>Country:</strong> {infoSection.country || 'N/A'}</div>
+            <div><strong>Nationality:</strong> {fixedInfo.nationality || 'N/A'}</div>
+            <div><strong>Email:</strong> {detail?.email || 'N/A'}</div>
+            <div><strong>Review Status:</strong> {review?.reviewResult?.reviewAnswer || 'N/A'}</div>
+            <div><strong>IP Country:</strong> {detail?.ipCountry || 'N/A'}</div>
+          </Box>
+        );
+      }
+    }
+  ], []);
+
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
