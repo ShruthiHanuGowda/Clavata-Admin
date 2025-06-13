@@ -133,10 +133,10 @@ const allMenu: NavItemType = {
       icon: icons.GiftOutlined
     },
     {
-      id: 'beneficiary',
-      title: <FormattedMessage id="Beneficiary" />,
+      id: 'addressBook',
+      title: <FormattedMessage id="Address Book" />,
       type: 'item',
-      url: '/beneficiary',
+      url: '/address-book',
       icon: icons.UsergroupAddOutlined
     },
     {

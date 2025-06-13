@@ -37,6 +37,9 @@ import { LIST_BENEFICIARIES } from '../../../graphql/queries';
 import { ApolloClient, InMemoryCache, HttpLink, useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
+import { Link } from 'react-router-dom';
+import { getBlockExploreLink } from '../../../utils/explorer';
+import { shortenAddress } from '../../../utils/shortenAddress';
 
 const client = new ApolloClient({
   link: new HttpLink({
@@ -184,9 +187,11 @@ export default function transactionTable() {
 
   // Transform company data to fit column structure
   const transformedData =
-    data?.listBeneficiaries?.items.map((item: any) => ({
+    data?.listAddressBooks?.items.map((item: any) => ({
+      id: item.id,
       name: item.name,
-      wallet: item.wallet,
+      walletAddress: item.walletAddress,
+      beneficiaryAddress: item.beneficiaryAddress,
       chain: item.chain
     })) || [];
 
@@ -195,8 +200,10 @@ export default function transactionTable() {
     if (!searchTerm) return transformedData;
     return transformedData.filter(
       (item: any) =>
+        (item.id && item.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.wallet && item.wallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.walletAddress && item.walletAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.beneficiaryAddress && item.beneficiaryAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.chain && item.chain.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, transformedData]);
@@ -211,7 +218,27 @@ export default function transactionTable() {
       },
       {
         header: 'Wallet Address',
-        accessorKey: 'wallet'
+        accessorKey: 'walletAddress'
+        // cell: (cell) => {
+        //   const hash = cell.getValue() as string;
+        //   return (
+        //     <Link to={getBlockExploreLink(hash)} target="_blank">
+        //       {shortenAddress(hash)}
+        //     </Link>
+        //   );
+        // }
+      },
+      {
+        header: 'Beneficiary Address',
+        accessorKey: 'beneficiaryAddress'
+        // cell: (cell) => {
+        //   const hash = cell.getValue() as string;
+        //   return (
+        //     <Link to={getBlockExploreLink(hash)} target="_blank">
+        //       {shortenAddress(hash)}
+        //     </Link>
+        //   );
+        // }
       },
       {
         header: 'Chain',
