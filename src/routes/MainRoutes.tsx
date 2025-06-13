@@ -88,7 +88,7 @@ const MainRoutes = {
           element: <Airdrop />
         },
         {
-          path: '/beneficiary',
+          path: '/address-book',
           element: <Beneficiary />
         },
         {

@@ -134,11 +134,13 @@ export const LIST_AIRDROP_COLLECTIONS = gql`
 `;
 
 export const LIST_BENEFICIARIES = gql`
-  query listBeneficiaries {
-    listBeneficiaries {
+  query listAddressBooks {
+    listAddressBooks {
       items {
+        id
         name
-        wallet
+        beneficiaryAddress
+        walletAddress
         chain
       }
     }
