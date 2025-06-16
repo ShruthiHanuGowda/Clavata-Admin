@@ -31,6 +31,7 @@ const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/Ta
 const PlatformSettings = Loadable(lazy(() => import('pages/profiles/account/PlatformSettings')));
 const EvidentItems = Loadable(lazy(() => import('pages/evident-items')));
 const Beneficiary = Loadable(lazy(() => import('pages/beneficiary')));
+const Validator = Loadable(lazy(() => import('pages/validator')));
 const Blog = Loadable(lazy(() => import('pages/blog')));
 const BlogDetails = Loadable(lazy(() => import('pages/blogDetails')));
 
@@ -90,6 +91,10 @@ const MainRoutes = {
         {
           path: '/address-book',
           element: <Beneficiary />
+        },
+         {
+          path: '/validator',
+          element: <Validator />
         },
         {
           path: '/setting',

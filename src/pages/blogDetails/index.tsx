@@ -1,5 +1,13 @@
-import { Box, Button, Chip, CircularProgress, Container, Typography } from '@mui/material';
-import { useNavigate, useParams } from 'react-router-dom';
+import {
+  Box,
+  Chip,
+  CircularProgress,
+  Container,
+  Typography,
+  Paper,
+  Divider
+} from '@mui/material';
+import { useParams } from 'react-router-dom';
 import { useQuery, ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
 import { GET_BLOG_BY_ID } from 'graphql/queries';
 import Breadcrumbs from 'components/@extended/Breadcrumbs';
@@ -17,8 +25,6 @@ const client = new ApolloClient({
 
 export default function BlogDetails() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-
   const { data, loading, error } = useQuery(GET_BLOG_BY_ID, {
     variables: { id },
     client
@@ -26,7 +32,7 @@ export default function BlogDetails() {
 
   if (loading)
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
         <CircularProgress />
       </Box>
     );
@@ -34,24 +40,64 @@ export default function BlogDetails() {
 
   const blog = data?.getBlogs;
 
-  let breadcrumbLinks = [{ title: 'Home', to: APP_DEFAULT_PATH }, { title: 'blog', to: '/blog' }, { title: blog.title }];
+  const breadcrumbLinks = [
+    { title: 'Home', to: APP_DEFAULT_PATH },
+    { title: 'Blog', to: '/blog' },
+    { title: blog.title }
+  ];
 
   return (
     <>
       <Breadcrumbs custom heading={blog.title} links={breadcrumbLinks} />
       <Container maxWidth="md">
-        <Box mt={4}>
-          <Typography variant="h4" gutterBottom>
+        <Paper elevation={2} sx={{ p: { xs: 2, sm: 4 }, mt: 4, mb: 6, borderRadius: 3 }}>
+          <Typography variant="h3" fontWeight={600} gutterBottom>
             {blog.title}
           </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            By {blog.author_name} • {blog.status}
+
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            By <strong>{blog.author_name}</strong> • Status: <em>{blog.status}</em>
           </Typography>
-          <Box mt={2}>{blog.tags?.map((tag: string, i: number) => <Chip key={i} label={tag} size="small" sx={{ mr: 0.5 }} />)}</Box>
-          <Box mt={4}>
-            <div dangerouslySetInnerHTML={{ __html: blog.content }} />
-          </Box>
-        </Box>
+
+          {blog.tags?.length > 0 && (
+            <Box mt={2} mb={3} display="flex" flexWrap="wrap" gap={1}>
+              {blog.tags.map((tag: string, i: number) => (
+                <Chip key={i} label={tag} variant="outlined" />
+              ))}
+            </Box>
+          )}
+
+          {blog.image_url && (
+            <Box mb={4} display="flex" justifyContent="center">
+              <img
+                src={blog.image_url}
+                alt="Blog Cover"
+                style={{
+                  maxWidth: '100%',
+                  borderRadius: '12px',
+                  boxShadow: '0px 4px 12px rgba(0,0,0,0.1)'
+                }}
+              />
+            </Box>
+          )}
+
+          <Divider sx={{ my: 3 }} />
+
+          <Box
+            sx={{
+              typography: 'body1',
+              lineHeight: 1.7,
+              '& h1, h2, h3': {
+                mt: 3,
+                mb: 1
+              },
+              '& p': {
+                mb: 2
+              }
+            }}
+            dangerouslySetInnerHTML={{ __html: blog.content }}
+          />
+        </Paper>
       </Container>
     </>
   );
