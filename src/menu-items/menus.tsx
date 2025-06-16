@@ -140,6 +140,13 @@ const allMenu: NavItemType = {
       icon: icons.UsergroupAddOutlined
     },
     {
+      id: 'validator',
+      title: <FormattedMessage id="Validator" />,
+      type: 'item',
+      url: '/validator',
+      icon: icons.UsergroupAddOutlined
+    },
+    {
       id: 'blog',
       title: <FormattedMessage id="Blog" />,
       type: 'item',
