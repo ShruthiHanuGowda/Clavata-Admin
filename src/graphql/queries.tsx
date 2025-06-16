@@ -205,6 +205,7 @@ export const CREATE_BLOG = gql`
     createBlogs(input: $createblogsinput) {
       id
       title
+      image_url
       content
       author_name
       tags
@@ -218,6 +219,7 @@ export const UPDATE_BLOG = gql`
     updateBlogs(input: $updateblogsinput) {
       id
       title
+      image_url
       content
       author_name
       tags

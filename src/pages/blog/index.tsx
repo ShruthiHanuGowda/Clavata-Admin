@@ -26,6 +26,7 @@ import { useNavigate } from 'react-router';
 const initialFormState = {
   id: '',
   title: '',
+  image_url: "",
   content: '',
   author_name: '',
   tags: [] as string[],
