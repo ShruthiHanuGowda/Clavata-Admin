@@ -188,6 +188,7 @@ export const LIST_BLOGS = gql`
   query listBlogs {
     listBlogs {
       items {
+        image_url
         id
         title
         content
@@ -237,6 +238,7 @@ export const GET_BLOG_BY_ID = gql`
   query GetBlogById($id: String!) {
     getBlogs(id: $id) {
       id
+      image_url
       title
       content
       author_name

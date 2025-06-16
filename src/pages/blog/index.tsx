@@ -54,6 +54,11 @@ export default function BlogManager() {
   const [showForm, setShowForm] = useState(false);
   const [selectedBlogId, setSelectedBlogId] = useState<string | null>(null);
 
+  //image state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageURL, setImageURL] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+
   const blogs = data?.listBlogs?.items || [];
   const navigate = useNavigate();
 
@@ -74,7 +79,8 @@ export default function BlogManager() {
       content: form.content,
       author_name: form.author_name,
       tags: form.tags,
-      status: form.status
+      status: form.status,
+      image_url: imageURL
     };
 
     if (isEdit) {
@@ -85,6 +91,8 @@ export default function BlogManager() {
 
     await refetch();
     setForm(initialFormState);
+    setImageFile(null);
+    setImageURL('');
     setTagInput('');
     setShowForm(false);
   };
@@ -100,6 +108,28 @@ export default function BlogManager() {
     setForm({ ...form, tags: form.tags.filter((tag) => tag !== tagToDelete) });
   };
 
+  const handleImageUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      setUploading(true);
+      const res = await fetch('https://lgv3ps53le.execute-api.me-central-1.amazonaws.com/default/uploadFile', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      setImageURL(data.image_url);
+    } catch (error) {
+      console.error('Image upload error:', error);
+      alert('Failed to upload image.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" mb={2}>
@@ -110,6 +140,33 @@ export default function BlogManager() {
         <Box mb={4} p={2} border="1px solid #ccc" borderRadius={2}>
           <Typography variant="h6" gutterBottom>{isEdit ? 'Edit Blog' : 'Create Blog'}</Typography>
           <Stack spacing={2}>
+            {/* image upload */}
+            <Box>
+              <InputLabel>Upload Image</InputLabel>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setImageFile(file);
+                    await handleImageUpload(file);
+                  }
+                }}
+              />
+              {uploading && (
+                <Typography color="text.secondary">Uploading...</Typography>
+              )}
+              {imageURL && (
+                <Box mt={1}>
+                  <img
+                    src={imageURL}
+                    alt="Uploaded preview"
+                    style={{ maxWidth: '200px', borderRadius: 8 }}
+                  />
+                </Box>
+              )}
+            </Box>
             <TextField label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} fullWidth />
             <Box>
               <Box mb={1}>Content</Box>
@@ -117,6 +174,8 @@ export default function BlogManager() {
             </Box>
 
             <TextField label="Author" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })} fullWidth />
+
+
 
             <Box>
               <InputLabel>Tags</InputLabel>
@@ -160,10 +219,11 @@ export default function BlogManager() {
       )}
 
       <TableContainer>
-           <Typography variant="h5">Blog Manager</Typography>
+        <Typography variant="h5">Blog Manager</Typography>
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell>Image</TableCell>
               <TableCell>Title</TableCell>
               <TableCell>Author</TableCell>
               <TableCell>Status</TableCell>
@@ -174,6 +234,17 @@ export default function BlogManager() {
           <TableBody>
             {blogs.map((blog: any) => (
               <TableRow key={blog.id}>
+                <TableCell>
+                  {blog.image_url ? (
+                    <img
+                      src={blog.image_url}
+                      alt="Blog Thumbnail"
+                      style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }}
+                    />
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">No image</Typography>
+                  )}
+                </TableCell>
                 <TableCell>{blog.title}</TableCell>
                 <TableCell>{blog.author_name}</TableCell>
                 <TableCell>{blog.status}</TableCell>

@@ -44,6 +44,15 @@ export default function BlogDetails() {
           <Typography variant="h4" gutterBottom>
             {blog.title}
           </Typography>
+          {blog.image_url && (
+            <Box mt={4} display="flex" justifyContent="center">
+              <img
+                src={blog.image_url}
+                alt="Blog"
+                style={{ maxWidth: '100%', borderRadius: 12 }}
+              />
+            </Box>
+          )}
           <Typography variant="subtitle1" color="text.secondary">
             By {blog.author_name} • {blog.status}
           </Typography>
