@@ -73,6 +73,7 @@ export default function BlogManager() {
     }
     setShowForm(true);
   };
+  console.log("Final imageURL before save:", imageURL);
 
   const handleSave = async () => {
     const input = {
@@ -83,6 +84,9 @@ export default function BlogManager() {
       status: form.status,
       image_url: imageURL
     };
+
+    console.log('Saving blog with input:', input); // 👈 Log full payload
+    console.log("Final imageURL before save:", imageURL);
 
     if (isEdit) {
       await updateBlog({ variables: { updateblogsinput: { ...input, id: form.id } } });
@@ -110,19 +114,24 @@ export default function BlogManager() {
   };
 
   const handleImageUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
+    console.log("file.type", file.type)
     try {
       setUploading(true);
-      const res = await fetch('https://lgv3ps53le.execute-api.me-central-1.amazonaws.com/default/uploadFile', {
+
+      const res = await fetch('https://ku5yu8b4ob.execute-api.me-central-1.amazonaws.com/default/uploadImage', {
         method: 'POST',
-        body: formData
+        headers: {
+          'Content-Type': file.type,
+        },
+        body: file,
       });
 
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
-      setImageURL(data.image_url);
+      console.log("image data data", data)
+      console.log("data.url", data.data.url)
+      setImageURL(data.data.url); // Adjust based on actual response
+      setForm(prev => ({ ...prev, image_url: data.data.url }));
     } catch (error) {
       console.error('Image upload error:', error);
       alert('Failed to upload image.');
