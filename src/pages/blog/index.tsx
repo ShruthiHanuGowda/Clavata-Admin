@@ -109,20 +109,45 @@ export default function BlogManager() {
     setForm({ ...form, tags: form.tags.filter((tag) => tag !== tagToDelete) });
   };
 
-  const handleImageUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
+  // const handleImageUpload = async (file: File) => {
+  //   const formData = new FormData();
+  //   formData.append('file', file);
 
+  //   try {
+  //     setUploading(true);
+  //     const res = await fetch('https://lgv3ps53le.execute-api.me-central-1.amazonaws.com/default/uploadFile', {
+  //       method: 'POST',
+  //       body: formData
+  //     });
+
+  //     if (!res.ok) throw new Error('Upload failed');
+  //     const data = await res.json();
+  //     setImageURL(data.image_url);
+  //   } catch (error) {
+  //     console.error('Image upload error:', error);
+  //     alert('Failed to upload image.');
+  //   } finally {
+  //     setUploading(false);
+  //   }
+  // };
+
+  const handleImageUpload = async (file: File) => {
+    console.log("file.type", file.type)
     try {
       setUploading(true);
-      const res = await fetch('https://lgv3ps53le.execute-api.me-central-1.amazonaws.com/default/uploadFile', {
+
+      const res = await fetch('https://ku5yu8b4ob.execute-api.me-central-1.amazonaws.com/default/uploadImage', {
         method: 'POST',
-        body: formData
+        headers: {
+          'Content-Type': file.type, 
+        },
+        body: file, 
       });
 
       if (!res.ok) throw new Error('Upload failed');
+
       const data = await res.json();
-      setImageURL(data.image_url);
+      setImageURL(data.image_url); // Adjust based on actual response
     } catch (error) {
       console.error('Image upload error:', error);
       alert('Failed to upload image.');
