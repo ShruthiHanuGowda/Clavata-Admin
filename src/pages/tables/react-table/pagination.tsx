@@ -237,30 +237,30 @@ export default function PaginationTable() {
           );
         }
       },
-      {
-        header: 'Denergy Wallet Address',
-        accessorKey: 'denergyWallet',
-        cell: (cell) => {
-          const address = cell.getValue() as string;
-          return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
-              {shortenAddress(address)}
-            </Link>
-          );
-        }
-      },
-      {
-        header: 'Ethereum Wallet Address',
-        accessorKey: 'ethereumWallet',
-        cell: (cell) => {
-          const address = cell.getValue() as string;
-          return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
-              {shortenAddress(address)}
-            </Link>
-          );
-        }
-      },
+      // {
+      //   header: 'Denergy Wallet Address',
+      //   accessorKey: 'denergyWallet',
+      //   cell: (cell) => {
+      //     const address = cell.getValue() as string;
+      //     return (
+      //       <Link to={getBlockExploreLink(address)} target="_blank">
+      //         {shortenAddress(address)}
+      //       </Link>
+      //     );
+      //   }
+      // },
+      // {
+      //   header: 'Ethereum Wallet Address',
+      //   accessorKey: 'ethereumWallet',
+      //   cell: (cell) => {
+      //     const address = cell.getValue() as string;
+      //     return (
+      //       <Link to={getBlockExploreLink(address)} target="_blank">
+      //         {shortenAddress(address)}
+      //       </Link>
+      //     );
+      //   }
+      // },
       {
         header: 'KYB Applicant ID',
         accessorKey: 'applicantId'

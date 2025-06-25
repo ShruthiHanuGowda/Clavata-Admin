@@ -233,32 +233,32 @@ export default function PaginationUserTable() {
         );
       }
     },
-    {
-      header: 'Denergy Wallet Address',
-      accessorKey: 'denergyWallet',
-      enableSorting: true,
-      cell: (cell) => {
-        const address = cell.getValue() as string;
-        return (
-          <Link to={getBlockExploreLink(address)} target="_blank">
-            {shortenAddress(address)}
-          </Link>
-        );
-      }
-    },
-    {
-      header: 'Ethereum Wallet Address',
-      accessorKey: 'ethereumWallet',
-      enableSorting: true,
-      cell: (cell) => {
-        const address = cell.getValue() as string;
-        return (
-          <Link to={getBlockExploreLink(address)} target="_blank">
-            {shortenAddress(address)}
-          </Link>
-        );
-      }
-    },
+    // {
+    //   header: 'Denergy Wallet Address',
+    //   accessorKey: 'denergyWallet',
+    //   enableSorting: true,
+    //   cell: (cell) => {
+    //     const address = cell.getValue() as string;
+    //     return (
+    //       <Link to={getBlockExploreLink(address)} target="_blank">
+    //         {shortenAddress(address)}
+    //       </Link>
+    //     );
+    //   }
+    // },
+    // {
+    //   header: 'Ethereum Wallet Address',
+    //   accessorKey: 'ethereumWallet',
+    //   enableSorting: true,
+    //   cell: (cell) => {
+    //     const address = cell.getValue() as string;
+    //     return (
+    //       <Link to={getBlockExploreLink(address)} target="_blank">
+    //         {shortenAddress(address)}
+    //       </Link>
+    //     );
+    //   }
+    // },
     {
       header: 'KYC Applicant ID',
       accessorKey: 'applicantId',
