@@ -92,7 +92,7 @@ const MainRoutes = {
           path: '/address-book',
           element: <Beneficiary />
         },
-         {
+        {
           path: '/validator',
           element: <Validator />
         },

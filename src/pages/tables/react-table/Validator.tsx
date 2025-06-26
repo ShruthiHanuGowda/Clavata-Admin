@@ -32,6 +32,9 @@ interface Validator {
     validatorName: string;
     commissionRate: number;
     totalStakeAmount: number;
+    totalStakedNFT: number;
+    totalStakedWatt: number;
+    validatorAge: number;
     status: string;
 }
 
@@ -191,6 +194,9 @@ export default function Validator() {
             wallet: v.validatorId,
             commissionRate: v.commissionRate,
             totalStakeAmount: v.totalStakeAmount,
+            totalStakedNFT: v.totalStakedNFT,
+            totalStakedWatt: v.totalStakedWatt,
+            validatorAge: v.validatorAge,
             status: v.status
         }));
     }, [validators]);
@@ -225,6 +231,21 @@ export default function Validator() {
             header: 'Total Stake Amount',
             accessorKey: 'totalStakeAmount',
             cell: ({ getValue }) => Number(getValue()).toLocaleString()
+        },
+        {
+            header: 'Total Staked NFT',
+            accessorKey: 'totalStakedNFT',
+            cell: ({ getValue }) => Number(getValue()).toLocaleString()
+        },
+        {
+            header: 'Total Staked WATT',
+            accessorKey: 'totalStakedWatt',
+            cell: ({ getValue }) => Number(getValue()).toLocaleString()
+        },
+        {
+            header: 'Validator Age',
+            accessorKey: 'validatorAge',
+            // cell: ({ getValue }) => Number(getValue()).toLocaleString()
         },
         {
             header: 'Status',

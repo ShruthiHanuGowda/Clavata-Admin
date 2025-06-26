@@ -19,7 +19,9 @@ import {
   MobileOutlined,
   UsbOutlined,
   UsergroupAddOutlined,
-  ReadOutlined
+  ReadOutlined,
+  BlockOutlined,
+  ContainerOutlined
 } from '@ant-design/icons';
 
 // icons
@@ -37,7 +39,9 @@ const icons = {
   MobileOutlined,
   UsbOutlined,
   UsergroupAddOutlined,
-  ReadOutlined
+  ReadOutlined,
+  BlockOutlined,
+  ContainerOutlined
 };
 
 // ==============================|| MENU ITEMS - SUPPORT ||============================== //
@@ -144,7 +148,7 @@ const allMenu: NavItemType = {
       title: <FormattedMessage id="Validator" />,
       type: 'item',
       url: '/validator',
-      icon: icons.UsergroupAddOutlined
+      icon: icons.ContainerOutlined
     },
     {
       id: 'blog',
