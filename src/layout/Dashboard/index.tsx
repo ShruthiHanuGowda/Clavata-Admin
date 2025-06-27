@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
 // material-ui
@@ -20,6 +20,7 @@ import AuthGuard from 'utils/route-guard/AuthGuard';
 import { MenuOrientation } from 'config';
 import useConfig from 'hooks/useConfig';
 import { handlerDrawerOpen, useGetMenuMaster } from 'api/menu';
+import { Context } from '../../App';
 
 // ==============================|| MAIN LAYOUT ||============================== //
 
@@ -33,6 +34,13 @@ export default function DashboardLayout() {
   const { container, miniDrawer, menuOrientation } = useConfig();
 
   const isHorizontal = menuOrientation === MenuOrientation.HORIZONTAL && !downLG;
+  const context: any = useContext(Context);
+
+  const { setSearchTerm }: any = context;
+
+  useEffect(() => {
+    if (pathname) setSearchTerm('');
+  }, [pathname, setSearchTerm]);
 
   // set media wise responsive drawer
   useEffect(() => {
