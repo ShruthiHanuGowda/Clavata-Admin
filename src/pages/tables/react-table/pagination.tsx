@@ -212,7 +212,7 @@ export default function PaginationTable() {
         (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.ethereumWallet && item.ethereumWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.is_verified_kyb && item.is_verified_kyb.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.is_verified_kyb?.toString() && item.is_verified_kyb.toString().includes(searchTerm.toLowerCase())) ||
         (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, transformedData]);
