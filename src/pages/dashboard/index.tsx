@@ -10,7 +10,7 @@ import Blockchain from 'sections/dashboard/blockchain';
 import DWallet from 'sections/dashboard/d-wallet';
 import DTerminal from 'sections/dashboard/d-terminal';
 import StatisticsCard from 'sections/dashboard';
-import { getStats, getCounters, getCharts } from 'utils/api/denergytestnet';
+import { getStats, getCounters, getCharts, getNewAccounts } from 'utils/api/denergytestnet';
 import EnergyConsumption from 'sections/dashboard/energy-consumption';
 
 const countersToAnalytics: any = {
@@ -41,6 +41,11 @@ export default function Dashboard() {
       )
     );
     getCharts().then((data) => setCharts(data.sections));
+    getNewAccounts().then((data) => {
+      if (data?.chart && Array.isArray(data.chart) && data.chart.length > 0 && 'value' in data.chart[0]) {
+        setStats({ ...stats, newAccountsIN24Hours: data.chart[0].value });
+      }
+    });
   }, []);
 
   return (
@@ -53,7 +58,7 @@ export default function Dashboard() {
           totalTransaction={stats?.total_transactions}
           totalTransaction24={stats?.transactions_today}
           totalWallets={stats?.total_addresses}
-          totalWallets24="0"
+          totalWallets24={stats?.newAccountsIN24Hours ?? 0}
         />
       </Grid>
       {/* <Grid item xs={12} lg={12}>
