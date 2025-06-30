@@ -49,7 +49,7 @@ function ReactTable({ data, columns, top, onRowClick }: { data: TableDataProps[]
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         debugTable: true,
-        getSortedRowModel: getSortedRowModel()
+        getSortedRowModel: getSortedRowModel(), // Ensure sorting is active
     });
 
     let headers: LabelKeyObject[] = [];
@@ -269,13 +269,12 @@ export default function Validator() {
                             <Divider />
                             <h4>Delegators</h4>
                             {delegators.map((delegator, index) => (
-                                // <p key={index}>{delegator.name}</p>
                                 <>
-                                    <p><strong>Delegator Address:</strong> {delegator.delegatorAddress}</p>
+                                    <p key={index}><strong>Delegator Address:</strong> {delegator.delegatorAddress}</p>
                                     <p><strong>Reward Earned:</strong> {delegator.rewardsEarned}</p>
                                     <p><strong>Staked Amount:</strong> {delegator.stakedAmount}</p>
                                     <p><strong>Staked NFT:</strong> {delegator.stakedNFT}</p>
-                                    <p><strong>stakedWatt:</strong> {delegator.stakedWatt}</p>
+                                    <p><strong>Staked WATT:</strong> {delegator.stakedWatt}</p>
                                 </>
                             ))}
                         </div>
