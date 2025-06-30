@@ -56,4 +56,5 @@ export type TableDataProps = {
   avatar: number;
   skills: string[];
   time: string[];
+  validatorId: string;
 };
