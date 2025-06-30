@@ -68,17 +68,21 @@ function EnergyConsumption() {
 
         {analytics && (
           <>
-            <Grid item xs={12} sm={6} md={6}>
-              <AnalyticCard title={analytics.total.title} count={analytics.total.count} isLoss={analytics.total.isLoss} />
-            </Grid>
-            <Grid item xs={12} sm={6} md={6}>
-              <AnalyticCard title={analytics.daily.title} count={analytics.daily.count} isLoss={analytics?.daily.isLoss} />
-            </Grid>
+            {analytics.total && (
+              <Grid item xs={12} sm={6} md={6}>
+                <AnalyticCard title={analytics.total.title} count={analytics.total.count} isLoss={analytics.total.isLoss} />
+              </Grid>
+            )}
+            {analytics.daily && (
+              <Grid item xs={12} sm={6} md={6}>
+                <AnalyticCard title={analytics.daily.title} count={analytics.daily.count} isLoss={analytics?.daily.isLoss} />
+              </Grid>
+            )}
           </>
         )}
 
         <Grid item xs={12}>
-          <LineChartCard title="Daily New User Accounts" slot={timeSlot} data={chartData} handleSlotChange={handleTimeSlotChange} />
+          <LineChartCard title="Energy Consumption (MWh)" slot={timeSlot} data={chartData} handleSlotChange={handleTimeSlotChange} />
         </Grid>
       </Grid>
     </MainCard>
