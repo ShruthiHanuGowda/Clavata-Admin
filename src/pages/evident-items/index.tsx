@@ -15,9 +15,11 @@ import Divider from '@mui/material/Divider';
 import { LabelKeyObject } from 'react-csv/lib/core';
 import { useMemo } from 'react';
 
-import { useQuery } from '@apollo/client';
+import { ApolloClient, HttpLink, InMemoryCache, useQuery } from '@apollo/client';
 import { LIST_EVIDENT_ITEMS } from 'graphql/queries';
 import { formatDate } from 'utils/date';
+import { ON_CREATE_EVIDENT_ITEM, ON_UPDATE_EVIDENT_ITEM, ON_DELETE_EVIDENT_ITEM } from 'graphql/subscriptions';
+import { WebSocketLink } from '@apollo/client/link/ws';
 
 export default function EvidentItems() {
   const [data, setData] = useState([]);
@@ -25,15 +27,68 @@ export default function EvidentItems() {
     notifyOnNetworkStatusChange: true
   });
 
+  const wsLink = new WebSocketLink({
+    uri: import.meta.env.VITE_APP_EVIDENT_GRAPHQL_WS_URL,
+    options: {
+      reconnect: true,
+      connectionParams: {
+        'x-api-key': import.meta.env.VITE_APP_EVIDENT_GRAPHQL_API_KEY
+      }
+    }
+  });
+
+  const client = new ApolloClient({
+    link: wsLink,
+    cache: new InMemoryCache()
+  });
+
   useEffect(() => {
     if (listEvidentResponse.data?.listEvidentItems?.items) setData(listEvidentResponse.data.listEvidentItems.items);
   }, [listEvidentResponse]);
 
   useEffect(() => {
-    data.forEach((d: any) => {
-      console.log(JSON.parse(d.asset)?.issue?.deviceDetails?.deviceType?.deviceGroup);
+    const createSub = client.subscribe({ query: ON_CREATE_EVIDENT_ITEM }).subscribe({
+      next({ data }) {
+        const newItem = data?.onCreateEvidentItems;
+        if (newItem) {
+          setData((prevData) => [...prevData, newItem]);
+        }
+      },
+      error(err) {
+        console.error('Create subscription error:', err);
+      }
     });
-  }, [data]);
+
+    const updateSub = client.subscribe({ query: ON_UPDATE_EVIDENT_ITEM }).subscribe({
+      next({ data }) {
+        const updatedItem = data?.onUpdateEvidentItems;
+        if (updatedItem) {
+          setData((prevData) => prevData.map((item) => (item.uid === updatedItem.uid ? updatedItem : item)));
+        }
+      },
+      error(err) {
+        console.error('Update subscription error:', err);
+      }
+    });
+
+    const deleteSub = client.subscribe({ query: ON_DELETE_EVIDENT_ITEM }).subscribe({
+      next({ data }) {
+        const deletedItem = data?.onDeleteEvidentItems;
+        if (deletedItem) {
+          setData((prevData) => prevData.filter((item) => item.uid !== deletedItem.uid));
+        }
+      },
+      error(err) {
+        console.error('Delete subscription error:', err);
+      }
+    });
+
+    return () => {
+      createSub.unsubscribe();
+      updateSub.unsubscribe();
+      deleteSub.unsubscribe();
+    };
+  }, [client]);
 
   const columns: any = useMemo<ColumnDef<any>[]>(
     () => [
