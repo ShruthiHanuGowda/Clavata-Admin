@@ -22,7 +22,7 @@ import { useNavigate } from 'react-router-dom';
 // ==============================|| HEADER - CONTENT ||============================== //
 
 export default function HeaderContent() {
-   const navigate = useNavigate();
+  const navigate = useNavigate();
   const { menuOrientation } = useConfig();
   const downLG = useMediaQuery((theme: Theme) => theme.breakpoints.down('lg'));
 
@@ -42,6 +42,12 @@ export default function HeaderContent() {
           Blog
         </Button>
       </Tooltip> */}
+      {/* <Button variant="contained" color="primary" size="small">
+        Connect Wallet
+      </Button> */}
+      <Box>
+        <appkit-button label="Connect Wallet" />
+      </Box>
       <Notification />
       <Message />
       {!downLG && <FullScreen />}

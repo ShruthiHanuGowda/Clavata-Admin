@@ -51,7 +51,7 @@ export default function EvidentItems() {
       next({ data }) {
         const newItem = data?.onCreateEvidentItems;
         if (newItem) {
-          setData((prevData) => [...prevData, newItem]);
+          setData((prevData) => [...prevData, newItem] as any);
         }
       },
       error(err) {
@@ -63,7 +63,7 @@ export default function EvidentItems() {
       next({ data }) {
         const updatedItem = data?.onUpdateEvidentItems;
         if (updatedItem) {
-          setData((prevData) => prevData.map((item) => (item.uid === updatedItem.uid ? updatedItem : item)));
+          setData((prevData) => prevData.map((item: any) => (item.uid === updatedItem.uid ? updatedItem : item)) as any);
         }
       },
       error(err) {
@@ -75,7 +75,7 @@ export default function EvidentItems() {
       next({ data }) {
         const deletedItem = data?.onDeleteEvidentItems;
         if (deletedItem) {
-          setData((prevData) => prevData.filter((item) => item.uid !== deletedItem.uid));
+          setData((prevData) => prevData.filter((item: any) => item.uid !== deletedItem.uid));
         }
       },
       error(err) {
