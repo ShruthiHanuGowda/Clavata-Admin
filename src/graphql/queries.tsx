@@ -185,8 +185,8 @@ export const LIST_NON_MINTED_NFTS = gql`
 `;
 
 export const LIST_NFT_PENDING_MINT_ITEMS = gql`
-  query ListNftPendingMintItems($nextToken: String) {
-    listNftPendingMintItems(nextToken: $nextToken) {
+  query ListNftPendingMintItems($nextToken: String, $filter: TableNftPendingMintItemsFilterInput) {
+    listNftPendingMintItems(nextToken: $nextToken, filter: $filter) {
       items {
         assetId
         id

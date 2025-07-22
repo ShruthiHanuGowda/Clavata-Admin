@@ -134,10 +134,14 @@ export default function PendingMintedNftsTable() {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [inputVolume, setInputVolume] = useState('');
+  const [isMinting, setIsMinting] = useState(false);
 
   // Query for Non-Minted NFTs
-  const { error, data } = useQuery(LIST_NFT_PENDING_MINT_ITEMS, {
-    variables: { nextToken: null }
+  const { loading, error, data, fetchMore, refetch } = useQuery(LIST_NFT_PENDING_MINT_ITEMS, {
+    variables: {
+      nextToken: null,
+      filter: { status: { eq: 'pending' } }
+    }
   });
 
   const [updateNft] = useMutation(UPDATE_NFT_PENDING_MINT);
@@ -161,6 +165,7 @@ export default function PendingMintedNftsTable() {
 
   const mintNft = async (item: any) => {
     try {
+      setIsMinting(true);
       const provider = new BrowserProvider(window.ethereum as any);
       const signer = await provider.getSigner();
       const contract = new Contract(item.contractAddress, ERC1155_ABI, signer);
@@ -191,6 +196,7 @@ export default function PendingMintedNftsTable() {
           input: mutationInput
         }
       });
+      refetch();
     } catch (error: any) {
       console.log('error - ', error);
       let errorMessage = 'Failed to mint NFT';
@@ -210,6 +216,8 @@ export default function PendingMintedNftsTable() {
         variant: 'alert',
         alert: { color: 'error' }
       } as SnackbarProps);
+    } finally {
+      setIsMinting(false);
     }
   };
 
@@ -243,6 +251,7 @@ export default function PendingMintedNftsTable() {
       { header: 'Token ID', accessorKey: 'tokenId' },
       { header: 'Volume', accessorKey: 'volume' },
       { header: 'status', accessorKey: 'status' },
+      { header: 'type', accessorKey: 'type' },
       {
         header: 'txHash',
         accessorKey: 'txHash',
@@ -293,7 +302,14 @@ export default function PendingMintedNftsTable() {
         <DialogTitle>Confirm NFT Minting</DialogTitle>
         <DialogContent>
           <Box mt={2}>
-            <TextField label="Volume" type="number" fullWidth value={inputVolume} onChange={(e) => setInputVolume(e.target.value)} />
+            <TextField
+              label="Volume"
+              type="number"
+              disabled
+              fullWidth
+              value={inputVolume}
+              onChange={(e) => setInputVolume(e.target.value)}
+            />
           </Box>
         </DialogContent>
         <DialogActions>
@@ -318,8 +334,9 @@ export default function PendingMintedNftsTable() {
             }}
             variant="contained"
             color="primary"
+            disabled={isMinting}
           >
-            Confirm & Mint
+            {isMinting ? 'Minting...' : 'Confirm & Mint'}
           </Button>
         </DialogActions>
       </Dialog>
