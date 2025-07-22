@@ -184,6 +184,39 @@ export const LIST_NON_MINTED_NFTS = gql`
   }
 `;
 
+export const LIST_NFT_PENDING_MINT_ITEMS = gql`
+  query ListNftPendingMintItems($nextToken: String) {
+    listNftPendingMintItems(nextToken: $nextToken) {
+      items {
+        assetId
+        id
+        type
+        volume
+        updatedAt
+        txHash
+        tokenId
+        status
+        recipientWalletAddress
+        createdAt
+        contractAddress
+      }
+      nextToken
+    }
+  }
+`;
+
+export const UPDATE_NFT_PENDING_MINT = gql`
+  mutation UpdateNftPendingMintItems($input: UpdateNftPendingMintItemsInput!) {
+    updateNftPendingMintItems(input: $input) {
+      id
+      status
+      txHash
+      volume
+      updatedAt
+    }
+  }
+`;
+
 export const LIST_BLOGS = gql`
   query listBlogs {
     listBlogs {
