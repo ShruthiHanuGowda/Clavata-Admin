@@ -156,10 +156,10 @@ export default function PendingMintedNftsTable() {
     if (!searchTerm) return transformedData;
     return transformedData.filter(
       (item: any) =>
-        item.contractAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.recipientWalletAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.txHash.toLowerCase().includes(searchTerm.toLowerCase())
+        item?.contractAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item?.assetId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item?.recipientWalletAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item?.txHash?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [searchTerm, transformedData]);
 
