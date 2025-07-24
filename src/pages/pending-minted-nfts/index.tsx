@@ -10,7 +10,13 @@ import TablePagination from 'components/third-party/react-table/TablePagination'
 import ScrollX from 'components/ScrollX';
 import CSVExport from 'components/third-party/react-table/CSVExport';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
-import { LIST_NFT_PENDING_MINT_ITEMS, UPDATE_NFT_PENDING_MINT } from 'graphql/queries';
+import {
+  CREATE_MINTED_NFT,
+  GET_MINTED_NFT_BY_ASSET_ID,
+  LIST_NFT_PENDING_MINT_ITEMS,
+  UPDATE_MINTED_NFT_BY_ASSET_ID,
+  UPDATE_NFT_PENDING_MINT
+} from 'graphql/queries';
 import { formatDate } from 'utils/date';
 import { Button } from '@mui/material';
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
@@ -145,6 +151,17 @@ export default function PendingMintedNftsTable() {
   });
 
   const [updateNft] = useMutation(UPDATE_NFT_PENDING_MINT);
+  const [createMintedNft] = useMutation(CREATE_MINTED_NFT);
+  const [updateMintedNftByAssetId] = useMutation(UPDATE_MINTED_NFT_BY_ASSET_ID);
+  const {
+    data: mintedNftData,
+    loading: mintedNftLoading,
+    error: mintedNftError,
+    refetch: refetchMintedNft
+  } = useQuery(GET_MINTED_NFT_BY_ASSET_ID, {
+    variables: { assetId: '' },
+    skip: true
+  });
 
   if (error) {
     console.error('Error fetching pending minted NFTs:', error);
@@ -169,45 +186,66 @@ export default function PendingMintedNftsTable() {
       const provider = new BrowserProvider(window.ethereum as any);
       const signer = await provider.getSigner();
       const contract = new Contract(item.contractAddress, ERC1155_ABI, signer);
+      const currentTokenId = await contract.currentTokenId();
 
+      const { data: existing } = await refetchMintedNft({
+        assetId: String(item.assetId)
+      });
+
+      const existingMintedNft = existing?.getMintedNfts;
       let tx;
       if (item.type === 'mint') {
         tx = await contract.mint(address, item.volume);
-        console.log('tx - ', tx);
       } else if (item.type === 'addVolume') {
         tx = await contract.addVolume(BigInt(item.tokenId), item.volume, address);
       }
 
       const receipt = await tx.wait();
 
-      const mutationInput: any = {
+      const mutationInput = {
         id: item.id,
         status: 'minted',
         txHash: receipt?.hash,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        ...(item.type === 'addVolume' && {
+          volume: (item.volume || 0) + (item.existingVolume || 0)
+        })
       };
 
-      if (item.type === 'addVolume') {
-        mutationInput.volume = (item.volume || 0) + (item.existingVolume || 0);
+      if (existingMintedNft) {
+        const updatedMintedVolume = parseInt(existingMintedNft.mintedVolume || '0') + (item.volume || 0);
+
+        await updateMintedNftByAssetId({
+          variables: {
+            input: {
+              assetId: item.assetId,
+              mintedVolume: updatedMintedVolume.toString(),
+              updatedAt: new Date().toISOString()
+            }
+          }
+        });
+      } else {
+        const mintedNftInput = {
+          assetId: item.assetId,
+          tokenId: BigInt(currentTokenId).toString(),
+          contractAddress: item.contractAddress,
+          mintedVolume: String(item.volume),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        await createMintedNft({ variables: { input: mintedNftInput } });
       }
 
-      await updateNft({
-        variables: {
-          input: mutationInput
-        }
-      });
+      await updateNft({ variables: { input: mutationInput } });
       refetch();
     } catch (error: any) {
-      console.log('error - ', error);
-      let errorMessage = 'Failed to mint NFT';
+      console.error('Mint error:', error);
 
-      if (error?.error?.message) {
-        errorMessage = error.error.message;
-      } else if (error?.data?.message) {
-        errorMessage = error.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
+      let errorMessage = 'Failed to mint NFT';
+      if (error?.error?.message) errorMessage = error.error.message;
+      else if (error?.data?.message) errorMessage = error.data.message;
+      else if (error?.message) errorMessage = error.message;
 
       openSnackbar({
         open: true,

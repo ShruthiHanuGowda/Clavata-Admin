@@ -217,6 +217,44 @@ export const UPDATE_NFT_PENDING_MINT = gql`
   }
 `;
 
+export const GET_MINTED_NFT_BY_ASSET_ID = gql`
+  query GetMintedNftByAssetId($assetId: String!) {
+    getMintedNfts(assetId: $assetId) {
+      assetId
+      contractAddress
+      tokenId
+      mintedVolume
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_MINTED_NFT = gql`
+  mutation CreateMintedNfts($input: CreateMintedNftsInput!) {
+    createMintedNfts(input: $input) {
+      assetId
+      tokenId
+      contractAddress
+      mintedVolume
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_MINTED_NFT_BY_ASSET_ID = gql`
+  mutation UpdateMintedNfts($input: UpdateMintedNftsInput!) {
+    updateMintedNfts(input: $input) {
+      assetId
+      tokenId
+      mintedVolume
+      contractAddress
+      createdAt
+      updatedAt
+    }
+  }
+`;
 export const LIST_BLOGS = gql`
   query listBlogs {
     listBlogs {
