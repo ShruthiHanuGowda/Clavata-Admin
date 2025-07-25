@@ -206,6 +206,7 @@ export default function PendingMintedNftsTable() {
         id: item.id,
         status: 'minted',
         txHash: receipt?.hash,
+        tokenId: BigInt(currentTokenId).toString(),
         updatedAt: new Date().toISOString(),
         ...(item.type === 'addVolume' && {
           volume: (item.volume || 0) + (item.existingVolume || 0)
