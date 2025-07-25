@@ -27,6 +27,7 @@ import { SnackbarProps } from 'types/snackbar';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
   const context = useContext(Context);
@@ -202,16 +203,16 @@ export default function PendingMintedNftsTable() {
 
       const receipt = await tx.wait();
 
-      const mutationInput = {
-        id: item.id,
-        status: 'minted',
-        txHash: receipt?.hash,
-        tokenId: BigInt(currentTokenId).toString(),
-        updatedAt: new Date().toISOString(),
-        ...(item.type === 'addVolume' && {
-          volume: (item.volume || 0) + (item.existingVolume || 0)
-        })
-      };
+      // const mutationInput = {
+      //   id: item.id,
+      //   status: 'minted',
+      //   txHash: receipt?.hash,
+      //   tokenId: BigInt(currentTokenId).toString(),
+      //   updatedAt: new Date().toISOString(),
+      //   ...(item.type === 'addVolume' && {
+      //     volume: (item.volume || 0) + (item.existingVolume || 0)
+      //   })
+      // };
 
       if (existingMintedNft) {
         const updatedMintedVolume = parseInt(existingMintedNft.mintedVolume || '0') + (item.volume || 0);
@@ -238,7 +239,14 @@ export default function PendingMintedNftsTable() {
         await createMintedNft({ variables: { input: mintedNftInput } });
       }
 
-      await updateNft({ variables: { input: mutationInput } });
+      // await updateNft({ variables: { input: mutationInput } });
+      const payload = {
+        id: item.id,
+        assetId: item.assetId,
+        tokenId: BigInt(currentTokenId).toString(),
+        txHash: receipt?.hash
+      };
+      await axios.post(import.meta.env.VITE_APP_EVIDENT_UPDATE_URL, payload);
       refetch();
     } catch (error: any) {
       console.error('Mint error:', error);
@@ -322,7 +330,7 @@ export default function PendingMintedNftsTable() {
               setOpenDialog(true);
             }}
           >
-            {isConnected ? 'Mint' : 'Connect Wallet to Mint'}
+            {isConnected ? (cell.row.original.type === 'mint' ? 'Mint' : 'Add Volume') : 'Connect Wallet to Mint'}
           </Button>
         )
       }
