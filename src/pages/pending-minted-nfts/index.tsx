@@ -196,7 +196,7 @@ export default function PendingMintedNftsTable() {
       const existingMintedNft = existing?.getMintedNfts;
       let tx;
       if (item.type === 'mint') {
-        tx = await contract.mint(address, item.volume);
+        tx = await contract.mint(item.recipientWalletAddress, item.volume);
       } else if (item.type === 'addVolume') {
         tx = await contract.addVolume(BigInt(item.tokenId), item.volume, address);
       }
