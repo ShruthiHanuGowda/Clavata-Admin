@@ -25,6 +25,7 @@ const DTerminalTransactionHistory = Loadable(lazy(() => import('pages/dterminal/
 const Airdrop = Loadable(lazy(() => import('pages/airdrop/Airdrop')));
 const Setting = Loadable(lazy(() => import('pages/setting')));
 const NonMintedNFT = Loadable(lazy(() => import('pages/non-minted-nfts/index')));
+const PendingMintedNfts = Loadable(lazy(() => import('pages/pending-minted-nfts/index')));
 const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
 const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRole')));
 const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/TabSettings')));
@@ -71,6 +72,10 @@ const MainRoutes = {
         {
           path: '/non-minted-nft',
           element: <NonMintedNFT />
+        },
+        {
+          path: '/pending-minted-nft',
+          element: <PendingMintedNfts />
         },
         {
           path: '/transaction',

@@ -109,6 +109,13 @@ const allMenu: NavItemType = {
       icon: icons.FileTextOutlined
     },
     {
+      id: 'pending-minted-nft',
+      title: <FormattedMessage id="Pending-Minted NFTs" />,
+      type: 'item',
+      url: '/pending-minted-nft',
+      icon: icons.FileTextOutlined
+    },
+    {
       id: 'transaction',
       title: <FormattedMessage id="Transaction" />,
       type: 'item',

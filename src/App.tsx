@@ -10,6 +10,11 @@ import ScrollTop from 'components/ScrollTop';
 import Snackbar from 'components/@extended/Snackbar';
 import Notistack from 'components/third-party/Notistack';
 
+//appkit
+import { createAppKit } from '@reown/appkit/react';
+import { EthersAdapter } from '@reown/appkit-adapter-ethers';
+import { arbitrum, mainnet } from '@reown/appkit/networks';
+
 // auth-provider
 // import { JWTProvider as AuthProvider } from 'contexts/JWTContext';
 import { AWSCognitoProvider as AuthProvider } from 'contexts/AWSCognitoContext';
@@ -19,6 +24,7 @@ import { createContext, useContext, useState } from 'react';
 import { ApolloClient, ApolloProvider, InMemoryCache, HttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { SettingsProvider } from 'contexts/SettingsContext';
+import { CHAINS } from 'chains';
 
 // ==============================|| APP - THEME, ROUTER, LOCAL ||============================== //
 
@@ -36,8 +42,46 @@ interface ContextType {
   setSearchTerm: any;
 }
 
+const networks = CHAINS;
+
+const metadata = {
+  name: 'Denergy',
+  description: 'Denergy',
+  url: 'https://www.admin-panel-fe-new.denergychain.com',
+  icons: ['https://avatars.githubusercontent.com/u/37784886']
+};
+
 // Create the Context
 export const Context = createContext<ContextType | undefined>(undefined);
+
+const projectId = import.meta.env.VITE_APP_PROJECT_ID || '95e67c8c9df44db006eec4af5da5d494';
+
+export const reownModal = createAppKit({
+  adapters: [new EthersAdapter()],
+  networks,
+  metadata,
+  projectId,
+  allowUnsupportedChain: false,
+  enableAuthLogger: false,
+  chainImages: {
+    4442: '/images/watt.png'
+  },
+  themeVariables: {
+    // '--w3m-color-mix': '#292929',
+    // '--w3m-color-mix-strength': 40,
+    // '--w3m-accent': '#81c8c3',
+    '--w3m-border-radius-master': '1.5px'
+  },
+  features: {
+    swaps: false,
+    onramp: false,
+    send: false,
+    socials: false,
+    email: false,
+    analytics: false,
+    history: false
+  }
+});
 
 // Dynamic Authorization Header using setContext
 const authLink = setContext((_, { headers }) => {
