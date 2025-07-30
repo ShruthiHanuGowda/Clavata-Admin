@@ -1,6 +1,4 @@
-import { useContext, useMemo } from 'react';
-
-// material-ui
+import { useState, useContext, useMemo } from 'react';
 import Grid from '@mui/material/Grid';
 import Divider from '@mui/material/Divider';
 import Table from '@mui/material/Table';
@@ -12,27 +10,14 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Stack from '@mui/material/Stack';
 import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
-// third-party
-import {
-  useReactTable,
-  getCoreRowModel,
-  getPaginationRowModel,
-  ColumnDef,
-  HeaderGroup,
-  flexRender,
-  getSortedRowModel
-} from '@tanstack/react-table';
-
-// project-import
+import { Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Button, Typography } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import { useReactTable, getCoreRowModel, getPaginationRowModel, ColumnDef, HeaderGroup, flexRender, getSortedRowModel } from '@tanstack/react-table';
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
 import { CSVExport, TablePagination } from 'components/third-party/react-table';
-
-// types
 import { TableDataProps } from 'types/table';
 import { LabelKeyObject } from 'react-csv/lib/core';
-
-//query
 import { useQuery } from '@apollo/client';
 import { LIST_USER_WALLETS } from 'graphql/queries';
 import { CardContent } from '@mui/material';
@@ -41,14 +26,12 @@ import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
+import React from 'react';
 
-// ==============================|| REACT TABLE ||============================== //
-
-function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
+function ReactTable({ data, columns, top, handleOpenDetail, expandedRowId }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean, handleOpenDetail: (id: string) => void, expandedRowId: string | null }) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
-  console.log('user data', data);
-  console.log('user column', columns);
+
   const table = useReactTable({
     data,
     columns,
@@ -58,28 +41,14 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
     debugTable: true
   });
 
-  let headers: LabelKeyObject[] = [];
-  table.getAllColumns().map((columns) =>
-    headers.push({
-      label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
-      // @ts-ignore
-      key: columns.columnDef.accessorKey
-    })
-  );
-
   const handleSearch = (term: any) => {
     setSearchTerm(term);
   };
 
   return (
     <>
-      <MainCard
-        title={' '}
-        content={false}
-        secondary={<CSVExport {...{ data, headers, filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
-      >
+      <MainCard title={' '} content={false} secondary={<CSVExport {...{ data, headers: [], filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}>
         <CardContent sx={{ p: 2 }}>
-          {/* Add Search component below the title */}
           <Box sx={{ mb: 2 }}>
             <Search onSearch={handleSearch} />
           </Box>
@@ -97,7 +66,6 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                   />
                 </Box>
               )}
-
               <TableContainer>
                 <Table>
                   <TableHead>
@@ -106,11 +74,11 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                         {headerGroup.headers.map((header) => (
                           <TableCell key={header.id} {...header.column.columnDef.meta}>
                             <span
-                              onClick={header.column.getToggleSortingHandler()} // Handle sorting when clicked
+                              onClick={header.column.getToggleSortingHandler()}
                               style={{ cursor: 'pointer', fontWeight: 'bold' }}
                             >
                               {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                              { {
+                              {{
                                 asc: ' 🔼',
                                 desc: ' 🔽'
                               }[header.column.getIsSorted() as string] ?? null}
@@ -121,19 +89,47 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                     ))}
                   </TableHead>
                   <TableBody>
-                    {table.getRowModel().rows.map((row) => (
-                      <TableRow key={row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
+                    {table.getRowModel().rows.map((row: any) => (
+                      <React.Fragment key={row.id}>
+                        <TableRow>
+                          {row.getVisibleCells().map((cell: any) => (
+                            <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+
+                        </TableRow>
+
+                        {/* Show KYC Details to the extreme right if the row is expanded */}
+                        {expandedRowId === row.id && (
+                          <TableRow>
+                            <TableCell colSpan={row.getVisibleCells().length} sx={{ padding: 0 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', padding: '10px', position: 'relative' }}>
+                                <Box sx={{
+                                  width: '250px',
+                                  padding: '10px',
+                                  backgroundColor: '#f9f9f9',
+                                  borderRadius: '8px',
+                                  boxShadow: 2
+                                }}>
+                                  <div><strong>First Name:</strong> {row.original.kycDetails?.fullResponse?.info.firstName || 'N/A'}</div>
+                                  <div><strong>Last Name:</strong> {row.original.kycDetails?.fullResponse?.info.lastName || 'N/A'}</div>
+                                  <div><strong>Date of Birth:</strong> {row.original.kycDetails?.fullResponse?.info.dob || 'N/A'}</div>
+                                  <div><strong>Country:</strong> {row.original.kycDetails?.fullResponse?.info.country || 'N/A'}</div>
+                                  <div><strong>Nationality:</strong> {row.original.kycDetails?.fullResponse?.fixedInfo.nationality || 'N/A'}</div>
+                                  <div><strong>Email:</strong> {row.original.kycDetails?.email || 'N/A'}</div>
+                                  <div><strong>Review Status:</strong> {row.original.kycDetails?.fullResponse?.review?.reviewResult?.reviewAnswer || 'N/A'}</div>
+                                  <div><strong>IP Country:</strong> {row.original.kycDetails?.ipCountry || 'N/A'}</div>
+                                </Box>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
-
               {!top && (
                 <>
                   <Divider />
@@ -163,12 +159,17 @@ export default function PaginationUserTable() {
   const context = useContext(Context);
   const { searchTerm }: any = context;
   const { data, loading, error } = useQuery(LIST_USER_WALLETS);
-  console.log('Query user Response:', { loading, error, data });
+
   if (error) {
     console.error('GraphQL Error:', error);
   }
 
-  // Transform company data to fit column structure
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+
+  const handleOpenDetail = (id: string) => {
+    setExpandedRowId(prevId => (prevId === id ? null : id));
+  };
+
   const transformedData = data?.listUserWalletAddresses?.items.map((item: any) => {
     let parsedUserDetail = null;
     try {
@@ -178,15 +179,10 @@ export default function PaginationUserTable() {
         } else if (typeof item.kycDetails === 'object') {
           parsedUserDetail = item.kycDetails;
         }
-      } else {
-        console.warn('kycDetails is missing or null for:', item.emailAddress || item.userWallet);
       }
     } catch (e) {
       console.error('Failed to parse kycDetails for:', item.emailAddress || item.userWallet, 'Error:', e);
     }
-    // Log parsedUserDetail to debug
-    console.log('Parsed User Detail:', parsedUserDetail);
-
     return {
       email: item.emailAddress,
       wallet_address: item.userWallet,
@@ -196,11 +192,10 @@ export default function PaginationUserTable() {
       is_verified: item.is_verified,
       reviewStatus: item.reviewStatus,
       date: item.date,
-      kycDetails: parsedUserDetail // Store the entire parsedUserDetail
+      kycDetails: parsedUserDetail
     };
   }) || [];
 
-  // Filter data based on search term
   const filteredData = useMemo(() => {
     if (!searchTerm) return transformedData;
     return transformedData.filter(
@@ -233,32 +228,6 @@ export default function PaginationUserTable() {
         );
       }
     },
-    // {
-    //   header: 'Denergy Wallet Address',
-    //   accessorKey: 'denergyWallet',
-    //   enableSorting: true,
-    //   cell: (cell) => {
-    //     const address = cell.getValue() as string;
-    //     return (
-    //       <Link to={getBlockExploreLink(address)} target="_blank">
-    //         {shortenAddress(address)}
-    //       </Link>
-    //     );
-    //   }
-    // },
-    // {
-    //   header: 'Ethereum Wallet Address',
-    //   accessorKey: 'ethereumWallet',
-    //   enableSorting: true,
-    //   cell: (cell) => {
-    //     const address = cell.getValue() as string;
-    //     return (
-    //       <Link to={getBlockExploreLink(address)} target="_blank">
-    //         {shortenAddress(address)}
-    //       </Link>
-    //     );
-    //   }
-    // },
     {
       header: 'KYC Applicant ID',
       accessorKey: 'applicantId',
@@ -277,34 +246,11 @@ export default function PaginationUserTable() {
     },
     {
       header: 'KYC User Detail',
-      accessorKey: 'kycDetails', // This is now the entire object
+      accessorKey: 'kycDetails',
       cell: (info) => {
         const detail = info.getValue() as any;
-        console.log("Rendering KYC Details:", detail);
-
-        // If no detail exists, return a placeholder or "N/A"
-        if (!detail) return '—'; // Placeholder for missing data
-
-        // Destructure the values you're looking for
-        const { fullResponse } = detail || {};
-        const infoSection = fullResponse?.info || {};  
-        const fixedInfo = fullResponse?.fixedInfo || {};
-        const review = fullResponse?.review || {};
-
-        // Additional logs for full response inspection
-        console.log("Full Response:", fullResponse);
-
         return (
-          <Box>
-            <div><strong>First Name:</strong> {infoSection.firstName || 'N/A'}</div>
-            <div><strong>Last Name:</strong> {infoSection.lastName || 'N/A'}</div>
-            <div><strong>Date of Birth:</strong> {infoSection.dob || 'N/A'}</div>
-            <div><strong>Country:</strong> {infoSection.country || 'N/A'}</div>
-            <div><strong>Nationality:</strong> {fixedInfo.nationality || 'N/A'}</div>
-            <div><strong>Email:</strong> {detail?.email || 'N/A'}</div>
-            <div><strong>Review Status:</strong> {review?.reviewResult?.reviewAnswer || 'N/A'}</div>
-            <div><strong>IP Country:</strong> {detail?.ipCountry || 'N/A'}</div>
-          </Box>
+          <Button onClick={() => handleOpenDetail(info.row.id)}>View Details</Button>
         );
       }
     }
@@ -313,7 +259,7 @@ export default function PaginationUserTable() {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <ReactTable {...{ data: filteredData, columns }} />
+        <ReactTable {...{ data: filteredData, columns, handleOpenDetail, expandedRowId }} />
       </Grid>
     </Grid>
   );
