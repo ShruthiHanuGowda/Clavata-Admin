@@ -19,12 +19,13 @@ import { arbitrum, mainnet } from '@reown/appkit/networks';
 // import { JWTProvider as AuthProvider } from 'contexts/JWTContext';
 import { AWSCognitoProvider as AuthProvider } from 'contexts/AWSCognitoContext';
 import { LIST_USER_WALLETS } from 'graphql/queries';
-import { useQuery } from '@apollo/client';
+import { createHttpLink, useQuery } from '@apollo/client';
 import { createContext, useContext, useState } from 'react';
 import { ApolloClient, ApolloProvider, InMemoryCache, HttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { SettingsProvider } from 'contexts/SettingsContext';
 import { CHAINS } from 'chains';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 // ==============================|| APP - THEME, ROUTER, LOCAL ||============================== //
 
@@ -84,29 +85,22 @@ export const reownModal = createAppKit({
 });
 
 // Dynamic Authorization Header using setContext
-const authLink = setContext((_, { headers }) => {
-  // Retrieve token from local state (or Context API, if needed)
-  const token = localStorage.getItem('serviceToken'); // Or get from state/context
-  // const token = session.getAccessToken().getJwtToken();
-  // console.log("test token", token)
-  return {
-    headers: {
-      ...headers,
-      'x-api-key': API_Key,
-      Authorization: token ? `Bearer ${token}` : ''
-    }
-  };
-});
+// const authLink = setContext((_, { headers }) => {
+//   // Retrieve token from local state (or Context API, if needed)
+//   const token = localStorage.getItem('serviceToken'); // Or get from state/context
+//   // const token = session.getAccessToken().getJwtToken();
+//   // console.log("test token", token)
+//   return {
+//     headers: {
+//       ...headers,
+//       'x-api-key': API_Key,
+//       Authorization: token ? `Bearer ${token}` : ''
+//     }
+//   };
+// });
 
-// Apollo Client with dynamic headers
-const client = new ApolloClient({
-  link: new HttpLink({
-    uri: import.meta.env.VITE_APP_GRAPHQL_URL,
-    headers: {
-      'x-api-key': import.meta.env.VITE_APP_GRAPHQL_API_KEY
-    }
-  }),
-  cache: new InMemoryCache()
+const httpLink = createHttpLink({
+  uri: import.meta.env.VITE_APP_GRAPHQL_URL
 });
 
 // Create Apollo Client instances for each GraphQL endpoint
@@ -133,9 +127,28 @@ const client = new ApolloClient({
 export default function App() {
   // const context = useContext(Context);
   // const { authenticationToken }: any = context;
-  const [authenticationToken, setAuthenticationToken] = useState('');
+  const [authenticationToken, setAuthenticationToken] = useState(() => {
+    return localStorage.getItem('serviceToken') || '';
+  });
   const [searchTerm, setSearchTerm] = useState('');
   console.log('authenticationToken', authenticationToken);
+
+  const authLink = setContext(async (_, { headers }) => {
+    // const token = localStorage.getItem('serviceToken');
+    console.log('[Cognito ID Token]', authenticationToken);
+    return {
+      headers: {
+        ...headers,
+        Authorization: authenticationToken || ''
+      }
+    };
+  });
+
+  // Apollo Client with dynamic headers
+  const client = new ApolloClient({
+    link: authLink.concat(httpLink),
+    cache: new InMemoryCache()
+  });
   return (
     <ApolloProvider client={client}>
       <Context.Provider value={{ authenticationToken, setAuthenticationToken, searchTerm, setSearchTerm }}>

@@ -106,10 +106,13 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
     await new Promise<void>((resolve, reject) => {
       usr.authenticateUser(authData, {
         onSuccess: (session: CognitoUserSession) => {
-          const accessToken = session.getAccessToken().getJwtToken();
-          // console.log("Access Token: ", accessToken);
-          setSession(accessToken);
-          setAuthenticationToken(accessToken)
+          // const accessToken = session.getAccessToken().getJwtToken();
+          // // console.log("Access Token: ", accessToken);
+          // setSession(accessToken);
+          // setAuthenticationToken(accessToken)
+          const idToken = session.getIdToken().getJwtToken();
+          setSession(idToken);
+          setAuthenticationToken(idToken);
           localStorage.setItem('username', authData.getUsername());
           dispatch({
             type: LOGIN,
