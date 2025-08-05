@@ -1,23 +1,17 @@
-import {
-  Box,
-  Chip,
-  CircularProgress,
-  Container,
-  Typography,
-  Paper,
-  Divider
-} from '@mui/material';
+import { Box, Chip, CircularProgress, Container, Typography, Paper, Divider } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import { useQuery, ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
 import { GET_BLOG_BY_ID } from 'graphql/queries';
 import Breadcrumbs from 'components/@extended/Breadcrumbs';
 import { APP_DEFAULT_PATH } from 'config';
 
+const token = localStorage.getItem('serviceToken');
 const client = new ApolloClient({
   link: new HttpLink({
     uri: import.meta.env.VITE_APP_BLOG_GRAPHQL_URL,
     headers: {
-      'x-api-key': import.meta.env.VITE_APP_BLOG_GRAPHQL_API_KEY
+      // 'x-api-key': import.meta.env.VITE_APP_BLOG_GRAPHQL_API_KEY
+      Authorization: token ? `Bearer ${token}` : ''
     }
   }),
   cache: new InMemoryCache()
@@ -40,11 +34,7 @@ export default function BlogDetails() {
 
   const blog = data?.getBlogs;
 
-  const breadcrumbLinks = [
-    { title: 'Home', to: APP_DEFAULT_PATH },
-    { title: 'Blog', to: '/blog' },
-    { title: blog.title }
-  ];
+  const breadcrumbLinks = [{ title: 'Home', to: APP_DEFAULT_PATH }, { title: 'Blog', to: '/blog' }, { title: blog.title }];
 
   return (
     <>
