@@ -26,18 +26,20 @@ import { useNavigate } from 'react-router';
 const initialFormState = {
   id: '',
   title: '',
-  image_url: "",
+  image_url: '',
   content: '',
   author_name: '',
   tags: [] as string[],
   status: 'Draft'
 };
 
+const token = localStorage.getItem('serviceToken');
 const client = new ApolloClient({
   link: new HttpLink({
     uri: import.meta.env.VITE_APP_BLOG_GRAPHQL_URL,
     headers: {
-      'x-api-key': import.meta.env.VITE_APP_BLOG_GRAPHQL_API_KEY
+      // 'x-api-key': import.meta.env.VITE_APP_BLOG_GRAPHQL_API_KEY
+      Authorization: token ? `Bearer ${token}` : ''
     }
   }),
   cache: new InMemoryCache()
@@ -73,7 +75,7 @@ export default function BlogManager() {
     }
     setShowForm(true);
   };
-  console.log("Final imageURL before save:", imageURL);
+  console.log('Final imageURL before save:', imageURL);
 
   const handleSave = async () => {
     const input = {
@@ -86,7 +88,7 @@ export default function BlogManager() {
     };
 
     console.log('Saving blog with input:', input); // 👈 Log full payload
-    console.log("Final imageURL before save:", imageURL);
+    console.log('Final imageURL before save:', imageURL);
 
     if (isEdit) {
       await updateBlog({ variables: { updateblogsinput: { ...input, id: form.id } } });
@@ -114,24 +116,24 @@ export default function BlogManager() {
   };
 
   const handleImageUpload = async (file: File) => {
-    console.log("file.type", file.type)
+    console.log('file.type', file.type);
     try {
       setUploading(true);
 
       const res = await fetch('https://ku5yu8b4ob.execute-api.me-central-1.amazonaws.com/default/uploadImage', {
         method: 'POST',
         headers: {
-          'Content-Type': file.type,
+          'Content-Type': file.type
         },
-        body: file,
+        body: file
       });
 
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
-      console.log("image data data", data)
-      console.log("data.url", data.data.url)
+      console.log('image data data', data);
+      console.log('data.url', data.data.url);
       setImageURL(data.data.url); // Adjust based on actual response
-      setForm(prev => ({ ...prev, image_url: data.data.url }));
+      setForm((prev) => ({ ...prev, image_url: data.data.url }));
     } catch (error) {
       console.error('Image upload error:', error);
       alert('Failed to upload image.');
@@ -143,12 +145,16 @@ export default function BlogManager() {
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" mb={2}>
-        <Button variant="contained" onClick={() => handleOpen()}>Create Blog</Button>
+        <Button variant="contained" onClick={() => handleOpen()}>
+          Create Blog
+        </Button>
       </Box>
 
       {showForm && (
         <Box mb={4} p={2} border="1px solid #ccc" borderRadius={2}>
-          <Typography variant="h6" gutterBottom>{isEdit ? 'Edit Blog' : 'Create Blog'}</Typography>
+          <Typography variant="h6" gutterBottom>
+            {isEdit ? 'Edit Blog' : 'Create Blog'}
+          </Typography>
           <Stack spacing={2}>
             {/* image upload */}
             <Box>
@@ -164,16 +170,10 @@ export default function BlogManager() {
                   }
                 }}
               />
-              {uploading && (
-                <Typography color="text.secondary">Uploading...</Typography>
-              )}
+              {uploading && <Typography color="text.secondary">Uploading...</Typography>}
               {imageURL && (
                 <Box mt={1}>
-                  <img
-                    src={imageURL}
-                    alt="Uploaded preview"
-                    style={{ maxWidth: '200px', borderRadius: 8 }}
-                  />
+                  <img src={imageURL} alt="Uploaded preview" style={{ maxWidth: '200px', borderRadius: 8 }} />
                 </Box>
               )}
             </Box>
@@ -183,9 +183,12 @@ export default function BlogManager() {
               <ReactQuill theme="snow" value={form.content} onChange={(value) => setForm({ ...form, content: value })} />
             </Box>
 
-            <TextField label="Author" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })} fullWidth />
-
-
+            <TextField
+              label="Author"
+              value={form.author_name}
+              onChange={(e) => setForm({ ...form, author_name: e.target.value })}
+              fullWidth
+            />
 
             <Box>
               <InputLabel>Tags</InputLabel>
@@ -217,12 +220,19 @@ export default function BlogManager() {
             </FormControl>
 
             <Stack direction="row" spacing={2}>
-              <Button variant="outlined" onClick={() => {
-                setShowForm(false);
-                setForm(initialFormState);
-                setTagInput('');
-              }}>Cancel</Button>
-              <Button variant="contained" onClick={handleSave}>{isEdit ? 'Update' : 'Create'}</Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setShowForm(false);
+                  setForm(initialFormState);
+                  setTagInput('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button variant="contained" onClick={handleSave}>
+                {isEdit ? 'Update' : 'Create'}
+              </Button>
             </Stack>
           </Stack>
         </Box>
@@ -246,13 +256,11 @@ export default function BlogManager() {
               <TableRow key={blog.id}>
                 <TableCell>
                   {blog.image_url ? (
-                    <img
-                      src={blog.image_url}
-                      alt="Blog Thumbnail"
-                      style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }}
-                    />
+                    <img src={blog.image_url} alt="Blog Thumbnail" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }} />
                   ) : (
-                    <Typography variant="body2" color="text.secondary">No image</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      No image
+                    </Typography>
                   )}
                 </TableCell>
                 <TableCell>{blog.title}</TableCell>
@@ -265,8 +273,12 @@ export default function BlogManager() {
                 </TableCell>
                 <TableCell>
                   <Stack direction="row" spacing={1}>
-                    <Button size="small" onClick={() => navigate(`/blog/${blog.id}`)}>View</Button>
-                    <Button size="small" onClick={() => handleOpen(blog)}>Edit</Button>
+                    <Button size="small" onClick={() => navigate(`/blog/${blog.id}`)}>
+                      View
+                    </Button>
+                    <Button size="small" onClick={() => handleOpen(blog)}>
+                      Edit
+                    </Button>
                     <Button
                       size="small"
                       color="error"

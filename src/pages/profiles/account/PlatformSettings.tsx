@@ -1,30 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Button,
-  Grid,
-  Stack,
-  TextField,
-  Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions
-} from '@mui/material';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Button, Grid, Stack, TextField, Typography, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { ApolloClient, HttpLink, InMemoryCache, useQuery, useMutation } from '@apollo/client';
 
 import MainCard from 'components/MainCard';
 import { LIST_PLATFORM_SETTINGS, UPDATE_PLATFORM_SETTINGS } from 'graphql/queries';
+import createApolloClient from '../../../utils/createApolloClient';
 
 // Apollo Client setup
-const client = new ApolloClient({
-  link: new HttpLink({
-    uri: import.meta.env.VITE_APP_PLATFORM_GRAPHQL_URL,
-    headers: {
-      'x-api-key': import.meta.env.VITE_APP_PLATFORM_GRAPHQL_API_KEY,
-    },
-  }),
-  cache: new InMemoryCache(),
-});
+// const token = localStorage.getItem('serviceToken');
+// const client = new ApolloClient({
+//   link: new HttpLink({
+//     uri: import.meta.env.VITE_APP_PLATFORM_GRAPHQL_URL,
+//     headers: {
+//       // 'x-api-key': import.meta.env.VITE_APP_PLATFORM_GRAPHQL_API_KEY,
+//       Authorization: token ? `Bearer ${token}` : ''
+//     }
+//   }),
+//   cache: new InMemoryCache()
+// });
 
 // Types
 interface PlatformSetting {
@@ -40,6 +33,8 @@ interface PlatformSettingsData {
 }
 
 export default function PlatformSettings() {
+  const client = useMemo(() => createApolloClient(import.meta.env.VITE_APP_PLATFORM_GRAPHQL_URL), []);
+
   const { loading, error, data } = useQuery<PlatformSettingsData>(LIST_PLATFORM_SETTINGS, { client });
 
   const [platformSettings, setPlatformSettings] = useState<PlatformSetting[]>([]);
@@ -54,9 +49,7 @@ export default function PlatformSettings() {
   }, [data]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
-    const updatedSettings = platformSettings.map((item) =>
-      item.keyName === key ? { ...item, value: e.target.value } : item
-    );
+    const updatedSettings = platformSettings.map((item) => (item.keyName === key ? { ...item, value: e.target.value } : item));
     setPlatformSettings(updatedSettings);
   };
 
@@ -69,9 +62,9 @@ export default function PlatformSettings() {
               input: {
                 pId: setting.pId,
                 keyName: setting.keyName,
-                value: setting.value,
-              },
-            },
+                value: setting.value
+              }
+            }
           })
         )
       );

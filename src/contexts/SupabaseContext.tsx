@@ -116,9 +116,10 @@ export const SupabseProvider = ({ children }: { children: ReactElement }) => {
       console.error(error);
       throw error;
     }
-
+    setSession(null);
     dispatch({
-      type: LOGOUT
+      type: LOGOUT,
+      payload: { isLoggedIn: false, user: null }
     });
   }, []);
 

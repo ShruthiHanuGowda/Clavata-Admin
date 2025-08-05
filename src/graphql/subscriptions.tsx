@@ -6,7 +6,6 @@ export const ON_CREATE_EVIDENT_ITEM = gql`
       uid
       asset
       volume
-      # include all other fields you need
     }
   }
 `;

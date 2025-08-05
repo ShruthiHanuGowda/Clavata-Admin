@@ -40,16 +40,18 @@ import { Context } from 'App';
 import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from '../../../utils/explorer';
 import { shortenAddress } from '../../../utils/shortenAddress';
+import createApolloClient from '../../../utils/createApolloClient';
+// import useAuthToken from 'hooks/useAuthToken';
 
-const client = new ApolloClient({
-  link: new HttpLink({
-    uri: import.meta.env.VITE_APP_BENEFICIARY_GRAPHQL_URL,
-    headers: {
-      'x-api-key': import.meta.env.VITE_APP_BENEFICIARY_GRAPHQL_API_KEY
-    }
-  }),
-  cache: new InMemoryCache()
-});
+// const client = new ApolloClient({
+//   link: new HttpLink({
+//     uri: import.meta.env.VITE_APP_BENEFICIARY_GRAPHQL_URL,
+//     headers: {
+//       // 'x-api-key': import.meta.env.VITE_APP_BENEFICIARY_GRAPHQL_API_KEY
+//     }
+//   }),
+//   cache: new InMemoryCache()
+// });
 
 // ==============================|| REACT TABLE ||============================== //
 
@@ -174,6 +176,9 @@ export default function transactionTable() {
   // const data: TableDataProps[] = makeData(100);
   const context = useContext(Context);
   const { searchTerm, setSearchTerm }: any = context;
+
+  const client = useMemo(() => createApolloClient(import.meta.env.VITE_APP_BENEFICIARY_GRAPHQL_URL), []);
+
   const { loading, error, data } = useQuery(LIST_BENEFICIARIES, {
     client,
     variables: { nextToken: null }
