@@ -35,6 +35,8 @@ const Beneficiary = Loadable(lazy(() => import('pages/beneficiary')));
 const Validator = Loadable(lazy(() => import('pages/validator')));
 const Blog = Loadable(lazy(() => import('pages/blog')));
 const BlogDetails = Loadable(lazy(() => import('pages/blogDetails')));
+const UserKYCDetail = Loadable(lazy(() => import('components/UserKYCDetail')));
+const CompanyKybDetail = Loadable(lazy(() => import('components/CompanyKybDetail')));
 
 // ==============================|| MAIN ROUTING ||============================== //
 
@@ -52,6 +54,14 @@ const MainRoutes = {
         {
           path: '/user',
           element: <User />
+        },
+        {
+          path: '/companies/:id',
+          element: <CompanyKybDetail />
+        },
+        {
+          path: '/user/:id',
+          element: <UserKYCDetail />
         },
         {
           path: '/companies',

@@ -248,9 +248,14 @@ export default function PaginationUserTable() {
       header: 'KYC User Detail',
       accessorKey: 'kycDetails',
       cell: (info) => {
-        const detail = info.getValue() as any;
+        console.log("kycDetails applicantId", info)
+        const applicantId = info.row.original.applicantId;
         return (
-          <Button onClick={() => handleOpenDetail(info.row.id)}>View Details</Button>
+          <Link to={`/user/${applicantId}`}>
+            <button style={{ padding: '6px 12px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+              View Details
+            </button>
+          </Link>
         );
       }
     }
