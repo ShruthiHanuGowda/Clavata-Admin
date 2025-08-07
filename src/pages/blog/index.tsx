@@ -33,23 +33,25 @@ const initialFormState = {
   status: 'Draft'
 };
 
-const token = localStorage.getItem('serviceToken');
-const client = new ApolloClient({
-  link: new HttpLink({
-    uri: import.meta.env.VITE_APP_BLOG_GRAPHQL_URL,
-    headers: {
-      // 'x-api-key': import.meta.env.VITE_APP_BLOG_GRAPHQL_API_KEY
-      Authorization: token ? `Bearer ${token}` : ''
-    }
-  }),
-  cache: new InMemoryCache()
-});
+// const token = localStorage.getItem('serviceToken');
+// const client = new ApolloClient({
+//   link: new HttpLink({
+//     uri: import.meta.env.VITE_APP_BLOG_GRAPHQL_URL,
+//     headers: {
+//       // 'x-api-key': import.meta.env.VITE_APP_BLOG_GRAPHQL_API_KEY
+//       Authorization: token ? `Bearer ${token}` : ''
+//     }
+//   }),
+//   cache: new InMemoryCache()
+// });
 
 export default function BlogManager() {
-  const { data, refetch } = useQuery(LIST_BLOGS, { client });
-  const [createBlog] = useMutation(CREATE_BLOG, { client });
-  const [updateBlog] = useMutation(UPDATE_BLOG, { client });
-  const [deleteBlog] = useMutation(DELETE_BLOG, { client });
+  const { data, refetch } = useQuery(LIST_BLOGS, {
+    variables: { nextToken: null }
+  });
+  const [createBlog] = useMutation(CREATE_BLOG);
+  const [updateBlog] = useMutation(UPDATE_BLOG);
+  const [deleteBlog] = useMutation(DELETE_BLOG);
 
   const [form, setForm] = useState(initialFormState);
   const [isEdit, setIsEdit] = useState(false);

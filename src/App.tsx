@@ -131,15 +131,13 @@ export default function App() {
     return localStorage.getItem('serviceToken') || '';
   });
   const [searchTerm, setSearchTerm] = useState('');
-  console.log('authenticationToken', authenticationToken);
 
   const authLink = setContext(async (_, { headers }) => {
-    // const token = localStorage.getItem('serviceToken');
-    console.log('[Cognito ID Token]', authenticationToken);
+    // const token = localStorage.getItem('serviceToken');;
     return {
       headers: {
         ...headers,
-        Authorization: authenticationToken || ''
+        Authorization: authenticationToken ? `Bearer ${authenticationToken}` : ''
       }
     };
   });
