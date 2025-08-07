@@ -168,7 +168,7 @@ export default function PendingMintedNftsTable() {
     console.error('Error fetching pending minted NFTs:', error);
   }
 
-  const transformedData = data?.listNftPendingMintItems?.items || [];
+  const transformedData = data?.listGroupedNftPendingMintItems?.items?.flatMap((group: any) => group.items) || [];
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return transformedData;

@@ -185,20 +185,23 @@ export const LIST_NON_MINTED_NFTS = gql`
 `;
 
 export const LIST_NFT_PENDING_MINT_ITEMS = gql`
-  query ListNftPendingMintItems($nextToken: String, $filter: TableNftPendingMintItemsFilterInput) {
-    listNftPendingMintItems(nextToken: $nextToken, filter: $filter) {
+  query ListGroupedNftPendingMintItems($limit: Int, $nextToken: String) {
+    listGroupedNftPendingMintItems(limit: $limit, nextToken: $nextToken) {
       items {
         assetId
-        id
-        type
-        volume
-        updatedAt
-        txHash
-        tokenId
-        status
-        recipientWalletAddress
-        createdAt
-        contractAddress
+        items {
+          assetId
+          id
+          type
+          volume
+          updatedAt
+          txHash
+          tokenId
+          status
+          recipientWalletAddress
+          createdAt
+          contractAddress
+        }
       }
       nextToken
     }
