@@ -177,10 +177,7 @@ export default function transactionTable() {
   const context = useContext(Context);
   const { searchTerm, setSearchTerm }: any = context;
 
-  const client = useMemo(() => createApolloClient(import.meta.env.VITE_APP_BENEFICIARY_GRAPHQL_URL), []);
-
   const { loading, error, data } = useQuery(LIST_BENEFICIARIES, {
-    client,
     variables: { nextToken: null }
   });
 

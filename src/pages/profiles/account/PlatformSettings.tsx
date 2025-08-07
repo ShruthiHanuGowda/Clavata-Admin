@@ -4,7 +4,7 @@ import { ApolloClient, HttpLink, InMemoryCache, useQuery, useMutation } from '@a
 
 import MainCard from 'components/MainCard';
 import { LIST_PLATFORM_SETTINGS, UPDATE_PLATFORM_SETTINGS } from 'graphql/queries';
-import createApolloClient from '../../../utils/createApolloClient';
+// import createApolloClient from '../../../utils/createApolloClient';
 
 // Apollo Client setup
 // const token = localStorage.getItem('serviceToken');
@@ -33,12 +33,12 @@ interface PlatformSettingsData {
 }
 
 export default function PlatformSettings() {
-  const client = useMemo(() => createApolloClient(import.meta.env.VITE_APP_PLATFORM_GRAPHQL_URL), []);
+  // const client = useMemo(() => createApolloClient(import.meta.env.VITE_APP_PLATFORM_GRAPHQL_URL), []);
 
-  const { loading, error, data } = useQuery<PlatformSettingsData>(LIST_PLATFORM_SETTINGS, { client });
+  const { loading, error, data } = useQuery<PlatformSettingsData>(LIST_PLATFORM_SETTINGS);
 
   const [platformSettings, setPlatformSettings] = useState<PlatformSetting[]>([]);
-  const [updateSetting] = useMutation(UPDATE_PLATFORM_SETTINGS, { client });
+  const [updateSetting] = useMutation(UPDATE_PLATFORM_SETTINGS);
 
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
 
