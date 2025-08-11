@@ -1,13 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import MainCard from '../../components/MainCard';
-import { TablePagination } from '../../components/third-party/react-table';
+import { TablePaginationToken } from '../../components/third-party/react-table';
 import ScrollX from '../../components/ScrollX';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import TableContainer from '@mui/material/TableContainer';
 import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
-import { ColumnDef, flexRender, getCoreRowModel, getPaginationRowModel, getSortedRowModel, HeaderGroup, useReactTable } from '@tanstack/react-table';
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  HeaderGroup,
+  useReactTable
+} from '@tanstack/react-table';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
@@ -25,9 +33,28 @@ import { WebSocketLink } from '@apollo/client/link/ws';
 export default function EvidentItems() {
   const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
-  const listEvidentResponse = useQuery(LIST_EVIDENT_ITEMS, {
-    notifyOnNetworkStatusChange: true
+
+  const [nextToken, setNextToken] = useState<string | null>(null);
+  const [previousTokens, setPreviousTokens] = useState<string[]>([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const {
+    data: queryData,
+    loading,
+    error,
+    fetchMore
+  } = useQuery(LIST_EVIDENT_ITEMS, {
+    notifyOnNetworkStatusChange: true,
+    variables: { limit: pageSize }
   });
+
+  if (error) {
+    console.error('GraphQL Error:', error);
+  }
+  // const listEvidentResponse = useQuery(LIST_EVIDENT_ITEMS, {
+  //   notifyOnNetworkStatusChange: true
+  // });
 
   const wsLink = new WebSocketLink({
     uri: import.meta.env.VITE_APP_EVIDENT_GRAPHQL_WS_URL,
@@ -44,9 +71,9 @@ export default function EvidentItems() {
     cache: new InMemoryCache()
   });
 
-  useEffect(() => {
-    if (listEvidentResponse.data?.listEvidentItems?.items) setData(listEvidentResponse.data.listEvidentItems.items);
-  }, [listEvidentResponse]);
+  // useEffect(() => {
+  //   if (listEvidentResponse.data?.listEvidentItems?.items) setData(listEvidentResponse.data.listEvidentItems.items);
+  // }, [listEvidentResponse]);
 
   useEffect(() => {
     const createSub = client.subscribe({ query: ON_CREATE_EVIDENT_ITEM }).subscribe({
@@ -111,50 +138,113 @@ export default function EvidentItems() {
     });
   }, [search, data]);
 
-  const columns: any = useMemo<ColumnDef<any>[]>(() => [
-    {
-      header: 'Energy Type',
-      accessorFn: (row: any) =>
-        row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.deviceType?.deviceGroup : '',
-      cell: ({ getValue }) => getValue() || ''
-    },
-    {
-      header: 'Country',
-      accessorFn: (row: any) =>
-        row.asset ? JSON.parse(row.asset)?.country?.name : '',
-      cell: ({ getValue }) => getValue() || ''
-    },
-    {
-      header: 'Facility Name',
-      accessorFn: (row: any) =>
-        row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.name : '',
-      cell: ({ getValue }) => getValue() || ''
-    },
-    {
-      header: 'Volume (MWh)',
-      accessorKey: 'volume',
-      cell: ({ getValue }: any) => parseFloat(getValue() || '0')
-    },
-    {
-      header: 'Production Start Date',
-      accessorFn: (row: any) =>
-        row.asset ? JSON.parse(row.asset)?.startDate : '',
-      cell: ({ getValue }) => getValue() || ''
-    },
-    {
-      header: 'Production End Date',
-      accessorFn: (row: any) =>
-        row.asset ? JSON.parse(row.asset)?.endDate : '',
-      cell: ({ getValue }: any) => formatDate(getValue())
-    },
-    {
-      header: 'Facility Commissioning Date',
-      accessorFn: (row: any) =>
-        row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.commissioningDate : '',
-      cell: ({ getValue }: any) => formatDate(getValue())
+  useEffect(() => {
+    if (queryData?.listEvidentItems?.items) {
+      setData(queryData?.listEvidentItems?.items);
+      setNextToken(queryData.listEvidentItems.nextToken);
     }
-  ], []);
+  }, [queryData]);
 
+  const handlePagination = useCallback(
+    async (direction: 'next' | 'previous' | 'first') => {
+      let token = direction === 'next' ? nextToken : previousTokens[previousTokens.length - 1];
+
+      if (!token) token = null;
+      if (nextToken === null) {
+        token = previousTokens[previousTokens.length - 2];
+      }
+      switch (direction) {
+        case 'first':
+          token = null;
+          setPreviousTokens([]);
+          break;
+        case 'previous':
+          if (currentPageIndex === 2) {
+            token = null;
+          }
+          break;
+        case 'next':
+          break;
+        default:
+          break;
+      }
+
+      let variables: { limit: number; nextToken?: string } = {
+        limit: pageSize
+      };
+      if (token) {
+        variables.nextToken = token;
+      }
+      fetchMore({
+        variables
+      }).then((fetchMoreResult: any) => {
+        const fetchedData = fetchMoreResult.data;
+
+        setData(fetchedData?.listEvidentItems?.items);
+        setNextToken(fetchedData?.listEvidentItems.nextToken);
+
+        if (direction === 'next') {
+          setPreviousTokens((prev) => [...prev, nextToken!]);
+          setCurrentPageIndex((prev) => prev + 1);
+        } else if (direction === 'previous') {
+          setCurrentPageIndex((prev) => prev - 1);
+          if (nextToken === null) {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 2));
+          } else {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 1));
+          }
+        } else {
+          setCurrentPageIndex(1);
+        }
+      });
+    },
+    [nextToken, previousTokens, pageSize, fetchMore]
+  );
+
+  useEffect(() => {
+    handlePagination('first');
+  }, [pageSize]);
+
+  const columns: any = useMemo<ColumnDef<any>[]>(
+    () => [
+      {
+        header: 'Energy Type',
+        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.deviceType?.deviceGroup : ''),
+        cell: ({ getValue }) => getValue() || ''
+      },
+      {
+        header: 'Country',
+        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.country?.name : ''),
+        cell: ({ getValue }) => getValue() || ''
+      },
+      {
+        header: 'Facility Name',
+        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.name : ''),
+        cell: ({ getValue }) => getValue() || ''
+      },
+      {
+        header: 'Volume (MWh)',
+        accessorKey: 'volume',
+        cell: ({ getValue }: any) => parseFloat(getValue() || '0')
+      },
+      {
+        header: 'Production Start Date',
+        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.startDate : ''),
+        cell: ({ getValue }) => getValue() || ''
+      },
+      {
+        header: 'Production End Date',
+        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.endDate : ''),
+        cell: ({ getValue }: any) => formatDate(getValue())
+      },
+      {
+        header: 'Facility Commissioning Date',
+        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.commissioningDate : ''),
+        cell: ({ getValue }: any) => formatDate(getValue())
+      }
+    ],
+    []
+  );
 
   const table = useReactTable({
     data: filteredData,
@@ -237,14 +327,25 @@ export default function EvidentItems() {
 
           <Divider />
           <Box sx={{ p: 2 }}>
-            <TablePagination
+            <TablePaginationToken
+              {...{
+                currentPageIndex,
+                handlePagination,
+                nextToken,
+                previousTokens,
+                pageSize,
+                setPageSize,
+                isLoading: false
+              }}
+            />
+            {/* <TablePagination
               {...{
                 setPageSize: table.setPageSize,
                 setPageIndex: table.setPageIndex,
                 getState: table.getState,
                 getPageCount: table.getPageCount
               }}
-            />
+            /> */}
           </Box>
         </Stack>
       </ScrollX>

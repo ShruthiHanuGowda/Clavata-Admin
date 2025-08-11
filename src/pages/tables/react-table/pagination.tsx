@@ -1,4 +1,4 @@
-import { useContext, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 // material-ui
 import Grid from '@mui/material/Grid';
@@ -26,7 +26,7 @@ import {
 // project-import
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
-import { CSVExport, TablePagination } from 'components/third-party/react-table';
+import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
 
 // types
 import { TableDataProps } from 'types/table';
@@ -49,14 +49,36 @@ import { formatDate } from 'utils/date';
 //   registrationNumber?: string;
 // }
 
-function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
+function ReactTable({
+  data,
+  columns,
+  top,
+  currentPageIndex,
+  handlePagination,
+  nextToken,
+  previousTokens,
+  pageSize,
+  setPageSize,
+  isLoading
+}: {
+  data: TableDataProps[];
+  columns: ColumnDef<TableDataProps>[];
+  top?: boolean;
+  currentPageIndex: number;
+  handlePagination: (direction: 'next' | 'previous' | 'first') => Promise<void>;
+  nextToken: string | null;
+  previousTokens: string[];
+  setPageSize: (size: number) => void;
+  pageSize: number;
+  isLoading: boolean;
+}) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    // getPaginationRowModel: getPaginationRowModel(),
     debugTable: true,
     getSortedRowModel: getSortedRowModel()
   });
@@ -90,12 +112,23 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
             <Stack>
               {top && (
                 <Box sx={{ p: 2 }}>
-                  <TablePagination
+                  {/* <TablePagination
                     {...{
                       setPageSize: table.setPageSize,
                       setPageIndex: table.setPageIndex,
                       getState: table.getState,
                       getPageCount: table.getPageCount
+                    }}
+                  /> */}
+                  <TablePaginationToken
+                    {...{
+                      currentPageIndex,
+                      handlePagination,
+                      nextToken,
+                      previousTokens,
+                      pageSize,
+                      setPageSize,
+                      isLoading
                     }}
                   />
                 </Box>
@@ -141,12 +174,15 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                 <>
                   <Divider />
                   <Box sx={{ p: 2 }}>
-                    <TablePagination
+                    <TablePaginationToken
                       {...{
-                        setPageSize: table.setPageSize,
-                        setPageIndex: table.setPageIndex,
-                        getState: table.getState,
-                        getPageCount: table.getPageCount
+                        currentPageIndex,
+                        handlePagination,
+                        nextToken,
+                        previousTokens,
+                        pageSize,
+                        setPageSize,
+                        isLoading
                       }}
                     />
                   </Box>
@@ -166,19 +202,69 @@ export default function PaginationTable() {
   // const data: TableDataProps[] = makeData(100);
   const context = useContext(Context);
   const { searchTerm }: any = context;
-  const { loading, error, data } = useQuery(LIST_COMPANY_WALLETS, {
-    variables: { nextToken: null }
-  });
 
-  console.log('Query company Response:', { loading, error, data });
+  const [nextToken, setNextToken] = useState<string | null>(null);
+  const [previousTokens, setPreviousTokens] = useState<string[]>([]);
+  const [data, setData] = useState<TableDataProps[]>([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const {
+    data: queryData,
+    loading,
+    error,
+    fetchMore
+  } = useQuery(LIST_COMPANY_WALLETS, {
+    variables: { limit: pageSize }
+  });
 
   if (error) {
     console.error('GraphQL Error:', error);
   }
 
   // Transform company data to fit column structure
-  const transformedData =
-    data?.listUserWallets?.items.map((item: any) => {
+  // const transformedData =
+  //   data?.listUserWallets?.items.map((item: any) => {
+  //     let parsedCompanyDetail = null;
+
+  //     try {
+  //       parsedCompanyDetail = typeof item.company_detail === 'string' ? JSON.parse(item.company_detail) : item.company_detail;
+  //     } catch (e) {
+  //       console.error('Invalid JSON in company_detail:', e);
+  //     }
+
+  //     const companyInfo = parsedCompanyDetail?.fullResponse?.fixedInfo?.companyInfo;
+
+  //     return {
+  //       email: item.userAddress,
+  //       wallet_address: item.userWallet,
+  //       denergyWallet: item.denergyWallet,
+  //       ethereumWallet: item.ethereumWallet,
+  //       applicantId: item.applicantId,
+  //       is_verified_kyb: item.is_verified_kyb,
+  //       reviewStatus: item.reviewStatus,
+  //       date: item.date,
+  //       company_detail: companyInfo || null
+  //     };
+  //   }) || [];
+
+  // Filter data based on search term
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+    return data.filter(
+      (item: any) =>
+        (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.ethereumWallet && item.ethereumWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.is_verified_kyb?.toString() && item.is_verified_kyb.toString().includes(searchTerm.toLowerCase())) ||
+        (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [searchTerm, data]);
+
+  const transformedResponseData = (resData: any) => {
+    return resData.listUserWallets?.items.map((item: any, index: number) => {
       let parsedCompanyDetail = null;
 
       try {
@@ -190,6 +276,7 @@ export default function PaginationTable() {
       const companyInfo = parsedCompanyDetail?.fullResponse?.fixedInfo?.companyInfo;
 
       return {
+        id: item?.id || index || '',
         email: item.userAddress,
         wallet_address: item.userWallet,
         denergyWallet: item.denergyWallet,
@@ -200,24 +287,78 @@ export default function PaginationTable() {
         date: item.date,
         company_detail: companyInfo || null
       };
-    }) || [];
+    });
+  };
 
-  // Filter data based on search term
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return transformedData;
-    return transformedData.filter(
-      (item: any) =>
-        (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.ethereumWallet && item.ethereumWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.is_verified_kyb?.toString() && item.is_verified_kyb.toString().includes(searchTerm.toLowerCase())) ||
-        (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [searchTerm, transformedData]);
+  useEffect(() => {
+    if (queryData) {
+      const transformedData = transformedResponseData(queryData);
+      setData(transformedData);
+      setNextToken(queryData.listUserWallets.nextToken);
+    }
+  }, [queryData]);
 
-  console.log('new company data', data);
+  const handlePagination = useCallback(
+    async (direction: 'next' | 'previous' | 'first') => {
+      let token = direction === 'next' ? nextToken : previousTokens[previousTokens.length - 1];
+
+      if (!token) token = null;
+      if (nextToken === null) {
+        token = previousTokens[previousTokens.length - 2];
+      }
+      switch (direction) {
+        case 'first':
+          token = null;
+          setPreviousTokens([]);
+          break;
+        case 'previous':
+          if (currentPageIndex === 2) {
+            token = null;
+          }
+          break;
+        case 'next':
+          break;
+        default:
+          break;
+      }
+
+      let variables: { limit: number; nextToken?: string } = {
+        limit: pageSize
+      };
+      if (token) {
+        variables.nextToken = token;
+      }
+      fetchMore({
+        variables
+      }).then((fetchMoreResult: any) => {
+        const fetchedData = fetchMoreResult.data;
+
+        const transformedData = transformedResponseData(fetchedData);
+
+        setData(transformedData);
+        setNextToken(fetchMoreResult.data.listUserWallets.nextToken);
+
+        if (direction === 'next') {
+          setPreviousTokens((prev) => [...prev, nextToken!]);
+          setCurrentPageIndex((prev) => prev + 1);
+        } else if (direction === 'previous') {
+          setCurrentPageIndex((prev) => prev - 1);
+          if (nextToken === null) {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 2));
+          } else {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 1));
+          }
+        } else {
+          setCurrentPageIndex(1);
+        }
+      });
+    },
+    [nextToken, previousTokens, pageSize, fetchMore]
+  );
+
+  useEffect(() => {
+    handlePagination('first');
+  }, [pageSize]);
 
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
@@ -286,7 +427,16 @@ export default function PaginationTable() {
 
           return (
             <Link to={`/companies/${applicantId}`}>
-              <button style={{ padding: '6px 12px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+              <button
+                style={{
+                  padding: '6px 12px',
+                  background: '#1976d2',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
                 View Details
               </button>
             </Link>
@@ -300,7 +450,19 @@ export default function PaginationTable() {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <ReactTable {...{ data: filteredData, columns }} />
+        <ReactTable
+          {...{
+            data: filteredData,
+            columns,
+            nextToken,
+            previousTokens,
+            currentPageIndex,
+            pageSize,
+            setPageSize,
+            handlePagination,
+            isLoading: loading
+          }}
+        />
       </Grid>
     </Grid>
   );
