@@ -1,4 +1,4 @@
-import { useContext, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 // material-ui
 import Grid from '@mui/material/Grid';
@@ -26,7 +26,7 @@ import {
 // project-import
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
-import { CSVExport, TablePagination } from 'components/third-party/react-table';
+import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
 
 // types
 import { TableDataProps } from 'types/table';
@@ -55,14 +55,36 @@ import createApolloClient from '../../../utils/createApolloClient';
 
 // ==============================|| REACT TABLE ||============================== //
 
-function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: ColumnDef<TableDataProps>[]; top?: boolean }) {
+function ReactTable({
+  data,
+  columns,
+  top,
+  currentPageIndex,
+  handlePagination,
+  nextToken,
+  previousTokens,
+  pageSize,
+  setPageSize,
+  isLoading
+}: {
+  data: TableDataProps[];
+  columns: ColumnDef<TableDataProps>[];
+  top?: boolean;
+  currentPageIndex: number;
+  handlePagination: (direction: 'next' | 'previous' | 'first') => Promise<void>;
+  nextToken: string | null;
+  previousTokens: string[];
+  setPageSize: (size: number) => void;
+  pageSize: number;
+  isLoading: boolean;
+}) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    // getPaginationRowModel: getPaginationRowModel(),
     debugTable: true,
     getSortedRowModel: getSortedRowModel()
   });
@@ -96,12 +118,15 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
             <Stack>
               {top && (
                 <Box sx={{ p: 2 }}>
-                  <TablePagination
+                  <TablePaginationToken
                     {...{
-                      setPageSize: table.setPageSize,
-                      setPageIndex: table.setPageIndex,
-                      getState: table.getState,
-                      getPageCount: table.getPageCount
+                      currentPageIndex,
+                      handlePagination,
+                      nextToken,
+                      previousTokens,
+                      pageSize,
+                      setPageSize,
+                      isLoading
                     }}
                   />
                 </Box>
@@ -151,12 +176,15 @@ function ReactTable({ data, columns, top }: { data: TableDataProps[]; columns: C
                 <>
                   <Divider />
                   <Box sx={{ p: 2 }}>
-                    <TablePagination
+                    <TablePaginationToken
                       {...{
-                        setPageSize: table.setPageSize,
-                        setPageIndex: table.setPageIndex,
-                        getState: table.getState,
-                        getPageCount: table.getPageCount
+                        currentPageIndex,
+                        handlePagination,
+                        nextToken,
+                        previousTokens,
+                        pageSize,
+                        setPageSize,
+                        isLoading
                       }}
                     />
                   </Box>
@@ -177,30 +205,39 @@ export default function transactionTable() {
   const context = useContext(Context);
   const { searchTerm, setSearchTerm }: any = context;
 
-  const { loading, error, data } = useQuery(LIST_BENEFICIARIES, {
-    variables: { nextToken: null }
-  });
+  const [nextToken, setNextToken] = useState<string | null>(null);
+  const [previousTokens, setPreviousTokens] = useState<string[]>([]);
+  const [data, setData] = useState<TableDataProps[]>([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  console.log('Query airdrop transaction Response:', { loading, error, data });
+  const {
+    data: queryData,
+    loading,
+    error,
+    fetchMore
+  } = useQuery(LIST_BENEFICIARIES, {
+    variables: { nextToken: null, limit: pageSize }
+  });
 
   if (error) {
     console.error('GraphQL Error:', error);
   }
 
   // Transform company data to fit column structure
-  const transformedData =
-    data?.listAddressBooks?.items.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      walletAddress: item.walletAddress,
-      beneficiaryAddress: item.beneficiaryAddress,
-      chain: item.chain
-    })) || [];
+  // const transformedData =
+  //   data?.listAddressBooks?.items.map((item: any) => ({
+  //     id: item.id,
+  //     name: item.name,
+  //     walletAddress: item.walletAddress,
+  //     beneficiaryAddress: item.beneficiaryAddress,
+  //     chain: item.chain
+  //   })) || [];
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
-    if (!searchTerm) return transformedData;
-    return transformedData.filter(
+    if (!searchTerm) return data;
+    return data.filter(
       (item: any) =>
         (item.id && item.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -208,9 +245,87 @@ export default function transactionTable() {
         (item.beneficiaryAddress && item.beneficiaryAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.chain && item.chain.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-  }, [searchTerm, transformedData]);
+  }, [searchTerm, data]);
 
-  console.log('new airdrop company data', data);
+  const transformedResponseData = (resData: any) => {
+    return resData.listAddressBooks?.items.map((item: any, index: number) => ({
+      id: item.id || index || '',
+      name: item.name,
+      walletAddress: item.walletAddress,
+      beneficiaryAddress: item.beneficiaryAddress,
+      chain: item.chain
+    }));
+  };
+
+  useEffect(() => {
+    if (queryData) {
+      const transformedData = transformedResponseData(queryData);
+      setData(transformedData);
+      setNextToken(queryData.listAddressBooks.nextToken);
+    }
+  }, [queryData]);
+
+  const handlePagination = useCallback(
+    async (direction: 'next' | 'previous' | 'first') => {
+      let token = direction === 'next' ? nextToken : previousTokens[previousTokens.length - 1];
+
+      if (!token) token = null;
+      if (nextToken === null) {
+        token = previousTokens[previousTokens.length - 2];
+      }
+      switch (direction) {
+        case 'first':
+          token = null;
+          setPreviousTokens([]);
+          break;
+        case 'previous':
+          if (currentPageIndex === 2) {
+            token = null;
+          }
+          break;
+        case 'next':
+          break;
+        default:
+          break;
+      }
+
+      let variables: { limit: number; nextToken?: string } = {
+        limit: pageSize
+      };
+      if (token) {
+        variables.nextToken = token;
+      }
+      fetchMore({
+        variables
+      }).then((fetchMoreResult: any) => {
+        const fetchedData = fetchMoreResult.data;
+
+        const transformedData = transformedResponseData(fetchedData);
+
+        setData(transformedData);
+        setNextToken(fetchedData.listAddressBooks.nextToken);
+
+        if (direction === 'next') {
+          setPreviousTokens((prev) => [...prev, nextToken!]);
+          setCurrentPageIndex((prev) => prev + 1);
+        } else if (direction === 'previous') {
+          setCurrentPageIndex((prev) => prev - 1);
+          if (nextToken === null) {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 2));
+          } else {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 1));
+          }
+        } else {
+          setCurrentPageIndex(1);
+        }
+      });
+    },
+    [nextToken, previousTokens, pageSize, fetchMore]
+  );
+
+  useEffect(() => {
+    handlePagination('first');
+  }, [pageSize]);
 
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
@@ -253,7 +368,19 @@ export default function transactionTable() {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <ReactTable {...{ data: filteredData, columns }} />
+        <ReactTable
+          {...{
+            data: filteredData,
+            columns,
+            nextToken,
+            previousTokens,
+            currentPageIndex,
+            pageSize,
+            setPageSize,
+            handlePagination,
+            isLoading: loading
+          }}
+        />
       </Grid>
     </Grid>
   );

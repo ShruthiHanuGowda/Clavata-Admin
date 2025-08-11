@@ -1,17 +1,38 @@
-import { useContext, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { Grid, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, Box, Divider, CardContent, Stack } from '@mui/material';
 import { useReactTable, getCoreRowModel, getPaginationRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
 import { Context } from 'App';
 import MainCard from 'components/MainCard';
-import TablePagination from 'components/third-party/react-table/TablePagination';
+import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
 import ScrollX from 'components/ScrollX';
-import CSVExport from 'components/third-party/react-table/CSVExport';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { LIST_NON_MINTED_NFTS } from 'graphql/queries';
 import { formatDate } from 'utils/date';
 
-function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
+function ReactTable({
+  data,
+  columns,
+  top,
+  currentPageIndex,
+  handlePagination,
+  nextToken,
+  previousTokens,
+  pageSize,
+  setPageSize,
+  isLoading
+}: {
+  data: any[];
+  columns: ColumnDef<any>[];
+  top?: boolean;
+  currentPageIndex: number;
+  handlePagination: (direction: 'next' | 'previous' | 'first') => Promise<void>;
+  nextToken: string | null;
+  previousTokens: string[];
+  setPageSize: (size: number) => void;
+  pageSize: number;
+  isLoading: boolean;
+}) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
 
@@ -19,7 +40,7 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    // getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel()
   });
 
@@ -46,11 +67,16 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
             <Stack>
               {top && (
                 <Box sx={{ p: 2 }}>
-                  <TablePagination
-                    setPageSize={table.setPageSize}
-                    setPageIndex={table.setPageIndex}
-                    getState={table.getState}
-                    getPageCount={table.getPageCount}
+                  <TablePaginationToken
+                    {...{
+                      currentPageIndex,
+                      handlePagination,
+                      nextToken,
+                      previousTokens,
+                      pageSize,
+                      setPageSize,
+                      isLoading
+                    }}
                   />
                 </Box>
               )}
@@ -96,11 +122,16 @@ function ReactTable({ data, columns, top }: { data: any[]; columns: ColumnDef<an
                 <>
                   <Divider />
                   <Box sx={{ p: 2 }}>
-                    <TablePagination
-                      setPageSize={table.setPageSize}
-                      setPageIndex={table.setPageIndex}
-                      getState={table.getState}
-                      getPageCount={table.getPageCount}
+                    <TablePaginationToken
+                      {...{
+                        currentPageIndex,
+                        handlePagination,
+                        nextToken,
+                        previousTokens,
+                        pageSize,
+                        setPageSize,
+                        isLoading
+                      }}
                     />
                   </Box>
                 </>
@@ -117,27 +148,104 @@ export default function NonMintedNftsTable() {
   const context = useContext(Context);
   const { searchTerm } = context as any;
 
-  // Query for Non-Minted NFTs
-  const { error, data } = useQuery(LIST_NON_MINTED_NFTS, {
-    variables: { nextToken: null }
+  const [nextToken, setNextToken] = useState<string | null>(null);
+  const [previousTokens, setPreviousTokens] = useState<string[]>([]);
+  const [data, setData] = useState([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const {
+    data: queryData,
+    loading,
+    error,
+    fetchMore
+  } = useQuery(LIST_NON_MINTED_NFTS, {
+    variables: { limit: pageSize }
   });
 
   if (error) {
     console.error('Error fetching Non-Minted NFTs:', error);
   }
 
-  const transformedData = data?.listNonMintedNfts?.items || [];
+  // const transformedData = data?.listNonMintedNfts?.items || [];
 
   const filteredData = useMemo(() => {
-    if (!searchTerm) return transformedData;
-    return transformedData.filter(
+    if (!searchTerm) return data;
+    return data.filter(
       (item: any) =>
         item.itemId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.commissioningDate.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.country.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, transformedData]);
+  }, [searchTerm, data]);
+
+  useEffect(() => {
+    if (queryData) {
+      setData(queryData.listNonMintedNfts.items);
+      setNextToken(queryData.listNonMintedNfts.nextToken);
+    }
+  }, [queryData]);
+
+  const handlePagination = useCallback(
+    async (direction: 'next' | 'previous' | 'first') => {
+      let token = direction === 'next' ? nextToken : previousTokens[previousTokens.length - 1];
+
+      if (!token) token = null;
+      if (nextToken === null) {
+        token = previousTokens[previousTokens.length - 2];
+      }
+      switch (direction) {
+        case 'first':
+          token = null;
+          setPreviousTokens([]);
+          break;
+        case 'previous':
+          if (currentPageIndex === 2) {
+            token = null;
+          }
+          break;
+        case 'next':
+          break;
+        default:
+          break;
+      }
+
+      let variables: { limit: number; nextToken?: string } = {
+        limit: pageSize
+      };
+      if (token) {
+        variables.nextToken = token;
+      }
+      fetchMore({
+        variables
+      }).then((fetchMoreResult: any) => {
+        const fetchedData = fetchMoreResult.data;
+
+        setData(fetchedData.listNonMintedNfts.items);
+        setNextToken(fetchedData.listNonMintedNfts.nextToken);
+
+        if (direction === 'next') {
+          setPreviousTokens((prev) => [...prev, nextToken!]);
+          setCurrentPageIndex((prev) => prev + 1);
+        } else if (direction === 'previous') {
+          setCurrentPageIndex((prev) => prev - 1);
+          if (nextToken === null) {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 2));
+          } else {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 1));
+          }
+        } else {
+          setCurrentPageIndex(1);
+        }
+      });
+    },
+    [nextToken, previousTokens, pageSize, fetchMore]
+  );
+
+  useEffect(() => {
+    handlePagination('first');
+  }, [pageSize]);
 
   const columns = useMemo<ColumnDef<any>[]>(
     () => [
@@ -157,7 +265,19 @@ export default function NonMintedNftsTable() {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <ReactTable {...{ data: filteredData, columns }} />
+        <ReactTable
+          {...{
+            data: filteredData,
+            columns,
+            nextToken,
+            previousTokens,
+            currentPageIndex,
+            pageSize,
+            setPageSize,
+            handlePagination,
+            isLoading: loading
+          }}
+        />
       </Grid>
     </Grid>
   );

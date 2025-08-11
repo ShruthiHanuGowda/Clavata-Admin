@@ -1,12 +1,11 @@
-import { useContext, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { Grid, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, Box, Divider, CardContent, Stack } from '@mui/material';
 import { useReactTable, getCoreRowModel, getPaginationRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
 import { Context } from 'App';
 import MainCard from 'components/MainCard';
-import TablePagination from 'components/third-party/react-table/TablePagination';
+import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
 import ScrollX from 'components/ScrollX';
-import CSVExport from 'components/third-party/react-table/CSVExport';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { LIST_TRANSACTION_HISTORY_MOBILE } from 'graphql/queries'; // Define the query for transaction history
 import { useNavigate } from 'react-router';
@@ -15,7 +14,29 @@ import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
 
-function TransactionHistoryMobilePage({ data, columns, top }: { data: any[]; columns: ColumnDef<any>[]; top?: boolean }) {
+function TransactionHistoryMobilePage({
+  data,
+  columns,
+  top,
+  currentPageIndex,
+  handlePagination,
+  nextToken,
+  previousTokens,
+  pageSize,
+  setPageSize,
+  isLoading
+}: {
+  data: any[];
+  columns: ColumnDef<any>[];
+  top?: boolean;
+  currentPageIndex: number;
+  handlePagination: (direction: 'next' | 'previous' | 'first') => Promise<void>;
+  nextToken: string | null;
+  previousTokens: string[];
+  setPageSize: (size: number) => void;
+  pageSize: number;
+  isLoading: boolean;
+}) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
   const navigate = useNavigate();
@@ -24,7 +45,7 @@ function TransactionHistoryMobilePage({ data, columns, top }: { data: any[]; col
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    // getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel()
   });
 
@@ -55,11 +76,16 @@ function TransactionHistoryMobilePage({ data, columns, top }: { data: any[]; col
             <Stack>
               {top && (
                 <Box sx={{ p: 2 }}>
-                  <TablePagination
-                    setPageSize={table.setPageSize}
-                    setPageIndex={table.setPageIndex}
-                    getState={table.getState}
-                    getPageCount={table.getPageCount}
+                  <TablePaginationToken
+                    {...{
+                      currentPageIndex,
+                      handlePagination,
+                      nextToken,
+                      previousTokens,
+                      pageSize,
+                      setPageSize,
+                      isLoading
+                    }}
                   />
                 </Box>
               )}
@@ -109,11 +135,16 @@ function TransactionHistoryMobilePage({ data, columns, top }: { data: any[]; col
                 <>
                   <Divider />
                   <Box sx={{ p: 2 }}>
-                    <TablePagination
-                      setPageSize={table.setPageSize}
-                      setPageIndex={table.setPageIndex}
-                      getState={table.getState}
-                      getPageCount={table.getPageCount}
+                    <TablePaginationToken
+                      {...{
+                        currentPageIndex,
+                        handlePagination,
+                        nextToken,
+                        previousTokens,
+                        pageSize,
+                        setPageSize,
+                        isLoading
+                      }}
                     />
                   </Box>
                 </>
@@ -130,24 +161,104 @@ export default function MobileTransactionHistory() {
   const context = useContext(Context);
   const { searchTerm } = context as any;
 
-  const { error, data } = useQuery(LIST_TRANSACTION_HISTORY_MOBILE);
+  const [nextToken, setNextToken] = useState<string | null>(null);
+  const [previousTokens, setPreviousTokens] = useState<string[]>([]);
+  const [data, setData] = useState([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const {
+    data: queryData,
+    loading,
+    error,
+    fetchMore
+  } = useQuery(LIST_TRANSACTION_HISTORY_MOBILE, {
+    variables: { nextToken: null, limit: pageSize }
+  });
 
   if (error) {
     console.error('Error fetching mobile transaction history:', error);
   }
 
-  const transformedData = data?.listTransactionHistoryMobiles?.items || [];
+  // const transformedData = data?.listTransactionHistoryMobiles?.items || [];
 
   const filteredData = useMemo(() => {
-    if (!searchTerm) return transformedData;
-    return transformedData.filter(
+    if (!searchTerm) return data;
+    return data.filter(
       (item: any) =>
         item.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.to.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.transactionHash.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, transformedData]);
+  }, [searchTerm, data]);
+
+  useEffect(() => {
+    if (queryData) {
+      setData(queryData.listTransactionHistoryMobiles.items);
+      setNextToken(queryData.listTransactionHistoryMobiles.nextToken);
+    }
+  }, [queryData]);
+
+  const handlePagination = useCallback(
+    async (direction: 'next' | 'previous' | 'first') => {
+      let token = direction === 'next' ? nextToken : previousTokens[previousTokens.length - 1];
+
+      if (!token) token = null;
+      if (nextToken === null) {
+        token = previousTokens[previousTokens.length - 2];
+      }
+      switch (direction) {
+        case 'first':
+          token = null;
+          setPreviousTokens([]);
+          break;
+        case 'previous':
+          if (currentPageIndex === 2) {
+            token = null;
+          }
+          break;
+        case 'next':
+          break;
+        default:
+          break;
+      }
+
+      let variables: { limit: number; nextToken?: string } = {
+        limit: pageSize
+      };
+      if (token) {
+        variables.nextToken = token;
+      }
+      fetchMore({
+        variables
+      }).then((fetchMoreResult: any) => {
+        const fetchedData = fetchMoreResult.data;
+
+        setData(fetchedData.listTransactionHistoryMobiles.items);
+        setNextToken(fetchedData.listTransactionHistoryMobiles.nextToken);
+
+        if (direction === 'next') {
+          setPreviousTokens((prev) => [...prev, nextToken!]);
+          setCurrentPageIndex((prev) => prev + 1);
+        } else if (direction === 'previous') {
+          setCurrentPageIndex((prev) => prev - 1);
+          if (nextToken === null) {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 2));
+          } else {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 1));
+          }
+        } else {
+          setCurrentPageIndex(1);
+        }
+      });
+    },
+    [nextToken, previousTokens, pageSize, fetchMore]
+  );
+
+  useEffect(() => {
+    handlePagination('first');
+  }, [pageSize]);
 
   const columns = useMemo<ColumnDef<any>[]>(
     () => [
@@ -200,7 +311,19 @@ export default function MobileTransactionHistory() {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <TransactionHistoryMobilePage {...{ data: filteredData, columns }} />
+        <TransactionHistoryMobilePage
+          {...{
+            data: filteredData,
+            columns,
+            nextToken,
+            previousTokens,
+            currentPageIndex,
+            pageSize,
+            setPageSize,
+            handlePagination,
+            isLoading: loading
+          }}
+        />
       </Grid>
     </Grid>
   );

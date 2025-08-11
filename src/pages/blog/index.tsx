@@ -16,12 +16,13 @@ import {
   TextField,
   Typography
 } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useQuery, useMutation, ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
 import { LIST_BLOGS, CREATE_BLOG, UPDATE_BLOG, DELETE_BLOG } from 'graphql/queries';
 import { useNavigate } from 'react-router';
+import { TablePaginationToken } from 'components/third-party/react-table';
 
 const initialFormState = {
   id: '',
@@ -46,8 +47,20 @@ const initialFormState = {
 // });
 
 export default function BlogManager() {
-  const { data, refetch } = useQuery(LIST_BLOGS, {
-    variables: { nextToken: null }
+  const [nextToken, setNextToken] = useState<string | null>(null);
+  const [previousTokens, setPreviousTokens] = useState<string[]>([]);
+  const [data, setData] = useState([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const {
+    data: queryData,
+    loading,
+    error,
+    fetchMore,
+    refetch
+  } = useQuery(LIST_BLOGS, {
+    variables: { nextToken: null, limit: pageSize }
   });
   const [createBlog] = useMutation(CREATE_BLOG);
   const [updateBlog] = useMutation(UPDATE_BLOG);
@@ -64,8 +77,12 @@ export default function BlogManager() {
   const [imageURL, setImageURL] = useState<string>('');
   const [uploading, setUploading] = useState(false);
 
-  const blogs = data?.listBlogs?.items || [];
+  // const blogs = data?.listBlogs?.items || [];
   const navigate = useNavigate();
+
+  if (error) {
+    console.error('GraphQL Error:', error);
+  }
 
   const handleOpen = (blog?: any) => {
     if (blog) {
@@ -77,7 +94,6 @@ export default function BlogManager() {
     }
     setShowForm(true);
   };
-  console.log('Final imageURL before save:', imageURL);
 
   const handleSave = async () => {
     const input = {
@@ -143,6 +159,73 @@ export default function BlogManager() {
       setUploading(false);
     }
   };
+
+  useEffect(() => {
+    if (queryData) {
+      setData(queryData.listBlogs.items);
+      setNextToken(queryData.listBlogs.nextToken);
+    }
+  }, [queryData]);
+
+  const handlePagination = useCallback(
+    async (direction: 'next' | 'previous' | 'first') => {
+      let token = direction === 'next' ? nextToken : previousTokens[previousTokens.length - 1];
+
+      if (!token) token = null;
+      if (nextToken === null) {
+        token = previousTokens[previousTokens.length - 2];
+      }
+      switch (direction) {
+        case 'first':
+          token = null;
+          setPreviousTokens([]);
+          break;
+        case 'previous':
+          if (currentPageIndex === 2) {
+            token = null;
+          }
+          break;
+        case 'next':
+          break;
+        default:
+          break;
+      }
+
+      let variables: { limit: number; nextToken?: string } = {
+        limit: pageSize
+      };
+      if (token) {
+        variables.nextToken = token;
+      }
+      fetchMore({
+        variables
+      }).then((fetchMoreResult: any) => {
+        const fetchedData = fetchMoreResult.data;
+
+        setData(fetchedData.listBlogs.items);
+        setNextToken(fetchedData.listBlogs.nextToken);
+
+        if (direction === 'next') {
+          setPreviousTokens((prev) => [...prev, nextToken!]);
+          setCurrentPageIndex((prev) => prev + 1);
+        } else if (direction === 'previous') {
+          setCurrentPageIndex((prev) => prev - 1);
+          if (nextToken === null) {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 2));
+          } else {
+            setPreviousTokens((prev) => prev.slice(0, prev.length - 1));
+          }
+        } else {
+          setCurrentPageIndex(1);
+        }
+      });
+    },
+    [nextToken, previousTokens, pageSize, fetchMore]
+  );
+
+  useEffect(() => {
+    handlePagination('first');
+  }, [pageSize]);
 
   return (
     <Box p={3}>
@@ -254,50 +337,68 @@ export default function BlogManager() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {blogs.map((blog: any) => (
-              <TableRow key={blog.id}>
-                <TableCell>
-                  {blog.image_url ? (
-                    <img src={blog.image_url} alt="Blog Thumbnail" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }} />
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No image
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell>{blog.title}</TableCell>
-                <TableCell>{blog.author_name}</TableCell>
-                <TableCell>{blog.status}</TableCell>
-                <TableCell>
-                  {blog.tags?.map((tag: string, i: number) => (
-                    <Chip key={i} label={tag} size="small" sx={{ mr: 0.5 }} />
-                  ))}
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <Button size="small" onClick={() => navigate(`/blog/${blog.id}`)}>
-                      View
-                    </Button>
-                    <Button size="small" onClick={() => handleOpen(blog)}>
-                      Edit
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={async () => {
-                        await deleteBlog({ variables: { input: { id: blog.id } } });
-                        await refetch();
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
+            {data?.length > 0 &&
+              data.map((blog: any) => (
+                <TableRow key={blog.id}>
+                  <TableCell>
+                    {blog.image_url ? (
+                      <img
+                        src={blog.image_url}
+                        alt="Blog Thumbnail"
+                        style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }}
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        No image
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>{blog.title}</TableCell>
+                  <TableCell>{blog.author_name}</TableCell>
+                  <TableCell>{blog.status}</TableCell>
+                  <TableCell>
+                    {blog.tags?.map((tag: string, i: number) => (
+                      <Chip key={i} label={tag} size="small" sx={{ mr: 0.5 }} />
+                    ))}
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      <Button size="small" onClick={() => navigate(`/blog/${blog.id}`)}>
+                        View
+                      </Button>
+                      <Button size="small" onClick={() => handleOpen(blog)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="small"
+                        color="error"
+                        onClick={async () => {
+                          await deleteBlog({ variables: { input: { id: blog.id } } });
+                          await refetch();
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
       </TableContainer>
+      <Box sx={{ p: 2 }}>
+        <TablePaginationToken
+          {...{
+            currentPageIndex,
+            handlePagination,
+            nextToken,
+            previousTokens,
+            pageSize,
+            setPageSize,
+            isLoading: loading
+          }}
+        />
+      </Box>
     </Box>
   );
 }

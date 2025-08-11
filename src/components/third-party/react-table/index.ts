@@ -7,6 +7,7 @@ export { default as CellEditable } from './CellEditable';
 export { default as RowSelection } from './RowSelection';
 export { default as DebouncedInput } from './DebouncedInput';
 export { default as TablePagination } from './TablePagination';
+export { default as TablePaginationToken } from './TablePaginationToken';
 export { default as DraggableColumnHeader } from './DraggableColumnHeader';
 export { default as IndeterminateCheckbox } from './IndeterminateCheckbox';
 export { default as SelectColumnVisibility } from './SelectColumnVisibility';

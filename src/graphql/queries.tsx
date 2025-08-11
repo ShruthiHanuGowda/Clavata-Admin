@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client';
 
 export const LIST_COMPANY_WALLETS = gql`
-  query ListUserWallets($nextToken: String) {
-    listUserWallets(limit: 25, nextToken: $nextToken) {
+  query ListUserWallets($limit: Int, $nextToken: String) {
+    listUserWallets(limit: $limit, nextToken: $nextToken) {
       items {
         userAddress
         applicantId
@@ -21,8 +21,8 @@ export const LIST_COMPANY_WALLETS = gql`
 `;
 
 export const LIST_USER_WALLETS = gql`
-  query ListUserWallets($filter: TableUserWalletAddressFilterInput, $limit: Int) {
-    listUserWalletAddresses(filter: $filter, limit: $limit) {
+  query ListUserWallets($filter: TableUserWalletAddressFilterInput, $limit: Int, $nextToken: String) {
+    listUserWalletAddresses(filter: $filter, limit: $limit, nextToken: $nextToken) {
       items {
         emailAddress
         denergyWallet
@@ -39,8 +39,8 @@ export const LIST_USER_WALLETS = gql`
 `;
 
 export const LIST_NFT_WALLETS = gql`
-  query listNft($contractAddress: String) {
-    listMintedNfts(filter: { contractAddress: { contains: $contractAddress } }) {
+  query listNft($contractAddress: String, $limit: Int, $nextToken: String) {
+    listMintedNfts(limit: $limit, nextToken: $nextToken, filter: { contractAddress: { contains: $contractAddress } }) {
       items {
         assetId
         contractAddress
@@ -54,8 +54,8 @@ export const LIST_NFT_WALLETS = gql`
 `;
 
 export const LIST_EVIDENT_ITEMS = gql`
-  query ListEvidentItems {
-    listEvidentItems {
+  query ListEvidentItems($limit: Int, $nextToken: String) {
+    listEvidentItems(limit: $limit, nextToken: $nextToken) {
       items {
         uid
         assetId
@@ -63,13 +63,14 @@ export const LIST_EVIDENT_ITEMS = gql`
         volume
         asset
       }
+      nextToken
     }
   }
 `;
 
 export const LIST_TRANSACTION_HISTORY = gql`
-  query ListTransactionsHistories {
-    listTransactionsHistories(limit: 10) {
+  query ListTransactionsHistories($limit: Int, $nextToken: String) {
+    listTransactionsHistories(limit: $limit, nextToken: $nextToken) {
       items {
         transactionId
         amount
@@ -85,8 +86,8 @@ export const LIST_TRANSACTION_HISTORY = gql`
 `;
 
 export const LIST_DTERMINAL_TRANSACTION_HISTORY = gql`
-  query ListAllTransactions {
-    listDterminalTransactionHistories(limit: 10) {
+  query ListAllTransactions($limit: Int, $nextToken: String) {
+    listDterminalTransactionHistories(limit: $limit, nextToken: $nextToken) {
       items {
         transactionHash
         method
@@ -102,8 +103,8 @@ export const LIST_DTERMINAL_TRANSACTION_HISTORY = gql`
 `;
 
 export const LIST_NFT_COLLECTIONS = gql`
-  query listNftCollections {
-    listNftCollections {
+  query listNftCollections($limit: Int, $nextToken: String) {
+    listNftCollections(limit: $limit, nextToken: $nextToken) {
       items {
         contractAddress
         collectionName
@@ -115,13 +116,14 @@ export const LIST_NFT_COLLECTIONS = gql`
         createdAt
         updatedAt
       }
+      nextToken
     }
   }
 `;
 
 export const LIST_AIRDROP_COLLECTIONS = gql`
-  query ListAirdropClaims {
-    listAirdropClaims {
+  query ListAirdropClaims($limit: Int, $nextToken: String) {
+    listAirdropClaims(limit: $limit, nextToken: $nextToken) {
       items {
         walletAddress
         amount
@@ -134,8 +136,8 @@ export const LIST_AIRDROP_COLLECTIONS = gql`
 `;
 
 export const LIST_BENEFICIARIES = gql`
-  query listAddressBooks {
-    listAddressBooks {
+  query listAddressBooks($limit: Int, $nextToken: String) {
+    listAddressBooks(limit: $limit, nextToken: $nextToken) {
       items {
         id
         name
@@ -143,13 +145,14 @@ export const LIST_BENEFICIARIES = gql`
         walletAddress
         chain
       }
+      nextToken
     }
   }
 `;
 
 export const LIST_TRANSACTION_HISTORY_MOBILE = gql`
-  query ListTransactionsHistories {
-    listTransactionHistoryMobiles {
+  query ListTransactionsHistories($limit: Int, $nextToken: String) {
+    listTransactionHistoryMobiles(limit: $limit, nextToken: $nextToken) {
       items {
         amount
         coinCode
@@ -161,13 +164,14 @@ export const LIST_TRANSACTION_HISTORY_MOBILE = gql`
         transactionStatus
         txnFee
       }
+      nextToken
     }
   }
 `;
 
 export const LIST_NON_MINTED_NFTS = gql`
-  query ListNonMintedNfts($nextToken: String) {
-    listNonMintedNfts(nextToken: $nextToken) {
+  query ListNonMintedNfts($limit: Int, $nextToken: String) {
+    listNonMintedNfts(limit: $limit, nextToken: $nextToken) {
       items {
         itemId
         assetId
@@ -185,8 +189,8 @@ export const LIST_NON_MINTED_NFTS = gql`
 `;
 
 export const LIST_NFT_PENDING_MINT_ITEMS = gql`
-  query ListNftPendingMintItems($nextToken: String, $filter: TableNftPendingMintItemsFilterInput) {
-    listNftPendingMintItems(nextToken: $nextToken, filter: $filter) {
+  query ListNftPendingMintItems($limit: Int, $nextToken: String, $filter: TableNftPendingMintItemsFilterInput) {
+    listNftPendingMintItems(limit: $limit, nextToken: $nextToken, filter: $filter) {
       items {
         assetId
         id
@@ -256,8 +260,8 @@ export const UPDATE_MINTED_NFT_BY_ASSET_ID = gql`
   }
 `;
 export const LIST_BLOGS = gql`
-  query listBlogs {
-    listBlogs {
+  query listBlogs($limit: Int, $nextToken: String) {
+    listBlogs(limit: $limit, nextToken: $nextToken) {
       items {
         image_url
         id
@@ -267,6 +271,7 @@ export const LIST_BLOGS = gql`
         tags
         status
       }
+      nextToken
     }
   }
 `;
