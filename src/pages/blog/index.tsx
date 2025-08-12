@@ -19,10 +19,11 @@ import {
 import React, { useCallback, useEffect, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { useQuery, useMutation, ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
+import { useQuery, useMutation } from '@apollo/client';
 import { LIST_BLOGS, CREATE_BLOG, UPDATE_BLOG, DELETE_BLOG } from 'graphql/queries';
 import { useNavigate } from 'react-router';
 import { TablePaginationToken } from 'components/third-party/react-table';
+import useAuth from 'hooks/useAuth';
 
 const initialFormState = {
   id: '',
@@ -47,6 +48,7 @@ const initialFormState = {
 // });
 
 export default function BlogManager() {
+  const { logout } = useAuth();
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
   const [data, setData] = useState([]);
@@ -82,6 +84,9 @@ export default function BlogManager() {
 
   if (error) {
     console.error('GraphQL Error:', error);
+    if (error?.message?.includes('code 401')) {
+      logout();
+    }
   }
 
   const handleOpen = (blog?: any) => {

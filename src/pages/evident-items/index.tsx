@@ -29,8 +29,10 @@ import { FormControl, InputAdornment, OutlinedInput } from '@mui/material';
 import { SearchOutlined } from '@ant-design/icons';
 import { ON_CREATE_EVIDENT_ITEM, ON_UPDATE_EVIDENT_ITEM, ON_DELETE_EVIDENT_ITEM } from 'graphql/subscriptions';
 import { WebSocketLink } from '@apollo/client/link/ws';
+import useAuth from 'hooks/useAuth';
 
 export default function EvidentItems() {
+  const { logout } = useAuth();
   const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
 
@@ -51,6 +53,9 @@ export default function EvidentItems() {
 
   if (error) {
     console.error('GraphQL Error:', error);
+    if (error?.message?.includes('code 401')) {
+      logout();
+    }
   }
   // const listEvidentResponse = useQuery(LIST_EVIDENT_ITEMS, {
   //   notifyOnNetworkStatusChange: true

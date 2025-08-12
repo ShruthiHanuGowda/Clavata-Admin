@@ -4,24 +4,25 @@ import { useQuery, ApolloClient, HttpLink, InMemoryCache } from '@apollo/client'
 import { GET_BLOG_BY_ID } from 'graphql/queries';
 import Breadcrumbs from 'components/@extended/Breadcrumbs';
 import { APP_DEFAULT_PATH } from 'config';
+import useAuth from 'hooks/useAuth';
 
-const token = localStorage.getItem('serviceToken');
-const client = new ApolloClient({
-  link: new HttpLink({
-    uri: import.meta.env.VITE_APP_BLOG_GRAPHQL_URL,
-    headers: {
-      // 'x-api-key': import.meta.env.VITE_APP_BLOG_GRAPHQL_API_KEY
-      Authorization: token ? `Bearer ${token}` : ''
-    }
-  }),
-  cache: new InMemoryCache()
-});
+// const token = localStorage.getItem('serviceToken');
+// const client = new ApolloClient({
+//   link: new HttpLink({
+//     uri: import.meta.env.VITE_APP_BLOG_GRAPHQL_URL,
+//     headers: {
+//       // 'x-api-key': import.meta.env.VITE_APP_BLOG_GRAPHQL_API_KEY
+//       Authorization: token ? `Bearer ${token}` : ''
+//     }
+//   }),
+//   cache: new InMemoryCache()
+// });
 
 export default function BlogDetails() {
+  const { logout } = useAuth();
   const { id } = useParams<{ id: string }>();
   const { data, loading, error } = useQuery(GET_BLOG_BY_ID, {
-    variables: { id },
-    client
+    variables: { id }
   });
 
   if (loading)
@@ -30,7 +31,13 @@ export default function BlogDetails() {
         <CircularProgress />
       </Box>
     );
-  if (error) return <Typography color="error">Error loading blog.</Typography>;
+  if (error) {
+    if (error?.message?.includes('code 401')) {
+      logout();
+      return;
+    }
+    return <Typography color="error">Error loading blog.</Typography>;
+  }
 
   const blog = data?.getBlogs;
 

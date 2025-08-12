@@ -42,6 +42,7 @@ import { Context } from 'App';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
+import useAuth from 'hooks/useAuth';
 
 // ==============================|| REACT TABLE ||============================== //
 
@@ -199,6 +200,7 @@ function ReactTable({
 // ==============================|| REACT TABLE - PAGINATION ||============================== //
 
 export default function NftTable() {
+  const { logout } = useAuth();
   // const data: TableDataProps[] = makeData(100);
 
   const [contractAddress, setContractAddress] = useState('');
@@ -224,6 +226,9 @@ export default function NftTable() {
 
   if (error) {
     console.error('GraphQL Error:', error);
+    if (error?.message?.includes('code 401')) {
+      logout();
+    }
   }
 
   useEffect(() => {

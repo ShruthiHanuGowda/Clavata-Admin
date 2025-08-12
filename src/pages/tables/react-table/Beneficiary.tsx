@@ -34,14 +34,15 @@ import { LabelKeyObject } from 'react-csv/lib/core';
 
 //query
 import { LIST_BENEFICIARIES } from '../../../graphql/queries';
-import { ApolloClient, InMemoryCache, HttpLink, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
 import { Context } from 'App';
-import { Link } from 'react-router-dom';
-import { getBlockExploreLink } from '../../../utils/explorer';
-import { shortenAddress } from '../../../utils/shortenAddress';
-import createApolloClient from '../../../utils/createApolloClient';
+// import { Link } from 'react-router-dom';
+// import { getBlockExploreLink } from '../../../utils/explorer';
+// import { shortenAddress } from '../../../utils/shortenAddress';
+// import createApolloClient from '../../../utils/createApolloClient';
 // import useAuthToken from 'hooks/useAuthToken';
+import useAuth from 'hooks/useAuth';
 
 // const client = new ApolloClient({
 //   link: new HttpLink({
@@ -201,6 +202,7 @@ function ReactTable({
 // ==============================|| REACT TABLE - PAGINATION ||============================== //
 
 export default function transactionTable() {
+  const { logout } = useAuth();
   // const data: TableDataProps[] = makeData(100);
   const context = useContext(Context);
   const { searchTerm, setSearchTerm }: any = context;
@@ -222,6 +224,9 @@ export default function transactionTable() {
 
   if (error) {
     console.error('GraphQL Error:', error);
+    if (error?.message?.includes('code 401')) {
+      logout();
+    }
   }
 
   // Transform company data to fit column structure

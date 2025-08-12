@@ -9,6 +9,7 @@ import ScrollX from 'components/ScrollX';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { LIST_NON_MINTED_NFTS } from 'graphql/queries';
 import { formatDate } from 'utils/date';
+import useAuth from 'hooks/useAuth';
 
 function ReactTable({
   data,
@@ -145,6 +146,7 @@ function ReactTable({
 }
 
 export default function NonMintedNftsTable() {
+  const { logout } = useAuth();
   const context = useContext(Context);
   const { searchTerm } = context as any;
 
@@ -165,6 +167,9 @@ export default function NonMintedNftsTable() {
 
   if (error) {
     console.error('Error fetching Non-Minted NFTs:', error);
+    if (error?.message?.includes('code 401')) {
+      logout();
+    }
   }
 
   // const transformedData = data?.listNonMintedNfts?.items || [];

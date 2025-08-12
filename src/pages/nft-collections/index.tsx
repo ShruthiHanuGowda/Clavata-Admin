@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
+import useAuth from 'hooks/useAuth';
 
 function ReactTable({
   data,
@@ -164,6 +165,7 @@ function ReactTable({
 }
 
 export default function NftCollectionTable() {
+  const { logout } = useAuth();
   const context = useContext(Context);
   const { searchTerm } = context as any;
 
@@ -185,6 +187,9 @@ export default function NftCollectionTable() {
 
   if (error) {
     console.error('Error fetching NFT collections:', error);
+    if (error?.message?.includes('code 401')) {
+      logout();
+    }
   }
 
   // const transformedData = data?.listNftCollections?.items || [];

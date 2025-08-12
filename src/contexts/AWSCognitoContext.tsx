@@ -169,7 +169,13 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
       console.log('Email cleared:', localStorage.getItem('email'));
       console.log('ServiceToken cleared:', localStorage.getItem('serviceToken'));
       loggedInUser.signOut();
-      dispatch({ type: LOGOUT });
+      dispatch({
+        type: LOGOUT,
+        payload: {
+          isLoggedIn: false,
+          user: null
+        }
+      });
       sessionStorage.clear();
       console.log('Session cleared:', sessionStorage);
 
@@ -188,8 +194,8 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
       Pool: userPool
     });
     user.forgotPassword({
-      onSuccess: () => { },
-      onFailure: () => { }
+      onSuccess: () => {},
+      onFailure: () => {}
     });
   };
 
@@ -257,7 +263,7 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
     });
   };
 
-  const updateProfile = () => { };
+  const updateProfile = () => {};
 
   if (state.isInitialized !== undefined && !state.isInitialized) {
     return <Loader />;

@@ -35,6 +35,7 @@ import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
 import React from 'react';
+import useAuth from 'hooks/useAuth';
 
 function ReactTable({
   data,
@@ -214,6 +215,7 @@ function ReactTable({
 // ==============================|| REACT TABLE - PAGINATION ||============================== //
 
 export default function PaginationUserTable() {
+  const { logout } = useAuth();
   const context = useContext(Context);
   const { searchTerm }: any = context;
 
@@ -234,6 +236,9 @@ export default function PaginationUserTable() {
 
   if (error) {
     console.error('GraphQL Error:', error);
+    if (error?.message?.includes('code 401')) {
+      logout();
+    }
   }
 
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
