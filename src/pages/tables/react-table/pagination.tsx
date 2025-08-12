@@ -41,6 +41,7 @@ import { Link } from 'react-router-dom';
 import { shortenAddress } from 'utils/shortenAddress';
 import { getBlockExploreLink } from 'utils/explorer';
 import { formatDate } from 'utils/date';
+import useAuth from 'hooks/useAuth';
 
 // ==============================|| REACT TABLE ||============================== //
 
@@ -199,6 +200,7 @@ function ReactTable({
 // ==============================|| REACT TABLE - PAGINATION ||============================== //
 
 export default function PaginationTable() {
+  const { logout } = useAuth();
   // const data: TableDataProps[] = makeData(100);
   const context = useContext(Context);
   const { searchTerm }: any = context;
@@ -220,6 +222,9 @@ export default function PaginationTable() {
 
   if (error) {
     console.error('GraphQL Error:', error);
+    if (error?.message?.includes('code 401')) {
+      logout();
+    }
   }
 
   // Transform company data to fit column structure

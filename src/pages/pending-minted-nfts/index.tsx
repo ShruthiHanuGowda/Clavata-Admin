@@ -27,6 +27,7 @@ import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import useAuth from 'hooks/useAuth';
 
 function ReactTable({
   data,
@@ -163,6 +164,7 @@ function ReactTable({
 }
 
 export default function PendingMintedNftsTable() {
+  const { logout } = useAuth();
   const context = useContext(Context);
   const { searchTerm } = context as any;
 
@@ -210,6 +212,9 @@ export default function PendingMintedNftsTable() {
 
   if (error) {
     console.error('Error fetching pending minted NFTs:', error);
+    if (error?.message?.includes('code 401')) {
+      logout();
+    }
   }
 
   // const transformedData = data?.listNftPendingMintItems?.items || [];

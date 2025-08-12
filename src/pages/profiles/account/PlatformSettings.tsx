@@ -4,6 +4,7 @@ import { ApolloClient, HttpLink, InMemoryCache, useQuery, useMutation } from '@a
 
 import MainCard from 'components/MainCard';
 import { LIST_PLATFORM_SETTINGS, UPDATE_PLATFORM_SETTINGS } from 'graphql/queries';
+import useAuth from 'hooks/useAuth';
 // import createApolloClient from '../../../utils/createApolloClient';
 
 // Apollo Client setup
@@ -33,6 +34,7 @@ interface PlatformSettingsData {
 }
 
 export default function PlatformSettings() {
+  const { logout } = useAuth();
   // const client = useMemo(() => createApolloClient(import.meta.env.VITE_APP_PLATFORM_GRAPHQL_URL), []);
 
   const { loading, error, data } = useQuery<PlatformSettingsData>(LIST_PLATFORM_SETTINGS);
@@ -76,7 +78,13 @@ export default function PlatformSettings() {
   };
 
   if (loading) return <Typography>Loading...</Typography>;
-  if (error) return <Typography>Error: {error.message}</Typography>;
+  if (error) {
+    if (error?.message?.includes('code 401')) {
+      logout();
+      return;
+    }
+    return <Typography>Error: {error.message}</Typography>;
+  }
 
   return (
     <>
