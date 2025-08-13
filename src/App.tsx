@@ -143,9 +143,13 @@ export default function App() {
   });
 
   // Apollo Client with dynamic headers
+  const token = localStorage.getItem('serviceToken');
   const client = new ApolloClient({
     link: authLink.concat(httpLink),
-    cache: new InMemoryCache()
+    cache: new InMemoryCache(),
+    headers: {
+      Authorization: token ? `Bearer ${token}` : ''
+    }
   });
   return (
     <ApolloProvider client={client}>
