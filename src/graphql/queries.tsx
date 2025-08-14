@@ -206,6 +206,7 @@ export const LIST_NFT_PENDING_MINT_ITEMS = gql`
           createdAt
           contractAddress
         }
+        recipientWalletAddress
       }
       nextToken
     }

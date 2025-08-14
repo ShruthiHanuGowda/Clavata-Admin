@@ -53,17 +53,14 @@ import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
 import { SnackbarProps } from 'types/snackbar';
 import { Context } from 'App';
-import useAuth from 'hooks/useAuth';
 
 const ITEMS_PER_PAGE = 10;
 
 export default function PendingMintedNftsTable() {
-  const { logout } = useAuth();
   const context = useContext(Context);
   const { open } = useAppKit();
   const { address, isConnected } = useAppKitAccount();
 
-  // State management
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -72,7 +69,6 @@ export default function PendingMintedNftsTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // GraphQL mutations and queries
   const [updateNft] = useMutation(UPDATE_NFT_PENDING_MINT);
   const [createMintedNft] = useMutation(CREATE_MINTED_NFT);
   const [updateMintedNftByAssetId] = useMutation(UPDATE_MINTED_NFT_BY_ASSET_ID);
@@ -149,8 +145,8 @@ export default function PendingMintedNftsTable() {
   };
 
   const expandAllGroups = () => {
-    const allAssetIds: Set<string> = new Set(paginatedGroups.map((group: any) => group.assetId));
-    setExpandedGroups(allAssetIds);
+    const allGroupKeys: Set<string> = new Set(paginatedGroups.map((group: any) => `${group.assetId}_${group.recipientWalletAddress}`));
+    setExpandedGroups(allGroupKeys);
   };
 
   const collapseAllGroups = () => {
@@ -161,19 +157,22 @@ export default function PendingMintedNftsTable() {
   const mintNft = async (item: any) => {
     try {
       setIsMinting(true);
+
       const provider = new BrowserProvider(window.ethereum as any);
       const signer = await provider.getSigner();
       const contract = new Contract(item.contractAddress, ERC1155_ABI, signer);
-      const currentTokenId = await contract.currentTokenId();
+      const currentTokenId = await contract.totalTokenTypes();
+      const nextTokenId = BigInt(currentTokenId) + 1n;
 
       const { data: existing } = await refetchMintedNft({
         assetId: String(item.assetId)
       });
 
       const existingMintedNft = existing?.getMintedNfts;
+      const currentTimestamp = Math.floor(Date.now() / 1000);
       let tx;
       if (item.type === 'mint') {
-        tx = await contract.mint(item.recipientWalletAddress, item.volume);
+        tx = await contract.mint(item.recipientWalletAddress, item.volume, currentTimestamp);
       } else if (item.type === 'addVolume') {
         tx = await contract.addVolume(BigInt(item.tokenId), item.volume, address);
       }
@@ -195,7 +194,7 @@ export default function PendingMintedNftsTable() {
       } else {
         const mintedNftInput = {
           assetId: item.assetId,
-          tokenId: BigInt(currentTokenId).toString(),
+          tokenId: BigInt(nextTokenId).toString(),
           contractAddress: item.contractAddress,
           mintedVolume: String(item.volume),
           createdAt: new Date().toISOString(),
@@ -208,7 +207,7 @@ export default function PendingMintedNftsTable() {
       const payload = {
         id: item.id,
         assetId: item.assetId,
-        tokenId: BigInt(currentTokenId).toString(),
+        tokenId: BigInt(nextTokenId).toString(),
         txHash: receipt?.hash
       };
 
@@ -319,118 +318,121 @@ export default function PendingMintedNftsTable() {
               </Paper>
             ) : (
               <Stack spacing={2}>
-                {paginatedGroups.map((group: any) => (
-                  <Paper key={group.assetId} sx={{ border: '1px solid', borderColor: 'divider' }}>
-                    {/* Group Header */}
-                    <Box
-                      sx={{
-                        p: 2,
-                        bgcolor: 'primary.50',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        '&:hover': { bgcolor: 'primary.100' }
-                      }}
-                      onClick={() => toggleGroupExpansion(group.assetId)}
-                    >
-                      <Stack direction="row" alignItems="center" spacing={2}>
-                        {expandedGroups.has(group.assetId) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        <Typography variant="subtitle1" fontWeight="medium">
-                          Asset ID: {group.assetId}
-                        </Typography>
-                        <Chip label={`${group.items.length} pending`} size="small" color="warning" variant="filled" />
-                      </Stack>
-                      {/* <Chip
+                {paginatedGroups.map((group: any, index: number) => {
+                  const groupKey = `${group.assetId}_${group.recipientWalletAddress}`;
+                  return (
+                    <Paper key={groupKey} sx={{ border: '1px solid', borderColor: 'divider' }}>
+                      {/* Group Header */}
+                      <Box
+                        sx={{
+                          p: 2,
+                          bgcolor: 'primary.50',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          '&:hover': { bgcolor: 'primary.100' }
+                        }}
+                        onClick={() => toggleGroupExpansion(groupKey)}
+                      >
+                        <Stack direction="row" alignItems="center" spacing={2}>
+                          {expandedGroups.has(groupKey) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                          <Typography variant="subtitle1" fontWeight="medium">
+                            Asset ID: {group.assetId}
+                          </Typography>
+                          <Chip label={`${group.items.length} pending`} size="small" color="warning" variant="filled" />
+                        </Stack>
+                        {/* <Chip
                         label={`Total Volume: ${group.items.reduce((sum: number, item: any) => sum + (item.volume || 0), 0).toLocaleString()}`}
                         size="small"
                         color="info"
                         variant="outlined"
                       /> */}
-                    </Box>
-
-                    {/* Group Content */}
-                    <Collapse in={expandedGroups.has(group.assetId)}>
-                      <Box sx={{ p: 0 }}>
-                        <TableContainer>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow sx={{ bgcolor: 'grey.50' }}>
-                                <TableCell sx={{ fontWeight: 'bold', minWidth: 120 }}>Contract</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', minWidth: 120 }}>Recipient</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', width: 80 }}>Token ID</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Volume</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Type</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', width: 120 }}>Created</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', width: 120 }}>Action</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {group.items.map((item: any) => (
-                                <TableRow key={item.id} hover>
-                                  <TableCell>
-                                    <Link to={getBlockExploreLink(item.contractAddress)} style={{ textDecoration: 'none' }}>
-                                      <Typography variant="body2" color="primary" sx={{ fontFamily: 'monospace' }}>
-                                        {shortenAddress(item.contractAddress)}
-                                      </Typography>
-                                    </Link>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Link to={getBlockExploreLink(item.recipientWalletAddress)} style={{ textDecoration: 'none' }}>
-                                      <Typography variant="body2" color="primary" sx={{ fontFamily: 'monospace' }}>
-                                        {shortenAddress(item.recipientWalletAddress)}
-                                      </Typography>
-                                    </Link>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                                      {item.tokenId || '-'}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2" fontWeight="medium">
-                                      {item.volume?.toLocaleString() || '0'}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Chip
-                                      label={item.type}
-                                      size="small"
-                                      color={item.type === 'mint' ? 'primary' : 'secondary'}
-                                      variant="outlined"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2" color="text.secondary">
-                                      {formatDate(item.createdAt)}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Button
-                                      variant="contained"
-                                      size="small"
-                                      color={item.type === 'mint' ? 'primary' : 'secondary'}
-                                      startIcon={!isConnected ? <WalletIcon /> : null}
-                                      onClick={() => {
-                                        if (!isConnected) return open();
-                                        setSelectedItem(item);
-                                        setInputVolume(String(item.volume || ''));
-                                        setOpenDialog(true);
-                                      }}
-                                      sx={{ minWidth: 100 }}
-                                    >
-                                      {!isConnected ? 'Connect' : item.type === 'mint' ? 'Mint' : 'Add Volume'}
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
                       </Box>
-                    </Collapse>
-                  </Paper>
-                ))}
+
+                      {/* Group Content */}
+                      <Collapse in={expandedGroups.has(groupKey)}>
+                        <Box sx={{ p: 0 }}>
+                          <TableContainer>
+                            <Table size="small">
+                              <TableHead>
+                                <TableRow sx={{ bgcolor: 'grey.50' }}>
+                                  <TableCell sx={{ fontWeight: 'bold', minWidth: 120 }}>Contract</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold', minWidth: 120 }}>Recipient</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold', width: 80 }}>Token ID</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Volume</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold', width: 120 }}>Created</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold', width: 120 }}>Action</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {group.items.map((item: any) => (
+                                  <TableRow key={item.id} hover>
+                                    <TableCell>
+                                      <Link to={getBlockExploreLink(item.contractAddress)} style={{ textDecoration: 'none' }}>
+                                        <Typography variant="body2" color="primary" sx={{ fontFamily: 'monospace' }}>
+                                          {shortenAddress(item.contractAddress)}
+                                        </Typography>
+                                      </Link>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Link to={getBlockExploreLink(item.recipientWalletAddress)} style={{ textDecoration: 'none' }}>
+                                        <Typography variant="body2" color="primary" sx={{ fontFamily: 'monospace' }}>
+                                          {shortenAddress(item.recipientWalletAddress)}
+                                        </Typography>
+                                      </Link>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                        {item.tokenId || '-'}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography variant="body2" fontWeight="medium">
+                                        {item.volume?.toLocaleString() || '0'}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label={item.type}
+                                        size="small"
+                                        color={item.type === 'mint' ? 'primary' : 'secondary'}
+                                        variant="outlined"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography variant="body2" color="text.secondary">
+                                        {formatDate(item.createdAt)}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Button
+                                        variant="contained"
+                                        size="small"
+                                        color={item.type === 'mint' ? 'primary' : 'secondary'}
+                                        startIcon={!isConnected ? <WalletIcon /> : null}
+                                        onClick={() => {
+                                          if (!isConnected) return open();
+                                          setSelectedItem(item);
+                                          setInputVolume(String(item.volume || ''));
+                                          setOpenDialog(true);
+                                        }}
+                                        sx={{ minWidth: 100 }}
+                                      >
+                                        {!isConnected ? 'Connect' : item.type === 'mint' ? 'Mint' : 'Add Volume'}
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </Box>
+                      </Collapse>
+                    </Paper>
+                  );
+                })}
               </Stack>
             )}
 
