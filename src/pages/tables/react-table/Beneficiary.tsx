@@ -219,7 +219,22 @@ export default function transactionTable() {
     error,
     fetchMore
   } = useQuery(LIST_BENEFICIARIES, {
-    variables: { nextToken: null, limit: pageSize }
+    variables: {
+      nextToken: null,
+      limit: pageSize,
+      filter: {
+        or: [
+          { name: { contains: searchTerm } },
+          { walletAddress: { contains: searchTerm } },
+          { beneficiaryAddress: { contains: searchTerm } },
+          { chain: { contains: searchTerm } }
+        ]
+      }
+      // filter: {
+      //   or: [{ name: { contains: 'Jemin' } }, { walletAddress: { contains: '0xfBf8f51692d205cdCbD45873235ab1284A2332d2' } }]
+      // }
+    }
+    // variables: { nextToken: null, limit: pageSize, filter: { name: { contains: 'Jemin' } } }
   });
 
   if (error) {
@@ -240,17 +255,17 @@ export default function transactionTable() {
   //   })) || [];
 
   // Filter data based on search term
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-    return data.filter(
-      (item: any) =>
-        (item.id && item.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.walletAddress && item.walletAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.beneficiaryAddress && item.beneficiaryAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.chain && item.chain.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [searchTerm, data]);
+  // const filteredData = useMemo(() => {
+  //   if (!searchTerm) return data;
+  //   return data.filter(
+  //     (item: any) =>
+  //       (item.id && item.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.walletAddress && item.walletAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.beneficiaryAddress && item.beneficiaryAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.chain && item.chain.toLowerCase().includes(searchTerm.toLowerCase()))
+  //   );
+  // }, [searchTerm, data]);
 
   const transformedResponseData = (resData: any) => {
     return resData.listAddressBooks?.items.map((item: any, index: number) => ({
@@ -328,10 +343,6 @@ export default function transactionTable() {
     [nextToken, previousTokens, pageSize, fetchMore]
   );
 
-  useEffect(() => {
-    handlePagination('first');
-  }, [pageSize]);
-
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
       {
@@ -375,7 +386,7 @@ export default function transactionTable() {
       <Grid item xs={12}>
         <ReactTable
           {...{
-            data: filteredData,
+            data,
             columns,
             nextToken,
             previousTokens,

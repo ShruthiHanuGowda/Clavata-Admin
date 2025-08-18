@@ -202,7 +202,21 @@ export default function transactionTable() {
     error,
     fetchMore
   } = useQuery(LIST_TRANSACTION_HISTORY, {
-    variables: { nextToken: null, limit: pageSize }
+    variables: {
+      nextToken: null,
+      limit: pageSize,
+      filter: {
+        or: [
+          { transactionId: { contains: searchTerm } },
+          { amount: { contains: searchTerm } },
+          { destinationAccount: { contains: searchTerm } },
+          { sourceAccount: { contains: searchTerm } },
+          { status: { contains: searchTerm } },
+          { timestamp: { contains: searchTerm } },
+          { transactionType: { contains: searchTerm } }
+        ]
+      }
+    }
   });
 
   if (error) {
@@ -225,19 +239,19 @@ export default function transactionTable() {
   // })) || [];
 
   // Filter data based on search term
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-    return data.filter(
-      (item: any) =>
-        (item.amount && item.amount.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.destinationAccount && item.destinationAccount.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.sourceAccount && item.sourceAccount.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.status && item.status.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.timestamp && item.timestamp.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.transactionId && item.transactionId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.transactionType && item.transactionType.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [searchTerm, data]);
+  // const filteredData = useMemo(() => {
+  //   if (!searchTerm) return data;
+  //   return data.filter(
+  //     (item: any) =>
+  //       (item.amount && item.amount.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.destinationAccount && item.destinationAccount.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.sourceAccount && item.sourceAccount.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.status && item.status.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.timestamp && item.timestamp.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.transactionId && item.transactionId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.transactionType && item.transactionType.toLowerCase().includes(searchTerm.toLowerCase()))
+  //   );
+  // }, [searchTerm, data]);
 
   const transformedResponseData = (resData: any) => {
     return resData.listTransactionsHistories?.items.map((item: any, index: number) => ({
@@ -362,7 +376,7 @@ export default function transactionTable() {
       <Grid item xs={12}>
         <ReactTable
           {...{
-            data: filteredData,
+            data,
             columns,
             nextToken,
             previousTokens,

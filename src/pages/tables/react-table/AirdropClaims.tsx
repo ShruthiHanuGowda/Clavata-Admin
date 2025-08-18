@@ -207,7 +207,18 @@ export default function transactionTable() {
     error,
     fetchMore
   } = useQuery(LIST_AIRDROP_COLLECTIONS, {
-    variables: { nextToken: null, limit: pageSize }
+    variables: {
+      nextToken: null,
+      limit: pageSize,
+      filter: {
+        or: [
+          { walletAddress: { contains: searchTerm } },
+          { amount: { contains: searchTerm } },
+          { claimedAt: { contains: searchTerm } },
+          { txHash: { contains: searchTerm } }
+        ]
+      }
+    }
   });
 
   if (error) {

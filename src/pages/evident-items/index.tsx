@@ -48,7 +48,12 @@ export default function EvidentItems() {
     fetchMore
   } = useQuery(LIST_EVIDENT_ITEMS, {
     notifyOnNetworkStatusChange: true,
-    variables: { limit: pageSize }
+    variables: {
+      limit: pageSize,
+      filter: {
+        or: [{ assetId: { contains: search } }, { uid: { contains: search } }, { asset: { contains: search } }]
+      }
+    }
   });
 
   if (error) {
@@ -124,24 +129,24 @@ export default function EvidentItems() {
     };
   }, [client]);
 
-  const filteredData = useMemo(() => {
-    if (!search) return data;
+  // const filteredData = useMemo(() => {
+  //   if (!search) return data;
 
-    return data.filter((item: any) => {
-      const asset = item.asset ? JSON.parse(item.asset) : {};
-      const country = asset?.country?.name || '';
-      const deviceName = asset?.issue?.deviceDetails?.name || '';
-      const deviceGroup = asset?.issue?.deviceDetails?.deviceType?.deviceGroup || '';
+  //   return data.filter((item: any) => {
+  //     const asset = item.asset ? JSON.parse(item.asset) : {};
+  //     const country = asset?.country?.name || '';
+  //     const deviceName = asset?.issue?.deviceDetails?.name || '';
+  //     const deviceGroup = asset?.issue?.deviceDetails?.deviceType?.deviceGroup || '';
 
-      const searchLower = search.toLowerCase();
+  //     const searchLower = search.toLowerCase();
 
-      return (
-        country.toLowerCase().includes(searchLower) ||
-        deviceName.toLowerCase().includes(searchLower) ||
-        deviceGroup.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [search, data]);
+  //     return (
+  //       country.toLowerCase().includes(searchLower) ||
+  //       deviceName.toLowerCase().includes(searchLower) ||
+  //       deviceGroup.toLowerCase().includes(searchLower)
+  //     );
+  //   });
+  // }, [search, data]);
 
   useEffect(() => {
     if (queryData?.listEvidentItems?.items) {
@@ -252,7 +257,7 @@ export default function EvidentItems() {
   );
 
   const table = useReactTable({
-    data: filteredData,
+    data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

@@ -204,7 +204,20 @@ export default function transactionTable() {
     error,
     fetchMore
   } = useQuery(LIST_DTERMINAL_TRANSACTION_HISTORY, {
-    variables: { nextToken: null, limit: pageSize }
+    variables: {
+      nextToken: null,
+      limit: pageSize,
+      filter: {
+        or: [
+          { transactionHash: { contains: searchTerm } },
+          { method: { contains: searchTerm } },
+          { coin: { contains: searchTerm } },
+          { age: { contains: searchTerm } },
+          { from: { contains: searchTerm } },
+          { to: { contains: searchTerm } }
+        ]
+      }
+    }
   });
 
   if (error) {
@@ -227,19 +240,19 @@ export default function transactionTable() {
   //   })) || [];
 
   // Filter data based on search term
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-    return data.filter(
-      (item: any) =>
-        (item.transactionHash && item.transactionHash.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.from && item.from.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.to && item.to.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.method && item.method.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.age && item.age.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.amount && item.amount.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.txnFee && item.txnFee.toString().toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [searchTerm, data]);
+  // const filteredData = useMemo(() => {
+  //   if (!searchTerm) return data;
+  //   return data.filter(
+  //     (item: any) =>
+  //       (item.transactionHash && item.transactionHash.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.from && item.from.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.to && item.to.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.method && item.method.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.age && item.age.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.amount && item.amount.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.txnFee && item.txnFee.toString().toLowerCase().includes(searchTerm.toLowerCase()))
+  //   );
+  // }, [searchTerm, data]);
 
   const transformedResponseData = (resData: any) => {
     return resData.listDterminalTransactionHistories?.items.map((item: any) => ({
@@ -386,7 +399,7 @@ export default function transactionTable() {
       <Grid item xs={12}>
         <ReactTable
           {...{
-            data: filteredData,
+            data,
             columns,
             nextToken,
             previousTokens,

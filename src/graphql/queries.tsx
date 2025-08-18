@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client';
 
 export const LIST_COMPANY_WALLETS = gql`
-  query ListUserWallets($limit: Int, $nextToken: String) {
-    listUserWallets(limit: $limit, nextToken: $nextToken) {
+  query ListUserWallets($limit: Int, $nextToken: String, $filter: TableUserWalletsFilterInput) {
+    listUserWallets(limit: $limit, nextToken: $nextToken, filter: $filter) {
       items {
         userAddress
         applicantId
@@ -54,8 +54,8 @@ export const LIST_NFT_WALLETS = gql`
 `;
 
 export const LIST_EVIDENT_ITEMS = gql`
-  query ListEvidentItems($limit: Int, $nextToken: String) {
-    listEvidentItems(limit: $limit, nextToken: $nextToken) {
+  query ListEvidentItems($limit: Int, $nextToken: String, $filter: TableEvidentItemsFilterInput) {
+    listEvidentItems(limit: $limit, nextToken: $nextToken, filter: $filter) {
       items {
         uid
         assetId
@@ -69,8 +69,8 @@ export const LIST_EVIDENT_ITEMS = gql`
 `;
 
 export const LIST_TRANSACTION_HISTORY = gql`
-  query ListTransactionsHistories($limit: Int, $nextToken: String) {
-    listTransactionsHistories(limit: $limit, nextToken: $nextToken) {
+  query ListTransactionsHistories($filter: TableTransactionsHistoryFilterInput, $limit: Int, $nextToken: String) {
+    listTransactionsHistories(filter: $filter, limit: $limit, nextToken: $nextToken) {
       items {
         transactionId
         amount
@@ -86,8 +86,8 @@ export const LIST_TRANSACTION_HISTORY = gql`
 `;
 
 export const LIST_DTERMINAL_TRANSACTION_HISTORY = gql`
-  query ListAllTransactions($limit: Int, $nextToken: String) {
-    listDterminalTransactionHistories(limit: $limit, nextToken: $nextToken) {
+  query ListAllTransactions($limit: Int, $nextToken: String, $filter: TableDterminalTransactionHistoryFilterInput) {
+    listDterminalTransactionHistories(limit: $limit, nextToken: $nextToken, filter: $filter) {
       items {
         transactionHash
         method
@@ -103,8 +103,8 @@ export const LIST_DTERMINAL_TRANSACTION_HISTORY = gql`
 `;
 
 export const LIST_NFT_COLLECTIONS = gql`
-  query listNftCollections($limit: Int, $nextToken: String) {
-    listNftCollections(limit: $limit, nextToken: $nextToken) {
+  query listNftCollections($limit: Int, $nextToken: String, $filter: TableNftCollectionsFilterInput) {
+    listNftCollections(limit: $limit, nextToken: $nextToken, filter: $filter) {
       items {
         contractAddress
         collectionName
@@ -122,8 +122,8 @@ export const LIST_NFT_COLLECTIONS = gql`
 `;
 
 export const LIST_AIRDROP_COLLECTIONS = gql`
-  query ListAirdropClaims($limit: Int, $nextToken: String) {
-    listAirdropClaims(limit: $limit, nextToken: $nextToken) {
+  query ListAirdropClaims($limit: Int, $nextToken: String, $filter: TableAirdropClaimsFilterInput) {
+    listAirdropClaims(limit: $limit, nextToken: $nextToken, filter: $filter) {
       items {
         walletAddress
         amount
@@ -136,8 +136,8 @@ export const LIST_AIRDROP_COLLECTIONS = gql`
 `;
 
 export const LIST_BENEFICIARIES = gql`
-  query listAddressBooks($limit: Int, $nextToken: String) {
-    listAddressBooks(limit: $limit, nextToken: $nextToken) {
+  query listAddressBooks($limit: Int, $nextToken: String, $filter: TableAddressBookFilterInput) {
+    listAddressBooks(limit: $limit, nextToken: $nextToken, filter: $filter) {
       items {
         id
         name
@@ -151,8 +151,8 @@ export const LIST_BENEFICIARIES = gql`
 `;
 
 export const LIST_TRANSACTION_HISTORY_MOBILE = gql`
-  query ListTransactionsHistories($limit: Int, $nextToken: String) {
-    listTransactionHistoryMobiles(limit: $limit, nextToken: $nextToken) {
+  query ListTransactionsHistories($limit: Int, $nextToken: String, $filter: TableTransactionHistoryMobileFilterInput) {
+    listTransactionHistoryMobiles(limit: $limit, nextToken: $nextToken, filter: $filter) {
       items {
         amount
         coinCode
@@ -170,8 +170,8 @@ export const LIST_TRANSACTION_HISTORY_MOBILE = gql`
 `;
 
 export const LIST_NON_MINTED_NFTS = gql`
-  query ListNonMintedNfts($limit: Int, $nextToken: String) {
-    listNonMintedNfts(limit: $limit, nextToken: $nextToken) {
+  query ListNonMintedNfts($limit: Int, $nextToken: String, $filter: TableNonMintedNftsFilterInput) {
+    listNonMintedNfts(limit: $limit, nextToken: $nextToken, filter: $filter) {
       items {
         itemId
         assetId
@@ -189,8 +189,8 @@ export const LIST_NON_MINTED_NFTS = gql`
 `;
 
 export const LIST_NFT_PENDING_MINT_ITEMS = gql`
-  query ListGroupedNftPendingMintItems($limit: Int, $nextToken: String) {
-    listGroupedNftPendingMintItems(limit: $limit, nextToken: $nextToken) {
+  query ListGroupedNftPendingMintItems($limit: Int, $nextToken: String, $filter: TableNftPendingMintItemsFilterInput) {
+    listGroupedNftPendingMintItems(limit: $limit, nextToken: $nextToken, filter: $filter) {
       items {
         assetId
         items {

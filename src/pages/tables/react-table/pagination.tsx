@@ -221,7 +221,7 @@ export default function PaginationTable() {
   });
 
   if (error) {
-    console.error('GraphQL Error:', error);
+    console.error('GraphQL Error:', error, error?.message?.includes('code 401'), error?.message);
     if (error?.message?.includes('code 401')) {
       logout();
     }
