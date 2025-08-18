@@ -1,23 +1,28 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
-import { Grid, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, Box, Divider, CardContent, Stack } from '@mui/material';
-import { useReactTable, getCoreRowModel, getPaginationRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
+import {
+  Grid,
+  Box,
+  Divider,
+  Card,
+  CardContent,
+  CardMedia,
+  Typography,
+  Stack
+} from '@mui/material';
 import { Context } from 'App';
 import MainCard from 'components/MainCard';
-import ScrollX from 'components/ScrollX';
 import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { LIST_NFT_COLLECTIONS } from 'graphql/queries';
-import { useNavigate } from 'react-router';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
 import useAuth from 'hooks/useAuth';
 
-function ReactTable({
+function NftCardView({
   data,
-  columns,
   top,
   currentPageIndex,
   handlePagination,
@@ -28,7 +33,6 @@ function ReactTable({
   isLoading
 }: {
   data: any[];
-  columns: ColumnDef<any>[];
   top?: boolean;
   currentPageIndex: number;
   handlePagination: (direction: 'next' | 'previous' | 'first') => Promise<void>;
@@ -42,125 +46,129 @@ function ReactTable({
   const { setSearchTerm }: any = context;
   const navigate = useNavigate();
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    // getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel()
-  });
-
-  let headers: any[] = [];
-  table.getAllColumns().map((col: any) =>
-    headers.push({
-      label: col.columnDef.header,
-      key: col.columnDef.accessorKey
-    })
-  );
+  let headers: any[] = [
+    { label: 'Contract Address', key: 'contractAddress' },
+    { label: 'Collection Name', key: 'collectionName' },
+    { label: 'Symbol', key: 'symbol' },
+    { label: 'Year', key: 'year' },
+    { label: 'Country', key: 'country' },
+    { label: 'Owner Address', key: 'ownerAddress' },
+    { label: 'Type', key: 'type' },
+    { label: 'Created At', key: 'createdAt' },
+    { label: 'Updated At', key: 'updatedAt' }
+  ];
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
   };
 
   const handleContractAddressClick = (contractAddress: string) => {
-    navigate(`/nft?search=${contractAddress}`); // Navigate to the desired URL with search parameter
+    navigate(`/nft?search=${contractAddress}`);
   };
 
   return (
-    <>
-      <MainCard title="NFT Collections" content={false} secondary={<CSVExport {...{ data, headers, filename: 'nft-collections.csv' }} />}>
-        <CardContent sx={{ p: 2 }}>
-          <Box sx={{ mb: 2 }}>
-            <Search onSearch={handleSearch} />
-          </Box>
-          <ScrollX>
-            <Stack>
-              {top && (
-                <Box sx={{ p: 2 }}>
-                  <TablePaginationToken
-                    {...{
-                      currentPageIndex,
-                      handlePagination,
-                      nextToken,
-                      previousTokens,
-                      pageSize,
-                      setPageSize,
-                      isLoading
-                    }}
-                  />
-                </Box>
-              )}
+    <MainCard
+      title="NFT Collections"
+      content={false}
+      secondary={<CSVExport {...{ data, headers, filename: 'nft-collections.csv' }} />}
+    >
+      <CardContent sx={{ p: 2 }}>
+        <Box sx={{ mb: 2 }}>
+          <Search onSearch={handleSearch} />
+        </Box>
 
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <TableCell key={header.id} {...header.column.columnDef.meta}>
-                            <span onClick={header.column.getToggleSortingHandler()} style={{ cursor: 'pointer', fontWeight: 'bold' }}>
-                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                              {{
-                                asc: ' 🔼',
-                                desc: ' 🔽'
-                              }[header.column.getIsSorted() as string] ?? null}
-                            </span>
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableHead>
-                  <TableBody>
-                    {table.getRowModel().rows?.length > 0 ? (
-                      table.getRowModel().rows.map((row) => (
-                        <TableRow key={row.id}>
-                          {row.getVisibleCells().map((cell: any) => (
-                            <TableCell
-                              key={cell.id}
-                              {...cell.column.columnDef.meta}
-                              onClick={() => {
-                                // Only trigger navigation when contractAddress cell is clicked
-                                if (cell.column.columnDef?.accessorKey === 'contractAddress') {
-                                  handleContractAddressClick(cell.getValue());
-                                }
-                              }}
-                              style={{ cursor: cell.column.columnDef.accessorKey === 'contractAddress' ? 'pointer' : 'default' }}
-                            >
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow key={0}>No data found!</TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+        <Stack>
+          {top && (
+            <Box sx={{ p: 2 }}>
+              <TablePaginationToken
+                {...{
+                  currentPageIndex,
+                  handlePagination,
+                  nextToken,
+                  previousTokens,
+                  pageSize,
+                  setPageSize,
+                  isLoading
+                }}
+              />
+            </Box>
+          )}
 
-              {!top && (
-                <>
-                  <Divider />
-                  <Box sx={{ p: 2 }}>
-                    <TablePaginationToken
-                      {...{
-                        currentPageIndex,
-                        handlePagination,
-                        nextToken,
-                        previousTokens,
-                        pageSize,
-                        setPageSize,
-                        isLoading
-                      }}
+          <Grid container spacing={3}>
+            {data?.length > 0 ? (
+              data.map((item, idx) => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={idx}>
+                  <Card sx={{ height: '100%', cursor: 'pointer' }}>
+                    <CardMedia
+                      component="img"
+                      height="160"
+                      image={item.collection_image || '/placeholder.png'}
+                      alt={item.collectionName}
+                      onClick={() => handleContractAddressClick(item.contractAddress)}
                     />
-                  </Box>
-                </>
-              )}
-            </Stack>
-          </ScrollX>
-        </CardContent>
-      </MainCard>
-    </>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        {item.collectionName}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <b>Contract:</b> {shortenAddress(item.contractAddress)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <b>Symbol:</b> {item.symbol}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <b>Year:</b> {item.year}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <b>Country:</b> {item.country}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <b>Owner:</b>{' '}
+                        <Link to={getBlockExploreLink(item.ownerAddress)} target="_blank">
+                          {shortenAddress(item.ownerAddress)}
+                        </Link>
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <b>Type:</b> {item.type}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <b>Created:</b> {formatDate(item.createdAt)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <b>Updated:</b> {formatDate(item.updatedAt)}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))
+            ) : (
+              <Typography variant="body1" sx={{ p: 2 }}>
+                No data found!
+              </Typography>
+            )}
+          </Grid>
+
+          {!top && (
+            <>
+              <Divider sx={{ my: 2 }} />
+              <Box sx={{ p: 2 }}>
+                <TablePaginationToken
+                  {...{
+                    currentPageIndex,
+                    handlePagination,
+                    nextToken,
+                    previousTokens,
+                    pageSize,
+                    setPageSize,
+                    isLoading
+                  }}
+                />
+              </Box>
+            </>
+          )}
+        </Stack>
+      </CardContent>
+    </MainCard>
   );
 }
 
@@ -171,11 +179,10 @@ export default function NftCollectionTable() {
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<any[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(1000);
 
-  // Query for NFT collections
   const {
     data: queryData,
     loading,
@@ -210,18 +217,6 @@ export default function NftCollectionTable() {
       logout();
     }
   }
-
-  // const transformedData = data?.listNftCollections?.items || [];
-
-  // const filteredData = useMemo(() => {
-  //   if (!searchTerm) return data;
-  //   return data.filter(
-  //     (item: any) =>
-  //       item.collectionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //       item.contractAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //       item.ownerAddress.toLowerCase().includes(searchTerm.toLowerCase())
-  //   );
-  // }, [searchTerm, data]);
 
   useEffect(() => {
     if (queryData) {
@@ -290,46 +285,12 @@ export default function NftCollectionTable() {
     handlePagination('first');
   }, [pageSize]);
 
-  const columns = useMemo<ColumnDef<any>[]>(
-    () => [
-      {
-        header: 'Contract Address',
-        accessorKey: 'contractAddress',
-        cell: (cell) => {
-          const address = cell.getValue() as string;
-          return <>{shortenAddress(address)}</>;
-        }
-      },
-      { header: 'Collection Name', accessorKey: 'collectionName' },
-      { header: 'Symbol', accessorKey: 'symbol' },
-      { header: 'Year', accessorKey: 'year' },
-      { header: 'Country', accessorKey: 'country' },
-      {
-        header: 'Owner Address',
-        accessorKey: 'ownerAddress',
-        cell: (cell) => {
-          const address = cell.getValue() as string;
-          return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
-              {shortenAddress(address)}
-            </Link>
-          );
-        }
-      },
-      { header: 'Type', accessorKey: 'type' },
-      { header: 'Created At', accessorKey: 'createdAt', cell: (cell) => formatDate(cell.getValue() as string) },
-      { header: 'Updated At', accessorKey: 'updatedAt', cell: (cell) => formatDate(cell.getValue() as string) }
-    ],
-    []
-  );
-
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <ReactTable
+        <NftCardView
           {...{
             data,
-            columns,
             nextToken,
             previousTokens,
             currentPageIndex,

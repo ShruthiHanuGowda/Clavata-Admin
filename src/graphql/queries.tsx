@@ -102,24 +102,27 @@ export const LIST_DTERMINAL_TRANSACTION_HISTORY = gql`
   }
 `;
 
-export const LIST_NFT_COLLECTIONS = gql`
-  query listNftCollections($limit: Int, $nextToken: String, $filter: TableNftCollectionsFilterInput) {
-    listNftCollections(limit: $limit, nextToken: $nextToken, filter: $filter) {
-      items {
-        contractAddress
-        collectionName
-        symbol
-        year
-        country
-        ownerAddress
-        type
-        createdAt
-        updatedAt
+  export const LIST_NFT_COLLECTIONS = gql`
+    query listNftCollections($limit: Int, $nextToken: String, $filter: TableNftCollectionsFilterInput) {
+      listNftCollections(limit: $limit, nextToken: $nextToken, filter: $filter) {
+        items {
+          contractAddress
+          collectionName
+          collection_image
+          country_image
+          energy_type_image
+          symbol
+          year
+          country
+          ownerAddress
+          type
+          createdAt
+          updatedAt
+        }
+        nextToken
       }
-      nextToken
     }
-  }
-`;
+  `;
 
 export const LIST_AIRDROP_COLLECTIONS = gql`
   query ListAirdropClaims($limit: Int, $nextToken: String, $filter: TableAirdropClaimsFilterInput) {
