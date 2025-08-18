@@ -162,7 +162,22 @@ export default function NonMintedNftsTable() {
     error,
     fetchMore
   } = useQuery(LIST_NON_MINTED_NFTS, {
-    variables: { limit: pageSize }
+    variables: {
+      limit: pageSize,
+      filter: {
+        or: [
+          { assetId: { contains: searchTerm } },
+          { country: { contains: searchTerm } },
+          { facilityName: { contains: searchTerm } },
+          { type: { contains: searchTerm } },
+          { commissioningDate: { contains: searchTerm } },
+          { startDate: { contains: searchTerm } },
+          { endDate: { contains: searchTerm } },
+          { createdAt: { contains: searchTerm } },
+          { itemId: { contains: searchTerm } }
+        ]
+      }
+    }
   });
 
   if (error) {
@@ -174,16 +189,16 @@ export default function NonMintedNftsTable() {
 
   // const transformedData = data?.listNonMintedNfts?.items || [];
 
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-    return data.filter(
-      (item: any) =>
-        item.itemId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.commissioningDate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.country.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [searchTerm, data]);
+  // const filteredData = useMemo(() => {
+  //   if (!searchTerm) return data;
+  //   return data.filter(
+  //     (item: any) =>
+  //       item.itemId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       item.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       item.commissioningDate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       item.country.toLowerCase().includes(searchTerm.toLowerCase())
+  //   );
+  // }, [searchTerm, data]);
 
   useEffect(() => {
     if (queryData) {
@@ -272,7 +287,7 @@ export default function NonMintedNftsTable() {
       <Grid item xs={12}>
         <ReactTable
           {...{
-            data: filteredData,
+            data,
             columns,
             nextToken,
             previousTokens,

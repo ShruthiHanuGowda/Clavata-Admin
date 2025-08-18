@@ -175,7 +175,21 @@ export default function MobileTransactionHistory() {
     error,
     fetchMore
   } = useQuery(LIST_TRANSACTION_HISTORY_MOBILE, {
-    variables: { nextToken: null, limit: pageSize }
+    variables: {
+      nextToken: null,
+      limit: pageSize,
+      filter: {
+        or: [
+          { from: { contains: searchTerm } },
+          { to: { contains: searchTerm } },
+          { method: { contains: searchTerm } },
+          { coinCode: { contains: searchTerm } },
+          { transactionStatus: { contains: searchTerm } },
+          { transactionHash: { contains: searchTerm } },
+          { createdAt: { contains: searchTerm } }
+        ]
+      }
+    }
   });
 
   if (error) {
@@ -187,16 +201,16 @@ export default function MobileTransactionHistory() {
 
   // const transformedData = data?.listTransactionHistoryMobiles?.items || [];
 
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-    return data.filter(
-      (item: any) =>
-        item.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.to.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.transactionHash.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [searchTerm, data]);
+  // const filteredData = useMemo(() => {
+  //   if (!searchTerm) return data;
+  //   return data.filter(
+  //     (item: any) =>
+  //       item.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       item.to.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       item.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       item.transactionHash.toLowerCase().includes(searchTerm.toLowerCase())
+  //   );
+  // }, [searchTerm, data]);
 
   useEffect(() => {
     if (queryData) {
@@ -318,7 +332,7 @@ export default function MobileTransactionHistory() {
       <Grid item xs={12}>
         <TransactionHistoryMobilePage
           {...{
-            data: filteredData,
+            data,
             columns,
             nextToken,
             previousTokens,

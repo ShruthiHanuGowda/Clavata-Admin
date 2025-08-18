@@ -182,7 +182,26 @@ export default function NftCollectionTable() {
     error,
     fetchMore
   } = useQuery(LIST_NFT_COLLECTIONS, {
-    variables: { limit: pageSize }
+    variables: {
+      limit: pageSize,
+      ...(searchTerm
+        ? {
+            filter: {
+              or: [
+                { contractAddress: { contains: searchTerm } },
+                { collectionName: { contains: searchTerm } },
+                { symbol: { contains: searchTerm } },
+                { year: { contains: searchTerm } },
+                { country: { contains: searchTerm } },
+                { ownerAddress: { contains: searchTerm } },
+                { type: { contains: searchTerm } },
+                { createdAt: { contains: searchTerm } },
+                { updatedAt: { contains: searchTerm } }
+              ]
+            }
+          }
+        : {})
+    }
   });
 
   if (error) {
@@ -194,15 +213,15 @@ export default function NftCollectionTable() {
 
   // const transformedData = data?.listNftCollections?.items || [];
 
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-    return data.filter(
-      (item: any) =>
-        item.collectionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.contractAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.ownerAddress.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [searchTerm, data]);
+  // const filteredData = useMemo(() => {
+  //   if (!searchTerm) return data;
+  //   return data.filter(
+  //     (item: any) =>
+  //       item.collectionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       item.contractAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       item.ownerAddress.toLowerCase().includes(searchTerm.toLowerCase())
+  //   );
+  // }, [searchTerm, data]);
 
   useEffect(() => {
     if (queryData) {
@@ -309,7 +328,7 @@ export default function NftCollectionTable() {
       <Grid item xs={12}>
         <ReactTable
           {...{
-            data: filteredData,
+            data,
             columns,
             nextToken,
             previousTokens,
