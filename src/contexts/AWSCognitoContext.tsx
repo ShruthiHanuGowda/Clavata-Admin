@@ -1,5 +1,7 @@
 import { ReactElement, createContext, useEffect, useReducer } from 'react';
 import { CognitoUserAttribute } from 'amazon-cognito-identity-js';
+import { useDispatch } from 'react-redux';
+import { login as authLogin, logout as authLogout } from 'store/slices/authSlice';
 
 // third-party
 import { CognitoUser, CognitoUserPool, CognitoUserSession, AuthenticationDetails } from 'amazon-cognito-identity-js';
@@ -42,6 +44,7 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
   const context = useContext(Context);
   const { authenticationToken, setAuthenticationToken }: any = context;
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const dispatchRedux = useDispatch();
 
   useEffect(() => {
     const init = async () => {
@@ -111,6 +114,7 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
           // setSession(accessToken);
           // setAuthenticationToken(accessToken)
           const idToken = session.getIdToken().getJwtToken();
+          const payload = session.getIdToken().decodePayload();
           setSession(idToken);
           setAuthenticationToken(idToken);
           localStorage.setItem('username', authData.getUsername());
@@ -124,6 +128,12 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
               }
             }
           });
+          dispatchRedux(
+            authLogin({
+              user: { id: payload.id, email: payload.email, name: payload.name },
+              token: idToken
+            })
+          );
           resolve();
         },
         onFailure: (err) => {
