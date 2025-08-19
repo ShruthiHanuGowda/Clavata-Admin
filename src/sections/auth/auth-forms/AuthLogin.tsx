@@ -20,6 +20,8 @@ import { Formik } from 'formik';
 import { preload } from 'swr';
 
 // project import
+import EyeOutlined from '@ant-design/icons/EyeOutlined';
+import EyeInvisibleOutlined from '@ant-design/icons/EyeInvisibleOutlined';
 import IconButton from 'components/@extended/IconButton';
 import AnimateButton from 'components/@extended/AnimateButton';
 
@@ -28,8 +30,6 @@ import useAuth from 'hooks/useAuth';
 import { fetcher } from 'utils/axios';
 
 // assets
-import EyeOutlined from '@ant-design/icons/EyeOutlined';
-import EyeInvisibleOutlined from '@ant-design/icons/EyeInvisibleOutlined';
 
 // ============================|| JWT - LOGIN ||============================ //
 

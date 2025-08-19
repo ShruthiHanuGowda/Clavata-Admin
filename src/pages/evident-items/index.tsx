@@ -1,7 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import MainCard from '../../components/MainCard';
-import { TablePaginationToken } from '../../components/third-party/react-table';
-import ScrollX from '../../components/ScrollX';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import TableContainer from '@mui/material/TableContainer';
@@ -22,14 +19,17 @@ import TableBody from '@mui/material/TableBody';
 import Divider from '@mui/material/Divider';
 import { LabelKeyObject } from 'react-csv/lib/core';
 import { useMemo } from 'react';
-import { ApolloClient, HttpLink, InMemoryCache, useQuery } from '@apollo/client';
-import { LIST_EVIDENT_ITEMS } from 'graphql/queries';
-import { formatDate } from 'utils/date';
+import { ApolloClient, InMemoryCache, useQuery } from '@apollo/client';
 import { FormControl, InputAdornment, OutlinedInput } from '@mui/material';
 import { SearchOutlined } from '@ant-design/icons';
-import { ON_CREATE_EVIDENT_ITEM, ON_UPDATE_EVIDENT_ITEM, ON_DELETE_EVIDENT_ITEM } from 'graphql/subscriptions';
 import { WebSocketLink } from '@apollo/client/link/ws';
+import ScrollX from '../../components/ScrollX';
+import { TablePaginationToken } from '../../components/third-party/react-table';
+import MainCard from '../../components/MainCard';
 import useAuth from 'hooks/useAuth';
+import { ON_CREATE_EVIDENT_ITEM, ON_UPDATE_EVIDENT_ITEM, ON_DELETE_EVIDENT_ITEM } from 'graphql/subscriptions';
+import { formatDate } from 'utils/date';
+import { LIST_EVIDENT_ITEMS } from 'graphql/queries';
 
 export default function EvidentItems() {
   const { logout } = useAuth();
@@ -179,7 +179,7 @@ export default function EvidentItems() {
           break;
       }
 
-      let variables: { limit: number; nextToken?: string } = {
+      const variables: { limit: number; nextToken?: string } = {
         limit: pageSize
       };
       if (token) {
@@ -265,7 +265,7 @@ export default function EvidentItems() {
     debugTable: true
   });
 
-  let headers: LabelKeyObject[] = [];
+  const headers: LabelKeyObject[] = [];
   table.getAllColumns().map((columns) =>
     headers.push({
       label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',

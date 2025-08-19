@@ -17,14 +17,14 @@ import Popper from '@mui/material/Popper';
 import Typography from '@mui/material/Typography';
 
 // project import
+import MailOutlined from '@ant-design/icons/MailOutlined';
+import CloseOutlined from '@ant-design/icons/CloseOutlined';
 import MainCard from 'components/MainCard';
 import IconButton from 'components/@extended/IconButton';
 import Transitions from 'components/@extended/Transitions';
 import { ThemeMode } from 'config';
 
 // assets
-import MailOutlined from '@ant-design/icons/MailOutlined';
-import CloseOutlined from '@ant-design/icons/CloseOutlined';
 
 import avatar2 from 'assets/images/users/avatar-2.png';
 import avatar3 from 'assets/images/users/avatar-3.png';

@@ -18,6 +18,8 @@ import * as Yup from 'yup';
 import { Formik } from 'formik';
 
 // project import
+import EyeOutlined from '@ant-design/icons/EyeOutlined';
+import EyeInvisibleOutlined from '@ant-design/icons/EyeInvisibleOutlined';
 import useAuth from 'hooks/useAuth';
 import IconButton from 'components/@extended/IconButton';
 import AnimateButton from 'components/@extended/AnimateButton';
@@ -30,8 +32,6 @@ import { SnackbarProps } from 'types/snackbar';
 import { StringColorProps } from 'types/password';
 
 // assets
-import EyeOutlined from '@ant-design/icons/EyeOutlined';
-import EyeInvisibleOutlined from '@ant-design/icons/EyeInvisibleOutlined';
 
 // ============================|| JWT - RESET PASSWORD ||============================ //
 

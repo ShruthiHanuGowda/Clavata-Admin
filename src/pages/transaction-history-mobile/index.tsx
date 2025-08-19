@@ -1,15 +1,15 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { Grid, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, Box, Divider, CardContent, Stack } from '@mui/material';
-import { useReactTable, getCoreRowModel, getPaginationRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
+import { useReactTable, getCoreRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
+import { useNavigate } from 'react-router';
+import { Link } from 'react-router-dom';
 import { Context } from 'App';
 import MainCard from 'components/MainCard';
 import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
 import ScrollX from 'components/ScrollX';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { LIST_TRANSACTION_HISTORY_MOBILE } from 'graphql/queries'; // Define the query for transaction history
-import { useNavigate } from 'react-router';
-import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
@@ -50,7 +50,7 @@ function TransactionHistoryMobilePage({
     getSortedRowModel: getSortedRowModel()
   });
 
-  let headers: any[] = [];
+  const headers: any[] = [];
   table.getAllColumns().map((col: any) =>
     headers.push({
       label: col.columnDef.header,
@@ -243,7 +243,7 @@ export default function MobileTransactionHistory() {
           break;
       }
 
-      let variables: { limit: number; nextToken?: string } = {
+      const variables: { limit: number; nextToken?: string } = {
         limit: pageSize
       };
       if (token) {

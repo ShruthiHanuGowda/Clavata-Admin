@@ -3,12 +3,12 @@ import { Theme } from '@mui/material/styles';
 import { CheckboxProps } from '@mui/material/Checkbox';
 
 // project import
-import getColors from 'utils/getColors';
 
 // assets
 import BorderOutlined from '@ant-design/icons/BorderOutlined';
 import CheckSquareFilled from '@ant-design/icons/CheckSquareFilled';
 import MinusSquareFilled from '@ant-design/icons/MinusSquareFilled';
+import getColors from 'utils/getColors';
 
 // types
 import { ExtendedStyleProps } from 'types/extended';

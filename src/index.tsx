@@ -3,9 +3,9 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { Provider as ReduxProvider } from 'react-redux';
 // project import
 import App from './App';
-import { ConfigProvider } from 'contexts/ConfigContext';
 import { store, persistor } from './store';
 import reportWebVitals from './reportWebVitals';
+import { ConfigProvider } from 'contexts/ConfigContext';
 import './assets/styles/globalImports.ts';
 
 //blog

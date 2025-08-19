@@ -6,14 +6,14 @@ import { createTheme, ThemeOptions, ThemeProvider, Theme, TypographyVariantsOpti
 import CssBaseline from '@mui/material/CssBaseline';
 
 // project import
-import useConfig from 'hooks/useConfig';
 import Palette from './palette';
 import Typography from './typography';
 import CustomShadows from './shadows';
 import componentsOverride from './overrides';
+import { CustomShadowProps } from 'types/theme';
+import useConfig from 'hooks/useConfig';
 
 // types
-import { CustomShadowProps } from 'types/theme';
 
 // types
 type ThemeCustomizationProps = {

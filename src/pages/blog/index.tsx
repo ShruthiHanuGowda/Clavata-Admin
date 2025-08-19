@@ -20,8 +20,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useQuery, useMutation } from '@apollo/client';
-import { LIST_BLOGS, CREATE_BLOG, UPDATE_BLOG, DELETE_BLOG } from 'graphql/queries';
 import { useNavigate } from 'react-router';
+import { LIST_BLOGS, CREATE_BLOG, UPDATE_BLOG, DELETE_BLOG } from 'graphql/queries';
 import { TablePaginationToken } from 'components/third-party/react-table';
 import useAuth from 'hooks/useAuth';
 
@@ -196,7 +196,7 @@ export default function BlogManager() {
           break;
       }
 
-      let variables: { limit: number; nextToken?: string } = {
+      const variables: { limit: number; nextToken?: string } = {
         limit: pageSize
       };
       if (token) {
@@ -362,9 +362,7 @@ export default function BlogManager() {
                   <TableCell>{blog.author_name}</TableCell>
                   <TableCell>{blog.status}</TableCell>
                   <TableCell>
-                    {blog.tags?.map((tag: string, i: number) => (
-                      <Chip key={i} label={tag} size="small" sx={{ mr: 0.5 }} />
-                    ))}
+                    {blog.tags?.map((tag: string, i: number) => <Chip key={i} label={tag} size="small" sx={{ mr: 0.5 }} />)}
                   </TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1}>

@@ -1,10 +1,11 @@
 import { ReactElement, createContext, useEffect, useReducer } from 'react';
 import { CognitoUserAttribute } from 'amazon-cognito-identity-js';
 import { useDispatch } from 'react-redux';
-import { login as authLogin, logout as authLogout } from 'store/slices/authSlice';
+import { CognitoUser, CognitoUserPool, CognitoUserSession, AuthenticationDetails } from 'amazon-cognito-identity-js';
+import { useContext } from 'react';
+import { login as authLogin } from 'store/slices/authSlice';
 
 // third-party
-import { CognitoUser, CognitoUserPool, CognitoUserSession, AuthenticationDetails } from 'amazon-cognito-identity-js';
 
 // project imports
 import Loader from 'components/Loader';
@@ -13,7 +14,6 @@ import authReducer from 'contexts/auth-reducer/auth';
 
 // types
 import { AWSCognitoContextType, InitialLoginContextProps } from 'types/auth';
-import { useContext } from 'react';
 import { Context } from 'App';
 
 // constant

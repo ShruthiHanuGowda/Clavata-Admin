@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Grid, Stack, TextField, Typography, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { ApolloClient, HttpLink, InMemoryCache, useQuery, useMutation } from '@apollo/client';
+import React, { useEffect, useState } from 'react';
+import { Button, Grid, Stack, TextField, Typography, Dialog, DialogContent, DialogActions } from '@mui/material';
+import { useQuery, useMutation } from '@apollo/client';
 
 import MainCard from 'components/MainCard';
 import { LIST_PLATFORM_SETTINGS, UPDATE_PLATFORM_SETTINGS } from 'graphql/queries';

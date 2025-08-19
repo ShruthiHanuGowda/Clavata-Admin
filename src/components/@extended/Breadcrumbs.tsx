@@ -9,14 +9,14 @@ import Typography from '@mui/material/Typography';
 import MuiBreadcrumbs from '@mui/material/Breadcrumbs';
 
 // project import
+import ApartmentOutlined from '@ant-design/icons/ApartmentOutlined';
+import HomeOutlined from '@ant-design/icons/HomeOutlined';
+import HomeFilled from '@ant-design/icons/HomeFilled';
 import MainCard from 'components/MainCard';
 import navigation from 'menu-items';
 import { ThemeDirection } from 'config';
 
 // assets
-import ApartmentOutlined from '@ant-design/icons/ApartmentOutlined';
-import HomeOutlined from '@ant-design/icons/HomeOutlined';
-import HomeFilled from '@ant-design/icons/HomeFilled';
 
 // types
 import { OverrideIcon } from 'types/root';
@@ -80,7 +80,7 @@ export default function Breadcrumbs({
     color: theme.palette.secondary.main
   };
 
-  let customLocation = location.pathname;
+  const customLocation = location.pathname;
 
   useEffect(() => {
     navigation?.items?.map((menu: NavItemType) => {

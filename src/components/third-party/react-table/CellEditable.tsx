@@ -17,11 +17,11 @@ import { Formik, Form } from 'formik';
 import { Row, RowData, Table } from '@tanstack/react-table';
 
 // project-imports
+import CheckOutlined from '@ant-design/icons/CheckOutlined';
 import IconButton from 'components/@extended/IconButton';
 import LinearWithLabel from 'components/@extended/progress/LinearWithLabel';
 
 // assets
-import CheckOutlined from '@ant-design/icons/CheckOutlined';
 
 type CellEditProps<T extends RowData> = {
   getValue: () => any;

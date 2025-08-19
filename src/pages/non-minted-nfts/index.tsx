@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { Grid, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, Box, Divider, CardContent, Stack } from '@mui/material';
-import { useReactTable, getCoreRowModel, getPaginationRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
+import { useReactTable, getCoreRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
 import { Context } from 'App';
 import MainCard from 'components/MainCard';
 import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
@@ -45,7 +45,7 @@ function ReactTable({
     getSortedRowModel: getSortedRowModel()
   });
 
-  let headers: any[] = [];
+  const headers: any[] = [];
   table.getAllColumns().map((col: any) =>
     headers.push({
       label: col.columnDef.header,
@@ -231,7 +231,7 @@ export default function NonMintedNftsTable() {
           break;
       }
 
-      let variables: { limit: number; nextToken?: string } = {
+      const variables: { limit: number; nextToken?: string } = {
         limit: pageSize
       };
       if (token) {

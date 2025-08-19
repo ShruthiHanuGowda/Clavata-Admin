@@ -9,8 +9,8 @@ import List from '@mui/material/List';
 import Typography from '@mui/material/Typography';
 
 // project import
-import NavItem from './NavItem';
 import NavGroup from './NavGroup';
+import NavItem from './NavItem';
 import menuItem from 'menu-items';
 
 import useConfig from 'hooks/useConfig';

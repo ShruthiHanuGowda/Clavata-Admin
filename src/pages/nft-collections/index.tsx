@@ -1,21 +1,12 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { useQuery } from '@apollo/client';
-import {
-  Grid,
-  Box,
-  Divider,
-  Card,
-  CardContent,
-  CardMedia,
-  Typography,
-  Stack
-} from '@mui/material';
+import { Grid, Box, Divider, Card, CardContent, CardMedia, Typography, Stack } from '@mui/material';
+import { Link, useNavigate } from 'react-router-dom';
 import { Context } from 'App';
 import MainCard from 'components/MainCard';
 import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { LIST_NFT_COLLECTIONS } from 'graphql/queries';
-import { Link, useNavigate } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
@@ -46,7 +37,7 @@ function NftCardView({
   const { setSearchTerm }: any = context;
   const navigate = useNavigate();
 
-  let headers: any[] = [
+  const headers: any[] = [
     { label: 'Contract Address', key: 'contractAddress' },
     { label: 'Collection Name', key: 'collectionName' },
     { label: 'Symbol', key: 'symbol' },
@@ -67,11 +58,7 @@ function NftCardView({
   };
 
   return (
-    <MainCard
-      title="NFT Collections"
-      content={false}
-      secondary={<CSVExport {...{ data, headers, filename: 'nft-collections.csv' }} />}
-    >
+    <MainCard title="NFT Collections" content={false} secondary={<CSVExport {...{ data, headers, filename: 'nft-collections.csv' }} />}>
       <CardContent sx={{ p: 2 }}>
         <Box sx={{ mb: 2 }}>
           <Search onSearch={handleSearch} />
@@ -249,7 +236,7 @@ export default function NftCollectionTable() {
           break;
       }
 
-      let variables: { limit: number; nextToken?: string } = {
+      const variables: { limit: number; nextToken?: string } = {
         limit: pageSize
       };
       if (token) {

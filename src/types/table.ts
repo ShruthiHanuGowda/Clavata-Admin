@@ -2,10 +2,10 @@
 import { TableCellProps } from '@mui/material/TableCell';
 
 // project import
+import { KeyedObject } from './root';
 import { Gender } from 'config';
 
 // types
-import { KeyedObject } from './root';
 
 export type ArrangementOrder = 'asc' | 'desc' | undefined;
 

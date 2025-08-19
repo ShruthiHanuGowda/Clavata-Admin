@@ -1,6 +1,3 @@
-import MainCard from '../../components/MainCard';
-import { CSVExport, TablePagination } from '../../components/third-party/react-table';
-import ScrollX from '../../components/ScrollX';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import TableContainer from '@mui/material/TableContainer';
@@ -13,12 +10,15 @@ import TableBody from '@mui/material/TableBody';
 import Divider from '@mui/material/Divider';
 import { LabelKeyObject } from 'react-csv/lib/core';
 import { useMemo } from 'react';
-import { TableDataProps } from '../../types/table';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import CloseOutlined from '@ant-design/icons/CloseOutlined';
 import EditTwoTone from '@ant-design/icons/EditTwoTone';
+import { TableDataProps } from '../../types/table';
+import ScrollX from '../../components/ScrollX';
+import { TablePagination } from '../../components/third-party/react-table';
+import MainCard from '../../components/MainCard';
 
 const data = [
   { name: 'Super Admin', description: 'Super Admin' },
@@ -73,7 +73,7 @@ export default function Roles() {
     debugTable: true
   });
 
-  let headers: LabelKeyObject[] = [];
+  const headers: LabelKeyObject[] = [];
   table.getAllColumns().map((columns) =>
     headers.push({
       label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',

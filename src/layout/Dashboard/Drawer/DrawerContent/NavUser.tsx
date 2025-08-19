@@ -13,12 +13,12 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
 // project import
+import RightOutlined from '@ant-design/icons/RightOutlined';
 import Avatar from 'components/@extended/Avatar';
 import useAuth from 'hooks/useAuth';
 import { useGetMenuMaster } from 'api/menu';
 
 // assets
-import RightOutlined from '@ant-design/icons/RightOutlined';
 import avatar1 from 'assets/images/users/avatar-1.png';
 
 interface ExpandMoreProps extends IconButtonProps {

@@ -9,11 +9,11 @@ import Slide, { SlideProps } from '@mui/material/Slide';
 import MuiSnackbar from '@mui/material/Snackbar';
 
 // project import
+import CloseOutlined from '@ant-design/icons/CloseOutlined';
 import IconButton from './IconButton';
 import { closeSnackbar, useGetSnackbar } from 'api/snackbar';
 
 // assets
-import CloseOutlined from '@ant-design/icons/CloseOutlined';
 
 // types
 import { KeyedObject } from 'types/root';

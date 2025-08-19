@@ -3,14 +3,14 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 
 // project import
-import MainCard from 'components/MainCard';
-import AnalyticCard from 'components/dashboard/AnalyticCard';
-import LineChartCard from 'components/dashboard/LineChartCard';
-import { useDashboardData } from '../../../pages/dashboard/useDashboardData';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import React from 'react';
+import { useDashboardData } from '../../../pages/dashboard/useDashboardData';
+import LineChartCard from 'components/dashboard/LineChartCard';
+import AnalyticCard from 'components/dashboard/AnalyticCard';
+import MainCard from 'components/MainCard';
 
 export default function DTerminal() {
   const { analytics, chartData, loading, error, timeSlot, handleTimeSlotChange, refetch } = useDashboardData('D_TERMINAL_API_BASE_URL');

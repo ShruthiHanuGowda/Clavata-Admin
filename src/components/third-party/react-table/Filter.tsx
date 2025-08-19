@@ -5,10 +5,10 @@ import Stack from '@mui/material/Stack';
 import { Column, RowData, Table } from '@tanstack/react-table';
 
 // project-import
+import MinusOutlined from '@ant-design/icons/MinusOutlined';
 import DebouncedInput from './DebouncedInput';
 
 // assets
-import MinusOutlined from '@ant-design/icons/MinusOutlined';
 
 type NumberInputProps = {
   columnFilterValue: [number, number];

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 // material-ui
 import FormControl from '@mui/material/FormControl';
@@ -36,7 +36,7 @@ export default function TablePagination({
   // const [currentPageIndex, setCurrentPageIndex] = useState(getState().pagination.pageIndex);
 
   const [open, setOpen] = useState(false);
-  let options: number[] = [10, 25, 50, 100];
+  const options: number[] = [10, 25, 50, 100];
 
   const handleClose = () => {
     setOpen(false);

@@ -34,9 +34,9 @@ import {
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 import { useMutation, useQuery } from '@apollo/client';
 import { BrowserProvider, Contract } from 'ethers';
-import { ERC1155_ABI } from 'abi';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { ERC1155_ABI } from 'abi';
 
 import {
   CREATE_MINTED_NFT,

@@ -1,9 +1,9 @@
 // project import
 
 import allMenu from './menus';
+import { NavItemType } from 'types/menu';
 
 // types
-import { NavItemType } from 'types/menu';
 
 // ==============================|| MENU ITEMS ||============================== //
 

@@ -7,8 +7,10 @@ import AppBar, { AppBarProps } from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 
 // project import
-import AppBarStyled from './AppBarStyled';
+import MenuFoldOutlined from '@ant-design/icons/MenuFoldOutlined';
+import MenuUnfoldOutlined from '@ant-design/icons/MenuUnfoldOutlined';
 import HeaderContent from './HeaderContent';
+import AppBarStyled from './AppBarStyled';
 import IconButton from 'components/@extended/IconButton';
 
 import useConfig from 'hooks/useConfig';
@@ -16,8 +18,6 @@ import { handlerDrawerOpen, useGetMenuMaster } from 'api/menu';
 import { MenuOrientation, ThemeMode, DRAWER_WIDTH, MINI_DRAWER_WIDTH } from 'config';
 
 // assets
-import MenuFoldOutlined from '@ant-design/icons/MenuFoldOutlined';
-import MenuUnfoldOutlined from '@ant-design/icons/MenuUnfoldOutlined';
 
 // ==============================|| MAIN LAYOUT - HEADER ||============================== //
 

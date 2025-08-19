@@ -4,19 +4,15 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import Box from '@mui/material/Box';
 
 // project import
-import Search from './Search';
+import { useNavigate } from 'react-router-dom';
 import Message from './Message';
 import Profile from './Profile';
 import Notification from './Notification';
 import FullScreen from './FullScreen';
 import MobileSection from './MobileSection';
-
-import useConfig from 'hooks/useConfig';
-import { MenuOrientation } from 'config';
 import DrawerHeader from 'layout/Dashboard/Drawer/DrawerHeader';
-import { BookOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { MenuOrientation } from 'config';
+import useConfig from 'hooks/useConfig';
 
 // import { Tooltip } from 'antd';
 // ==============================|| HEADER - CONTENT ||============================== //

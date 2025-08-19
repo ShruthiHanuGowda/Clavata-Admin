@@ -20,7 +20,7 @@ interface LoginPayload {
 const initialState: AuthState = {
   isLoggedIn: false,
   user: null,
-  token: null,
+  token: null
 };
 
 const authSlice = createSlice({

@@ -17,8 +17,11 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 // project import
-import ProfileTab from './ProfileTab';
+import LogoutOutlined from '@ant-design/icons/LogoutOutlined';
+import SettingOutlined from '@ant-design/icons/SettingOutlined';
+import UserOutlined from '@ant-design/icons/UserOutlined';
 import SettingTab from './SettingTab';
+import ProfileTab from './ProfileTab';
 import Avatar from 'components/@extended/Avatar';
 import MainCard from 'components/MainCard';
 import Transitions from 'components/@extended/Transitions';
@@ -28,9 +31,6 @@ import { ThemeDirection, ThemeMode } from 'config';
 import useAuth from 'hooks/useAuth';
 
 // assets
-import LogoutOutlined from '@ant-design/icons/LogoutOutlined';
-import SettingOutlined from '@ant-design/icons/SettingOutlined';
-import UserOutlined from '@ant-design/icons/UserOutlined';
 import avatar1 from 'assets/images/users/avatar-1.png';
 
 interface TabPanelProps {

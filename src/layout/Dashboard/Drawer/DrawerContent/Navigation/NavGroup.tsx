@@ -19,8 +19,11 @@ import Typography from '@mui/material/Typography';
 import { FormattedMessage } from 'react-intl';
 
 // project import
-import NavItem from './NavItem';
+import DownOutlined from '@ant-design/icons/DownOutlined';
+import GroupOutlined from '@ant-design/icons/GroupOutlined';
+import RightOutlined from '@ant-design/icons/RightOutlined';
 import NavCollapse from './NavCollapse';
+import NavItem from './NavItem';
 import SimpleBar from 'components/third-party/SimpleBar';
 import Transitions from 'components/@extended/Transitions';
 
@@ -29,9 +32,6 @@ import useConfig from 'hooks/useConfig';
 import { useGetMenuMaster } from 'api/menu';
 
 // assets
-import DownOutlined from '@ant-design/icons/DownOutlined';
-import GroupOutlined from '@ant-design/icons/GroupOutlined';
-import RightOutlined from '@ant-design/icons/RightOutlined';
 
 // types
 import { NavItemType } from 'types/menu';

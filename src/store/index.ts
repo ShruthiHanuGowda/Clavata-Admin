@@ -9,14 +9,7 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore redux-persist actions to avoid warnings
-        ignoredActions: [
-          'persist/PERSIST',
-          'persist/REHYDRATE',
-          'persist/PAUSE',
-          'persist/FLUSH',
-          'persist/PURGE',
-          'persist/REGISTER'
-        ]
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE', 'persist/PAUSE', 'persist/FLUSH', 'persist/PURGE', 'persist/REGISTER']
       }
     })
 });

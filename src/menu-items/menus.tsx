@@ -4,7 +4,6 @@ import { FormattedMessage } from 'react-intl';
 // assets
 
 // type
-import { NavItemType } from 'types/menu';
 import {
   DashboardOutlined,
   TeamOutlined,
@@ -23,6 +22,7 @@ import {
   BlockOutlined,
   ContainerOutlined
 } from '@ant-design/icons';
+import { NavItemType } from 'types/menu';
 
 // icons
 const icons = {

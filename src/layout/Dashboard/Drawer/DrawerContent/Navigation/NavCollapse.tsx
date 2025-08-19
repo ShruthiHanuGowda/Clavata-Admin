@@ -17,6 +17,10 @@ import Popper from '@mui/material/Popper';
 import Typography from '@mui/material/Typography';
 
 // project import
+import BorderOutlined from '@ant-design/icons/BorderOutlined';
+import DownOutlined from '@ant-design/icons/DownOutlined';
+import UpOutlined from '@ant-design/icons/UpOutlined';
+import RightOutlined from '@ant-design/icons/RightOutlined';
 import NavItem from './NavItem';
 import Dot from 'components/@extended/Dot';
 import IconButton from 'components/@extended/IconButton';
@@ -28,10 +32,6 @@ import useConfig from 'hooks/useConfig';
 import { useGetMenuMaster } from 'api/menu';
 
 // assets
-import BorderOutlined from '@ant-design/icons/BorderOutlined';
-import DownOutlined from '@ant-design/icons/DownOutlined';
-import UpOutlined from '@ant-design/icons/UpOutlined';
-import RightOutlined from '@ant-design/icons/RightOutlined';
 
 // types
 import { NavItemType } from 'types/menu';

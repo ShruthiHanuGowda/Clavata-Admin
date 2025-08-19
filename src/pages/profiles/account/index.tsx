@@ -7,13 +7,13 @@ import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 
 // project import
+import SettingOutlined from '@ant-design/icons/SettingOutlined';
+import TeamOutlined from '@ant-design/icons/TeamOutlined';
 import MainCard from 'components/MainCard';
 import Breadcrumbs from 'components/@extended/Breadcrumbs';
 import { APP_DEFAULT_PATH } from 'config';
 
 // assets
-import SettingOutlined from '@ant-design/icons/SettingOutlined';
-import TeamOutlined from '@ant-design/icons/TeamOutlined';
 
 // ==============================|| PROFILE - ACCOUNT ||============================== //
 
@@ -48,7 +48,7 @@ export default function AccountProfile() {
     setValue(newValue);
   };
 
-  let breadcrumbLinks = [
+  const breadcrumbLinks = [
     { title: 'Home', to: APP_DEFAULT_PATH },
     { title: 'Account Profile', to: '/profiles/account/user-permissions' },
     { title: breadcrumbTitle }
@@ -75,10 +75,10 @@ export default function AccountProfile() {
             />
             <Tab label="Settings" component={Link} to="/profiles/account/settings" icon={<SettingOutlined />} iconPosition="start" />
             <Tab
-              label="Platform Settings"  // New tab for Platform Settings
+              label="Platform Settings" // New tab for Platform Settings
               component={Link}
               to="/profiles/account/platform-settings"
-              icon={<SettingOutlined />}  // You can change the icon as per your needs
+              icon={<SettingOutlined />} // You can change the icon as per your needs
               iconPosition="start"
             />
           </Tabs>

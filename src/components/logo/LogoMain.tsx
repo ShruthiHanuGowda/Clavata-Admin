@@ -2,7 +2,6 @@
 import { useTheme } from '@mui/material/styles';
 import logo from 'assets/images/logo/d_energy_logo_final_nft_ver 1.png';
 // project-import
-import { ThemeMode } from 'config';
 
 /**
  * if you want to use image instead of <svg> uncomment following.

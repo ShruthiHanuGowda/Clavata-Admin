@@ -6,7 +6,7 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 
 // assets
 import SearchOutlined from '@ant-design/icons/SearchOutlined';
-import { useContext, useState } from 'react';
+import { useContext } from 'react';
 import { Context } from 'App';
 
 // ==============================|| HEADER CONTENT - SEARCH ||============================== //

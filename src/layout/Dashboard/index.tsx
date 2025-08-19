@@ -9,10 +9,11 @@ import Container from '@mui/material/Container';
 import Toolbar from '@mui/material/Toolbar';
 
 // project import
-import Drawer from './Drawer';
-import Header from './Header';
 // import Footer from './Footer';
+import { Context } from '../../App';
 import HorizontalBar from './Drawer/HorizontalBar';
+import Header from './Header';
+import Drawer from './Drawer';
 import Loader from 'components/Loader';
 import Breadcrumbs from 'components/@extended/Breadcrumbs';
 import AuthGuard from 'utils/route-guard/AuthGuard';
@@ -20,7 +21,6 @@ import AuthGuard from 'utils/route-guard/AuthGuard';
 import { MenuOrientation } from 'config';
 import useConfig from 'hooks/useConfig';
 import { handlerDrawerOpen, useGetMenuMaster } from 'api/menu';
-import { Context } from '../../App';
 
 // ==============================|| MAIN LAYOUT ||============================== //
 

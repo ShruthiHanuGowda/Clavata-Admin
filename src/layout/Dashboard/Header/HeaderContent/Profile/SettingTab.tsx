@@ -50,7 +50,7 @@ export default function SettingTab() {
         </ListItemIcon>
         <ListItemText primary="Account Settings" />
       </ListItemButton>
-        <ListItemButton
+      <ListItemButton
         disabled
         selected={selectedIndex === 1}
         onClick={(event: React.MouseEvent<HTMLDivElement>) => handleListItemClick(event, 1, '#')}

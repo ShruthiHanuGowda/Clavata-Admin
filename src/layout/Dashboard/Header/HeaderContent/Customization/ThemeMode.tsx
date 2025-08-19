@@ -17,9 +17,9 @@ import { ThemeMode } from 'config';
 import useConfig from 'hooks/useConfig';
 
 // assets
+import useSettings from 'hooks/useSettings';
 import defaultLayout from 'assets/images/customization/default.svg';
 import darkLayout from 'assets/images/customization/dark.svg';
-import useSettings from 'hooks/useSettings';
 
 // ==============================|| CUSTOMIZATION - MODE ||============================== //
 

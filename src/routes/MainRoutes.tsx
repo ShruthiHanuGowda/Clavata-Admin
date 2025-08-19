@@ -1,12 +1,12 @@
 import { lazy } from 'react';
 
 // project import
+import NftCollections from '../pages/nft-collections';
 import Loadable from 'components/Loadable';
 import DashboardLayout from 'layout/Dashboard';
 import PagesLayout from 'layout/Pages';
 import SimpleLayout from 'layout/Simple';
 import { SimpleLayoutType } from 'config';
-import NftCollections from '../pages/nft-collections';
 import MobileTransactionHistory from 'pages/transaction-history-mobile';
 
 const MaintenanceError = Loadable(lazy(() => import('pages/maintenance/404')));

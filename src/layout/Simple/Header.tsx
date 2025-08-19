@@ -22,6 +22,8 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 
 // project import
+import MenuOutlined from '@ant-design/icons/MenuOutlined';
+import LineOutlined from '@ant-design/icons/LineOutlined';
 import Logo from 'components/logo';
 import IconButton from 'components/@extended/IconButton';
 import AnimateButton from 'components/@extended/AnimateButton';
@@ -30,8 +32,6 @@ import useAuth from 'hooks/useAuth';
 import { APP_DEFAULT_PATH, ThemeMode } from 'config';
 
 // assets
-import MenuOutlined from '@ant-design/icons/MenuOutlined';
-import LineOutlined from '@ant-design/icons/LineOutlined';
 
 // ==============================|| COMPONENTS - APP BAR ||============================== //
 

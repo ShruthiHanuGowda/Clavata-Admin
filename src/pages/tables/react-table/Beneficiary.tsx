@@ -11,31 +11,23 @@ import Box from '@mui/material/Box';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Stack from '@mui/material/Stack';
-import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
 // third-party
-import {
-  useReactTable,
-  getCoreRowModel,
-  getPaginationRowModel,
-  ColumnDef,
-  HeaderGroup,
-  flexRender,
-  getSortedRowModel
-} from '@tanstack/react-table';
+import { useReactTable, getCoreRowModel, ColumnDef, HeaderGroup, flexRender, getSortedRowModel } from '@tanstack/react-table';
 
 // project-import
+import { LabelKeyObject } from 'react-csv/lib/core';
+import { useQuery } from '@apollo/client';
+import { CardContent } from '@mui/material';
+import { LIST_BENEFICIARIES } from '../../../graphql/queries';
+import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
 import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
 
 // types
 import { TableDataProps } from 'types/table';
-import { LabelKeyObject } from 'react-csv/lib/core';
 
 //query
-import { LIST_BENEFICIARIES } from '../../../graphql/queries';
-import { useQuery } from '@apollo/client';
-import { CardContent } from '@mui/material';
 import { Context } from 'App';
 // import { Link } from 'react-router-dom';
 // import { getBlockExploreLink } from '../../../utils/explorer';
@@ -90,7 +82,7 @@ function ReactTable({
     getSortedRowModel: getSortedRowModel()
   });
 
-  let headers: LabelKeyObject[] = [];
+  const headers: LabelKeyObject[] = [];
   table.getAllColumns().map((columns) =>
     headers.push({
       label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
@@ -309,7 +301,7 @@ export default function transactionTable() {
           break;
       }
 
-      let variables: { limit: number; nextToken?: string } = {
+      const variables: { limit: number; nextToken?: string } = {
         limit: pageSize
       };
       if (token) {

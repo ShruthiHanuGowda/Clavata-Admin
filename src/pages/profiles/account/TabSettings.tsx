@@ -25,7 +25,7 @@ export default function TabSettings() {
   const themeMode = useMemo(() => <DefaultThemeMode />, []);
 
   const myToggle = (e: any) => {
-    let { name, checked } = e.target;
+    const { name, checked } = e.target;
 
     updateSetting(name, checked);
   };

@@ -20,7 +20,7 @@ interface TooltipStyleProps {
 function getVariantStyle({ color, theme, labelColor }: TooltipStyleProps) {
   const colors = getColors(theme, color as ColorProps);
   const { main, contrastText } = colors;
-  let colorValue = color ? color : '';
+  const colorValue = color ? color : '';
 
   if (['primary', 'secondary', 'info', 'success', 'warning', 'error'].includes(colorValue)) {
     return {

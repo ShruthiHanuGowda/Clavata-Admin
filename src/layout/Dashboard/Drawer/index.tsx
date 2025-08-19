@@ -10,9 +10,8 @@ import Drawer from '@mui/material/Drawer';
 import DrawerHeader from './DrawerHeader';
 import DrawerContent from './DrawerContent';
 import MiniDrawerStyled from './MiniDrawerStyled';
-
-import { DRAWER_WIDTH } from 'config';
 import { handlerDrawerOpen, useGetMenuMaster } from 'api/menu';
+import { DRAWER_WIDTH } from 'config';
 
 interface Props {
   window?: () => Window;

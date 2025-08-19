@@ -77,7 +77,7 @@ export default function TabRole() {
     debugTable: true
   });
 
-  let headers: LabelKeyObject[] = [];
+  const headers: LabelKeyObject[] = [];
   table.getAllColumns().map((columns) =>
     headers.push({
       label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',

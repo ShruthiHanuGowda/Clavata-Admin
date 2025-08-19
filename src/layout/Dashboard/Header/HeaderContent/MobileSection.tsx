@@ -10,14 +10,14 @@ import Popper from '@mui/material/Popper';
 import Toolbar from '@mui/material/Toolbar';
 
 // project import
-import Search from './Search';
+import MoreOutlined from '@ant-design/icons/MoreOutlined';
 import Profile from './Profile';
+import Search from './Search';
 import IconButton from 'components/@extended/IconButton';
 import Transitions from 'components/@extended/Transitions';
 import { ThemeMode } from 'config';
 
 // assets
-import MoreOutlined from '@ant-design/icons/MoreOutlined';
 
 // ==============================|| HEADER CONTENT - MOBILE ||============================== //
 

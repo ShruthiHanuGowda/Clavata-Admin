@@ -1,6 +1,12 @@
 import { RouterProvider } from 'react-router-dom';
 
 // project import
+import { createAppKit } from '@reown/appkit/react';
+import { EthersAdapter } from '@reown/appkit-adapter-ethers';
+import { createHttpLink } from '@apollo/client';
+import { createContext, useState } from 'react';
+import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
+import { setContext } from '@apollo/client/link/context';
 import router from 'routes';
 import ThemeCustomization from 'themes';
 
@@ -11,21 +17,12 @@ import Snackbar from 'components/@extended/Snackbar';
 import Notistack from 'components/third-party/Notistack';
 
 //appkit
-import { createAppKit } from '@reown/appkit/react';
-import { EthersAdapter } from '@reown/appkit-adapter-ethers';
-import { arbitrum, mainnet } from '@reown/appkit/networks';
 
 // auth-provider
 // import { JWTProvider as AuthProvider } from 'contexts/JWTContext';
 import { AWSCognitoProvider as AuthProvider } from 'contexts/AWSCognitoContext';
-import { LIST_USER_WALLETS } from 'graphql/queries';
-import { createHttpLink, useQuery } from '@apollo/client';
-import { createContext, useContext, useState } from 'react';
-import { ApolloClient, ApolloProvider, InMemoryCache, HttpLink } from '@apollo/client';
-import { setContext } from '@apollo/client/link/context';
 import { SettingsProvider } from 'contexts/SettingsContext';
 import { CHAINS } from 'chains';
-import { fetchAuthSession } from 'aws-amplify/auth';
 
 // ==============================|| APP - THEME, ROUTER, LOCAL ||============================== //
 

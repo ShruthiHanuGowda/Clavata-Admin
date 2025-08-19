@@ -10,14 +10,14 @@ const createApolloClient = (uri: string) => {
     return {
       headers: {
         ...headers,
-        Authorization: token ? `Bearer ${token}` : '',
-      },
+        Authorization: token ? `Bearer ${token}` : ''
+      }
     };
   });
 
   return new ApolloClient({
     link: from([authLink, httpLink]),
-    cache: new InMemoryCache(),
+    cache: new InMemoryCache()
   });
 };
 

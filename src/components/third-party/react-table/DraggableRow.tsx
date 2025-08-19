@@ -9,10 +9,10 @@ import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { Row } from '@tanstack/react-table';
 
 // project-import
+import DragOutlined from '@ant-design/icons/DragOutlined';
 import IconButton from 'components/@extended/IconButton';
 
 // assets
-import DragOutlined from '@ant-design/icons/DragOutlined';
 
 // types
 import { TableDataProps } from 'types/table';

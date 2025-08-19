@@ -1,7 +1,4 @@
 import { useEffect, useState } from 'react';
-import MainCard from '../../components/MainCard';
-import { TablePagination } from '../../components/third-party/react-table';
-import ScrollX from '../../components/ScrollX';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import TableContainer from '@mui/material/TableContainer';
@@ -15,6 +12,9 @@ import Divider from '@mui/material/Divider';
 import { LabelKeyObject } from 'react-csv/lib/core';
 import { useMemo } from 'react';
 
+import ScrollX from '../../components/ScrollX';
+import { TablePagination } from '../../components/third-party/react-table';
+import MainCard from '../../components/MainCard';
 import { formatDate } from 'utils/date';
 
 export default function Registries() {
@@ -61,7 +61,7 @@ export default function Registries() {
     debugTable: true
   });
 
-  let headers: LabelKeyObject[] = [];
+  const headers: LabelKeyObject[] = [];
   table.getAllColumns().map((columns) =>
     headers.push({
       label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',

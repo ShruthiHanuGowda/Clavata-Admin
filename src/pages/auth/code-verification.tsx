@@ -10,12 +10,12 @@ import AuthCodeVerification from 'sections/auth/auth-forms/AuthCodeVerification'
 // ================================|| CODE VERIFICATION ||================================ //
 
 export default function CodeVerification() {
-  let email = window.localStorage.getItem('email');
-  let finalArr: string[] = [];
+  const email = window.localStorage.getItem('email');
+  const finalArr: string[] = [];
 
   if (email) {
-    let emailSplit = email.split('');
-    let len = emailSplit.indexOf('@');
+    const emailSplit = email.split('');
+    const len = emailSplit.indexOf('@');
     emailSplit.forEach((item, pos) => {
       pos >= 1 && pos <= len - 2 ? finalArr.push('*') : finalArr.push(emailSplit[pos]);
     });

@@ -9,32 +9,21 @@ import Box from '@mui/material/Box';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Stack from '@mui/material/Stack';
+import { useReactTable, getCoreRowModel, ColumnDef, HeaderGroup, flexRender, getSortedRowModel } from '@tanstack/react-table';
+import { useQuery } from '@apollo/client';
+import { CardContent } from '@mui/material';
+import { Link } from 'react-router-dom';
+import React from 'react';
 import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
-import { Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Button, Typography } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import {
-  useReactTable,
-  getCoreRowModel,
-  getPaginationRowModel,
-  ColumnDef,
-  HeaderGroup,
-  flexRender,
-  getSortedRowModel
-} from '@tanstack/react-table';
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
 import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
 import { TableDataProps } from 'types/table';
-import { LabelKeyObject } from 'react-csv/lib/core';
-import { useQuery } from '@apollo/client';
 import { LIST_USER_WALLETS } from 'graphql/queries';
-import { CardContent } from '@mui/material';
 import { Context } from 'App';
-import { Link } from 'react-router-dom';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
-import React from 'react';
 import useAuth from 'hooks/useAuth';
 
 function ReactTable({
@@ -355,7 +344,7 @@ export default function PaginationUserTable() {
           break;
       }
 
-      let variables: { limit: number; nextToken?: string } = {
+      const variables: { limit: number; nextToken?: string } = {
         limit: pageSize
       };
       if (token) {

@@ -3,10 +3,10 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 
 // project import
+import useLineChart from '../../../hooks/useLineChart';
 import MainCard from 'components/MainCard';
 import AnalyticCard from 'components/dashboard/AnalyticCard';
 import LineChartCard from 'components/dashboard/LineChartCard';
-import useLineChart from '../../../hooks/useLineChart';
 
 export default function WattCoin({ coinPrice }: { coinPrice: string }) {
   const { slot: coinSlot, data: coinData, handleSlotChange: handleCoinSlotChange } = useLineChart();
