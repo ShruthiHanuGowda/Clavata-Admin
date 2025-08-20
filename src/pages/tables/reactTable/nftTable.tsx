@@ -2,29 +2,12 @@ import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 // material-ui
 import Grid from '@mui/material/Grid';
-import Divider from '@mui/material/Divider';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableContainer from '@mui/material/TableContainer';
-import TableCell from '@mui/material/TableCell';
-import Box from '@mui/material/Box';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Stack from '@mui/material/Stack';
 // third-party
-import { useReactTable, getCoreRowModel, ColumnDef, HeaderGroup, flexRender, getSortedRowModel } from '@tanstack/react-table';
+import { ColumnDef } from '@tanstack/react-table';
 
 // project-import
-import { LabelKeyObject } from 'react-csv/lib/core';
 import { useQuery } from '@apollo/client';
-import { CardContent } from '@mui/material';
 import { LIST_NFT_WALLETS } from '../../../graphql/queries';
-import Search from '../../../layout/Dashboard/Header/HeaderContent/Search';
-import ScrollX from 'components/ScrollX';
-import MainCard from 'components/MainCard';
-// import LinearWithLabel from 'components/@extended/progress/LinearWithLabel';
-import { CSVExport, TablePaginationToken } from 'components/third-party/reactTable';
-// import makeData from 'data/react-table';
 
 // types
 import { TableDataProps } from 'types/table';
@@ -35,166 +18,10 @@ import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
 import useAuth from 'hooks/useAuth';
-
-// ==============================|| REACT TABLE ||============================== //
-
-function ReactTable({
-  data,
-  columns,
-  top,
-  currentPageIndex,
-  handlePagination,
-  nextToken,
-  previousTokens,
-  pageSize,
-  setPageSize,
-  isLoading
-}: {
-  data: TableDataProps[];
-  columns: ColumnDef<TableDataProps>[];
-  top?: boolean;
-  currentPageIndex: number;
-  handlePagination: (direction: 'next' | 'previous' | 'first') => Promise<void>;
-  nextToken: string | null;
-  previousTokens: string[];
-  setPageSize: (size: number) => void;
-  pageSize: number;
-  isLoading: boolean;
-}) {
-  const context = useContext(Context);
-  const { setSearchTerm }: any = context;
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    // getPaginationRowModel: getPaginationRowModel(),
-    debugTable: true,
-    getSortedRowModel: getSortedRowModel()
-  });
-
-  const headers: LabelKeyObject[] = [];
-  table.getAllColumns().map((columns) =>
-    headers.push({
-      label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
-      // @ts-ignore
-      key: columns.columnDef.accessorKey
-    })
-  );
-
-  const handleSearch = (term: any) => {
-    setSearchTerm(term);
-  };
-
-  return (
-    <>
-      <MainCard
-        title={' '}
-        content={false}
-        secondary={<CSVExport {...{ data, headers, filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
-      >
-        <CardContent sx={{ p: 2 }}>
-          {/* Add Search component below the title */}
-          <Box sx={{ mb: 2 }}>
-            <Search onSearch={handleSearch} />
-          </Box>
-          <ScrollX>
-            <Stack>
-              {top && (
-                <Box sx={{ p: 2 }}>
-                  <TablePaginationToken
-                    {...{
-                      currentPageIndex,
-                      handlePagination,
-                      nextToken,
-                      previousTokens,
-                      pageSize,
-                      setPageSize,
-                      isLoading
-                    }}
-                  />
-                  {/* <TablePagination
-                    {...{
-                      setPageSize: table.setPageSize,
-                      setPageIndex: table.setPageIndex,
-                      getState: table.getState,
-                      getPageCount: table.getPageCount
-                    }}
-                  /> */}
-                </Box>
-              )}
-
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
-                      <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <TableCell key={header.id} {...header.column.columnDef.meta}>
-                            <span
-                              onClick={header.column.getToggleSortingHandler()} // Handle sorting when clicked
-                              style={{ cursor: 'pointer', fontWeight: 'bold' }}
-                            >
-                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                              {{
-                                asc: ' 🔼',
-                                desc: ' 🔽'
-                              }[header.column.getIsSorted() as string] ?? null}
-                            </span>
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableHead>
-                  <TableBody>
-                    {table.getRowModel().rows?.length > 0 ? (
-                      table.getRowModel().rows.map((row) => (
-                        <TableRow key={row.id}>
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow key={0}>No data found!</TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              {!top && (
-                <>
-                  <Divider />
-                  <Box sx={{ p: 2 }}>
-                    <TablePaginationToken
-                      {...{
-                        currentPageIndex,
-                        handlePagination,
-                        nextToken,
-                        previousTokens,
-                        pageSize,
-                        setPageSize,
-                        isLoading
-                      }}
-                    />
-                  </Box>
-                </>
-              )}
-            </Stack>
-          </ScrollX>
-        </CardContent>
-      </MainCard>
-    </>
-  );
-}
-
-// ==============================|| REACT TABLE - PAGINATION ||============================== //
+import ReactTableWrapper from 'components/ReactTableWrapper';
 
 export default function NftTable() {
   const { logout } = useAuth();
-  // const data: TableDataProps[] = makeData(100);
-
   const [contractAddress, setContractAddress] = useState('');
 
   const context = useContext(Context);
@@ -234,17 +61,6 @@ export default function NftTable() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
-
-  // Transform company data to fit column structure
-  // const transformedData = useMemo(() => {
-  //   return (data?.listMintedNfts?.items || []).map((item: any) => ({
-  //     assetId: item.assetId,
-  //     contractAddress: item.contractAddress,
-  //     createdAt: item.createdAt,
-  //     mintedVolume: item.mintedVolume,
-  //     tokenId: item.tokenId
-  //   }));
-  // }, [data]);
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
@@ -404,22 +220,17 @@ export default function NftTable() {
 
   return (
     <Grid container spacing={3}>
-      {/* <Grid item xs={12}>
-        <ReactTable {...{ data, columns, top: true }} />
-      </Grid> */}
       <Grid item xs={12}>
-        <ReactTable
-          {...{
-            data: filteredData,
-            columns,
-            nextToken,
-            previousTokens,
-            currentPageIndex,
-            pageSize,
-            setPageSize,
-            handlePagination,
-            isLoading: loading
-          }}
+        <ReactTableWrapper
+          data={filteredData}
+          columns={columns}
+          currentPageIndex={currentPageIndex}
+          handlePagination={handlePagination}
+          nextToken={nextToken}
+          previousTokens={previousTokens}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+          isLoading={loading}
         />
       </Grid>
     </Grid>

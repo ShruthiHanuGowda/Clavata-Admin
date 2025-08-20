@@ -2,28 +2,13 @@ import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 // material-ui
 import Grid from '@mui/material/Grid';
-import Divider from '@mui/material/Divider';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableContainer from '@mui/material/TableContainer';
-import TableCell from '@mui/material/TableCell';
-import Box from '@mui/material/Box';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Stack from '@mui/material/Stack';
 // third-party
-import { useReactTable, getCoreRowModel, ColumnDef, HeaderGroup, flexRender, getSortedRowModel } from '@tanstack/react-table';
+import { ColumnDef } from '@tanstack/react-table';
 
 // project-import
-import { LabelKeyObject } from 'react-csv/lib/core';
 import { useQuery } from '@apollo/client';
-import { CardContent } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { LIST_DTERMINAL_TRANSACTION_HISTORY } from '../../../graphql/queries';
-import Search from '../../../layout/Dashboard/Header/HeaderContent/Search';
-import ScrollX from 'components/ScrollX';
-import MainCard from 'components/MainCard';
-import { CSVExport, TablePaginationToken } from 'components/third-party/reactTable';
 
 // types
 import { TableDataProps } from 'types/table';
@@ -34,153 +19,10 @@ import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import useAuth from 'hooks/useAuth';
 
-// ==============================|| REACT TABLE ||============================== //
+import ReactTableWrapper from 'components/ReactTableWrapper';
 
-function ReactTable({
-  data,
-  columns,
-  top,
-  currentPageIndex,
-  handlePagination,
-  nextToken,
-  previousTokens,
-  pageSize,
-  setPageSize,
-  isLoading
-}: {
-  data: TableDataProps[];
-  columns: ColumnDef<TableDataProps>[];
-  top?: boolean;
-  currentPageIndex: number;
-  handlePagination: (direction: 'next' | 'previous' | 'first') => Promise<void>;
-  nextToken: string | null;
-  previousTokens: string[];
-  setPageSize: (size: number) => void;
-  pageSize: number;
-  isLoading: boolean;
-}) {
-  const context = useContext(Context);
-  const { setSearchTerm }: any = context;
-
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    // getPaginationRowModel: getPaginationRowModel(),
-    debugTable: true,
-    getSortedRowModel: getSortedRowModel()
-  });
-
-  const headers: LabelKeyObject[] = [];
-  table.getAllColumns().map((columns) =>
-    headers.push({
-      label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
-      // @ts-ignore
-      key: columns.columnDef.accessorKey
-    })
-  );
-
-  const handleSearch = (term: any) => {
-    setSearchTerm(term);
-  };
-
-  return (
-    <>
-      <MainCard
-        title={' '}
-        content={false}
-        secondary={<CSVExport {...{ data, headers, filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
-      >
-        <CardContent sx={{ p: 2 }}>
-          {/* Add Search component below the title */}
-          <Box sx={{ mb: 2 }}>
-            <Search onSearch={handleSearch} />
-          </Box>
-          <ScrollX>
-            <Stack>
-              {top && (
-                <Box sx={{ p: 2 }}>
-                  <TablePaginationToken
-                    {...{
-                      currentPageIndex,
-                      handlePagination,
-                      nextToken,
-                      previousTokens,
-                      pageSize,
-                      setPageSize,
-                      isLoading
-                    }}
-                  />
-                </Box>
-              )}
-
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
-                      <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <TableCell key={header.id} {...header.column.columnDef.meta}>
-                            <span
-                              onClick={header.column.getToggleSortingHandler()} // Handle sorting when clicked
-                              style={{ cursor: 'pointer', fontWeight: 'bold' }}
-                            >
-                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                              {{
-                                asc: ' 🔼',
-                                desc: ' 🔽'
-                              }[header.column.getIsSorted() as string] ?? null}
-                            </span>
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableHead>
-                  <TableBody>
-                    {table.getRowModel().rows.map((row) => (
-                      <TableRow key={row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              {!top && (
-                <>
-                  <Divider />
-                  <Box sx={{ p: 2 }}>
-                    <TablePaginationToken
-                      {...{
-                        currentPageIndex,
-                        handlePagination,
-                        nextToken,
-                        previousTokens,
-                        pageSize,
-                        setPageSize,
-                        isLoading
-                      }}
-                    />
-                  </Box>
-                </>
-              )}
-            </Stack>
-          </ScrollX>
-        </CardContent>
-      </MainCard>
-    </>
-  );
-}
-
-// ==============================|| REACT TABLE - PAGINATION ||============================== //
-
-export default function transactionTable() {
+export default function DTerminalTransactionTable() {
   const { logout } = useAuth();
-  // const data: TableDataProps[] = makeData(100);
   const context = useContext(Context);
   const { searchTerm }: any = context;
 
@@ -218,33 +60,6 @@ export default function transactionTable() {
       logout();
     }
   }
-
-  // Transform company data to fit column structure
-  // const transformedData =
-  //   data?.listDterminalTransactionHistories?.items.map((item: any) => ({
-  //     transactionHash: item.transactionHash,
-  //     method: item.method,
-  //     age: item.age,
-  //     from: item.from,
-  //     to: item.to,
-  //     amount: item.amount,
-  //     txnFee: item.txnFee
-  //   })) || [];
-
-  // Filter data based on search term
-  // const filteredData = useMemo(() => {
-  //   if (!searchTerm) return data;
-  //   return data.filter(
-  //     (item: any) =>
-  //       (item.transactionHash && item.transactionHash.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.from && item.from.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.to && item.to.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.method && item.method.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.age && item.age.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.amount && item.amount.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.txnFee && item.txnFee.toString().toLowerCase().includes(searchTerm.toLowerCase()))
-  //   );
-  // }, [searchTerm, data]);
 
   const transformedResponseData = (resData: any) => {
     return resData.listDterminalTransactionHistories?.items.map((item: any) => ({
@@ -321,7 +136,7 @@ export default function transactionTable() {
         }
       });
     },
-    [nextToken, previousTokens, pageSize, fetchMore]
+    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
   useEffect(() => {
@@ -389,18 +204,16 @@ export default function transactionTable() {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <ReactTable
-          {...{
-            data,
-            columns,
-            nextToken,
-            previousTokens,
-            currentPageIndex,
-            pageSize,
-            setPageSize,
-            handlePagination,
-            isLoading: loading
-          }}
+        <ReactTableWrapper
+          data={data}
+          columns={columns}
+          currentPageIndex={currentPageIndex}
+          handlePagination={handlePagination}
+          nextToken={nextToken}
+          previousTokens={previousTokens}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+          isLoading={loading}
         />
       </Grid>
     </Grid>

@@ -31,7 +31,7 @@ const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRol
 const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/TabSettings')));
 const PlatformSettings = Loadable(lazy(() => import('pages/profiles/account/PlatformSettings')));
 const EvidentItems = Loadable(lazy(() => import('pages/evidentItems')));
-const Beneficiary = Loadable(lazy(() => import('pages/beneficiary')));
+const Beneficiary = Loadable(lazy(() => import('pages/addressBook')));
 const Validator = Loadable(lazy(() => import('pages/validator')));
 const Blog = Loadable(lazy(() => import('pages/blog')));
 const BlogDetails = Loadable(lazy(() => import('pages/blogDetails')));

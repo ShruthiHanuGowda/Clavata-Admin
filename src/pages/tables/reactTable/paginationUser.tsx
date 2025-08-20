@@ -1,23 +1,10 @@
 import { useState, useContext, useMemo, useEffect, useCallback } from 'react';
 import Grid from '@mui/material/Grid';
-import Divider from '@mui/material/Divider';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableContainer from '@mui/material/TableContainer';
-import TableCell from '@mui/material/TableCell';
-import Box from '@mui/material/Box';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Stack from '@mui/material/Stack';
-import { useReactTable, getCoreRowModel, ColumnDef, HeaderGroup, flexRender, getSortedRowModel } from '@tanstack/react-table';
+import { ColumnDef } from '@tanstack/react-table';
 import { useQuery } from '@apollo/client';
-import { CardContent } from '@mui/material';
 import { Link } from 'react-router-dom';
 import React from 'react';
-import Search from '../../../layout/Dashboard/Header/HeaderContent/Search';
-import ScrollX from 'components/ScrollX';
-import MainCard from 'components/MainCard';
-import { CSVExport, TablePaginationToken } from 'components/third-party/reactTable';
+import { Box } from '@mui/system';
 import { TableDataProps } from 'types/table';
 import { LIST_USER_WALLETS } from 'graphql/queries';
 import { Context } from 'App';
@@ -25,183 +12,7 @@ import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
 import useAuth from 'hooks/useAuth';
-
-function ReactTable({
-  data,
-  columns,
-  top,
-  handleOpenDetail,
-  expandedRowId,
-  currentPageIndex,
-  handlePagination,
-  nextToken,
-  previousTokens,
-  pageSize,
-  setPageSize,
-  isLoading
-}: {
-  data: TableDataProps[];
-  columns: ColumnDef<TableDataProps>[];
-  top?: boolean;
-  handleOpenDetail: (id: string) => void;
-  expandedRowId: string | null;
-  currentPageIndex: number;
-  handlePagination: (direction: 'next' | 'previous' | 'first') => Promise<void>;
-  nextToken: string | null;
-  previousTokens: string[];
-  setPageSize: (size: number) => void;
-  pageSize: number;
-  isLoading: boolean;
-}) {
-  const context = useContext(Context);
-  const { setSearchTerm }: any = context;
-
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    // getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    debugTable: true
-  });
-  const handleSearch = (term: any) => {
-    setSearchTerm(term);
-  };
-
-  return (
-    <>
-      <MainCard
-        title={' '}
-        content={false}
-        secondary={<CSVExport {...{ data, headers: [], filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
-      >
-        <CardContent sx={{ p: 2 }}>
-          <Box sx={{ mb: 2 }}>
-            <Search onSearch={handleSearch} />
-          </Box>
-          <ScrollX>
-            <Stack>
-              {top && (
-                <Box sx={{ p: 2 }}>
-                  <TablePaginationToken
-                    {...{
-                      currentPageIndex,
-                      handlePagination,
-                      nextToken,
-                      previousTokens,
-                      pageSize,
-                      setPageSize,
-                      isLoading
-                    }}
-                  />
-                </Box>
-              )}
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
-                      <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <TableCell key={header.id} {...header.column.columnDef.meta}>
-                            <span onClick={header.column.getToggleSortingHandler()} style={{ cursor: 'pointer', fontWeight: 'bold' }}>
-                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                              {{
-                                asc: ' 🔼',
-                                desc: ' 🔽'
-                              }[header.column.getIsSorted() as string] ?? null}
-                            </span>
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableHead>
-                  <TableBody>
-                    {table.getRowModel().rows.map((row: any) => (
-                      <React.Fragment key={row.id}>
-                        <TableRow>
-                          {row.getVisibleCells().map((cell: any) => (
-                            <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-
-                        {/* Show KYC Details to the extreme right if the row is expanded */}
-                        {expandedRowId === row.id && (
-                          <TableRow>
-                            <TableCell colSpan={row.getVisibleCells().length} sx={{ padding: 0 }}>
-                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', padding: '10px', position: 'relative' }}>
-                                <Box
-                                  sx={{
-                                    width: '250px',
-                                    padding: '10px',
-                                    backgroundColor: '#f9f9f9',
-                                    borderRadius: '8px',
-                                    boxShadow: 2
-                                  }}
-                                >
-                                  <div>
-                                    <strong>First Name:</strong> {row.original.kycDetails?.fullResponse?.info.firstName || 'N/A'}
-                                  </div>
-                                  <div>
-                                    <strong>Last Name:</strong> {row.original.kycDetails?.fullResponse?.info.lastName || 'N/A'}
-                                  </div>
-                                  <div>
-                                    <strong>Date of Birth:</strong> {row.original.kycDetails?.fullResponse?.info.dob || 'N/A'}
-                                  </div>
-                                  <div>
-                                    <strong>Country:</strong> {row.original.kycDetails?.fullResponse?.info.country || 'N/A'}
-                                  </div>
-                                  <div>
-                                    <strong>Nationality:</strong> {row.original.kycDetails?.fullResponse?.fixedInfo.nationality || 'N/A'}
-                                  </div>
-                                  <div>
-                                    <strong>Email:</strong> {row.original.kycDetails?.email || 'N/A'}
-                                  </div>
-                                  <div>
-                                    <strong>Review Status:</strong>{' '}
-                                    {row.original.kycDetails?.fullResponse?.review?.reviewResult?.reviewAnswer || 'N/A'}
-                                  </div>
-                                  <div>
-                                    <strong>IP Country:</strong> {row.original.kycDetails?.ipCountry || 'N/A'}
-                                  </div>
-                                </Box>
-                              </Box>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              {!top && (
-                <>
-                  <Divider />
-                  <Box sx={{ p: 2 }}>
-                    <TablePaginationToken
-                      {...{
-                        currentPageIndex,
-                        handlePagination,
-                        nextToken,
-                        previousTokens,
-                        pageSize,
-                        setPageSize,
-                        isLoading
-                      }}
-                    />
-                  </Box>
-                </>
-              )}
-            </Stack>
-          </ScrollX>
-        </CardContent>
-      </MainCard>
-    </>
-  );
-}
-
-// ==============================|| REACT TABLE - PAGINATION ||============================== //
+import ReactTableWrapper from 'components/ReactTableWrapper';
 
 export default function PaginationUserTable() {
   const { logout } = useAuth();
@@ -230,42 +41,14 @@ export default function PaginationUserTable() {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
-  const handleOpenDetail = (id: string) => {
-    setExpandedRowId((prevId) => (prevId === id ? null : id));
-  };
-
-  // const transformedData =
-  //   data?.listUserWalletAddresses?.items.map((item: any) => {
-  //     let parsedUserDetail = null;
-  //     try {
-  //       if (item.kycDetails) {
-  //         if (typeof item.kycDetails === 'string') {
-  //           parsedUserDetail = JSON.parse(item.kycDetails);
-  //         } else if (typeof item.kycDetails === 'object') {
-  //           parsedUserDetail = item.kycDetails;
-  //         }
-  //       }
-  //     } catch (e) {
-  //       console.error('Failed to parse kycDetails for:', item.emailAddress || item.userWallet, 'Error:', e);
-  //     }
-  //     return {
-  //       email: item.emailAddress,
-  //       wallet_address: item.userWallet,
-  //       denergyWallet: item.denergyWallet,
-  //       ethereumWallet: item.ethereumWallet,
-  //       applicantId: item.applicantId,
-  //       is_verified: item.is_verified,
-  //       reviewStatus: item.reviewStatus,
-  //       date: item.date,
-  //       kycDetails: parsedUserDetail
-  //     };
-  //   }) || [];
+  // const handleOpenDetail = (id: string) => {
+  //   setExpandedRowId((prevId) => (prevId === id ? null : id));
+  // };
 
   const filteredData = useMemo(() => {
-    // if (!searchTerm) return transformedData;
-    // return transformedData.filter(
     if (!searchTerm) return data;
     return data.filter(
       (item: any) =>
@@ -375,7 +158,7 @@ export default function PaginationUserTable() {
         }
       });
     },
-    [nextToken, previousTokens, pageSize, fetchMore]
+    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
   useEffect(() => {
@@ -448,20 +231,55 @@ export default function PaginationUserTable() {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <ReactTable
-          {...{
-            data: filteredData,
-            columns,
-            handleOpenDetail,
-            expandedRowId,
-            nextToken,
-            previousTokens,
-            currentPageIndex,
-            pageSize,
-            setPageSize,
-            handlePagination,
-            isLoading: loading
-          }}
+        <ReactTableWrapper
+          data={filteredData}
+          columns={columns}
+          currentPageIndex={currentPageIndex}
+          handlePagination={handlePagination}
+          nextToken={nextToken}
+          previousTokens={previousTokens}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+          isLoading={loading}
+          expandedRowId={expandedRowId}
+          renderExpandedRow={(row) => (
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', padding: '10px', position: 'relative' }}>
+              <Box
+                sx={{
+                  width: '250px',
+                  padding: '10px',
+                  backgroundColor: '#f9f9f9',
+                  borderRadius: '8px',
+                  boxShadow: 2
+                }}
+              >
+                <div>
+                  <strong>First Name:</strong> {row.original.kycDetails?.fullResponse?.info?.firstName || 'N/A'}
+                </div>
+                <div>
+                  <strong>Last Name:</strong> {row.original.kycDetails?.fullResponse?.info?.lastName || 'N/A'}
+                </div>
+                <div>
+                  <strong>Date of Birth:</strong> {row.original.kycDetails?.fullResponse?.info?.dob || 'N/A'}
+                </div>
+                <div>
+                  <strong>Country:</strong> {row.original.kycDetails?.fullResponse?.info?.country || 'N/A'}
+                </div>
+                <div>
+                  <strong>Nationality:</strong> {row.original.kycDetails?.fullResponse?.fixedInfo?.nationality || 'N/A'}
+                </div>
+                <div>
+                  <strong>Email:</strong> {row.original.kycDetails?.email || 'N/A'}
+                </div>
+                <div>
+                  <strong>Review Status:</strong> {row.original.kycDetails?.fullResponse?.review?.reviewResult?.reviewAnswer || 'N/A'}
+                </div>
+                <div>
+                  <strong>IP Country:</strong> {row.original.kycDetails?.ipCountry || 'N/A'}
+                </div>
+              </Box>
+            </Box>
+          )}
         />
       </Grid>
     </Grid>
