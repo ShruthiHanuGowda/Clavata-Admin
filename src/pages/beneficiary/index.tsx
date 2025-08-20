@@ -1,4 +1,4 @@
-import BeneficiaryTable from 'pages/tables/react-table/Beneficiary';
+import BeneficiaryTable from 'pages/tables/reactTable/beneficiary';
 
 function Index() {
   return <BeneficiaryTable />;

@@ -7,11 +7,11 @@ import Typography from '@mui/material/Typography';
 // project import
 import Blockchain from 'sections/dashboard/blockchain';
 // import WattCoin from 'sections/dashboard/watt-coin';
-import DWallet from 'sections/dashboard/d-wallet';
-import DTerminal from 'sections/dashboard/d-terminal';
+import DWallet from 'sections/dashboard/dWallet';
+import DTerminal from 'sections/dashboard/dTerminal';
 import StatisticsCard from 'sections/dashboard';
 import { getStats, getCounters, getCharts, getNewAccounts } from 'utils/api/denergytestnet';
-import EnergyConsumption from 'sections/dashboard/energy-consumption';
+import EnergyConsumption from 'sections/dashboard/energyConsumption';
 
 const countersToAnalytics: any = {
   accounts: ['totalAccounts', 'totalAddresses'],

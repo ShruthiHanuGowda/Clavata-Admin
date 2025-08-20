@@ -1,54 +1,21 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-
-// material-ui
-import Grid from '@mui/material/Grid';
-import Divider from '@mui/material/Divider';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableContainer from '@mui/material/TableContainer';
-import TableCell from '@mui/material/TableCell';
-import Box from '@mui/material/Box';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Stack from '@mui/material/Stack';
-// third-party
-import { useReactTable, getCoreRowModel, ColumnDef, HeaderGroup, flexRender, getSortedRowModel } from '@tanstack/react-table';
-
-// project-import
-import { LabelKeyObject } from 'react-csv/lib/core';
 import { useQuery } from '@apollo/client';
-import { CardContent } from '@mui/material';
-import { LIST_BENEFICIARIES } from '../../../graphql/queries';
-import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
-import ScrollX from 'components/ScrollX';
-import MainCard from 'components/MainCard';
-import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
-
-// types
-import { TableDataProps } from 'types/table';
-
-//query
+import { Grid, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, Box, Divider, CardContent, Stack } from '@mui/material';
+import { useReactTable, getCoreRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
+import { useNavigate } from 'react-router';
+import { Link } from 'react-router-dom';
 import { Context } from 'App';
-// import { Link } from 'react-router-dom';
-// import { getBlockExploreLink } from '../../../utils/explorer';
-// import { shortenAddress } from '../../../utils/shortenAddress';
-// import createApolloClient from '../../../utils/createApolloClient';
-// import useAuthToken from 'hooks/useAuthToken';
+import MainCard from 'components/MainCard';
+import { CSVExport, TablePaginationToken } from 'components/third-party/reactTable';
+import ScrollX from 'components/ScrollX';
+import Search from 'layout/Dashboard/Header/HeaderContent/Search';
+import { LIST_TRANSACTION_HISTORY_MOBILE } from 'graphql/queries'; // Define the query for transaction history
+import { getBlockExploreLink } from 'utils/explorer';
+import { shortenAddress } from 'utils/shortenAddress';
+import { formatDate } from 'utils/date';
 import useAuth from 'hooks/useAuth';
 
-// const client = new ApolloClient({
-//   link: new HttpLink({
-//     uri: import.meta.env.VITE_APP_BENEFICIARY_GRAPHQL_URL,
-//     headers: {
-//       // 'x-api-key': import.meta.env.VITE_APP_BENEFICIARY_GRAPHQL_API_KEY
-//     }
-//   }),
-//   cache: new InMemoryCache()
-// });
-
-// ==============================|| REACT TABLE ||============================== //
-
-function ReactTable({
+function TransactionHistoryMobilePage({
   data,
   columns,
   top,
@@ -60,8 +27,8 @@ function ReactTable({
   setPageSize,
   isLoading
 }: {
-  data: TableDataProps[];
-  columns: ColumnDef<TableDataProps>[];
+  data: any[];
+  columns: ColumnDef<any>[];
   top?: boolean;
   currentPageIndex: number;
   handlePagination: (direction: 'next' | 'previous' | 'first') => Promise<void>;
@@ -73,37 +40,36 @@ function ReactTable({
 }) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
+  const navigate = useNavigate();
+
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     // getPaginationRowModel: getPaginationRowModel(),
-    debugTable: true,
     getSortedRowModel: getSortedRowModel()
   });
 
-  const headers: LabelKeyObject[] = [];
-  table.getAllColumns().map((columns) =>
+  const headers: any[] = [];
+  table.getAllColumns().map((col: any) =>
     headers.push({
-      label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
-      // @ts-ignore
-      key: columns.columnDef.accessorKey
+      label: col.columnDef.header,
+      key: col.columnDef.accessorKey
     })
   );
 
-  const handleSearch = (term: any) => {
+  const handleSearch = (term: string) => {
     setSearchTerm(term);
   };
 
   return (
     <>
       <MainCard
-        title={' '}
+        title="Mobile Transactions"
         content={false}
-        secondary={<CSVExport {...{ data, headers, filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
+        secondary={<CSVExport {...{ data, headers, filename: 'mobile-transactions.csv' }} />}
       >
         <CardContent sx={{ p: 2 }}>
-          {/* Add Search component below the title */}
           <Box sx={{ mb: 2 }}>
             <Search onSearch={handleSearch} />
           </Box>
@@ -128,14 +94,11 @@ function ReactTable({
               <TableContainer>
                 <Table>
                   <TableHead>
-                    {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
+                    {table.getHeaderGroups().map((headerGroup) => (
                       <TableRow key={headerGroup.id}>
                         {headerGroup.headers.map((header) => (
                           <TableCell key={header.id} {...header.column.columnDef.meta}>
-                            <span
-                              onClick={header.column.getToggleSortingHandler()} // Handle sorting when clicked
-                              style={{ cursor: 'pointer', fontWeight: 'bold' }}
-                            >
+                            <span onClick={header.column.getToggleSortingHandler()} style={{ cursor: 'pointer', fontWeight: 'bold' }}>
                               {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                               {{
                                 asc: ' 🔼',
@@ -151,8 +114,12 @@ function ReactTable({
                     {table.getRowModel().rows?.length > 0 ? (
                       table.getRowModel().rows.map((row) => (
                         <TableRow key={row.id}>
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                          {row.getVisibleCells().map((cell: any) => (
+                            <TableCell
+                              key={cell.id}
+                              {...cell.column.columnDef.meta}
+                              style={{ cursor: cell.column.columnDef.accessorKey === 'transactionHash' ? 'pointer' : 'default' }}
+                            >
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </TableCell>
                           ))}
@@ -191,17 +158,14 @@ function ReactTable({
   );
 }
 
-// ==============================|| REACT TABLE - PAGINATION ||============================== //
-
-export default function transactionTable() {
+export default function MobileTransactionHistory() {
   const { logout } = useAuth();
-  // const data: TableDataProps[] = makeData(100);
   const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
+  const { searchTerm } = context as any;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState<TableDataProps[]>([]);
+  const [data, setData] = useState([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -210,70 +174,48 @@ export default function transactionTable() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_BENEFICIARIES, {
+  } = useQuery(LIST_TRANSACTION_HISTORY_MOBILE, {
     variables: {
       nextToken: null,
       limit: pageSize,
       filter: {
         or: [
-          { name: { contains: searchTerm } },
-          { walletAddress: { contains: searchTerm } },
-          { beneficiaryAddress: { contains: searchTerm } },
-          { chain: { contains: searchTerm } }
+          { from: { contains: searchTerm } },
+          { to: { contains: searchTerm } },
+          { method: { contains: searchTerm } },
+          { coinCode: { contains: searchTerm } },
+          { transactionStatus: { contains: searchTerm } },
+          { transactionHash: { contains: searchTerm } },
+          { createdAt: { contains: searchTerm } }
         ]
       }
-      // filter: {
-      //   or: [{ name: { contains: 'Jemin' } }, { walletAddress: { contains: '0xfBf8f51692d205cdCbD45873235ab1284A2332d2' } }]
-      // }
     }
-    // variables: { nextToken: null, limit: pageSize, filter: { name: { contains: 'Jemin' } } }
   });
 
   if (error) {
-    console.error('GraphQL Error:', error);
+    console.error('Error fetching mobile transaction history:', error);
     if (error?.message?.includes('code 401')) {
       logout();
     }
   }
 
-  // Transform company data to fit column structure
-  // const transformedData =
-  //   data?.listAddressBooks?.items.map((item: any) => ({
-  //     id: item.id,
-  //     name: item.name,
-  //     walletAddress: item.walletAddress,
-  //     beneficiaryAddress: item.beneficiaryAddress,
-  //     chain: item.chain
-  //   })) || [];
+  // const transformedData = data?.listTransactionHistoryMobiles?.items || [];
 
-  // Filter data based on search term
   // const filteredData = useMemo(() => {
   //   if (!searchTerm) return data;
   //   return data.filter(
   //     (item: any) =>
-  //       (item.id && item.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.walletAddress && item.walletAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.beneficiaryAddress && item.beneficiaryAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.chain && item.chain.toLowerCase().includes(searchTerm.toLowerCase()))
+  //       item.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       item.to.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       item.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       item.transactionHash.toLowerCase().includes(searchTerm.toLowerCase())
   //   );
   // }, [searchTerm, data]);
 
-  const transformedResponseData = (resData: any) => {
-    return resData.listAddressBooks?.items.map((item: any, index: number) => ({
-      id: item.id || index || '',
-      name: item.name,
-      walletAddress: item.walletAddress,
-      beneficiaryAddress: item.beneficiaryAddress,
-      chain: item.chain
-    }));
-  };
-
   useEffect(() => {
     if (queryData) {
-      const transformedData = transformedResponseData(queryData);
-      setData(transformedData);
-      setNextToken(queryData.listAddressBooks.nextToken);
+      setData(queryData.listTransactionHistoryMobiles.items);
+      setNextToken(queryData.listTransactionHistoryMobiles.nextToken);
     }
   }, [queryData]);
 
@@ -312,10 +254,8 @@ export default function transactionTable() {
       }).then((fetchMoreResult: any) => {
         const fetchedData = fetchMoreResult.data;
 
-        const transformedData = transformedResponseData(fetchedData);
-
-        setData(transformedData);
-        setNextToken(fetchedData.listAddressBooks.nextToken);
+        setData(fetchedData.listTransactionHistoryMobiles.items);
+        setNextToken(fetchedData.listTransactionHistoryMobiles.nextToken);
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
@@ -335,40 +275,54 @@ export default function transactionTable() {
     [nextToken, previousTokens, pageSize, fetchMore]
   );
 
-  const columns = useMemo<ColumnDef<TableDataProps>[]>(
+  useEffect(() => {
+    handlePagination('first');
+  }, [pageSize]);
+
+  const columns = useMemo<ColumnDef<any>[]>(
     () => [
       {
-        header: 'Name',
-        accessorKey: 'name'
+        header: 'Transaction Hash',
+        accessorKey: 'transactionHash',
+        cell: (cell) => {
+          const hash = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank">
+              {shortenAddress(hash)}
+            </Link>
+          );
+        }
       },
       {
-        header: 'Wallet Address',
-        accessorKey: 'walletAddress'
-        // cell: (cell) => {
-        //   const hash = cell.getValue() as string;
-        //   return (
-        //     <Link to={getBlockExploreLink(hash)} target="_blank">
-        //       {shortenAddress(hash)}
-        //     </Link>
-        //   );
-        // }
+        header: 'From',
+        accessorKey: 'from',
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
       {
-        header: 'Beneficiary Address',
-        accessorKey: 'beneficiaryAddress'
-        // cell: (cell) => {
-        //   const hash = cell.getValue() as string;
-        //   return (
-        //     <Link to={getBlockExploreLink(hash)} target="_blank">
-        //       {shortenAddress(hash)}
-        //     </Link>
-        //   );
-        // }
+        header: 'To',
+        accessorKey: 'to',
+        cell: (cell) => {
+          const address = cell.getValue() as string;
+          return (
+            <Link to={getBlockExploreLink(address)} target="_blank">
+              {shortenAddress(address)}
+            </Link>
+          );
+        }
       },
-      {
-        header: 'Chain',
-        accessorKey: 'chain'
-      }
+      { header: 'Amount', accessorKey: 'amount' },
+      { header: 'Coin Code', accessorKey: 'coinCode' },
+      { header: 'Method', accessorKey: 'method' },
+      { header: 'Status', accessorKey: 'transactionStatus' },
+      { header: 'Transaction Fee', accessorKey: 'txnFee' },
+      { header: 'Created At', accessorKey: 'createdAt', cell: (cell) => formatDate(cell.getValue() as string) }
     ],
     []
   );
@@ -376,7 +330,7 @@ export default function transactionTable() {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <ReactTable
+        <TransactionHistoryMobilePage
           {...{
             data,
             columns,

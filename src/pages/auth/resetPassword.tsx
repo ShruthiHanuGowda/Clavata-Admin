@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 
 // project import
 import AuthWrapper from 'sections/auth/AuthWrapper';
-import AuthResetPassword from 'sections/auth/auth-forms/AuthResetPassword';
+import AuthResetPassword from 'sections/auth/authForms/AuthResetPassword';
 
 // ================================|| RESET PASSWORD ||================================ //
 

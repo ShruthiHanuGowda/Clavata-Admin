@@ -11,7 +11,7 @@ import Typography from '@mui/material/Typography';
 // project import
 import NavGroup from './NavGroup';
 import NavItem from './NavItem';
-import menuItem from 'menu-items';
+import menuItem from 'menuItems';
 
 import useConfig from 'hooks/useConfig';
 import { HORIZONTAL_MAX_ITEM, MenuOrientation } from 'config';

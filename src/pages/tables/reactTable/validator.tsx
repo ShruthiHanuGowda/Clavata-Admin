@@ -21,10 +21,10 @@ import {
 import { LabelKeyObject } from 'react-csv/lib/core';
 import { CardContent, Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
+import Search from '../../../layout/Dashboard/Header/HeaderContent/Search';
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
-import { CSVExport, TablePagination } from 'components/third-party/react-table';
+import { CSVExport, TablePagination } from 'components/third-party/reactTable';
 import { TableDataProps } from 'types/table';
 import { Context } from 'App';
 

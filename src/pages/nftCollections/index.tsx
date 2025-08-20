@@ -4,7 +4,7 @@ import { Grid, Box, Divider, Card, CardContent, CardMedia, Typography, Stack } f
 import { Link, useNavigate } from 'react-router-dom';
 import { Context } from 'App';
 import MainCard from 'components/MainCard';
-import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
+import { CSVExport, TablePaginationToken } from 'components/third-party/reactTable';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { LIST_NFT_COLLECTIONS } from 'graphql/queries';
 import { getBlockExploreLink } from 'utils/explorer';

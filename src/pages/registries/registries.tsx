@@ -13,7 +13,7 @@ import { LabelKeyObject } from 'react-csv/lib/core';
 import { useMemo } from 'react';
 
 import ScrollX from '../../components/ScrollX';
-import { TablePagination } from '../../components/third-party/react-table';
+import { TablePagination } from '../../components/third-party/reactTable';
 import MainCard from '../../components/MainCard';
 import { formatDate } from 'utils/date';
 

@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+
 // material-ui
 import Grid from '@mui/material/Grid';
 import Divider from '@mui/material/Divider';
@@ -18,25 +18,29 @@ import { useReactTable, getCoreRowModel, ColumnDef, HeaderGroup, flexRender, get
 import { LabelKeyObject } from 'react-csv/lib/core';
 import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
-import { LIST_NFT_WALLETS } from '../../../graphql/queries';
-import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
+import { Link } from 'react-router-dom';
+import { LIST_COMPANY_WALLETS } from '../../../graphql/queries';
+import Search from '../../../layout/Dashboard/Header/HeaderContent/Search';
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
-// import LinearWithLabel from 'components/@extended/progress/LinearWithLabel';
-import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
-// import makeData from 'data/react-table';
+import { CSVExport, TablePaginationToken } from 'components/third-party/reactTable';
 
 // types
 import { TableDataProps } from 'types/table';
 
 //query
 import { Context } from 'App';
-import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
+import { getBlockExploreLink } from 'utils/explorer';
 import { formatDate } from 'utils/date';
 import useAuth from 'hooks/useAuth';
 
 // ==============================|| REACT TABLE ||============================== //
+
+// interface CompanyDetail {
+//   companyName?: string;
+//   registrationNumber?: string;
+// }
 
 function ReactTable({
   data,
@@ -101,6 +105,14 @@ function ReactTable({
             <Stack>
               {top && (
                 <Box sx={{ p: 2 }}>
+                  {/* <TablePagination
+                    {...{
+                      setPageSize: table.setPageSize,
+                      setPageIndex: table.setPageIndex,
+                      getState: table.getState,
+                      getPageCount: table.getPageCount
+                    }}
+                  /> */}
                   <TablePaginationToken
                     {...{
                       currentPageIndex,
@@ -112,14 +124,6 @@ function ReactTable({
                       isLoading
                     }}
                   />
-                  {/* <TablePagination
-                    {...{
-                      setPageSize: table.setPageSize,
-                      setPageIndex: table.setPageIndex,
-                      getState: table.getState,
-                      getPageCount: table.getPageCount
-                    }}
-                  /> */}
                 </Box>
               )}
 
@@ -146,19 +150,15 @@ function ReactTable({
                     ))}
                   </TableHead>
                   <TableBody>
-                    {table.getRowModel().rows?.length > 0 ? (
-                      table.getRowModel().rows.map((row) => (
-                        <TableRow key={row.id}>
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow key={0}>No data found!</TableRow>
-                    )}
+                    {table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -191,14 +191,10 @@ function ReactTable({
 
 // ==============================|| REACT TABLE - PAGINATION ||============================== //
 
-export default function NftTable() {
+export default function PaginationTable() {
   const { logout } = useAuth();
   // const data: TableDataProps[] = makeData(100);
-
-  const [contractAddress, setContractAddress] = useState('');
-
   const context = useContext(Context);
-  const location = useLocation();
   const { searchTerm }: any = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
@@ -212,69 +208,90 @@ export default function NftTable() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_NFT_WALLETS, {
-    variables: { limit: pageSize, contractAddress }
+  } = useQuery(LIST_COMPANY_WALLETS, {
+    variables: { limit: pageSize }
   });
 
   if (error) {
-    console.error('GraphQL Error:', error);
+    console.error('GraphQL Error:', error, error?.message?.includes('code 401'), error?.message);
     if (error?.message?.includes('code 401')) {
       logout();
     }
   }
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search); // Parse the URL query
-    const searchParam = params.get('search');
-    if (searchParam) {
-      setContractAddress(searchParam); // Set the search term from URL
-    }
-    return () => {
-      setContractAddress('');
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
-
   // Transform company data to fit column structure
-  // const transformedData = useMemo(() => {
-  //   return (data?.listMintedNfts?.items || []).map((item: any) => ({
-  //     assetId: item.assetId,
-  //     contractAddress: item.contractAddress,
-  //     createdAt: item.createdAt,
-  //     mintedVolume: item.mintedVolume,
-  //     tokenId: item.tokenId
-  //   }));
-  // }, [data]);
+  // const transformedData =
+  //   data?.listUserWallets?.items.map((item: any) => {
+  //     let parsedCompanyDetail = null;
+
+  //     try {
+  //       parsedCompanyDetail = typeof item.company_detail === 'string' ? JSON.parse(item.company_detail) : item.company_detail;
+  //     } catch (e) {
+  //       console.error('Invalid JSON in company_detail:', e);
+  //     }
+
+  //     const companyInfo = parsedCompanyDetail?.fullResponse?.fixedInfo?.companyInfo;
+
+  //     return {
+  //       email: item.userAddress,
+  //       wallet_address: item.userWallet,
+  //       denergyWallet: item.denergyWallet,
+  //       ethereumWallet: item.ethereumWallet,
+  //       applicantId: item.applicantId,
+  //       is_verified_kyb: item.is_verified_kyb,
+  //       reviewStatus: item.reviewStatus,
+  //       date: item.date,
+  //       company_detail: companyInfo || null
+  //     };
+  //   }) || [];
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(
       (item: any) =>
-        (item.assetId && item.assetId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.contractAddress && item.contractAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.createdAt && item.createdAt.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.mintedVolume && item.mintedVolume.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.tokenId && item.tokenId.toLowerCase().includes(searchTerm.toLowerCase()))
+        (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.ethereumWallet && item.ethereumWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.applicantId && item.applicantId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.is_verified_kyb?.toString() && item.is_verified_kyb.toString().includes(searchTerm.toLowerCase())) ||
+        (item.reviewStatus && item.reviewStatus.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, data]);
 
   const transformedResponseData = (resData: any) => {
-    return (resData?.listMintedNfts?.items || []).map((item: any, index: number) => ({
-      id: item?.id || index || '',
-      assetId: item.assetId,
-      contractAddress: item.contractAddress,
-      createdAt: item.createdAt,
-      mintedVolume: item.mintedVolume,
-      tokenId: item.tokenId
-    }));
+    return resData.listUserWallets?.items.map((item: any, index: number) => {
+      let parsedCompanyDetail = null;
+
+      try {
+        parsedCompanyDetail = typeof item.company_detail === 'string' ? JSON.parse(item.company_detail) : item.company_detail;
+      } catch (e) {
+        console.error('Invalid JSON in company_detail:', e);
+      }
+
+      const companyInfo = parsedCompanyDetail?.fullResponse?.fixedInfo?.companyInfo;
+
+      return {
+        id: item?.id || index || '',
+        email: item.userAddress,
+        wallet_address: item.userWallet,
+        denergyWallet: item.denergyWallet,
+        ethereumWallet: item.ethereumWallet,
+        applicantId: item.applicantId,
+        is_verified_kyb: item.is_verified_kyb,
+        reviewStatus: item.reviewStatus,
+        date: item.date,
+        company_detail: companyInfo || null
+      };
+    });
   };
 
   useEffect(() => {
     if (queryData) {
       const transformedData = transformedResponseData(queryData);
       setData(transformedData);
-      setNextToken(queryData.listMintedNfts.nextToken);
+      setNextToken(queryData.listUserWallets.nextToken);
     }
   }, [queryData]);
 
@@ -316,7 +333,7 @@ export default function NftTable() {
         const transformedData = transformedResponseData(fetchedData);
 
         setData(transformedData);
-        setNextToken(fetchedData.listMintedNfts.nextToken);
+        setNextToken(fetchMoreResult.data.listUserWallets.nextToken);
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
@@ -333,7 +350,7 @@ export default function NftTable() {
         }
       });
     },
-    [nextToken, previousTokens, pageSize, fetchMore]
+    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
   useEffect(() => {
@@ -343,12 +360,12 @@ export default function NftTable() {
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
       {
-        header: 'Asset Id',
-        accessorKey: 'assetId'
+        header: 'Email',
+        accessorKey: 'email'
       },
       {
-        header: 'Contract Address',
-        accessorKey: 'contractAddress',
+        header: 'User Wallet Address',
+        accessorKey: 'wallet_address',
         cell: (cell) => {
           const address = cell.getValue() as string;
           return (
@@ -358,55 +375,77 @@ export default function NftTable() {
           );
         }
       },
+      // {
+      //   header: 'Denergy Wallet Address',
+      //   accessorKey: 'denergyWallet',
+      //   cell: (cell) => {
+      //     const address = cell.getValue() as string;
+      //     return (
+      //       <Link to={getBlockExploreLink(address)} target="_blank">
+      //         {shortenAddress(address)}
+      //       </Link>
+      //     );
+      //   }
+      // },
+      // {
+      //   header: 'Ethereum Wallet Address',
+      //   accessorKey: 'ethereumWallet',
+      //   cell: (cell) => {
+      //     const address = cell.getValue() as string;
+      //     return (
+      //       <Link to={getBlockExploreLink(address)} target="_blank">
+      //         {shortenAddress(address)}
+      //       </Link>
+      //     );
+      //   }
+      // },
       {
-        header: 'Created At',
-        accessorKey: 'createdAt',
+        header: 'KYB Applicant ID',
+        accessorKey: 'applicantId'
+      },
+      {
+        header: 'KYB Verified',
+        accessorKey: 'is_verified_kyb'
+      },
+      // {
+      //   header: 'KYB Review Status',
+      //   accessorKey: 'reviewStatus'
+      // },
+      {
+        header: 'Date Registered',
+        accessorKey: 'date',
         cell: (cell) => formatDate(cell.getValue() as string)
       },
       {
-        header: 'Minted Volume',
-        accessorKey: 'mintedVolume'
-      },
-      // {
-      //   header: 'Denergy Wallet',
-      //   accessorKey: 'age',
-      //   meta: {
-      //     className: 'cell-right'
-      //   }
-      // },
-      {
-        header: 'Token Id',
-        accessorKey: 'tokenId'
-        // cell: (cell) => {
-        //   switch (cell.getValue()) {
-        //     case 'Complicated':
-        //       return <Chip color="error" label="Complicated" size="small" variant="light" />;
-        //     case 'Relationship':
-        //       return <Chip color="success" label="Relationship" size="small" variant="light" />;
-        //     case 'Single':
-        //     default:
-        //       return <Chip color="info" label="Single" size="small" variant="light" />;
-        //   }
-        // }
+        header: 'KYB Company Detail',
+        accessorKey: 'company_detail',
+        cell: (info) => {
+          const applicantId = info.row.original.applicantId;
+
+          return (
+            <Link to={`/companies/${applicantId}`}>
+              <button
+                style={{
+                  padding: '6px 12px',
+                  background: '#1976d2',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                View Details
+              </button>
+            </Link>
+          );
+        }
       }
-      // {
-      //   header: 'KYC status',
-      //   accessorKey: 'progress'
-      //   // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
-      // },
-      //   {
-      //     header: 'Date Registered',
-      //     accessorKey: 'date'
-      //   }
     ],
     []
   );
 
   return (
     <Grid container spacing={3}>
-      {/* <Grid item xs={12}>
-        <ReactTable {...{ data, columns, top: true }} />
-      </Grid> */}
       <Grid item xs={12}>
         <ReactTable
           {...{

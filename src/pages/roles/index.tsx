@@ -17,7 +17,7 @@ import CloseOutlined from '@ant-design/icons/CloseOutlined';
 import EditTwoTone from '@ant-design/icons/EditTwoTone';
 import { TableDataProps } from '../../types/table';
 import ScrollX from '../../components/ScrollX';
-import { TablePagination } from '../../components/third-party/react-table';
+import { TablePagination } from '../../components/third-party/reactTable';
 import MainCard from '../../components/MainCard';
 
 const data = [

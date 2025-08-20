@@ -5,8 +5,8 @@ import { Chance } from 'chance';
 import { jwtDecode } from 'jwt-decode';
 
 // reducer - state management
-import { LOGIN, LOGOUT } from 'contexts/auth-reducer/actions';
-import authReducer from 'contexts/auth-reducer/auth';
+import { LOGIN, LOGOUT } from 'contexts/authReducer/actions';
+import authReducer from 'contexts/authReducer/auth';
 
 // project import
 import Loader from 'components/Loader';

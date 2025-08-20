@@ -13,7 +13,7 @@ import ApartmentOutlined from '@ant-design/icons/ApartmentOutlined';
 import HomeOutlined from '@ant-design/icons/HomeOutlined';
 import HomeFilled from '@ant-design/icons/HomeFilled';
 import MainCard from 'components/MainCard';
-import navigation from 'menu-items';
+import navigation from 'menuItems';
 import { ThemeDirection } from 'config';
 
 // assets

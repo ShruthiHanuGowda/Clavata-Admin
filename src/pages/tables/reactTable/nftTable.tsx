@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-
+import { Link, useLocation } from 'react-router-dom';
 // material-ui
 import Grid from '@mui/material/Grid';
 import Divider from '@mui/material/Divider';
@@ -18,12 +18,13 @@ import { useReactTable, getCoreRowModel, ColumnDef, HeaderGroup, flexRender, get
 import { LabelKeyObject } from 'react-csv/lib/core';
 import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
-import { Link } from 'react-router-dom';
-import { LIST_DTERMINAL_TRANSACTION_HISTORY } from '../../../graphql/queries';
-import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
+import { LIST_NFT_WALLETS } from '../../../graphql/queries';
+import Search from '../../../layout/Dashboard/Header/HeaderContent/Search';
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
-import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
+// import LinearWithLabel from 'components/@extended/progress/LinearWithLabel';
+import { CSVExport, TablePaginationToken } from 'components/third-party/reactTable';
+// import makeData from 'data/react-table';
 
 // types
 import { TableDataProps } from 'types/table';
@@ -32,6 +33,7 @@ import { TableDataProps } from 'types/table';
 import { Context } from 'App';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
+import { formatDate } from 'utils/date';
 import useAuth from 'hooks/useAuth';
 
 // ==============================|| REACT TABLE ||============================== //
@@ -61,7 +63,6 @@ function ReactTable({
 }) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
-
   const table = useReactTable({
     data,
     columns,
@@ -111,6 +112,14 @@ function ReactTable({
                       isLoading
                     }}
                   />
+                  {/* <TablePagination
+                    {...{
+                      setPageSize: table.setPageSize,
+                      setPageIndex: table.setPageIndex,
+                      getState: table.getState,
+                      getPageCount: table.getPageCount
+                    }}
+                  /> */}
                 </Box>
               )}
 
@@ -137,15 +146,19 @@ function ReactTable({
                     ))}
                   </TableHead>
                   <TableBody>
-                    {table.getRowModel().rows.map((row) => (
-                      <TableRow key={row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
+                    {table.getRowModel().rows?.length > 0 ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id}>
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow key={0}>No data found!</TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -178,15 +191,19 @@ function ReactTable({
 
 // ==============================|| REACT TABLE - PAGINATION ||============================== //
 
-export default function transactionTable() {
+export default function NftTable() {
   const { logout } = useAuth();
   // const data: TableDataProps[] = makeData(100);
+
+  const [contractAddress, setContractAddress] = useState('');
+
   const context = useContext(Context);
+  const location = useLocation();
   const { searchTerm }: any = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<TableDataProps[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -195,21 +212,8 @@ export default function transactionTable() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_DTERMINAL_TRANSACTION_HISTORY, {
-    variables: {
-      nextToken: null,
-      limit: pageSize,
-      filter: {
-        or: [
-          { transactionHash: { contains: searchTerm } },
-          { method: { contains: searchTerm } },
-          { coin: { contains: searchTerm } },
-          { age: { contains: searchTerm } },
-          { from: { contains: searchTerm } },
-          { to: { contains: searchTerm } }
-        ]
-      }
-    }
+  } = useQuery(LIST_NFT_WALLETS, {
+    variables: { limit: pageSize, contractAddress }
   });
 
   if (error) {
@@ -219,42 +223,50 @@ export default function transactionTable() {
     }
   }
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search); // Parse the URL query
+    const searchParam = params.get('search');
+    if (searchParam) {
+      setContractAddress(searchParam); // Set the search term from URL
+    }
+    return () => {
+      setContractAddress('');
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
   // Transform company data to fit column structure
-  // const transformedData =
-  //   data?.listDterminalTransactionHistories?.items.map((item: any) => ({
-  //     transactionHash: item.transactionHash,
-  //     method: item.method,
-  //     age: item.age,
-  //     from: item.from,
-  //     to: item.to,
-  //     amount: item.amount,
-  //     txnFee: item.txnFee
-  //   })) || [];
+  // const transformedData = useMemo(() => {
+  //   return (data?.listMintedNfts?.items || []).map((item: any) => ({
+  //     assetId: item.assetId,
+  //     contractAddress: item.contractAddress,
+  //     createdAt: item.createdAt,
+  //     mintedVolume: item.mintedVolume,
+  //     tokenId: item.tokenId
+  //   }));
+  // }, [data]);
 
   // Filter data based on search term
-  // const filteredData = useMemo(() => {
-  //   if (!searchTerm) return data;
-  //   return data.filter(
-  //     (item: any) =>
-  //       (item.transactionHash && item.transactionHash.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.from && item.from.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.to && item.to.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.method && item.method.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.age && item.age.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.amount && item.amount.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
-  //       (item.txnFee && item.txnFee.toString().toLowerCase().includes(searchTerm.toLowerCase()))
-  //   );
-  // }, [searchTerm, data]);
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+    return data.filter(
+      (item: any) =>
+        (item.assetId && item.assetId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.contractAddress && item.contractAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.createdAt && item.createdAt.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.mintedVolume && item.mintedVolume.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.tokenId && item.tokenId.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [searchTerm, data]);
 
   const transformedResponseData = (resData: any) => {
-    return resData.listDterminalTransactionHistories?.items.map((item: any) => ({
-      transactionHash: item.transactionHash,
-      method: item.method,
-      age: item.age,
-      from: item.from,
-      to: item.to,
-      amount: item.amount,
-      txnFee: item.txnFee
+    return (resData?.listMintedNfts?.items || []).map((item: any, index: number) => ({
+      id: item?.id || index || '',
+      assetId: item.assetId,
+      contractAddress: item.contractAddress,
+      createdAt: item.createdAt,
+      mintedVolume: item.mintedVolume,
+      tokenId: item.tokenId
     }));
   };
 
@@ -262,7 +274,7 @@ export default function transactionTable() {
     if (queryData) {
       const transformedData = transformedResponseData(queryData);
       setData(transformedData);
-      setNextToken(queryData.listDterminalTransactionHistories.nextToken);
+      setNextToken(queryData.listMintedNfts.nextToken);
     }
   }, [queryData]);
 
@@ -304,7 +316,7 @@ export default function transactionTable() {
         const transformedData = transformedResponseData(fetchedData);
 
         setData(transformedData);
-        setNextToken(fetchedData.listDterminalTransactionHistories.nextToken);
+        setNextToken(fetchedData.listMintedNfts.nextToken);
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
@@ -331,20 +343,12 @@ export default function transactionTable() {
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
       {
-        header: 'Transaction Hash',
-        accessorKey: 'transactionHash',
-        cell: (cell) => {
-          const hash = cell.getValue() as string;
-          return (
-            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank">
-              {shortenAddress(hash)}
-            </Link>
-          );
-        }
+        header: 'Asset Id',
+        accessorKey: 'assetId'
       },
       {
-        header: 'From',
-        accessorKey: 'from',
+        header: 'Contract Address',
+        accessorKey: 'contractAddress',
         cell: (cell) => {
           const address = cell.getValue() as string;
           return (
@@ -355,43 +359,58 @@ export default function transactionTable() {
         }
       },
       {
-        header: 'To',
-        accessorKey: 'to',
-        cell: (cell) => {
-          const address = cell.getValue() as string;
-          return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
-              {shortenAddress(address)}
-            </Link>
-          );
-        }
+        header: 'Created At',
+        accessorKey: 'createdAt',
+        cell: (cell) => formatDate(cell.getValue() as string)
       },
       {
-        header: 'Method',
-        accessorKey: 'method'
+        header: 'Minted Volume',
+        accessorKey: 'mintedVolume'
       },
+      // {
+      //   header: 'Denergy Wallet',
+      //   accessorKey: 'age',
+      //   meta: {
+      //     className: 'cell-right'
+      //   }
+      // },
       {
-        header: 'Age',
-        accessorKey: 'age'
-      },
-      {
-        header: 'Amount',
-        accessorKey: 'amount'
-      },
-      {
-        header: 'Transaction Fee',
-        accessorKey: 'txnFee'
+        header: 'Token Id',
+        accessorKey: 'tokenId'
+        // cell: (cell) => {
+        //   switch (cell.getValue()) {
+        //     case 'Complicated':
+        //       return <Chip color="error" label="Complicated" size="small" variant="light" />;
+        //     case 'Relationship':
+        //       return <Chip color="success" label="Relationship" size="small" variant="light" />;
+        //     case 'Single':
+        //     default:
+        //       return <Chip color="info" label="Single" size="small" variant="light" />;
+        //   }
+        // }
       }
+      // {
+      //   header: 'KYC status',
+      //   accessorKey: 'progress'
+      //   // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
+      // },
+      //   {
+      //     header: 'Date Registered',
+      //     accessorKey: 'date'
+      //   }
     ],
     []
   );
 
   return (
     <Grid container spacing={3}>
+      {/* <Grid item xs={12}>
+        <ReactTable {...{ data, columns, top: true }} />
+      </Grid> */}
       <Grid item xs={12}>
         <ReactTable
           {...{
-            data,
+            data: filteredData,
             columns,
             nextToken,
             previousTokens,

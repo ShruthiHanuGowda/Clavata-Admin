@@ -24,7 +24,7 @@ import useAuth from 'hooks/useAuth';
 import IconButton from 'components/@extended/IconButton';
 import AnimateButton from 'components/@extended/AnimateButton';
 
-import { strengthColor, strengthIndicator } from 'utils/password-strength';
+import { strengthColor, strengthIndicator } from 'utils/passwordStrength';
 import { openSnackbar } from 'api/snackbar';
 
 // types

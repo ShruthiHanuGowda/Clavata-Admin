@@ -24,7 +24,7 @@ import { FormControl, InputAdornment, OutlinedInput } from '@mui/material';
 import { SearchOutlined } from '@ant-design/icons';
 import { WebSocketLink } from '@apollo/client/link/ws';
 import ScrollX from '../../components/ScrollX';
-import { TablePaginationToken } from '../../components/third-party/react-table';
+import { TablePaginationToken } from '../../components/third-party/reactTable';
 import MainCard from '../../components/MainCard';
 import useAuth from 'hooks/useAuth';
 import { ON_CREATE_EVIDENT_ITEM, ON_UPDATE_EVIDENT_ITEM, ON_DELETE_EVIDENT_ITEM } from 'graphql/subscriptions';

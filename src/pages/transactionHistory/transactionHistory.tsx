@@ -1,4 +1,4 @@
-import TransactionTable from 'pages/tables/react-table/transactionTable';
+import TransactionTable from 'pages/tables/reactTable/transactionTable';
 function TransactionHistory() {
   return <TransactionTable />;
 }

@@ -25,7 +25,7 @@ import CloseOutlined from '@ant-design/icons/CloseOutlined';
 import MainCard from 'components/MainCard';
 import IconButton from 'components/@extended/IconButton';
 import ScrollX from 'components/ScrollX';
-import { TablePagination } from 'components/third-party/react-table';
+import { TablePagination } from 'components/third-party/reactTable';
 
 import { TableDataProps } from 'types/table';
 

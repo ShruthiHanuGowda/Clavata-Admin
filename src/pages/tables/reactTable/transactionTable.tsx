@@ -18,20 +18,18 @@ import { useReactTable, getCoreRowModel, ColumnDef, HeaderGroup, flexRender, get
 import { LabelKeyObject } from 'react-csv/lib/core';
 import { useQuery } from '@apollo/client';
 import { CardContent } from '@mui/material';
-import { Link } from 'react-router-dom';
-import { LIST_AIRDROP_COLLECTIONS } from '../../../graphql/queries';
-import Search from '../../../../../admin-panel-fe/src/layout/Dashboard/Header/HeaderContent/Search';
+import { LIST_TRANSACTION_HISTORY } from '../../../graphql/queries';
+import Search from '../../../layout/Dashboard/Header/HeaderContent/Search';
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
-import { CSVExport, TablePaginationToken } from 'components/third-party/react-table';
+import { CSVExport, TablePaginationToken } from 'components/third-party/reactTable';
 
 // types
 import { TableDataProps } from 'types/table';
 
 //query
 import { Context } from 'App';
-import { getBlockExploreLink } from 'utils/explorer';
-import { shortenAddress } from 'utils/shortenAddress';
+import { formatDate } from 'utils/date';
 import useAuth from 'hooks/useAuth';
 
 // ==============================|| REACT TABLE ||============================== //
@@ -61,6 +59,7 @@ function ReactTable({
 }) {
   const context = useContext(Context);
   const { setSearchTerm }: any = context;
+
   const table = useReactTable({
     data,
     columns,
@@ -136,19 +135,15 @@ function ReactTable({
                     ))}
                   </TableHead>
                   <TableBody>
-                    {table.getRowModel().rows?.length > 0 ? (
-                      table.getRowModel().rows.map((row) => (
-                        <TableRow key={row.id}>
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow key={0}>No data found!</TableRow>
-                    )}
+                    {table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -189,7 +184,7 @@ export default function transactionTable() {
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState<TableDataProps[]>([]);
+  const [data, setData] = useState([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -198,16 +193,19 @@ export default function transactionTable() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_AIRDROP_COLLECTIONS, {
+  } = useQuery(LIST_TRANSACTION_HISTORY, {
     variables: {
       nextToken: null,
       limit: pageSize,
       filter: {
         or: [
-          { walletAddress: { contains: searchTerm } },
+          { transactionId: { contains: searchTerm } },
           { amount: { contains: searchTerm } },
-          { claimedAt: { contains: searchTerm } },
-          { txHash: { contains: searchTerm } }
+          { destinationAccount: { contains: searchTerm } },
+          { sourceAccount: { contains: searchTerm } },
+          { status: { contains: searchTerm } },
+          { timestamp: { contains: searchTerm } },
+          { transactionType: { contains: searchTerm } }
         ]
       }
     }
@@ -222,32 +220,41 @@ export default function transactionTable() {
 
   // Transform company data to fit column structure
   // const transformedData =
-  //   data?.listAirdropClaims?.items.map((item: any) => ({
-  //     txHash: item.txHash,
-  //     walletAddress: item.walletAddress,
-  //     claimedAt: item.claimedAt,
-  //     amount: item.amount
-  //   })) || [];
+  // data?.listTransactionsHistories?.items.map((item: any) => ({
+  //   amount: item.amount,
+  //   destinationAccount: item.destinationAccount,
+  //   sourceAccount: item.sourceAccount,
+  //   status: item.status,
+  //   timestamp: item.timestamp,
+  //   transactionId: item.transactionId,
+  //   transactionType: item.transactionType
+  // })) || [];
 
   // Filter data based on search term
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-    return data.filter(
-      (item: any) =>
-        (item.txHash && item.txHash.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.walletAddress && item.walletAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.claimedAt && item.claimedAt.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.amount && item.amount.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [searchTerm, data]);
+  // const filteredData = useMemo(() => {
+  //   if (!searchTerm) return data;
+  //   return data.filter(
+  //     (item: any) =>
+  //       (item.amount && item.amount.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.destinationAccount && item.destinationAccount.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.sourceAccount && item.sourceAccount.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.status && item.status.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.timestamp && item.timestamp.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.transactionId && item.transactionId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  //       (item.transactionType && item.transactionType.toLowerCase().includes(searchTerm.toLowerCase()))
+  //   );
+  // }, [searchTerm, data]);
 
   const transformedResponseData = (resData: any) => {
-    return resData.listAirdropClaims?.items.map((item: any, index: number) => ({
-      id: item.id || index || '',
-      txHash: item.txHash,
-      walletAddress: item.walletAddress,
-      claimedAt: item.claimedAt,
-      amount: item.amount
+    return resData.listTransactionsHistories?.items.map((item: any, index: number) => ({
+      id: item?.id || index || '',
+      amount: item.amount,
+      destinationAccount: item.destinationAccount,
+      sourceAccount: item.sourceAccount,
+      status: item.status,
+      timestamp: item.timestamp,
+      transactionId: item.transactionId,
+      transactionType: item.transactionType
     }));
   };
 
@@ -255,7 +262,7 @@ export default function transactionTable() {
     if (queryData) {
       const transformedData = transformedResponseData(queryData);
       setData(transformedData);
-      setNextToken(queryData.listAirdropClaims.nextToken);
+      setNextToken(queryData.listTransactionsHistories.nextToken);
     }
   }, [queryData]);
 
@@ -297,7 +304,7 @@ export default function transactionTable() {
         const transformedData = transformedResponseData(fetchedData);
 
         setData(transformedData);
-        setNextToken(fetchedData.listAirdropClaims.nextToken);
+        setNextToken(fetchedData.listTransactionsHistories.nextToken);
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
@@ -324,36 +331,33 @@ export default function transactionTable() {
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
       {
-        header: 'Transaction Hash',
-        accessorKey: 'txHash',
-        cell: (cell) => {
-          const hash = cell.getValue() as string;
-          return (
-            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank">
-              {shortenAddress(hash)}
-            </Link>
-          );
-        }
-      },
-      {
-        header: 'Wallet Address',
-        accessorKey: 'walletAddress',
-        cell: (cell) => {
-          const address = cell.getValue() as string;
-          return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
-              {shortenAddress(address)}
-            </Link>
-          );
-        }
-      },
-      {
-        header: 'Claimed At',
-        accessorKey: 'claimedAt'
-      },
-      {
         header: 'Amount',
         accessorKey: 'amount'
+      },
+      {
+        header: 'Destination Account',
+        accessorKey: 'destinationAccount'
+      },
+      {
+        header: 'Source Account',
+        accessorKey: 'sourceAccount'
+      },
+      {
+        header: 'Status',
+        accessorKey: 'status'
+      },
+      {
+        header: 'Timestamp',
+        accessorKey: 'timestamp',
+        cell: (cell) => formatDate(cell.getValue() as string)
+      },
+      {
+        header: 'Transaction Id',
+        accessorKey: 'transactionId'
+      },
+      {
+        header: 'Transaction Type',
+        accessorKey: 'transactionType'
       }
     ],
     []
@@ -364,7 +368,7 @@ export default function transactionTable() {
       <Grid item xs={12}>
         <ReactTable
           {...{
-            data: filteredData,
+            data,
             columns,
             nextToken,
             previousTokens,

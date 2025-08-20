@@ -16,7 +16,7 @@ import Header from './Header';
 import Drawer from './Drawer';
 import Loader from 'components/Loader';
 import Breadcrumbs from 'components/@extended/Breadcrumbs';
-import AuthGuard from 'utils/route-guard/AuthGuard';
+import AuthGuard from 'utils/routeGuard/AuthGuard';
 
 import { MenuOrientation } from 'config';
 import useConfig from 'hooks/useConfig';

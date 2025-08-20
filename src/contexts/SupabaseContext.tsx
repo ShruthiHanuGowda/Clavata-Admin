@@ -5,8 +5,8 @@ import { useMemo, useEffect, useReducer, useCallback, ReactElement, createContex
 import { createClient } from '@supabase/supabase-js';
 
 // project imports
-import authReducer from 'contexts/auth-reducer/auth';
-import { LOGIN, LOGOUT } from 'contexts/auth-reducer/actions';
+import authReducer from 'contexts/authReducer/auth';
+import { LOGIN, LOGOUT } from 'contexts/authReducer/actions';
 
 // types
 import { AuthProps, SupabaseContextType } from 'types/auth';

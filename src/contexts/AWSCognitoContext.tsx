@@ -9,8 +9,8 @@ import { login as authLogin } from 'store/slices/authSlice';
 
 // project imports
 import Loader from 'components/Loader';
-import { LOGIN, LOGOUT } from 'contexts/auth-reducer/actions';
-import authReducer from 'contexts/auth-reducer/auth';
+import { LOGIN, LOGOUT } from 'contexts/authReducer/actions';
+import authReducer from 'contexts/authReducer/auth';
 
 // types
 import { AWSCognitoContextType, InitialLoginContextProps } from 'types/auth';
