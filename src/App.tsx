@@ -1,4 +1,6 @@
 import { RouterProvider } from 'react-router-dom';
+import { Provider as ReduxProvider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
 
 // project import
 import { createAppKit } from '@reown/appkit/react';
@@ -9,6 +11,7 @@ import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import router from 'routes';
 import ThemeCustomization from 'themes';
+import { store, persistor } from 'store';
 
 import Locales from 'components/Locales';
 import ScrollTop from 'components/ScrollTop';
@@ -17,7 +20,6 @@ import Notistack from 'components/third-party/Notistack';
 
 // auth-provider
 import { AWSCognitoProvider as AuthProvider } from 'contexts/AWSCognitoContext';
-import { SettingsProvider } from 'contexts/SettingsContext';
 import { CHAINS } from 'chains';
 
 // ==============================|| APP - THEME, ROUTER, LOCAL ||============================== //
@@ -98,25 +100,27 @@ export default function App() {
   });
 
   return (
-    <ApolloProvider client={client}>
-      <Context.Provider value={{ authenticationToken, setAuthenticationToken, searchTerm, setSearchTerm }}>
-        <ThemeCustomization>
-          {/* <RTLLayout> */}
-          <Locales>
-            <ScrollTop>
-              <AuthProvider>
-                <SettingsProvider>
-                  <Notistack>
-                    <RouterProvider router={router} />
-                    <Snackbar />
-                  </Notistack>
-                </SettingsProvider>
-              </AuthProvider>
-            </ScrollTop>
-          </Locales>
-          {/* </RTLLayout> */}
-        </ThemeCustomization>
-      </Context.Provider>
-    </ApolloProvider>
+    <ReduxProvider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <ApolloProvider client={client}>
+          <Context.Provider value={{ authenticationToken, setAuthenticationToken, searchTerm, setSearchTerm }}>
+            <ThemeCustomization>
+              {/* <RTLLayout> */}
+              <Locales>
+                <ScrollTop>
+                  <AuthProvider>
+                    <Notistack>
+                      <RouterProvider router={router} />
+                      <Snackbar />
+                    </Notistack>
+                  </AuthProvider>
+                </ScrollTop>
+              </Locales>
+              {/* </RTLLayout> */}
+            </ThemeCustomization>
+          </Context.Provider>
+        </ApolloProvider>
+      </PersistGate>
+    </ReduxProvider>
   );
 }
