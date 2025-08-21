@@ -1,8 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 // material-ui
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
 
 // project import
 import MainCard from 'components/MainCard';
@@ -25,13 +28,46 @@ export default function Blockchain({
 }) {
   const { slot: txnSlot, data: txnData, setData: setTxnData, handleSlotChange: handleTxnSlotChange } = useLineChart();
   const { slot: walletSlot, data: walletData, setData: setWalletData, handleSlotChange: handleWalletSlotChange } = useLineChart();
+  
+  const [txnLoading, setTxnLoading] = useState(false);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [txnError, setTxnError] = useState<string | null>(null);
+  const [walletError, setWalletError] = useState<string | null>(null);
 
   useEffect(() => {
-    getTransactionChartData(txnSlot).then((data) => setTxnData(data.chart.map(({ value }: { value: string }) => value)));
+    const loadTransactionData = async () => {
+      try {
+        setTxnLoading(true);
+        setTxnError(null);
+        const data = await getTransactionChartData(txnSlot);
+        setTxnData(data.chart.map(({ value }: { value: string }) => value));
+      } catch (error) {
+        console.error('Error loading transaction data:', error);
+        setTxnError(error instanceof Error ? error.message : 'Failed to load transaction data');
+      } finally {
+        setTxnLoading(false);
+      }
+    };
+
+    loadTransactionData();
   }, [txnSlot, setTxnData]);
 
   useEffect(() => {
-    getWalletChartData(walletSlot).then((data) => setWalletData(data.chart.map(({ value }: { value: string }) => value)));
+    const loadWalletData = async () => {
+      try {
+        setWalletLoading(true);
+        setWalletError(null);
+        const data = await getWalletChartData(walletSlot);
+        setWalletData(data.chart.map(({ value }: { value: string }) => value));
+      } catch (error) {
+        console.error('Error loading wallet data:', error);
+        setWalletError(error instanceof Error ? error.message : 'Failed to load wallet data');
+      } finally {
+        setWalletLoading(false);
+      }
+    };
+
+    loadWalletData();
   }, [walletSlot, setWalletData]);
 
   return (
@@ -53,10 +89,34 @@ export default function Blockchain({
           <AnalyticCard title="New Wallets in last 24 hours" count={totalWallets24} isLoss color="warning" />
         </Grid>
         <Grid item xs={12} md={7} lg={8}>
-          <LineChartCard title="Daily transactions" slot={txnSlot} data={txnData} handleSlotChange={handleTxnSlotChange} />
+          {txnError ? (
+            <Alert severity="error">
+              Error loading transaction data: {txnError}
+            </Alert>
+          ) : (
+            <LineChartCard 
+              title="Daily transactions" 
+              slot={txnSlot} 
+              data={txnData} 
+              handleSlotChange={handleTxnSlotChange}
+              loading={txnLoading}
+            />
+          )}
         </Grid>
         <Grid item xs={12} md={5} lg={4}>
-          <LineChartCard title="Daily New Wallets" slot={walletSlot} data={walletData} handleSlotChange={handleWalletSlotChange} />
+          {walletError ? (
+            <Alert severity="error">
+              Error loading wallet data: {walletError}
+            </Alert>
+          ) : (
+            <LineChartCard 
+              title="Daily New Wallets" 
+              slot={walletSlot} 
+              data={walletData} 
+              handleSlotChange={handleWalletSlotChange}
+              loading={walletLoading}
+            />
+          )}
         </Grid>
       </Grid>
     </MainCard>
