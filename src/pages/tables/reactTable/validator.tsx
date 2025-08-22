@@ -27,6 +27,7 @@ import MainCard from 'components/MainCard';
 import { CSVExport, TablePagination } from 'components/third-party/reactTable';
 import { TableDataProps } from 'types/table';
 import { Context } from 'App';
+import ReactTableWrapper from 'components/ReactTableWrapper';
 
 interface Validator {
   validatorId: string;
@@ -39,134 +40,12 @@ interface Validator {
   status: string;
 }
 
-function ReactTable({
-  data,
-  columns,
-  top,
-  onRowClick
-}: {
-  data: TableDataProps[];
-  columns: ColumnDef<TableDataProps>[];
-  top?: boolean;
-  onRowClick?: (rowData: any) => void;
-}) {
-  const context = useContext(Context);
-  const { setSearchTerm }: any = context;
-
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    debugTable: true,
-    getSortedRowModel: getSortedRowModel() // Ensure sorting is active
-  });
-
-  const headers: LabelKeyObject[] = [];
-  table.getAllColumns().map((columns: any) =>
-    headers.push({
-      label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
-      key: columns.columnDef.accessorKey
-    })
-  );
-
-  const handleSearch = (term: any) => {
-    setSearchTerm(term);
-  };
-
-  return (
-    <MainCard
-      title={'Validators'}
-      content={false}
-      secondary={<CSVExport {...{ data, headers, filename: top ? 'pagination-top.csv' : 'pagination-bottom.csv' }} />}
-    >
-      <CardContent sx={{ p: 2 }}>
-        <Box sx={{ mb: 2 }}>
-          <Search onSearch={handleSearch} />
-        </Box>
-        <ScrollX>
-          <Stack>
-            {top && (
-              <Box sx={{ p: 2 }}>
-                <TablePagination
-                  {...{
-                    setPageSize: table.setPageSize,
-                    setPageIndex: table.setPageIndex,
-                    getState: table.getState,
-                    getPageCount: table.getPageCount
-                  }}
-                />
-              </Box>
-            )}
-
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableCell key={header.id} {...header.column.columnDef.meta}>
-                          <span onClick={header.column.getToggleSortingHandler()} style={{ cursor: 'pointer', fontWeight: 'bold' }}>
-                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                            {header.column.getIsSorted() === false
-                              ? null
-                              : { asc: ' 🔼', desc: ' 🔽' }[header.column.getIsSorted() as 'asc' | 'desc']}
-                          </span>
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHead>
-                <TableBody>
-                  {table.getRowModel().rows?.length > 0 ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow key={row.id} hover style={{ cursor: 'pointer' }} onClick={() => onRowClick?.(row?.original?.validatorId)}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow key={0}>
-                      <TableCell colSpan={columns.length} align="center">
-                        No data found!
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {!top && (
-              <>
-                <Divider />
-                <Box sx={{ p: 2 }}>
-                  <TablePagination
-                    {...{
-                      setPageSize: table.setPageSize,
-                      setPageIndex: table.setPageIndex,
-                      getState: table.getState,
-                      getPageCount: table.getPageCount
-                    }}
-                  />
-                </Box>
-              </>
-            )}
-          </Stack>
-        </ScrollX>
-      </CardContent>
-    </MainCard>
-  );
-}
-
 export default function Validator() {
-  const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
+  const { searchTerm }: any = useContext(Context);
   const [validators, setValidators] = useState<Validator[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [selectedValidator, setSelectedValidator] = useState<any | null>(null);
   const [delegators, setDelegators] = useState<any[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -190,13 +69,7 @@ export default function Validator() {
   }, []);
 
   const fetchValidatorDetails = async (validatorId: string) => {
-    console.log('validatorId', validatorId);
-    const id: any = typeof validatorId === 'object' && validatorId !== null ? validatorId : validatorId;
-
-    if (!id) {
-      console.error('Invalid validator ID');
-      return;
-    }
+    if (!validatorId) return;
     try {
       const response = await fetch(
         `https://2f6h4d0go8.execute-api.me-central-1.amazonaws.com/default/staking_getValidators?validatorId=${validatorId}`
@@ -210,18 +83,20 @@ export default function Validator() {
     }
   };
 
-  const transformedData: any = useMemo(() => {
-    return validators.map((v) => ({
-      name: v.validatorName,
-      validatorId: v.validatorId,
-      commissionRate: v.commissionRate,
-      totalStakeAmount: v.totalStakeAmount,
-      totalStakedNFT: v.totalStakedNFT,
-      totalStakedWatt: v.totalStakedWatt,
-      validatorAge: v.validatorAge,
-      status: v.status
-    }));
-  }, [validators]);
+  const transformedData = useMemo(
+    () =>
+      validators.map((v) => ({
+        name: v.validatorName,
+        validatorId: v.validatorId,
+        commissionRate: v.commissionRate,
+        totalStakeAmount: v.totalStakeAmount,
+        totalStakedNFT: v.totalStakedNFT,
+        totalStakedWatt: v.totalStakedWatt,
+        validatorAge: v.validatorAge,
+        status: v.status
+      })),
+    [validators]
+  );
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return transformedData;
@@ -233,14 +108,30 @@ export default function Validator() {
     );
   }, [searchTerm, transformedData]);
 
-  const columns = useMemo<ColumnDef<TableDataProps>[]>(
+  const columns = useMemo<ColumnDef<any>[]>(
     () => [
       { header: 'Validator Name', accessorKey: 'name' },
       { header: 'Validator ID', accessorKey: 'validatorId' },
-      { header: 'Commission Rate', accessorKey: 'commissionRate', cell: ({ getValue }: any) => (getValue() * 100).toFixed(2) + '%' },
-      { header: 'Total Stake Amount', accessorKey: 'totalStakeAmount', cell: ({ getValue }) => Number(getValue()).toLocaleString() },
-      { header: 'Total Staked NFT', accessorKey: 'totalStakedNFT', cell: ({ getValue }) => Number(getValue()).toLocaleString() },
-      { header: 'Total Staked WATT', accessorKey: 'totalStakedWatt', cell: ({ getValue }) => Number(getValue()).toLocaleString() },
+      {
+        header: 'Commission Rate',
+        accessorKey: 'commissionRate',
+        cell: ({ getValue }) => ((getValue<number>() || 0) * 100).toFixed(2) + '%'
+      },
+      {
+        header: 'Total Stake Amount',
+        accessorKey: 'totalStakeAmount',
+        cell: ({ getValue }) => Number(getValue<number>() || 0).toLocaleString()
+      },
+      {
+        header: 'Total Staked NFT',
+        accessorKey: 'totalStakedNFT',
+        cell: ({ getValue }) => Number(getValue<number>() || 0).toLocaleString()
+      },
+      {
+        header: 'Total Staked WATT',
+        accessorKey: 'totalStakedWatt',
+        cell: ({ getValue }) => Number(getValue<number>() || 0).toLocaleString()
+      },
       { header: 'Validator Age', accessorKey: 'validatorAge' },
       { header: 'Status', accessorKey: 'status' }
     ],
@@ -253,7 +144,15 @@ export default function Validator() {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <ReactTable data={filteredData} columns={columns} onRowClick={fetchValidatorDetails} />
+        <ReactTableWrapper
+          data={filteredData}
+          columns={columns}
+          isLoading={loading}
+          topPagination={true}
+          csvFilename="validators.csv"
+          // 👇 Optional: handle row clicks
+          onRowClick={(row: { validatorId: string; }) => fetchValidatorDetails(row.validatorId)}
+        />
       </Grid>
 
       {/* Dialog for displaying the validator details */}
@@ -293,8 +192,8 @@ export default function Validator() {
               <Divider />
               <h4>Delegators</h4>
               {delegators.map((delegator, index) => (
-                <>
-                  <p key={index}>
+                <div key={index}>
+                  <p>
                     <strong>Delegator Address:</strong> {delegator.delegatorAddress}
                   </p>
                   <p>
@@ -309,7 +208,7 @@ export default function Validator() {
                   <p>
                     <strong>Staked WATT:</strong> {delegator.stakedWatt}
                   </p>
-                </>
+                </div>
               ))}
             </div>
           )}

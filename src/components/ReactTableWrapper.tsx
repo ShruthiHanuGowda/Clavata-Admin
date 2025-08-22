@@ -88,7 +88,6 @@ function ReactTableWrapper<T>({
             )}
 
             <TableContainer>
-              Wrapper
               <Table>
                 <TableHead>
                   {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (

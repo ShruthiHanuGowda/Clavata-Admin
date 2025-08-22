@@ -3,9 +3,7 @@ import { useEffect, useState } from 'react';
 // material-ui
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
-import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
 
 // project import
 import MainCard from 'components/MainCard';
@@ -28,7 +26,7 @@ export default function Blockchain({
 }) {
   const { slot: txnSlot, data: txnData, setData: setTxnData, handleSlotChange: handleTxnSlotChange } = useLineChart();
   const { slot: walletSlot, data: walletData, setData: setWalletData, handleSlotChange: handleWalletSlotChange } = useLineChart();
-  
+
   const [txnLoading, setTxnLoading] = useState(false);
   const [walletLoading, setWalletLoading] = useState(false);
   const [txnError, setTxnError] = useState<string | null>(null);
@@ -90,14 +88,12 @@ export default function Blockchain({
         </Grid>
         <Grid item xs={12} md={7} lg={8}>
           {txnError ? (
-            <Alert severity="error">
-              Error loading transaction data: {txnError}
-            </Alert>
+            <Alert severity="error">Error loading transaction data: {txnError}</Alert>
           ) : (
-            <LineChartCard 
-              title="Daily transactions" 
-              slot={txnSlot} 
-              data={txnData} 
+            <LineChartCard
+              title="Daily transactions"
+              slot={txnSlot}
+              data={txnData}
               handleSlotChange={handleTxnSlotChange}
               loading={txnLoading}
             />
@@ -105,14 +101,12 @@ export default function Blockchain({
         </Grid>
         <Grid item xs={12} md={5} lg={4}>
           {walletError ? (
-            <Alert severity="error">
-              Error loading wallet data: {walletError}
-            </Alert>
+            <Alert severity="error">Error loading wallet data: {walletError}</Alert>
           ) : (
-            <LineChartCard 
-              title="Daily New Wallets" 
-              slot={walletSlot} 
-              data={walletData} 
+            <LineChartCard
+              title="Daily New Wallets"
+              slot={walletSlot}
+              data={walletData}
               handleSlotChange={handleWalletSlotChange}
               loading={walletLoading}
             />

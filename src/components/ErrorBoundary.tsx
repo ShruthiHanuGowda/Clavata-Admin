@@ -1,7 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { Box, Typography, Button, Alert, AlertTitle } from '@mui/material';
-import MainCard from './MainCard';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import MainCard from './MainCard';
 
 interface Props {
   children: ReactNode;
@@ -65,13 +65,7 @@ class ErrorBoundary extends Component<Props, State> {
           <Alert
             severity="error"
             action={
-              <Button
-                size="small"
-                startIcon={<RefreshIcon />}
-                onClick={this.handleReset}
-                variant="outlined"
-                color="error"
-              >
+              <Button size="small" startIcon={<RefreshIcon />} onClick={this.handleReset} variant="outlined" color="error">
                 Try Again
               </Button>
             }

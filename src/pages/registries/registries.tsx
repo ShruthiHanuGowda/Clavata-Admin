@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import TableContainer from '@mui/material/TableContainer';
@@ -16,20 +16,32 @@ import ScrollX from '../../components/ScrollX';
 import { TablePagination } from '../../components/third-party/reactTable';
 import MainCard from '../../components/MainCard';
 import { formatDate } from 'utils/date';
+import ReactTableWrapper from 'components/ReactTableWrapper';
 
 export default function Registries() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // pagination states (same as PaginationUserTable)
+  const [nextToken, setNextToken] = useState<string | null>(null);
+  const [previousTokens, setPreviousTokens] = useState<string[]>([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     fetch('https://hd1l22xs32.execute-api.me-central-1.amazonaws.com/default/adminRegistriesList')
       .then((res) => res.json())
       .then((res) => {
-        setData(res.data);
+        setData(res.data || []);
+        setIsLoading(false);
       })
-      .catch(() => setData([]));
+      .catch(() => {
+        setData([]);
+        setIsLoading(false);
+      });
   }, []);
 
-  const columns: any = useMemo<ColumnDef<any>[]>(
+  const columns = useMemo<ColumnDef<any>[]>(
     () => [
       {
         header: 'ID',
@@ -45,75 +57,37 @@ export default function Registries() {
       },
       {
         header: 'Created At',
-        cell: ({ row }: any) => {
-          return formatDate(row.original.created_at);
-        }
+        accessorKey: 'created_at',
+        cell: (cell) => formatDate(cell.getValue() as string)
       }
     ],
     []
   );
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    debugTable: true
-  });
-
-  const headers: LabelKeyObject[] = [];
-  table.getAllColumns().map((columns) =>
-    headers.push({
-      label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
-      // @ts-ignore
-      key: columns.columnDef.accessorKey
-    })
+  // dummy pagination handler (since API doesn’t provide tokens)
+  const handlePagination = useCallback(
+    async (direction: 'next' | 'previous' | 'first') => {
+      // for now just reset page index since API gives full data
+      if (direction === 'first') setCurrentPageIndex(1);
+      if (direction === 'next') setCurrentPageIndex((p) => p + 1);
+      if (direction === 'previous') setCurrentPageIndex((p) => Math.max(1, p - 1));
+    },
+    []
   );
 
   return (
-    <MainCard content={false}>
-      <ScrollX>
-        <Stack>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                {table.getHeaderGroups().map((headerGroup: HeaderGroup<never>) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableCell key={header.id} {...header.column.columnDef.meta}>
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHead>
-              <TableBody>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <Divider />
-          <Box sx={{ p: 2 }}>
-            <TablePagination
-              {...{
-                setPageSize: table.setPageSize,
-                setPageIndex: table.setPageIndex,
-                getState: table.getState,
-                getPageCount: table.getPageCount
-              }}
-            />
-          </Box>
-        </Stack>
-      </ScrollX>
-    </MainCard>
+    <ReactTableWrapper
+      data={data}
+      columns={columns}
+      currentPageIndex={currentPageIndex}
+      handlePagination={handlePagination}
+      nextToken={nextToken}
+      previousTokens={previousTokens}
+      pageSize={pageSize}
+      setPageSize={setPageSize}
+      isLoading={isLoading}
+      csvFilename="registries.csv"
+      showSearch={true} // disable search if not needed
+    />
   );
 }

@@ -41,12 +41,12 @@ export const useDashboardData = (type = 'D_WALLET_API_BASE_URL') => {
 
   const normalizeApiResponse = (response: any): DashboardApiResponse | null => {
     if (!response) return null;
-    
+
     // Handle different API response formats
     if (response.success) {
       return response as DashboardApiResponse;
     }
-    
+
     // Fallback for different response structures
     return {
       success: true,
@@ -59,7 +59,7 @@ export const useDashboardData = (type = 'D_WALLET_API_BASE_URL') => {
           dailyTitle: response.dailyTitle || 'Daily',
           dailyUsers: response.dailyUsers || 0,
           dailyUsersPercentage: response.dailyUsersPercentage,
-          dailyUsersExtra: response.dailyUsersExtra,
+          dailyUsersExtra: response.dailyUsersExtra
         },
         chartData: Array.isArray(response.chartData) ? response.chartData : []
       }
@@ -72,38 +72,34 @@ export const useDashboardData = (type = 'D_WALLET_API_BASE_URL') => {
       setError('');
       const response = await fetchDashboardData(type, slot);
       const normalizedResponse = normalizeApiResponse(response);
-      
+
       if (normalizedResponse?.success) {
         const { analytics: apiAnalytics, chartData: apiChartData } = normalizedResponse.data;
-        
+
         const newAnalytics: AnalyticsData = {};
-        
+
         // Only add total analytics if data exists
         if (apiAnalytics.totalUsers !== undefined && apiAnalytics.totalUsers !== null) {
           newAnalytics.total = {
             title: apiAnalytics.totalTitle || 'Total Users',
-            count: typeof apiAnalytics.totalUsers === 'number' 
-              ? apiAnalytics.totalUsers.toLocaleString() 
-              : String(apiAnalytics.totalUsers),
+            count: typeof apiAnalytics.totalUsers === 'number' ? apiAnalytics.totalUsers.toLocaleString() : String(apiAnalytics.totalUsers),
             percentage: apiAnalytics.totalUsersPercentage,
             extra: apiAnalytics.totalUsersExtra,
             isLoss: false
           };
         }
-        
+
         // Only add daily analytics if data exists
         if (apiAnalytics.dailyUsers !== undefined && apiAnalytics.dailyUsers !== null) {
           newAnalytics.daily = {
             title: apiAnalytics.dailyTitle || 'Daily Users',
-            count: typeof apiAnalytics.dailyUsers === 'number' 
-              ? apiAnalytics.dailyUsers.toLocaleString() 
-              : String(apiAnalytics.dailyUsers),
+            count: typeof apiAnalytics.dailyUsers === 'number' ? apiAnalytics.dailyUsers.toLocaleString() : String(apiAnalytics.dailyUsers),
             percentage: apiAnalytics.dailyUsersPercentage,
             extra: apiAnalytics.dailyUsersExtra,
             isLoss: false
           };
         }
-        
+
         setAnalytics(newAnalytics);
         setChartData(Array.isArray(apiChartData) ? apiChartData : []);
       } else {

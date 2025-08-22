@@ -30,12 +30,13 @@ import useAuth from 'hooks/useAuth';
 import { ON_CREATE_EVIDENT_ITEM, ON_UPDATE_EVIDENT_ITEM, ON_DELETE_EVIDENT_ITEM } from 'graphql/subscriptions';
 import { formatDate } from 'utils/date';
 import { LIST_EVIDENT_ITEMS } from 'graphql/queries';
+import ReactTableWrapper from 'components/ReactTableWrapper';
 
 export default function EvidentItems() {
   const { logout } = useAuth();
-  const [data, setData] = useState([]);
-  const [search, setSearch] = useState('');
 
+  const [data, setData] = useState<any[]>([]);
+  const [search, setSearch] = useState('');
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
@@ -51,7 +52,11 @@ export default function EvidentItems() {
     variables: {
       limit: pageSize,
       filter: {
-        or: [{ assetId: { contains: search } }, { uid: { contains: search } }, { asset: { contains: search } }]
+        or: [
+          { assetId: { contains: search } },
+          { uid: { contains: search } },
+          { asset: { contains: search } }
+        ]
       }
     }
   });
@@ -62,10 +67,8 @@ export default function EvidentItems() {
       logout();
     }
   }
-  // const listEvidentResponse = useQuery(LIST_EVIDENT_ITEMS, {
-  //   notifyOnNetworkStatusChange: true
-  // });
 
+  // --- Subscriptions setup
   const wsLink = new WebSocketLink({
     uri: import.meta.env.VITE_APP_EVIDENT_GRAPHQL_WS_URL,
     options: {
@@ -81,20 +84,13 @@ export default function EvidentItems() {
     cache: new InMemoryCache()
   });
 
-  // useEffect(() => {
-  //   if (listEvidentResponse.data?.listEvidentItems?.items) setData(listEvidentResponse.data.listEvidentItems.items);
-  // }, [listEvidentResponse]);
-
   useEffect(() => {
     const createSub = client.subscribe({ query: ON_CREATE_EVIDENT_ITEM }).subscribe({
       next({ data }) {
         const newItem = data?.onCreateEvidentItems;
         if (newItem) {
-          setData((prevData) => [...prevData, newItem] as any);
+          setData((prevData) => [...prevData, newItem]);
         }
-      },
-      error(err) {
-        console.error('Create subscription error:', err);
       }
     });
 
@@ -102,11 +98,10 @@ export default function EvidentItems() {
       next({ data }) {
         const updatedItem = data?.onUpdateEvidentItems;
         if (updatedItem) {
-          setData((prevData) => prevData.map((item: any) => (item.uid === updatedItem.uid ? updatedItem : item)) as any);
+          setData((prevData) =>
+            prevData.map((item) => (item.uid === updatedItem.uid ? updatedItem : item))
+          );
         }
-      },
-      error(err) {
-        console.error('Update subscription error:', err);
       }
     });
 
@@ -114,11 +109,8 @@ export default function EvidentItems() {
       next({ data }) {
         const deletedItem = data?.onDeleteEvidentItems;
         if (deletedItem) {
-          setData((prevData) => prevData.filter((item: any) => item.uid !== deletedItem.uid));
+          setData((prevData) => prevData.filter((item) => item.uid !== deletedItem.uid));
         }
-      },
-      error(err) {
-        console.error('Delete subscription error:', err);
       }
     });
 
@@ -129,28 +121,9 @@ export default function EvidentItems() {
     };
   }, [client]);
 
-  // const filteredData = useMemo(() => {
-  //   if (!search) return data;
-
-  //   return data.filter((item: any) => {
-  //     const asset = item.asset ? JSON.parse(item.asset) : {};
-  //     const country = asset?.country?.name || '';
-  //     const deviceName = asset?.issue?.deviceDetails?.name || '';
-  //     const deviceGroup = asset?.issue?.deviceDetails?.deviceType?.deviceGroup || '';
-
-  //     const searchLower = search.toLowerCase();
-
-  //     return (
-  //       country.toLowerCase().includes(searchLower) ||
-  //       deviceName.toLowerCase().includes(searchLower) ||
-  //       deviceGroup.toLowerCase().includes(searchLower)
-  //     );
-  //   });
-  // }, [search, data]);
-
   useEffect(() => {
     if (queryData?.listEvidentItems?.items) {
-      setData(queryData?.listEvidentItems?.items);
+      setData(queryData.listEvidentItems.items);
       setNextToken(queryData.listEvidentItems.nextToken);
     }
   }, [queryData]);
@@ -158,11 +131,11 @@ export default function EvidentItems() {
   const handlePagination = useCallback(
     async (direction: 'next' | 'previous' | 'first') => {
       let token = direction === 'next' ? nextToken : previousTokens[previousTokens.length - 1];
-
       if (!token) token = null;
       if (nextToken === null) {
         token = previousTokens[previousTokens.length - 2];
       }
+
       switch (direction) {
         case 'first':
           token = null;
@@ -173,25 +146,15 @@ export default function EvidentItems() {
             token = null;
           }
           break;
-        case 'next':
-          break;
-        default:
-          break;
       }
 
-      const variables: { limit: number; nextToken?: string } = {
-        limit: pageSize
-      };
-      if (token) {
-        variables.nextToken = token;
-      }
-      fetchMore({
-        variables
-      }).then((fetchMoreResult: any) => {
-        const fetchedData = fetchMoreResult.data;
+      const variables: { limit: number; nextToken?: string } = { limit: pageSize };
+      if (token) variables.nextToken = token;
 
-        setData(fetchedData?.listEvidentItems?.items);
-        setNextToken(fetchedData?.listEvidentItems.nextToken);
+      fetchMore({ variables }).then((res: any) => {
+        const fetchedData = res.data?.listEvidentItems;
+        setData(fetchedData?.items);
+        setNextToken(fetchedData?.nextToken);
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
@@ -215,150 +178,61 @@ export default function EvidentItems() {
     handlePagination('first');
   }, [pageSize]);
 
-  const columns: any = useMemo<ColumnDef<any>[]>(
+  const columns: ColumnDef<any>[] = useMemo(
     () => [
       {
         header: 'Energy Type',
-        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.deviceType?.deviceGroup : ''),
-        cell: ({ getValue }) => getValue() || ''
+        accessorFn: (row) =>
+          row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.deviceType?.deviceGroup : ''
       },
       {
         header: 'Country',
-        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.country?.name : ''),
-        cell: ({ getValue }) => getValue() || ''
+        accessorFn: (row) => (row.asset ? JSON.parse(row.asset)?.country?.name : '')
       },
       {
         header: 'Facility Name',
-        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.name : ''),
-        cell: ({ getValue }) => getValue() || ''
+        accessorFn: (row) => (row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.name : '')
       },
       {
         header: 'Volume (MWh)',
         accessorKey: 'volume',
-        cell: ({ getValue }: any) => parseFloat(getValue() || '0')
+        cell: ({ getValue }) => String(getValue() || '0')
       },
       {
         header: 'Production Start Date',
-        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.startDate : ''),
-        cell: ({ getValue }) => getValue() || ''
+        accessorFn: (row) => (row.asset ? JSON.parse(row.asset)?.startDate : '')
       },
       {
         header: 'Production End Date',
-        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.endDate : ''),
-        cell: ({ getValue }: any) => formatDate(getValue())
+        accessorFn: (row) => (row.asset ? JSON.parse(row.asset)?.endDate : ''),
+        cell: ({ getValue }) => formatDate(getValue<string>() || '')
       },
       {
         header: 'Facility Commissioning Date',
-        accessorFn: (row: any) => (row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.commissioningDate : ''),
-        cell: ({ getValue }: any) => formatDate(getValue())
+        accessorFn: (row) =>
+          row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.commissioningDate : '',
+        cell: ({ getValue }) => formatDate(getValue<string>() || '')
       }
     ],
     []
   );
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    debugTable: true
-  });
-
-  const headers: LabelKeyObject[] = [];
-  table.getAllColumns().map((columns) =>
-    headers.push({
-      label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
-      // @ts-ignore
-      key: columns.columnDef.accessorKey
-    })
-  );
-
   return (
     <MainCard title="Evident Items" content={false}>
-      <ScrollX>
-        <Stack>
-          <Box sx={{ width: '100%', ml: { xs: 0, md: 1 }, mb: 2 }}>
-            <FormControl sx={{ width: { xs: '100%', md: 224 } }}>
-              <OutlinedInput
-                size="small"
-                id="evident-search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                startAdornment={
-                  <InputAdornment position="start" sx={{ mr: -0.5 }}>
-                    <SearchOutlined />
-                  </InputAdornment>
-                }
-                aria-describedby="evident-search-text"
-                inputProps={{
-                  'aria-label': 'search'
-                }}
-                placeholder="Search..."
-              />
-            </FormControl>
-          </Box>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                {table.getHeaderGroups().map((headerGroup: HeaderGroup<never>) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableCell key={header.id} {...header.column.columnDef.meta}>
-                        {/* {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())} */}
-                        <span
-                          onClick={header.column.getToggleSortingHandler()} // Handle sorting when clicked
-                          style={{ cursor: 'pointer', fontWeight: 'bold' }}
-                        >
-                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: ' 🔼',
-                            desc: ' 🔽'
-                          }[header.column.getIsSorted() as string] ?? null}
-                        </span>
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHead>
-              <TableBody>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} {...cell.column.columnDef.meta}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <Divider />
-          <Box sx={{ p: 2 }}>
-            <TablePaginationToken
-              {...{
-                currentPageIndex,
-                handlePagination,
-                nextToken,
-                previousTokens,
-                pageSize,
-                setPageSize,
-                isLoading: false
-              }}
-            />
-            {/* <TablePagination
-              {...{
-                setPageSize: table.setPageSize,
-                setPageIndex: table.setPageIndex,
-                getState: table.getState,
-                getPageCount: table.getPageCount
-              }}
-            /> */}
-          </Box>
-        </Stack>
-      </ScrollX>
+      <ReactTableWrapper
+        data={data}
+        columns={columns}
+        currentPageIndex={currentPageIndex}
+        handlePagination={handlePagination}
+        nextToken={nextToken}
+        previousTokens={previousTokens}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        isLoading={loading}
+        topPagination={false}
+        showSearch={true}
+        csvFilename="evident-items.csv"
+      />
     </MainCard>
   );
 }

@@ -22,7 +22,14 @@ interface LineChartCardProps {
   loading?: boolean;
 }
 
-export default function LineChartCard({ title, description = '', slot = 'week', data, handleSlotChange, loading = false }: LineChartCardProps) {
+export default function LineChartCard({
+  title,
+  description = '',
+  slot = 'week',
+  data,
+  handleSlotChange,
+  loading = false
+}: LineChartCardProps) {
   return (
     <MainCard content={false}>
       <Grid item>
@@ -45,9 +52,9 @@ export default function LineChartCard({ title, description = '', slot = 'week', 
               justifyContent={{ xs: 'center', sm: 'flex-end' }}
               sx={{ mt: 2, mr: { xs: 0, sm: 2 } }}
             >
-              <Select 
-                value={slot} 
-                onChange={(e: SelectChangeEvent) => handleSlotChange(e.target.value as 'month' | 'week')} 
+              <Select
+                value={slot}
+                onChange={(e: SelectChangeEvent) => handleSlotChange(e.target.value as 'month' | 'week')}
                 size="small"
                 disabled={loading}
               >

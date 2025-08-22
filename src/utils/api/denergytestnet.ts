@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const api = axios.create({ 
+const api = axios.create({
   baseURL: import.meta.env.VITE_APP_DENERGY_TESTNET_API_URL,
   timeout: 10000,
   headers: {
