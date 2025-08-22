@@ -5,7 +5,7 @@ import { useQuery } from '@apollo/client';
 import { Link } from 'react-router-dom';
 import React from 'react';
 import { Box } from '@mui/system';
-import { TableDataProps } from 'types/table';
+import { ListUserWalletsResponse, UserTableRow } from 'types/table';
 import { LIST_USER_WALLETS } from 'graphql/queries';
 import { Context } from 'App';
 import { getBlockExploreLink } from 'utils/explorer';
@@ -17,11 +17,14 @@ import ReactTableWrapper from 'components/ReactTableWrapper';
 export default function PaginationUserTable() {
   const { logout } = useAuth();
   const context = useContext(Context);
-  const { searchTerm }: any = context;
+  if (!context) {
+    throw new Error('Context must be used within a Context.Provider');
+  }
+  const { searchTerm } = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState<TableDataProps[]>([]);
+  const [data, setData] = useState<UserTableRow[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -41,8 +44,7 @@ export default function PaginationUserTable() {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+  // const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
   // const handleOpenDetail = (id: string) => {
   //   setExpandedRowId((prevId) => (prevId === id ? null : id));
@@ -51,7 +53,7 @@ export default function PaginationUserTable() {
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(
-      (item: any) =>
+      (item) =>
         (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -61,8 +63,8 @@ export default function PaginationUserTable() {
     );
   }, [searchTerm, data]);
 
-  const transformedResponseData = (resData: any) => {
-    return resData.listUserWalletAddresses.items.map((item: any, index: number) => {
+  const transformedResponseData = (resData: ListUserWalletsResponse) => {
+    return resData.listUserWalletAddresses.items.map((item, index) => {
       let parsedUserDetail = null;
       try {
         if (item.kycDetails) {
@@ -77,7 +79,7 @@ export default function PaginationUserTable() {
       }
 
       return {
-        id: item.id || index || '',
+        id: item.id || index.toString() || '',
         firstName: parsedUserDetail?.info?.firstName || 'Unknown',
         lastName: parsedUserDetail?.info?.lastName || 'Unknown',
         fullName: `${parsedUserDetail?.info?.firstName || 'Unknown'} ${parsedUserDetail?.info?.lastName || 'Unknown'}`,
@@ -135,7 +137,7 @@ export default function PaginationUserTable() {
       }
       fetchMore({
         variables
-      }).then((fetchMoreResult: any) => {
+      }).then((fetchMoreResult: { data: ListUserWalletsResponse }) => {
         const fetchedData = fetchMoreResult.data;
 
         const transformedData = transformedResponseData(fetchedData);
@@ -166,7 +168,7 @@ export default function PaginationUserTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageSize]);
 
-  const columns = useMemo<ColumnDef<TableDataProps>[]>(
+  const columns = useMemo<ColumnDef<UserTableRow>[]>(
     () => [
       {
         header: 'Email',
@@ -242,7 +244,7 @@ export default function PaginationUserTable() {
           pageSize={pageSize}
           setPageSize={setPageSize}
           isLoading={loading}
-          expandedRowId={expandedRowId}
+          // expandedRowId={expandedRowId}
           renderExpandedRow={(row) => (
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', padding: '10px', position: 'relative' }}>
               <Box

@@ -12,7 +12,7 @@ import { LIST_COMPANY_WALLETS } from '../../../graphql/queries';
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
 // types
-import { TableDataProps } from 'types/table';
+import { CompanyTableRow, ListCompanyResponse } from 'types/table';
 //query
 import { Context } from 'App';
 import { shortenAddress } from 'utils/shortenAddress';
@@ -23,11 +23,14 @@ import useAuth from 'hooks/useAuth';
 export default function PaginationTable() {
   const { logout } = useAuth();
   const context = useContext(Context);
-  const { searchTerm }: any = context;
+  if (!context) {
+    throw new Error('Context must be used within a Context.Provider');
+  }
+  const { searchTerm } = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState<TableDataProps[]>([]);
+  const [data, setData] = useState<CompanyTableRow[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -51,7 +54,7 @@ export default function PaginationTable() {
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(
-      (item: any) =>
+      (item: CompanyTableRow) =>
         (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.wallet_address && item.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.denergyWallet && item.denergyWallet.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -62,8 +65,10 @@ export default function PaginationTable() {
     );
   }, [searchTerm, data]);
 
-  const transformedResponseData = (resData: any) => {
-    return resData.listUserWallets?.items.map((item: any, index: number) => {
+  const transformedResponseData = (resData: ListCompanyResponse): CompanyTableRow[] => {
+    if (!resData.listUserWallets || !resData.listUserWallets.items) return [];
+
+    return resData.listUserWallets.items.map((item, index) => {
       let parsedCompanyDetail = null;
 
       try {
@@ -75,7 +80,7 @@ export default function PaginationTable() {
       const companyInfo = parsedCompanyDetail?.fullResponse?.fixedInfo?.companyInfo;
 
       return {
-        id: item?.id || index || '',
+        id: item?.id || index.toString(),
         email: item.userAddress,
         wallet_address: item.userWallet,
         denergyWallet: item.denergyWallet,
@@ -84,7 +89,7 @@ export default function PaginationTable() {
         is_verified_kyb: item.is_verified_kyb,
         reviewStatus: item.reviewStatus,
         date: item.date,
-        company_detail: companyInfo || null
+        company_detail: companyInfo ?? null
       };
     });
   };
@@ -129,13 +134,13 @@ export default function PaginationTable() {
       }
       fetchMore({
         variables
-      }).then((fetchMoreResult: any) => {
+      }).then((fetchMoreResult: { data: ListCompanyResponse }) => {
         const fetchedData = fetchMoreResult.data;
 
         const transformedData = transformedResponseData(fetchedData);
 
         setData(transformedData);
-        setNextToken(fetchMoreResult.data.listUserWallets.nextToken);
+        setNextToken(fetchedData.listUserWallets?.nextToken ?? null);
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
@@ -160,7 +165,7 @@ export default function PaginationTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageSize]);
 
-  const columns = useMemo<ColumnDef<TableDataProps>[]>(
+  const columns = useMemo<ColumnDef<CompanyTableRow>[]>(
     () => [
       {
         header: 'Email',

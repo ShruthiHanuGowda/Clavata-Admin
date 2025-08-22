@@ -36,10 +36,14 @@ export function useGetMenuMaster() {
 export function handlerDrawerOpen(isDashboardDrawerOpened: boolean) {
   // to update local state based on key
 
-  mutate(
+  mutate<MenuProps>(
     endpoints.key + endpoints.master,
-    (currentMenuMaster: any) => {
-      return { ...currentMenuMaster, isDashboardDrawerOpened };
+    (currentMenuMaster) => {
+      const safeMenu: MenuProps = {
+        isDashboardDrawerOpened,
+        isComponentDrawerOpened: currentMenuMaster?.isComponentDrawerOpened ?? initialState.isComponentDrawerOpened
+      };
+      return safeMenu;
     },
     false
   );

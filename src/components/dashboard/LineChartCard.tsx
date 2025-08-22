@@ -16,7 +16,7 @@ import { TimeSlot } from 'hooks/useLineChart';
 interface LineChartCardProps {
   title: string;
   description?: string;
-  slot: any;
+  slot: 'week' | 'month';
   data: number[];
   handleSlotChange: (slot: TimeSlot) => void;
   loading?: boolean;
