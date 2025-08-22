@@ -1,5 +1,3 @@
-// src/components/common/ReactTableWrapper.tsx
-
 import React, { useContext } from 'react';
 import { useReactTable, getCoreRowModel, getSortedRowModel, ColumnDef, flexRender, HeaderGroup, Row } from '@tanstack/react-table';
 
@@ -61,6 +59,8 @@ function ReactTableWrapper<T>({
 
   const headers: LabelKeyObject[] = table.getAllColumns().map((col) => ({
     label: typeof col.columnDef.header === 'string' ? col.columnDef.header : '#',
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
     key: col.columnDef.accessorKey ?? ''
   }));
 
@@ -88,10 +88,10 @@ function ReactTableWrapper<T>({
             )}
 
             <TableContainer>
-              Wrapper
+              {/* Wrapper */}
               <Table>
                 <TableHead>
-                  {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
+                  {table.getHeaderGroups().map((headerGroup: HeaderGroup<T>) => (
                     <TableRow key={headerGroup.id}>
                       {headerGroup.headers.map((header) => (
                         <TableCell key={header.id} {...header.column.columnDef.meta}>

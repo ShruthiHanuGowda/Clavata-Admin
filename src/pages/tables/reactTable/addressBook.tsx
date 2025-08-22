@@ -10,7 +10,7 @@ import { useQuery } from '@apollo/client';
 import { LIST_BENEFICIARIES } from '../../../graphql/queries';
 
 // types
-import { TableDataProps } from 'types/table';
+import { AddressBookItem, AddressBookResponse } from 'types/table';
 
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
@@ -25,7 +25,7 @@ export default function AddressBookTable() {
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState<TableDataProps[]>([]);
+  const [data, setData] = useState([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -56,8 +56,8 @@ export default function AddressBookTable() {
     }
   }
 
-  const transformedResponseData = (resData: any) => {
-    return resData.listAddressBooks?.items.map((item: any, index: number) => ({
+  const transformedResponseData = (resData: AddressBookResponse) => {
+    return resData.listAddressBooks?.items.map((item: AddressBookItem, index: number) => ({
       id: item.id || index || '',
       name: item.name,
       walletAddress: item.walletAddress,
@@ -106,7 +106,7 @@ export default function AddressBookTable() {
       }
       fetchMore({
         variables
-      }).then((fetchMoreResult: any) => {
+      }).then((fetchMoreResult: { data: AddressBookResponse }) => {
         const fetchedData = fetchMoreResult.data;
 
         const transformedData = transformedResponseData(fetchedData);
@@ -132,7 +132,12 @@ export default function AddressBookTable() {
     [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
-  const columns = useMemo<ColumnDef<TableDataProps>[]>(
+  useEffect(() => {
+    handlePagination('first');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageSize]);
+
+  const columns = useMemo<ColumnDef<T>[]>(
     () => [
       {
         header: 'Name',

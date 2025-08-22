@@ -163,6 +163,7 @@ export default function PaginationUserTable() {
 
   useEffect(() => {
     handlePagination('first');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageSize]);
 
   const columns = useMemo<ColumnDef<TableDataProps>[]>(

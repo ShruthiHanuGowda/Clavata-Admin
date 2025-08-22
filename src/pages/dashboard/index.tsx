@@ -77,19 +77,21 @@ export default function Dashboard() {
         };
 
         // Normalize counters data
-        const normalizedCounters: CounterData[] = countersData?.counters?.map((counter: any) => ({
-          id: counter.id || '',
-          title: counter.title || 'Unknown',
-          info: counter.description || '',
-          count: isNaN(parseFloat(counter.value)) ? 0 : parseFloat(parseFloat(counter.value).toFixed(3))
-        })) || [];
+        const normalizedCounters: CounterData[] =
+          countersData?.counters?.map((counter: any) => ({
+            id: counter.id || '',
+            title: counter.title || 'Unknown',
+            info: counter.description || '',
+            count: isNaN(parseFloat(counter.value)) ? 0 : parseFloat(parseFloat(counter.value).toFixed(3))
+          })) || [];
 
         // Normalize charts data
-        const normalizedCharts: ChartSection[] = chartsData?.sections?.map((section: any) => ({
-          id: section.id || '',
-          title: section.title || 'Unknown',
-          charts: Array.isArray(section.charts) ? section.charts : []
-        })) || [];
+        const normalizedCharts: ChartSection[] =
+          chartsData?.sections?.map((section: any) => ({
+            id: section.id || '',
+            title: section.title || 'Unknown',
+            charts: Array.isArray(section.charts) ? section.charts : []
+          })) || [];
 
         setStats(normalizedStats);
         setCounters(normalizedCounters);
@@ -99,8 +101,8 @@ export default function Dashboard() {
         if (newAccountsData?.chart && Array.isArray(newAccountsData.chart) && newAccountsData.chart.length > 0) {
           const firstChartEntry = newAccountsData.chart[0];
           if (firstChartEntry && 'value' in firstChartEntry) {
-            setStats(prev => ({ 
-              ...prev, 
+            setStats((prev) => ({
+              ...prev,
               newAccountsIN24Hours: isNaN(parseFloat(firstChartEntry.value)) ? 0 : parseFloat(firstChartEntry.value)
             }));
           }
@@ -108,7 +110,7 @@ export default function Dashboard() {
       } catch (err) {
         console.error('Error loading dashboard data:', err);
         let errorMessage = 'Failed to load dashboard data';
-        
+
         if (err instanceof Error) {
           if (err.message.includes('Network Error') || err.message.includes('CORS')) {
             errorMessage = 'Unable to connect to the server. Please check your internet connection or contact support.';
@@ -116,7 +118,7 @@ export default function Dashboard() {
             errorMessage = err.message;
           }
         }
-        
+
         setError(errorMessage);
       } finally {
         setLoading(false);

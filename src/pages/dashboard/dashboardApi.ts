@@ -70,11 +70,11 @@ export const fetchDashboardData = async (type = 'D_WALLET_API_BASE_URL', timeSlo
     return data;
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
-    
+
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
       throw new Error('Network Error: Unable to connect to server. Please check your connection.');
     }
-    
+
     throw error;
   }
 };

@@ -59,3 +59,17 @@ export type TableDataProps = {
   time: string[];
   validatorId: string;
 };
+export interface AddressBookItem {
+  id: string;
+  name: string;
+  walletAddress: string;
+  beneficiaryAddress: string;
+  chain: string;
+}
+
+export interface AddressBookResponse {
+  listAddressBooks: {
+    items: AddressBookItem[];
+    nextToken: string | null;
+  };
+}
