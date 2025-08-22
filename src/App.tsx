@@ -1,5 +1,6 @@
 import { RouterProvider } from 'react-router-dom';
 import { Provider as ReduxProvider } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 
 // project import
@@ -11,7 +12,7 @@ import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import router from 'routes';
 import ThemeCustomization from 'themes';
-import { store, persistor } from 'store';
+import { store, persistor, RootState } from 'store';
 
 import Locales from 'components/Locales';
 import ScrollTop from 'components/ScrollTop';
@@ -78,13 +79,12 @@ const httpLink = createHttpLink({
 });
 
 export default function App() {
-  const [authenticationToken, setAuthenticationToken] = useState(() => {
-    return localStorage.getItem('serviceToken') || '';
-  });
+  const { token } = useSelector((state: RootState) => state?.auth);
+
+  const [authenticationToken, setAuthenticationToken] = useState(token ?? '');
   const [searchTerm, setSearchTerm] = useState('');
 
   const authLink = setContext((_, { headers }) => {
-    const token = authenticationToken || '';
     return {
       headers: {
         ...headers,

@@ -10,7 +10,7 @@ import { useQuery } from '@apollo/client';
 import { LIST_NFT_WALLETS } from '../../../graphql/queries';
 
 // types
-import { TableDataProps } from 'types/table';
+import { ListMintedNftsResponse, MintedNft } from 'types/table';
 
 //query
 import { Context } from 'App';
@@ -25,12 +25,15 @@ export default function NftTable() {
   const [contractAddress, setContractAddress] = useState('');
 
   const context = useContext(Context);
+  if (!context) {
+    throw new Error('Context must be used within a Context.Provider');
+  }
+  const { searchTerm } = context;
   const location = useLocation();
-  const { searchTerm }: any = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState<TableDataProps[]>([]);
+  const [data, setData] = useState<MintedNft[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -66,7 +69,7 @@ export default function NftTable() {
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(
-      (item: any) =>
+      (item: MintedNft) =>
         (item.assetId && item.assetId.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.contractAddress && item.contractAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.createdAt && item.createdAt.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -75,15 +78,17 @@ export default function NftTable() {
     );
   }, [searchTerm, data]);
 
-  const transformedResponseData = (resData: any) => {
-    return (resData?.listMintedNfts?.items || []).map((item: any, index: number) => ({
-      id: item?.id || index || '',
-      assetId: item.assetId,
-      contractAddress: item.contractAddress,
-      createdAt: item.createdAt,
-      mintedVolume: item.mintedVolume,
-      tokenId: item.tokenId
-    }));
+  const transformedResponseData = (resData: ListMintedNftsResponse): MintedNft[] => {
+    return (
+      resData.listMintedNfts?.items?.map((item, index) => ({
+        id: item?.id ?? String(index),
+        assetId: item?.assetId ?? '',
+        contractAddress: item?.contractAddress ?? '',
+        createdAt: item?.createdAt ?? '',
+        mintedVolume: item?.mintedVolume ?? '',
+        tokenId: item?.tokenId ?? ''
+      })) ?? []
+    );
   };
 
   useEffect(() => {
@@ -126,13 +131,13 @@ export default function NftTable() {
       }
       fetchMore({
         variables
-      }).then((fetchMoreResult: any) => {
-        const fetchedData = fetchMoreResult.data;
+      }).then((fetchMoreResult) => {
+        const fetchedData = fetchMoreResult.data as ListMintedNftsResponse;
 
         const transformedData = transformedResponseData(fetchedData);
 
         setData(transformedData);
-        setNextToken(fetchedData.listMintedNfts.nextToken);
+        setNextToken(fetchedData.listMintedNfts?.nextToken ?? null);
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
@@ -149,7 +154,7 @@ export default function NftTable() {
         }
       });
     },
-    [nextToken, previousTokens, pageSize, fetchMore]
+    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
   useEffect(() => {
@@ -157,7 +162,7 @@ export default function NftTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageSize]);
 
-  const columns = useMemo<ColumnDef<TableDataProps>[]>(
+  const columns = useMemo<ColumnDef<MintedNft>[]>(
     () => [
       {
         header: 'Asset Id',
@@ -184,37 +189,10 @@ export default function NftTable() {
         header: 'Minted Volume',
         accessorKey: 'mintedVolume'
       },
-      // {
-      //   header: 'Denergy Wallet',
-      //   accessorKey: 'age',
-      //   meta: {
-      //     className: 'cell-right'
-      //   }
-      // },
       {
         header: 'Token Id',
         accessorKey: 'tokenId'
-        // cell: (cell) => {
-        //   switch (cell.getValue()) {
-        //     case 'Complicated':
-        //       return <Chip color="error" label="Complicated" size="small" variant="light" />;
-        //     case 'Relationship':
-        //       return <Chip color="success" label="Relationship" size="small" variant="light" />;
-        //     case 'Single':
-        //     default:
-        //       return <Chip color="info" label="Single" size="small" variant="light" />;
-        //   }
-        // }
       }
-      // {
-      //   header: 'KYC status',
-      //   accessorKey: 'progress'
-      //   // cell: (cell) => <LinearWithLabel value={cell.getValue() as number} sx={{ minWidth: 75 }} />
-      // },
-      //   {
-      //     header: 'Date Registered',
-      //     accessorKey: 'date'
-      //   }
     ],
     []
   );

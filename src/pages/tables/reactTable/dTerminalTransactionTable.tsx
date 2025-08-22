@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { LIST_DTERMINAL_TRANSACTION_HISTORY } from '../../../graphql/queries';
 
 // types
-import { TableDataProps } from 'types/table';
+import { DTerminalTransactionItem, ListDTerminalTransactionHistoryResponse } from 'types/table';
 
 //query
 import { Context } from 'App';
@@ -24,11 +24,14 @@ import ReactTableWrapper from 'components/ReactTableWrapper';
 export default function DTerminalTransactionTable() {
   const { logout } = useAuth();
   const context = useContext(Context);
-  const { searchTerm }: any = context;
+  if (!context) {
+    throw new Error('Context must be used within a Context.Provider');
+  }
+  const { searchTerm } = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<DTerminalTransactionItem[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -60,17 +63,18 @@ export default function DTerminalTransactionTable() {
       logout();
     }
   }
-
-  const transformedResponseData = (resData: any) => {
-    return resData.listDterminalTransactionHistories?.items.map((item: any) => ({
-      transactionHash: item.transactionHash,
-      method: item.method,
-      age: item.age,
-      from: item.from,
-      to: item.to,
-      amount: item.amount,
-      txnFee: item.txnFee
-    }));
+  const transformedResponseData = (resData: ListDTerminalTransactionHistoryResponse): DTerminalTransactionItem[] => {
+    return (
+      resData.listDterminalTransactionHistories?.items?.map((item) => ({
+        transactionHash: item.transactionHash,
+        method: item.method,
+        age: item.age,
+        from: item.from,
+        to: item.to,
+        amount: item.amount,
+        txnFee: item.txnFee
+      })) ?? []
+    );
   };
 
   useEffect(() => {
@@ -113,13 +117,13 @@ export default function DTerminalTransactionTable() {
       }
       fetchMore({
         variables
-      }).then((fetchMoreResult: any) => {
+      }).then((fetchMoreResult: { data: ListDTerminalTransactionHistoryResponse }) => {
         const fetchedData = fetchMoreResult.data;
 
         const transformedData = transformedResponseData(fetchedData);
 
         setData(transformedData);
-        setNextToken(fetchedData.listDterminalTransactionHistories.nextToken);
+        setNextToken(fetchedData?.listDterminalTransactionHistories?.nextToken ?? null);
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
@@ -144,7 +148,7 @@ export default function DTerminalTransactionTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageSize]);
 
-  const columns = useMemo<ColumnDef<TableDataProps>[]>(
+  const columns = useMemo<ColumnDef<DTerminalTransactionItem>[]>(
     () => [
       {
         header: 'Transaction Hash',

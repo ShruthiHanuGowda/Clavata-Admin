@@ -19,8 +19,8 @@ const iconSX = { fontSize: '0.75rem', color: 'inherit', marginLeft: 0, marginRig
 // ==============================|| STATISTICS - ECOMMERCE CARD ||============================== //
 
 interface Props {
-  title: string;
-  count: string;
+  title: string | undefined;
+  count: string | number | undefined;
   percentage?: number;
   isLoss?: boolean;
   color?: ChipProps['color'];

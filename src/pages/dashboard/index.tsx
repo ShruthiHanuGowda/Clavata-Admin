@@ -17,7 +17,14 @@ import { getStats, getCounters, getCharts, getNewAccounts } from 'utils/api/dene
 import EnergyConsumption from 'sections/dashboard/energyConsumption';
 import ErrorBoundary from 'components/ErrorBoundary';
 
+interface Chart {
+  id: string;
+  title: string;
+  [key: string]: unknown;
+}
+
 interface CounterData {
+  isLoss: boolean;
   id: string;
   title: string;
   info?: string;
@@ -33,12 +40,25 @@ interface StatsData {
 }
 
 interface ChartSection {
-  id: string;
+  id: AnalyticsKey;
   title: string;
-  charts: Array<any>;
+  charts: Chart[];
+}
+interface RawCounter {
+  id?: string;
+  title?: string;
+  description?: string;
+  value?: string | number;
+}
+interface RawChartSection {
+  id?: string;
+  title?: string;
+  [key: string]: unknown;
 }
 
-const countersToAnalytics: Record<string, string[]> = {
+type AnalyticsKey = 'accounts' | 'transactions' | 'blocks' | 'tokens' | 'gas' | 'contracts' | 'wattCoin';
+
+const countersToAnalytics: Record<AnalyticsKey, string[]> = {
   accounts: ['totalAccounts', 'totalAddresses'],
   transactions: ['totalTxns', 'pendingTxns30m', 'completedTxns', 'newTxns24h'],
   blocks: ['averageBlockTime', 'totalBlocks', 'totalTokens', ''],
@@ -78,16 +98,21 @@ export default function Dashboard() {
 
         // Normalize counters data
         const normalizedCounters: CounterData[] =
-          countersData?.counters?.map((counter: any) => ({
-            id: counter.id || '',
-            title: counter.title || 'Unknown',
-            info: counter.description || '',
-            count: isNaN(parseFloat(counter.value)) ? 0 : parseFloat(parseFloat(counter.value).toFixed(3))
-          })) || [];
+          countersData?.counters?.map((counter: RawCounter) => {
+            const rawValue = typeof counter.value === 'string' ? parseFloat(counter.value) : Number(counter.value);
+            const count = isNaN(rawValue) ? 0 : Number(rawValue.toFixed(3));
+
+            return {
+              id: counter.id ?? '',
+              title: counter.title ?? 'Unknown',
+              info: counter.description ?? '',
+              count
+            };
+          }) ?? [];
 
         // Normalize charts data
         const normalizedCharts: ChartSection[] =
-          chartsData?.sections?.map((section: any) => ({
+          chartsData?.sections?.map((section: RawChartSection) => ({
             id: section.id || '',
             title: section.title || 'Unknown',
             charts: Array.isArray(section.charts) ? section.charts : []
@@ -197,7 +222,11 @@ export default function Dashboard() {
               analytics={
                 countersToAnalytics[id]
                   ?.map((counterId: string) => counters.find((counter) => counter.id === counterId))
-                  .filter((counter): counter is CounterData => Boolean(counter)) || []
+                  .filter((counter): counter is CounterData => Boolean(counter))
+                  .map((counter) => ({
+                    ...counter,
+                    isLoss: counter?.isLoss ?? false
+                  })) || []
               }
             />
           </ErrorBoundary>
