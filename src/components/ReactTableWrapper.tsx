@@ -88,10 +88,6 @@ function ReactTableWrapper<T>({
             )}
 
             <TableContainer>
-<<<<<<< HEAD
-=======
-              {/* Wrapper */}
->>>>>>> origin/feat/redux
               <Table>
                 <TableHead>
                   {table.getHeaderGroups().map((headerGroup: HeaderGroup<T>) => (
