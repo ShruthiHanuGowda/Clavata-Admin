@@ -148,7 +148,7 @@ export default function Validator() {
           data={filteredData}
           columns={columns}
           isLoading={loading}
-          topPagination={true}
+          topPagination={false}
           csvFilename="validators.csv"
           // 👇 Optional: handle row clicks
           onRowClick={(row: { validatorId: string; }) => fetchValidatorDetails(row.validatorId)}
