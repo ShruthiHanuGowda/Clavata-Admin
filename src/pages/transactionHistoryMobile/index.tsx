@@ -11,6 +11,25 @@ import { formatDate } from 'utils/date';
 import useAuth from 'hooks/useAuth';
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
+type TransactionHistory = {
+  transactionHash: string;
+  from: string;
+  to: string;
+  amount: string;
+  coinCode: string;
+  method: string;
+  transactionStatus: string;
+  txnFee: string;
+  createdAt: string;
+};
+
+type TransactionHistoryResponse = {
+  listTransactionHistoryMobiles: {
+    items: TransactionHistory[];
+    nextToken: string | null;
+  };
+};
+
 export default function MobileTransactionHistory() {
   const { logout } = useAuth();
   const context = useContext(Context);
@@ -18,7 +37,7 @@ export default function MobileTransactionHistory() {
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<TransactionHistory[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -27,7 +46,7 @@ export default function MobileTransactionHistory() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_TRANSACTION_HISTORY_MOBILE, {
+  } = useQuery<TransactionHistoryResponse>(LIST_TRANSACTION_HISTORY_MOBILE, {
     variables: {
       nextToken: null,
       limit: pageSize,
@@ -51,19 +70,6 @@ export default function MobileTransactionHistory() {
       logout();
     }
   }
-
-  // const transformedData = data?.listTransactionHistoryMobiles?.items || [];
-
-  // const filteredData = useMemo(() => {
-  //   if (!searchTerm) return data;
-  //   return data.filter(
-  //     (item: any) =>
-  //       item.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //       item.to.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //       item.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //       item.transactionHash.toLowerCase().includes(searchTerm.toLowerCase())
-  //   );
-  // }, [searchTerm, data]);
 
   useEffect(() => {
     if (queryData) {
@@ -104,8 +110,8 @@ export default function MobileTransactionHistory() {
       }
       fetchMore({
         variables
-      }).then((fetchMoreResult: any) => {
-        const fetchedData = fetchMoreResult.data;
+      }).then((fetchMoreResult) => {
+        const fetchedData = fetchMoreResult.data as TransactionHistoryResponse;
 
         setData(fetchedData.listTransactionHistoryMobiles.items);
         setNextToken(fetchedData.listTransactionHistoryMobiles.nextToken);
@@ -125,14 +131,15 @@ export default function MobileTransactionHistory() {
         }
       });
     },
-    [nextToken, previousTokens, pageSize, fetchMore]
+    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
   useEffect(() => {
     handlePagination('first');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageSize]);
 
-  const columns = useMemo<ColumnDef<any>[]>(
+  const columns = useMemo<ColumnDef<TransactionHistory>[]>(
     () => [
       {
         header: 'Transaction Hash',
