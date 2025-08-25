@@ -12,32 +12,39 @@ import { Column } from '@tanstack/react-table';
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
-const MenuProps = { PaperProps: { style: { maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP, width: 200 } } };
+const MenuProps = {
+  PaperProps: {
+    style: {
+      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+      width: 200
+    }
+  }
+};
 
-interface Props {
-  getVisibleLeafColumns: () => Column<any, unknown>[];
+interface Props<T extends object> {
+  getVisibleLeafColumns: () => Column<T, unknown>[];
   getIsAllColumnsVisible: () => boolean;
-  getToggleAllColumnsVisibilityHandler: () => (event: unknown) => void;
-  getAllColumns: () => Column<any, unknown>[];
+  getToggleAllColumnsVisibilityHandler: () => (event: React.MouseEvent<HTMLLIElement>) => void;
+  getAllColumns: () => Column<T, unknown>[];
 }
 
 // ==============================|| COLUMN VISIBILITY - SELECT ||============================== //
 
-export default function SelectColumnVisibility({
+export default function SelectColumnVisibility<T extends object>({
   getVisibleLeafColumns,
   getIsAllColumnsVisible,
   getToggleAllColumnsVisibilityHandler,
   getAllColumns
-}: Props) {
+}: Props<T>) {
   return (
     <FormControl sx={{ width: 200 }}>
       <Select
         id="column-hiding"
         multiple
         displayEmpty
-        value={getVisibleLeafColumns()}
+        value={getVisibleLeafColumns().map((col) => col.id)}
         input={<OutlinedInput id="select-column-hiding" placeholder="select column" />}
-        renderValue={(selected) => {
+        renderValue={() => {
           if (getIsAllColumnsVisible()) {
             return <Typography variant="subtitle1">All columns visible</Typography>;
           }
@@ -53,18 +60,16 @@ export default function SelectColumnVisibility({
       >
         <MenuItem value="all" onClick={getToggleAllColumnsVisibilityHandler()}>
           <Checkbox checked={getIsAllColumnsVisible()} color="success" />
-          <ListItemText primary="All Column" />
+          <ListItemText primary="All Columns" />
         </MenuItem>
-        {getAllColumns().map(
-          (column) =>
-            // @ts-ignore
-            column.columnDef.accessorKey && (
-              <MenuItem key={column.id} value={column.id} onClick={column.getToggleVisibilityHandler()}>
-                <Checkbox checked={column.getIsVisible()} color="success" />
-                <ListItemText primary={column.columnDef.header as string} />
-              </MenuItem>
-            )
-        )}
+        {getAllColumns()
+          .filter((col) => col.columnDef.accessorKey)
+          .map((column) => (
+            <MenuItem key={column.id} value={column.id} onClick={column.getToggleVisibilityHandler()}>
+              <Checkbox checked={column.getIsVisible()} color="success" />
+              <ListItemText primary={String(column.columnDef.header)} />
+            </MenuItem>
+          ))}
       </Select>
     </FormControl>
   );

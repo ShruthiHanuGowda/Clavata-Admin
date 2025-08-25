@@ -4,7 +4,6 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import Box from '@mui/material/Box';
 
 // project import
-import { useNavigate } from 'react-router-dom';
 import Message from './Message';
 import Profile from './Profile';
 import Notification from './Notification';
@@ -18,7 +17,6 @@ import useConfig from 'hooks/useConfig';
 // ==============================|| HEADER - CONTENT ||============================== //
 
 export default function HeaderContent() {
-  const navigate = useNavigate();
   const { menuOrientation } = useConfig();
   const downLG = useMediaQuery((theme: Theme) => theme.breakpoints.down('lg'));
 

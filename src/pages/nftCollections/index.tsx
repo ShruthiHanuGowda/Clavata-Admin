@@ -12,6 +12,24 @@ import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
 import useAuth from 'hooks/useAuth';
 
+interface AppContextType {
+  searchTerm?: string;
+  setSearchTerm: (term: string) => void;
+}
+
+interface NftCollection {
+  contractAddress: string;
+  collectionName: string;
+  symbol: string;
+  year: string;
+  country: string;
+  ownerAddress: string;
+  type: string;
+  createdAt: string;
+  updatedAt: string;
+  collection_image?: string;
+}
+
 function NftCardView({
   data,
   top,
@@ -23,7 +41,7 @@ function NftCardView({
   setPageSize,
   isLoading
 }: {
-  data: any[];
+  data: NftCollection[];
   top?: boolean;
   currentPageIndex: number;
   handlePagination: (direction: 'next' | 'previous' | 'first') => Promise<void>;
@@ -33,11 +51,11 @@ function NftCardView({
   pageSize: number;
   isLoading: boolean;
 }) {
-  const context = useContext(Context);
-  const { setSearchTerm }: any = context;
+  const context = useContext(Context) as AppContextType;
+  const { setSearchTerm } = context;
   const navigate = useNavigate();
 
-  const headers: any[] = [
+  const headers: { label: string; key: keyof NftCollection }[] = [
     { label: 'Contract Address', key: 'contractAddress' },
     { label: 'Collection Name', key: 'collectionName' },
     { label: 'Symbol', key: 'symbol' },
@@ -161,12 +179,11 @@ function NftCardView({
 
 export default function NftCollectionTable() {
   const { logout } = useAuth();
-  const context = useContext(Context);
-  const { searchTerm } = context as any;
-
+  const context = useContext(Context) as AppContextType;
+  const { searchTerm } = context;
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<NftCollection[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(1000);
 
@@ -244,9 +261,8 @@ export default function NftCollectionTable() {
       }
       fetchMore({
         variables
-      }).then((fetchMoreResult: any) => {
+      }).then((fetchMoreResult: { data: { listNftCollections: { items: NftCollection[]; nextToken: string | null } } }) => {
         const fetchedData = fetchMoreResult.data;
-
         setData(fetchedData.listNftCollections.items);
         setNextToken(fetchedData.listNftCollections.nextToken);
 
@@ -265,12 +281,12 @@ export default function NftCollectionTable() {
         }
       });
     },
-    [nextToken, previousTokens, pageSize, fetchMore]
+    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
   useEffect(() => {
     handlePagination('first');
-  }, [pageSize]);
+  }, [pageSize, handlePagination]);
 
   return (
     <Grid container spacing={3}>

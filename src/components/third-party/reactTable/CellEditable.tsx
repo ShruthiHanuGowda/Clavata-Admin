@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, ChangeEvent } from 'react';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
@@ -21,49 +21,48 @@ import CheckOutlined from '@ant-design/icons/CheckOutlined';
 import IconButton from 'components/@extended/IconButton';
 import LinearWithLabel from 'components/@extended/progress/LinearWithLabel';
 
-// assets
+// ------------------- TABLE META TYPE -------------------
+export type TableMeta = {
+  updateData: (rowIndex: number, columnId: string, value: unknown) => void;
+};
 
-type CellEditProps<T extends RowData> = {
-  getValue: () => any;
-  row: Row<T>;
-  column: any;
-  table: Table<T>;
+// ------------------- PROPS -------------------
+type CellEditProps = {
+  getValue: () => unknown;
+  row: Row<RowData>;
+  column: { id: string; columnDef: { dataType: 'text' | 'select' | 'progress' } };
+  table: Table<RowData>;
 };
 
 // ==============================|| EDITABLE CELL ||============================== //
-
-export default function CellEditable<T extends RowData>({
-  getValue: initialValue,
-  row: { index },
-  column: { id, columnDef },
-  table
-}: CellEditProps<T>) {
+export default function CellEditable({ getValue: initialValue, row: { index }, column: { id, columnDef }, table }: CellEditProps) {
   const theme = useTheme();
-  const [value, setValue] = useState(initialValue);
+  const [value, setValue] = useState<unknown>(initialValue);
   const [showSelect, setShowSelect] = useState(false);
 
-  const onChange = (e: any) => {
-    setValue(e.target?.value);
+  // handle input changes
+  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { value: unknown } }) => {
+    setValue(e.target.value);
   };
 
   const onBlur = () => {
-    table.options.meta?.updateData(index, id, value);
+    (table.options.meta as TableMeta | undefined)?.updateData(index, id, value);
   };
 
   useEffect(() => {
     setValue(initialValue);
   }, [initialValue]);
 
-  let element;
-  let userInfoSchema;
+  // Validation schema
+  let userInfoSchema = yup.object();
   switch (id) {
     case 'email':
-      userInfoSchema = yup.object().shape({
-        userInfo: yup.string().email('Enter valid email ').required('Email is required')
+      userInfoSchema = yup.object({
+        userInfo: yup.string().email('Enter valid email').required('Email is required')
       });
       break;
     case 'age':
-      userInfoSchema = yup.object().shape({
+      userInfoSchema = yup.object({
         userInfo: yup
           .number()
           .typeError('Age must be number')
@@ -73,28 +72,23 @@ export default function CellEditable<T extends RowData>({
       });
       break;
     case 'visits':
-      userInfoSchema = yup.object().shape({
+      userInfoSchema = yup.object({
         userInfo: yup.number().typeError('Visits must be number').required('Visits are required')
       });
       break;
     default:
-      userInfoSchema = yup.object().shape({
+      userInfoSchema = yup.object({
         userInfo: yup.string().min(2, 'Too Short!').max(50, 'Too Long!').required('Name is required')
       });
       break;
   }
 
+  let element: JSX.Element;
+
   switch (columnDef.dataType) {
     case 'text':
       element = (
-        <Formik
-          initialValues={{
-            userInfo: value
-          }}
-          enableReinitialize
-          validationSchema={userInfoSchema}
-          onSubmit={() => {}}
-        >
+        <Formik initialValues={{ userInfo: value }} enableReinitialize validationSchema={userInfoSchema} onSubmit={() => {}}>
           {({ values, handleChange, handleBlur, errors, touched }) => (
             <Form>
               <TextField
@@ -106,9 +100,12 @@ export default function CellEditable<T extends RowData>({
                   handleChange(e);
                   onChange(e);
                 }}
-                onBlur={handleBlur}
+                onBlur={(e) => {
+                  handleBlur(e);
+                  onBlur();
+                }}
                 error={touched.userInfo && Boolean(errors.userInfo)}
-                helperText={touched.userInfo && errors.userInfo && (errors.userInfo as string)}
+                helperText={touched.userInfo && errors.userInfo ? (errors.userInfo as string) : ''}
                 sx={{
                   '& .MuiOutlinedInput-input': { py: 0.75, px: 1, minWidth: { xs: 100 } },
                   '& .MuiOutlinedInput-notchedOutline': {
@@ -121,13 +118,14 @@ export default function CellEditable<T extends RowData>({
         </Formik>
       );
       break;
+
     case 'select':
       element = (
         <Select
           labelId="editable-select-status-label"
           sx={{ boxShadow: 'none', '.MuiOutlinedInput-notchedOutline': { border: 0 }, svg: { display: 'none' } }}
           id="editable-select-status"
-          value={value}
+          value={value as string}
           onChange={onChange}
           onBlur={onBlur}
         >
@@ -143,41 +141,35 @@ export default function CellEditable<T extends RowData>({
         </Select>
       );
       break;
+
     case 'progress':
-      element = (
-        <>
-          {!showSelect ? (
-            <Box onClick={() => setShowSelect(true)}>
-              <LinearWithLabel value={value} sx={{ minWidth: 75 }} />
-            </Box>
-          ) : (
-            <>
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ pl: 1, minWidth: 120 }}>
-                <Slider
-                  value={value}
-                  min={0}
-                  max={100}
-                  step={1}
-                  onBlur={onBlur}
-                  onChange={(event: Event, newValue: number | number[]) => {
-                    setValue(newValue);
-                  }}
-                  valueLabelDisplay="auto"
-                  aria-labelledby="non-linear-slider"
-                />
-                <Tooltip title={'Submit'}>
-                  <IconButton onClick={() => setShowSelect(false)}>
-                    <CheckOutlined />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-            </>
-          )}
-        </>
+      element = !showSelect ? (
+        <Box onClick={() => setShowSelect(true)}>
+          <LinearWithLabel value={value as number} sx={{ minWidth: 75 }} />
+        </Box>
+      ) : (
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ pl: 1, minWidth: 120 }}>
+          <Slider
+            value={value as number}
+            min={0}
+            max={100}
+            step={1}
+            onBlur={onBlur}
+            onChange={(_, newValue) => setValue(newValue)}
+            valueLabelDisplay="auto"
+            aria-labelledby="non-linear-slider"
+          />
+          <Tooltip title={'Submit'}>
+            <IconButton onClick={() => setShowSelect(false)}>
+              <CheckOutlined />
+            </IconButton>
+          </Tooltip>
+        </Stack>
       );
       break;
+
     default:
-      element = <span></span>;
+      element = <span />;
       break;
   }
 

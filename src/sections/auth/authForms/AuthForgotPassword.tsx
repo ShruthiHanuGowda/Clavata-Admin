@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useNavigate, useSearchParams } from 'react-router-dom';
 // material-ui
 import Button from '@mui/material/Button';
@@ -64,16 +63,17 @@ export default function AuthForgotPassword() {
                 // To fix, cancel all subscriptions and asynchronous tasks in a useEffect cleanup function.
                 // github issue: https://github.com/formium/formik/issues/2430
               },
-              (err: any) => {
+              (err: Error) => {
                 setStatus({ success: false });
                 setErrors({ submit: err.message });
                 setSubmitting(false);
               }
             );
-          } catch (err: any) {
+          } catch (err: unknown) {
             console.error(err);
+            const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
             setStatus({ success: false });
-            setErrors({ submit: err.message });
+            setErrors({ submit: errorMessage });
             setSubmitting(false);
           }
         }}

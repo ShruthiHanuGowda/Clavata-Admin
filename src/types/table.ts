@@ -36,7 +36,7 @@ export type TableDataApiResponse = {
 };
 
 export type TableDataProps = {
-  applicantId: any;
+  applicantId: string;
   id: number;
   firstName: string;
   lastName: string;

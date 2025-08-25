@@ -8,13 +8,30 @@ import { formatDate } from 'utils/date';
 import useAuth from 'hooks/useAuth';
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
+interface AppContext {
+  searchTerm: string;
+  // add any other context values if present
+}
+
+interface NonMintedNft {
+  itemId: string;
+  assetId: string;
+  commissioningDate: string;
+  country: string;
+  startDate: string;
+  endDate: string;
+  facilityName: string;
+  volume: number;
+  year: number;
+}
+
 export default function NonMintedNftsTable() {
   const { logout } = useAuth();
-  const context = useContext(Context);
-  const { searchTerm } = context as any;
+  const context = useContext(Context) as AppContext;
+  const { searchTerm } = context;
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<NonMintedNft[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -83,34 +100,36 @@ export default function NonMintedNftsTable() {
       const variables: { limit: number; nextToken?: string } = { limit: pageSize };
       if (token) variables.nextToken = token;
 
-      fetchMore({ variables }).then((fetchMoreResult: any) => {
-        const fetchedData = fetchMoreResult.data;
-        setData(fetchedData.listNonMintedNfts.items);
-        setNextToken(fetchedData.listNonMintedNfts.nextToken);
+      fetchMore({ variables }).then(
+        (fetchMoreResult: { data: { listNonMintedNfts: { items: NonMintedNft[]; nextToken: string | null } } }) => {
+          const fetchedData = fetchMoreResult.data;
+          setData(fetchedData.listNonMintedNfts.items);
+          setNextToken(fetchedData.listNonMintedNfts.nextToken);
 
-        if (direction === 'next') {
-          setPreviousTokens((prev) => [...prev, nextToken!]);
-          setCurrentPageIndex((prev) => prev + 1);
-        } else if (direction === 'previous') {
-          setCurrentPageIndex((prev) => prev - 1);
-          if (nextToken === null) {
-            setPreviousTokens((prev) => prev.slice(0, prev.length - 2));
+          if (direction === 'next') {
+            setPreviousTokens((prev) => [...prev, nextToken!]);
+            setCurrentPageIndex((prev) => prev + 1);
+          } else if (direction === 'previous') {
+            setCurrentPageIndex((prev) => prev - 1);
+            if (nextToken === null) {
+              setPreviousTokens((prev) => prev.slice(0, prev.length - 2));
+            } else {
+              setPreviousTokens((prev) => prev.slice(0, prev.length - 1));
+            }
           } else {
-            setPreviousTokens((prev) => prev.slice(0, prev.length - 1));
+            setCurrentPageIndex(1);
           }
-        } else {
-          setCurrentPageIndex(1);
         }
-      });
+      );
     },
-    [nextToken, previousTokens, pageSize, fetchMore]
+    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
   useEffect(() => {
     handlePagination('first');
-  }, [pageSize]);
+  }, [pageSize, handlePagination]);
 
-  const columns = useMemo<ColumnDef<any>[]>(
+  const columns = useMemo<ColumnDef<NonMintedNft>[]>(
     () => [
       { header: 'Item ID', accessorKey: 'itemId' },
       { header: 'Asset ID', accessorKey: 'assetId' },

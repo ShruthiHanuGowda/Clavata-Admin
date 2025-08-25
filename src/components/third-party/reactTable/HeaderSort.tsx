@@ -7,8 +7,8 @@ import Stack from '@mui/material/Stack';
 import CaretDownOutlined from '@ant-design/icons/CaretDownOutlined';
 import CaretUpOutlined from '@ant-design/icons/CaretUpOutlined';
 
-// types
-import { Column } from '@tanstack/react-table';
+// third-party
+import { Column, RowData } from '@tanstack/react-table';
 
 enum SortType {
   ASC = 'asc',
@@ -20,24 +20,38 @@ function SortToggler({ type }: { type?: SortType }) {
 
   return (
     <Stack sx={{ color: 'secondary.light' }}>
-      <CaretUpOutlined style={{ fontSize: '0.625rem', color: type === SortType.ASC ? theme.palette.text.secondary : 'inherit' }} />
+      <CaretUpOutlined
+        style={{
+          fontSize: '0.625rem',
+          color: type === SortType.ASC ? theme.palette.text.secondary : 'inherit'
+        }}
+      />
       <CaretDownOutlined
-        style={{ fontSize: '0.625rem', marginTop: -2, color: type === SortType.DESC ? theme.palette.text.secondary : 'inherit' }}
+        style={{
+          fontSize: '0.625rem',
+          marginTop: -2,
+          color: type === SortType.DESC ? theme.palette.text.secondary : 'inherit'
+        }}
       />
     </Stack>
   );
 }
 
-interface HeaderSortProps {
-  column: Column<any, unknown>;
+interface HeaderSortProps<TData extends RowData> {
+  column: Column<TData, unknown>;
   sort?: boolean;
 }
 
 // ==============================|| SORT HEADER ||============================== //
 
-export default function HeaderSort({ column, sort }: HeaderSortProps) {
+export default function HeaderSort<TData extends RowData>({ column, sort }: HeaderSortProps<TData>) {
   return (
-    <Box {...(sort && { onClick: column.getToggleSortingHandler(), className: 'cursor-pointer prevent-select' })}>
+    <Box
+      {...(sort && {
+        onClick: column.getToggleSortingHandler(),
+        className: 'cursor-pointer prevent-select'
+      })}
+    >
       {{
         asc: <SortToggler type={SortType.ASC} />,
         desc: <SortToggler type={SortType.DESC} />

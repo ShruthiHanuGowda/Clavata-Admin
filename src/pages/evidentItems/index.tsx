@@ -10,11 +10,17 @@ import { formatDate } from 'utils/date';
 import { LIST_EVIDENT_ITEMS } from 'graphql/queries';
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
+interface EvidentItem {
+  uid: string;
+  assetId: string;
+  asset: string;
+  volume?: number;
+}
+
 export default function EvidentItems() {
   const { logout } = useAuth();
-
-  const [data, setData] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
+  const [data, setData] = useState<EvidentItem[]>([]);
+  const [search] = useState('');
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
@@ -42,23 +48,23 @@ export default function EvidentItems() {
     }
   }
 
-  // --- Subscriptions setup
-  const wsLink = new WebSocketLink({
-    uri: import.meta.env.VITE_APP_EVIDENT_GRAPHQL_WS_URL,
-    options: {
-      reconnect: true,
-      connectionParams: {
-        'x-api-key': import.meta.env.VITE_APP_EVIDENT_GRAPHQL_API_KEY
-      }
-    }
-  });
-
-  const client = new ApolloClient({
-    link: wsLink,
-    cache: new InMemoryCache()
-  });
-
   useEffect(() => {
+    // --- Subscriptions setup
+    const wsLink = new WebSocketLink({
+      uri: import.meta.env.VITE_APP_EVIDENT_GRAPHQL_WS_URL,
+      options: {
+        reconnect: true,
+        connectionParams: {
+          'x-api-key': import.meta.env.VITE_APP_EVIDENT_GRAPHQL_API_KEY
+        }
+      }
+    });
+
+    const client = new ApolloClient({
+      link: wsLink,
+      cache: new InMemoryCache()
+    });
+
     const createSub = client.subscribe({ query: ON_CREATE_EVIDENT_ITEM }).subscribe({
       next({ data }) {
         const newItem = data?.onCreateEvidentItems;
@@ -91,7 +97,7 @@ export default function EvidentItems() {
       updateSub.unsubscribe();
       deleteSub.unsubscribe();
     };
-  }, [client]);
+  }, []);
 
   useEffect(() => {
     if (queryData?.listEvidentItems?.items) {
@@ -123,7 +129,7 @@ export default function EvidentItems() {
       const variables: { limit: number; nextToken?: string } = { limit: pageSize };
       if (token) variables.nextToken = token;
 
-      fetchMore({ variables }).then((res: any) => {
+      fetchMore({ variables }).then((res: { data: { listEvidentItems: { items: EvidentItem[]; nextToken: string | null } } }) => {
         const fetchedData = res.data?.listEvidentItems;
         setData(fetchedData?.items);
         setNextToken(fetchedData?.nextToken);
@@ -143,14 +149,24 @@ export default function EvidentItems() {
         }
       });
     },
-    [nextToken, previousTokens, pageSize, fetchMore]
+    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
   useEffect(() => {
-    handlePagination('first');
-  }, [pageSize]);
+    const fetchFirstPage = async () => {
+      const variables = { limit: pageSize };
+      const res = await fetchMore({ variables });
+      const fetchedData = res.data?.listEvidentItems;
+      setData(fetchedData?.items);
+      setNextToken(fetchedData?.nextToken);
+      setPreviousTokens([]);
+      setCurrentPageIndex(1);
+    };
 
-  const columns: ColumnDef<any>[] = useMemo(
+    fetchFirstPage();
+  }, [pageSize, fetchMore]);
+
+  const columns: ColumnDef<EvidentItem>[] = useMemo(
     () => [
       {
         header: 'Energy Type',

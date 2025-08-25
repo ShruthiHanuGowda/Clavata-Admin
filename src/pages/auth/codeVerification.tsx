@@ -17,7 +17,11 @@ export default function CodeVerification() {
     const emailSplit = email.split('');
     const len = emailSplit.indexOf('@');
     emailSplit.forEach((item, pos) => {
-      pos >= 1 && pos <= len - 2 ? finalArr.push('*') : finalArr.push(emailSplit[pos]);
+      if (pos >= 1 && pos <= len - 2) {
+        finalArr.push('*');
+      } else {
+        finalArr.push(emailSplit[pos]);
+      }
     });
   }
 

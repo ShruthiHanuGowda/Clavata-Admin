@@ -4,6 +4,36 @@ import { useQuery } from '@apollo/client';
 import { Box, Typography, Button, Grid, Paper, Divider } from '@mui/material';
 import { LIST_COMPANY_WALLETS } from 'graphql/queries';
 
+interface CompanyInfo {
+  companyName?: string;
+  registrationNumber?: string;
+  country?: string;
+  legalAddress?: string;
+  website?: string;
+  incorporatedOn?: string;
+  type?: string;
+  registrationLocation?: string;
+}
+
+interface FullResponse {
+  fixedInfo?: {
+    companyInfo?: CompanyInfo;
+  };
+}
+
+interface CompanyDetail {
+  fullResponse?: FullResponse;
+}
+
+interface Company {
+  applicantId: string;
+  userAddress: string;
+  userWallet: string;
+  company_detail?: string | CompanyDetail;
+  is_verified_kyb?: boolean;
+  date?: string;
+}
+
 export default function CompanyKybDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -12,18 +42,16 @@ export default function CompanyKybDetail() {
   if (loading) return <Typography>Loading...</Typography>;
   if (error) return <Typography>Error loading data.</Typography>;
 
-  const company = data?.listUserWallets?.items.find((item: any) => item.applicantId === id);
+  const company = data?.listUserWallets?.items.find((item: Company) => item.applicantId === id);
 
   if (!company) return <Typography>No company found with ID: {id}</Typography>;
 
-  let companyDetails = null;
+  let companyDetails: CompanyDetail | null = null;
   try {
-    companyDetails = typeof company.company_detail === 'string' ? JSON.parse(company.company_detail) : company.company_detail;
+    companyDetails = typeof company.company_detail === 'string' ? JSON.parse(company.company_detail) : company.company_detail || null;
   } catch (e) {
     console.error('Failed to parse company_detail:', e);
   }
-
-  console.log('company details', company);
 
   const info = companyDetails?.fullResponse?.fixedInfo?.companyInfo;
 
@@ -54,7 +82,7 @@ export default function CompanyKybDetail() {
               <strong>KYB Verified?:</strong> {company?.is_verified_kyb ? 'Yes' : 'No'}
             </Typography>
             <Typography>
-              <strong>Created Date:</strong> {new Date(company.date).toLocaleDateString()}
+              <strong>Created Date:</strong> {company.date ? new Date(company.date).toLocaleDateString() : 'N/A'}
             </Typography>
           </Paper>
         </Grid>

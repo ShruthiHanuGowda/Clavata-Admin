@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Box,
   Button,
@@ -33,18 +33,12 @@ import {
 } from '@mui/icons-material';
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 import { useMutation, useQuery } from '@apollo/client';
-import { BrowserProvider, Contract } from 'ethers';
+import { BrowserProvider, Contract, Eip1193Provider } from 'ethers';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { ERC1155_ABI } from 'abi';
 
-import {
-  CREATE_MINTED_NFT,
-  GET_MINTED_NFT_BY_ASSET_ID,
-  LIST_NFT_PENDING_MINT_ITEMS,
-  UPDATE_MINTED_NFT_BY_ASSET_ID,
-  UPDATE_NFT_PENDING_MINT
-} from 'graphql/queries';
+import { CREATE_MINTED_NFT, GET_MINTED_NFT_BY_ASSET_ID, LIST_NFT_PENDING_MINT_ITEMS, UPDATE_MINTED_NFT_BY_ASSET_ID } from 'graphql/queries';
 
 import { openSnackbar } from 'api/snackbar';
 import MainCard from 'components/MainCard';
@@ -52,24 +46,42 @@ import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
 import { SnackbarProps } from 'types/snackbar';
-import { Context } from 'App';
 
 const ITEMS_PER_PAGE = 10;
 
+interface NftPendingItem {
+  id: string;
+  assetId: string;
+  contractAddress: string;
+  recipientWalletAddress: string;
+  tokenId?: string;
+  volume: number;
+  type: 'mint' | 'addVolume';
+  status?: string;
+  createdAt: string;
+}
+
+interface NftPendingGroup {
+  assetId: string;
+  recipientWalletAddress: string;
+  items: NftPendingItem[];
+}
+
+type EthersError = { error?: { message?: string } };
+type GraphQlError = { data?: { message?: string } };
+type GenericError = { message?: string };
+
 export default function PendingMintedNftsTable() {
-  const context = useContext(Context);
   const { open } = useAppKit();
   const { address, isConnected } = useAppKitAccount();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<NftPendingItem | null>(null);
   const [inputVolume, setInputVolume] = useState('');
   const [isMinting, setIsMinting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-
-  const [updateNft] = useMutation(UPDATE_NFT_PENDING_MINT);
   const [createMintedNft] = useMutation(CREATE_MINTED_NFT);
   const [updateMintedNftByAssetId] = useMutation(UPDATE_MINTED_NFT_BY_ASSET_ID);
 
@@ -77,29 +89,29 @@ export default function PendingMintedNftsTable() {
     variables: { limit: 50 }
   });
 
-  const { data: mintedNftData, refetch: refetchMintedNft } = useQuery(GET_MINTED_NFT_BY_ASSET_ID, {
+  const { refetch: refetchMintedNft } = useQuery(GET_MINTED_NFT_BY_ASSET_ID, {
     variables: { assetId: '' },
     skip: true
   });
 
   // Filter for pending items only
-  const pendingGroupedItems = useMemo(() => {
-    const allGroups = data?.listGroupedNftPendingMintItems?.items || [];
+  const pendingGroupedItems = useMemo<NftPendingGroup[]>(() => {
+    const allGroups: NftPendingGroup[] = data?.listGroupedNftPendingMintItems?.items || [];
     return allGroups
-      .map((group: any) => ({
+      .map((group) => ({
         ...group,
-        items: group.items.filter((item: any) => item.status?.toLowerCase() === 'pending')
+        items: group.items.filter((item) => item.status?.toLowerCase() === 'pending')
       }))
-      .filter((group: any) => group.items.length > 0);
+      .filter((group) => group.items.length > 0);
   }, [data]);
 
-  const filteredGroups = useMemo(() => {
+  const filteredGroups = useMemo<NftPendingGroup[]>(() => {
     if (!searchTerm.trim()) return pendingGroupedItems;
 
     return pendingGroupedItems
-      .map((group: any) => {
+      .map((group) => {
         const filteredItems = group.items.filter(
-          (item: any) =>
+          (item) =>
             item.contractAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.assetId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.recipientWalletAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,7 +119,7 @@ export default function PendingMintedNftsTable() {
         );
         return filteredItems.length ? { ...group, items: filteredItems } : null;
       })
-      .filter(Boolean);
+      .filter((group): group is NftPendingGroup => Boolean(group));
   }, [searchTerm, pendingGroupedItems]);
 
   // Pagination logic
@@ -145,7 +157,9 @@ export default function PendingMintedNftsTable() {
   };
 
   const expandAllGroups = () => {
-    const allGroupKeys: Set<string> = new Set(paginatedGroups.map((group: any) => `${group.assetId}_${group.recipientWalletAddress}`));
+    const allGroupKeys: Set<string> = new Set(
+      paginatedGroups.map((group: NftPendingGroup) => `${group.assetId}_${group.recipientWalletAddress}`)
+    );
     setExpandedGroups(allGroupKeys);
   };
 
@@ -153,19 +167,30 @@ export default function PendingMintedNftsTable() {
     setExpandedGroups(new Set());
   };
 
+  function hasEthersError(e: unknown): e is EthersError {
+    return typeof e === 'object' && e !== null && 'error' in e;
+  }
+
+  function hasGraphQlError(e: unknown): e is GraphQlError {
+    return typeof e === 'object' && e !== null && 'data' in e;
+  }
+
+  function hasGenericMessage(e: unknown): e is GenericError {
+    return typeof e === 'object' && e !== null && 'message' in e;
+  }
+
   // Mint NFT function
-  const mintNft = async (item: any) => {
+  const mintNft = async (item: NftPendingItem) => {
     try {
       setIsMinting(true);
-
-      const provider = new BrowserProvider(window.ethereum as any);
+      const provider = new BrowserProvider(window.ethereum as unknown as Eip1193Provider);
       const signer = await provider.getSigner();
       const contract = new Contract(item.contractAddress, ERC1155_ABI, signer);
       const currentTokenId = await contract.totalTokenTypes();
       const nextTokenId = BigInt(currentTokenId) + 1n;
 
       const { data: existing } = await refetchMintedNft({
-        assetId: String(item.assetId)
+        assetId: String(item.assetId ?? '')
       });
 
       const existingMintedNft = existing?.getMintedNfts;
@@ -174,7 +199,7 @@ export default function PendingMintedNftsTable() {
       if (item.type === 'mint') {
         tx = await contract.mint(item.recipientWalletAddress, item.volume, currentTimestamp);
       } else if (item.type === 'addVolume') {
-        tx = await contract.addVolume(BigInt(item.tokenId), item.volume, address);
+        tx = await contract.addVolume(BigInt(item.tokenId ?? '0'), item.volume, address);
       }
 
       const receipt = await tx.wait();
@@ -221,13 +246,17 @@ export default function PendingMintedNftsTable() {
         variant: 'alert',
         alert: { color: 'success' }
       } as SnackbarProps);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Mint error:', error);
-
       let errorMessage = 'Failed to mint NFT';
-      if (error?.error?.message) errorMessage = error.error.message;
-      else if (error?.data?.message) errorMessage = error.data.message;
-      else if (error?.message) errorMessage = error.message;
+
+      if (hasEthersError(error) && typeof error.error?.message === 'string') {
+        errorMessage = error.error.message;
+      } else if (hasGraphQlError(error) && typeof error.data?.message === 'string') {
+        errorMessage = error.data.message;
+      } else if (hasGenericMessage(error) && typeof error.message === 'string') {
+        errorMessage = error.message;
+      }
 
       openSnackbar({
         open: true,
@@ -318,7 +347,7 @@ export default function PendingMintedNftsTable() {
               </Paper>
             ) : (
               <Stack spacing={2}>
-                {paginatedGroups.map((group: any, index: number) => {
+                {paginatedGroups.map((group: NftPendingGroup) => {
                   const groupKey = `${group.assetId}_${group.recipientWalletAddress}`;
                   return (
                     <Paper key={groupKey} sx={{ border: '1px solid', borderColor: 'divider' }}>
@@ -342,12 +371,6 @@ export default function PendingMintedNftsTable() {
                           </Typography>
                           <Chip label={`${group.items.length} pending`} size="small" color="warning" variant="filled" />
                         </Stack>
-                        {/* <Chip
-                        label={`Total Volume: ${group.items.reduce((sum: number, item: any) => sum + (item.volume || 0), 0).toLocaleString()}`}
-                        size="small"
-                        color="info"
-                        variant="outlined"
-                      /> */}
                       </Box>
 
                       {/* Group Content */}
@@ -367,7 +390,7 @@ export default function PendingMintedNftsTable() {
                                 </TableRow>
                               </TableHead>
                               <TableBody>
-                                {group.items.map((item: any) => (
+                                {group.items.map((item: NftPendingItem) => (
                                   <TableRow key={item.id} hover>
                                     <TableCell>
                                       <Link to={getBlockExploreLink(item.contractAddress)} style={{ textDecoration: 'none' }}>

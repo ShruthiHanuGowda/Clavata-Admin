@@ -18,14 +18,35 @@ interface Validator {
   status: string;
 }
 
+interface Delegator {
+  delegatorAddress: string;
+  rewardsEarned: number;
+  stakedAmount: number;
+  stakedNFT: number;
+  stakedWatt: number;
+}
+
+interface TransformedValidator {
+  name: string;
+  validatorId: string;
+  commissionRate: number;
+  totalStakeAmount: number;
+  totalStakedNFT: number;
+  totalStakedWatt: number;
+  validatorAge: number;
+  status: string;
+}
+
 export default function Validator() {
-  const { searchTerm }: any = useContext(Context);
+  const context = useContext(Context);
+  if (!context) throw new Error('Validator must be used within a Context.Provider');
+  const { searchTerm } = context;
   const [validators, setValidators] = useState<Validator[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedValidator, setSelectedValidator] = useState<any | null>(null);
-  const [delegators, setDelegators] = useState<any[]>([]);
+  const [selectedValidator, setSelectedValidator] = useState<Validator | null>(null);
+  const [delegators, setDelegators] = useState<Delegator[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
 
   useEffect(() => {
@@ -37,8 +58,12 @@ export default function Validator() {
         const json = await res.json();
         setValidators(json.validators || []);
         setError(null);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch validators');
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Failed to fetch validators');
+        }
       } finally {
         setLoading(false);
       }
@@ -61,7 +86,7 @@ export default function Validator() {
     }
   };
 
-  const transformedData = useMemo(
+  const transformedData: TransformedValidator[] = useMemo(
     () =>
       validators.map((v) => ({
         name: v.validatorName,
@@ -79,14 +104,14 @@ export default function Validator() {
   const filteredData = useMemo(() => {
     if (!searchTerm) return transformedData;
     return transformedData.filter(
-      (item: any) =>
+      (item: TransformedValidator) =>
         (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.validatorId && item.validatorId.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.status && item.status.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, transformedData]);
 
-  const columns = useMemo<ColumnDef<any>[]>(
+  const columns = useMemo<ColumnDef<TransformedValidator>[]>(
     () => [
       { header: 'Validator Name', accessorKey: 'name' },
       { header: 'Validator ID', accessorKey: 'validatorId' },

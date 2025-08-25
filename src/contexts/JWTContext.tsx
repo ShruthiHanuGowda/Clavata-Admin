@@ -129,6 +129,7 @@ export const JWTProvider = ({ children }: { children: React.ReactElement }) => {
   };
 
   const resetPassword = async (email: string) => {
+    // eslint-disable-next-line no-console
     console.log('email - ', email);
   };
 

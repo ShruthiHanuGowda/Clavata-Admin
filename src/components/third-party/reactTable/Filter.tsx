@@ -2,21 +2,19 @@
 import Stack from '@mui/material/Stack';
 
 // third-party
-import { Column, RowData, Table } from '@tanstack/react-table';
+import { Column, RowData, Table, Updater } from '@tanstack/react-table';
 
 // project-import
 import MinusOutlined from '@ant-design/icons/MinusOutlined';
 import DebouncedInput from './DebouncedInput';
 
-// assets
+// ==============================|| NUMBER INPUT ||============================== //
 
 type NumberInputProps = {
   columnFilterValue: [number, number];
   getFacetedMinMaxValues: () => [number, number] | undefined;
-  setFilterValue: (updater: any) => void;
+  setFilterValue: (updater: Updater<[number, number] | undefined>) => void;
 };
-
-// ==============================|| FILTER - NUMBER FIELD ||============================== //
 
 function NumberInput({ columnFilterValue, getFacetedMinMaxValues, setFilterValue }: NumberInputProps) {
   const minOpt = getFacetedMinMaxValues()?.[0];
@@ -30,23 +28,21 @@ function NumberInput({ columnFilterValue, getFacetedMinMaxValues, setFilterValue
       <DebouncedInput
         type="number"
         value={columnFilterValue?.[0] ?? ''}
-        onFilterChange={(value) => setFilterValue((old: [number, number]) => [value, old?.[1]])}
+        onFilterChange={(value) => setFilterValue((old) => [value, old?.[1]] as [number, number])}
         placeholder={`Min ${minOpt ? `(${min})` : ''}`}
         fullWidth
-        inputProps={{ min: min, max: max }}
+        inputProps={{ min, max }}
         size="small"
         startAdornment={false}
       />
-      <>
-        <MinusOutlined />
-      </>
+      <MinusOutlined />
       <DebouncedInput
         type="number"
         value={columnFilterValue?.[1] ?? ''}
-        onFilterChange={(value) => setFilterValue((old: [number, number]) => [old?.[0], value])}
+        onFilterChange={(value) => setFilterValue((old) => [old?.[0], value] as [number, number])}
         placeholder={`Max ${maxOpt ? `(${max})` : ''}`}
         fullWidth
-        inputProps={{ min: min, max: max }}
+        inputProps={{ min, max }}
         size="small"
         startAdornment={false}
       />
@@ -54,14 +50,14 @@ function NumberInput({ columnFilterValue, getFacetedMinMaxValues, setFilterValue
   );
 }
 
+// ==============================|| TEXT INPUT ||============================== //
+
 type TextInputProps = {
   columnId: string;
   columnFilterValue: string;
-  setFilterValue: (updater: any) => void;
+  setFilterValue: (updater: Updater<string | undefined>) => void;
   header?: string;
 };
-
-// ==============================|| FILTER - TEXT FIELD ||============================== //
 
 function TextInput({ columnId, columnFilterValue, header, setFilterValue }: TextInputProps) {
   const dataListId = columnId + 'list';
@@ -80,12 +76,12 @@ function TextInput({ columnId, columnFilterValue, header, setFilterValue }: Text
   );
 }
 
+// ==============================|| FILTER COMPONENT ||============================== //
+
 type Props<T extends RowData> = {
   column: Column<T, unknown>;
   table: Table<T>;
 };
-
-// ==============================|| FILTER - INPUT ||============================== //
 
 export default function Filter<T extends RowData>({ column, table }: Props<T>) {
   const firstValue = table.getPreFilteredRowModel().flatRows[0]?.getValue(column.id);

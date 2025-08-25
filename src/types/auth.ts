@@ -6,6 +6,17 @@ import firebase from 'firebase/compat/app';
 export type GuardProps = {
   children: ReactElement | null;
 };
+
+export type Auth0ContextType = {
+  isLoggedIn: boolean;
+  isInitialized?: boolean;
+  user?: UserProfile | null;
+  loginAuth: (options?: PopupLoginOptions) => Promise<void>;
+  logout: () => void;
+  resetPassword: (email: string) => Promise<void>;
+  updateProfile: VoidFunction;
+};
+
 type CanRemove = {
   login?: (email: string, password: string) => Promise<void>;
   register?: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
@@ -21,7 +32,21 @@ type CanRemove = {
   newPassword?: (email: string, code: string, password: string) => Promise<void>;
   updatePassword?: (password: string) => Promise<void>;
   resetPassword?: (email: string) => Promise<void>;
-  awsResetPassword?: (verificationCode: string, newPassword: string) => Promise<any>;
+  awsResetPassword?: (verificationCode: string, newPassword: string) => Promise<unknown>;
+};
+
+export type FirebaseContextType = {
+  isLoggedIn: boolean;
+  isInitialized?: boolean;
+  user?: UserProfile | null;
+  firebaseRegister: (email: string, password: string) => Promise<firebase.auth.UserCredential>;
+  firebaseEmailPasswordSignIn: (email: string, password: string) => Promise<firebase.auth.UserCredential>;
+  firebaseGoogleSignIn: () => Promise<firebase.auth.UserCredential>;
+  firebaseTwitterSignIn: () => Promise<firebase.auth.UserCredential>;
+  firebaseFacebookSignIn: () => Promise<firebase.auth.UserCredential>;
+  logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updateProfile: VoidFunction;
 };
 
 export type UserProfile = {

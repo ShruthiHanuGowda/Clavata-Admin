@@ -19,7 +19,7 @@ declare module '@tanstack/react-table' {
   export interface TableMeta {
     updateData: (rowIndex: number, columnId: string, value: unknown) => void;
     revertData?: (rowIndex: number, revert: unknown) => void;
-    selectedRow?: any;
-    setSelectedRow?: any;
+    selectedRow?: unknown;
+    setSelectedRow?: unknown;
   }
 }

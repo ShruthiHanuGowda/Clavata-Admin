@@ -1,114 +1,78 @@
-import { forwardRef, CSSProperties, ExoticComponent, ReactElement, Ref } from 'react';
-
-// material-ui
-import Collapse from '@mui/material/Collapse';
-import Fade from '@mui/material/Fade';
+import { forwardRef, CSSProperties, ReactElement, Ref } from 'react';
+import Collapse, { CollapseProps } from '@mui/material/Collapse';
+import Fade, { FadeProps } from '@mui/material/Fade';
 import Box from '@mui/material/Box';
-import Grow from '@mui/material/Grow';
-import Slide from '@mui/material/Slide';
+import Grow, { GrowProps } from '@mui/material/Grow';
+import Slide, { SlideProps } from '@mui/material/Slide';
 import Zoom, { ZoomProps } from '@mui/material/Zoom';
 
 // ==============================|| TRANSITIONS ||============================== //
 
+type TransitionProps = GrowProps | CollapseProps | FadeProps | SlideProps | ZoomProps;
+
 interface Props {
   children?: ReactElement;
-  position?: string;
+  position?: 'top-left' | 'top-right' | 'top' | 'bottom-left' | 'bottom-right' | 'bottom';
   sx?: CSSProperties;
   in?: boolean;
-  type?: string;
+  type?: 'grow' | 'collapse' | 'fade' | 'slide' | 'zoom';
   direction?: 'up' | 'right' | 'left' | 'down';
-  [others: string]: any;
+  others?: TransitionProps;
 }
 
-function transitions({ children, position = 'top-left', type = 'grow', direction = 'up', ...others }: Props, ref: Ref<ExoticComponent>) {
-  let positionSX = {
-    transformOrigin: '0 0 0'
-  };
+function transitions({ children, position = 'top-left', type = 'grow', direction = 'up', ...others }: Props, ref: Ref<HTMLElement>) {
+  let positionSX: CSSProperties = { transformOrigin: '0 0 0' };
 
   switch (position) {
     case 'top-right':
-      positionSX = {
-        transformOrigin: 'top right'
-      };
+      positionSX = { transformOrigin: 'top right' };
       break;
     case 'top':
-      positionSX = {
-        transformOrigin: 'top'
-      };
+      positionSX = { transformOrigin: 'top' };
       break;
     case 'bottom-left':
-      positionSX = {
-        transformOrigin: 'bottom left'
-      };
+      positionSX = { transformOrigin: 'bottom left' };
       break;
     case 'bottom-right':
-      positionSX = {
-        transformOrigin: 'bottom right'
-      };
+      positionSX = { transformOrigin: 'bottom right' };
       break;
     case 'bottom':
-      positionSX = {
-        transformOrigin: 'bottom'
-      };
+      positionSX = { transformOrigin: 'bottom' };
       break;
     case 'top-left':
     default:
-      positionSX = {
-        transformOrigin: '0 0 0'
-      };
+      positionSX = { transformOrigin: '0 0 0' };
       break;
   }
 
   return (
     <Box ref={ref}>
       {type === 'grow' && (
-        <Grow
-          {...others}
-          timeout={{
-            appear: 0,
-            enter: 150,
-            exit: 150
-          }}
-        >
+        <Grow {...(others as GrowProps)} timeout={{ appear: 0, enter: 150, exit: 150 }}>
           <Box sx={positionSX}>{children}</Box>
         </Grow>
       )}
 
       {type === 'collapse' && (
-        <Collapse {...others} sx={positionSX}>
+        <Collapse {...(others as CollapseProps)} sx={positionSX}>
           {children}
         </Collapse>
       )}
 
       {type === 'fade' && (
-        <Fade
-          {...others}
-          timeout={{
-            appear: 0,
-            enter: 300,
-            exit: 150
-          }}
-        >
+        <Fade {...(others as FadeProps)} timeout={{ appear: 0, enter: 300, exit: 150 }}>
           <Box sx={positionSX}>{children}</Box>
         </Fade>
       )}
 
       {type === 'slide' && (
-        <Slide
-          {...others}
-          timeout={{
-            appear: 0,
-            enter: 150,
-            exit: 150
-          }}
-          direction={direction}
-        >
+        <Slide {...(others as SlideProps)} timeout={{ appear: 0, enter: 150, exit: 150 }} direction={direction}>
           <Box sx={positionSX}>{children}</Box>
         </Slide>
       )}
 
       {type === 'zoom' && (
-        <Zoom {...others}>
+        <Zoom {...(others as ZoomProps)}>
           <Box sx={positionSX}>{children}</Box>
         </Zoom>
       )}

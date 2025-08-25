@@ -33,7 +33,10 @@ type TransactionHistoryResponse = {
 export default function MobileTransactionHistory() {
   const { logout } = useAuth();
   const context = useContext(Context);
-  const { searchTerm } = context as any;
+  if (!context) {
+    throw new Error('Context is missing. Did you forget to wrap your app in <Context.Provider>?');
+  }
+  const { searchTerm } = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);

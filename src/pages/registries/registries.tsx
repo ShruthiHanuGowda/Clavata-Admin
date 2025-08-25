@@ -5,13 +5,20 @@ import { useMemo } from 'react';
 import { formatDate } from 'utils/date';
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
+type Registry = {
+  ID: string;
+  name: string;
+  description: string;
+  created_at: string;
+};
+
 export default function Registries() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<Registry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // pagination states (same as PaginationUserTable)
-  const [nextToken, setNextToken] = useState<string | null>(null);
-  const [previousTokens, setPreviousTokens] = useState<string[]>([]);
+  const [nextToken] = useState<string | null>(null);
+  const [previousTokens] = useState<string[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -28,7 +35,7 @@ export default function Registries() {
       });
   }, []);
 
-  const columns = useMemo<ColumnDef<any>[]>(
+  const columns = useMemo<ColumnDef<Registry>[]>(
     () => [
       {
         header: 'ID',

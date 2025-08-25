@@ -26,7 +26,7 @@ interface Props {
   item: NavItemType;
   level: number;
   isParents?: boolean;
-  setSelectedID?: Function;
+  setSelectedID?: () => void;
 }
 
 // ==============================|| NAVIGATION - LIST ITEM ||============================== //

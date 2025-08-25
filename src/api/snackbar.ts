@@ -42,27 +42,26 @@ export function useGetSnackbar() {
 }
 
 export function openSnackbar(snackbar: SnackbarProps) {
-  // to update local state based on key
-
   const { action, open, message, anchorOrigin, variant, alert, transition, close, actionButton } = snackbar;
 
   mutate(
     endpoints.key,
-    (currentSnackbar: any) => {
+    (currentSnackbar: SnackbarProps | undefined) => {
+      const prev = currentSnackbar || initialState;
       return {
-        ...currentSnackbar,
-        action: action || initialState.action,
-        open: open || initialState.open,
-        message: message || initialState.message,
-        anchorOrigin: anchorOrigin || initialState.anchorOrigin,
-        variant: variant || initialState.variant,
+        ...prev,
+        action: action ?? prev.action,
+        open: open ?? prev.open,
+        message: message ?? prev.message,
+        anchorOrigin: anchorOrigin ?? prev.anchorOrigin,
+        variant: variant ?? prev.variant,
         alert: {
-          color: alert?.color || initialState.alert.color,
-          variant: alert?.variant || initialState.alert.variant
+          color: alert?.color ?? prev.alert.color,
+          variant: alert?.variant ?? prev.alert.variant
         },
-        transition: transition || initialState.transition,
-        close: close || initialState.close,
-        actionButton: actionButton || initialState.actionButton
+        transition: transition ?? prev.transition,
+        close: close ?? prev.close,
+        actionButton: actionButton ?? prev.actionButton
       };
     },
     false
@@ -70,11 +69,11 @@ export function openSnackbar(snackbar: SnackbarProps) {
 }
 
 export function closeSnackbar() {
-  // to update local state based on key
   mutate(
     endpoints.key,
-    (currentSnackbar: any) => {
-      return { ...currentSnackbar, open: false };
+    (currentSnackbar: SnackbarProps | undefined) => {
+      const prev = currentSnackbar || initialState;
+      return { ...prev, open: false };
     },
     false
   );

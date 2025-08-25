@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { ElementType, Fragment, useEffect, useState } from 'react';
 import { matchPath, useLocation } from 'react-router-dom';
 
 // material-ui
@@ -105,9 +105,9 @@ export default function NavGroup({
   useEffect(() => {
     if (lastItem) {
       if (item.id === lastItemId) {
-        const localItem: any = { ...item };
-        const elements = remItems.map((ele: NavItemType) => ele.elements);
-        localItem.children = elements.flat(1);
+        const localItem: NavItemType = { ...item };
+        const elements = remItems.flatMap((ele) => ele.elements ?? []);
+        localItem.children = elements;
         setCurrentItem(localItem);
       } else {
         setCurrentItem(item);
@@ -119,7 +119,7 @@ export default function NavGroup({
   const checkOpenForParent = (child: NavItemType[], id: string) => {
     child.forEach((ele: NavItemType) => {
       if (ele.children?.length) {
-        checkOpenForParent(ele.children, currentItem.id!);
+        checkOpenForParent(ele.children, currentItem.id);
       }
 
       if (ele.url && !!matchPath({ path: ele?.link ? ele.link : ele.url, end: true }, pathname)) {
@@ -132,11 +132,11 @@ export default function NavGroup({
     const childrens = data.children ? data.children : [];
     childrens.forEach((itemCheck: NavItemType) => {
       if (itemCheck?.children?.length) {
-        checkOpenForParent(itemCheck.children, currentItem.id!);
+        checkOpenForParent(itemCheck.children, currentItem.id);
       }
 
       if (itemCheck.url && !!matchPath({ path: itemCheck?.link ? itemCheck.link : itemCheck.url, end: true }, pathname)) {
-        setSelectedID(currentItem.id!);
+        setSelectedID(currentItem.id);
       }
     });
   };
@@ -159,9 +159,10 @@ export default function NavGroup({
 
   const isSelected = selectedID === currentItem.id;
 
-  const Icon = currentItem?.icon!;
-  const itemIcon = currentItem?.icon ? (
-    <Icon
+  const IconComponent: ElementType | null = typeof currentItem.icon === 'function' ? currentItem.icon : null;
+
+  const itemIcon = IconComponent ? (
+    <IconComponent
       style={{
         fontSize: 20,
         stroke: '1.5',
@@ -182,7 +183,7 @@ export default function NavGroup({
             selectedLevel={selectedLevel}
             selectedItems={selectedItems}
             level={1}
-            parentId={currentItem.id!}
+            parentId={currentItem.id}
           />
         );
       case 'item':
@@ -216,7 +217,7 @@ export default function NavGroup({
                 key={menu.id}
                 menu={menu}
                 level={1}
-                parentId={currentItem.id!}
+                parentId={currentItem.id}
                 setSelectedItems={setSelectedItems}
                 setSelectedLevel={setSelectedLevel}
                 selectedLevel={selectedLevel}
@@ -245,7 +246,7 @@ export default function NavGroup({
             key={menu.id}
             menu={menu}
             level={1}
-            parentId={currentItem.id!}
+            parentId={currentItem.id}
             setSelectedItems={setSelectedItems}
             setSelectedLevel={setSelectedLevel}
             selectedLevel={selectedLevel}

@@ -12,7 +12,7 @@ import { NavActionType } from 'config';
 export type NavActionProps = {
   type: NavActionType;
   label: string;
-  function?: any;
+  function?: unknown;
   url?: string;
   target?: boolean;
   icon: GenericCardProps['iconPrimary'] | string;
@@ -29,7 +29,7 @@ export type NavItemType = {
   external?: boolean;
   isDropdown?: boolean;
   icon?: GenericCardProps['iconPrimary'] | string;
-  id?: string;
+  id: string;
   link?: string;
   search?: string;
   target?: boolean;

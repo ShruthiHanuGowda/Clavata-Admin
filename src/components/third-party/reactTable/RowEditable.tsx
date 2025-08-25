@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, ChangeEvent } from 'react';
 
 // material-ui
 import Chip from '@mui/material/Chip';
@@ -11,38 +11,45 @@ import TextField from '@mui/material/TextField';
 // third-party
 import * as yup from 'yup';
 import { Formik, Form } from 'formik';
-import { Row, RowData, Table } from '@tanstack/react-table';
+import { Row, RowData, Table, ColumnDef } from '@tanstack/react-table';
 
 // project-imports
 import LinearWithLabel from 'components/@extended/progress/LinearWithLabel';
 
-type RowEditProps<T extends RowData> = {
-  getValue: () => any;
-  row: Row<T>;
-  column: any;
-  table: Table<T>;
+// ------------------- TABLE META TYPE -------------------
+export type TableMeta = {
+  selectedRow: Record<string, boolean>;
+  updateData: (rowIndex: number, columnId: string, value: unknown) => void;
+};
+
+// ------------------- PROPS -------------------
+type RowEditProps = {
+  getValue: () => unknown;
+  row: Row<RowData>;
+  column: ColumnDef<RowData, unknown>;
+  table: Table<RowData>;
 };
 
 // ==============================|| EDITABLE ROW ||============================== //
 
-export default function RowEditable<T extends RowData>({ getValue: initialValue, row, column: { id, columnDef }, table }: RowEditProps<T>) {
-  const [value, setValue] = useState(initialValue);
-  const tableMeta = table.options.meta;
+export default function RowEditable({ getValue: initialValue, row, column, table }: RowEditProps) {
+  const [value, setValue] = useState<unknown>(initialValue);
+  const tableMeta = table.options.meta as TableMeta | undefined;
 
-  const onChange = (e: any) => {
-    setValue(e.target?.value);
+  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setValue(e.target.value);
   };
 
   const onBlur = () => {
-    tableMeta!.updateData(row.index, id, value);
+    tableMeta?.updateData(row.index, column.id, value);
   };
 
   useEffect(() => {
     setValue(initialValue);
   }, [initialValue]);
 
-  const ShowStatus = (value: string) => {
-    switch (value) {
+  const ShowStatus = (val: string) => {
+    switch (val) {
       case 'Complicated':
         return <Chip color="error" label="Complicated" size="small" variant="light" />;
       case 'Relationship':
@@ -53,16 +60,14 @@ export default function RowEditable<T extends RowData>({ getValue: initialValue,
     }
   };
 
-  let element;
-  let userInfoSchema;
-  switch (id) {
+  // Validation schema
+  let userInfoSchema = yup.object();
+  switch (column.id) {
     case 'email':
-      userInfoSchema = yup.object().shape({
-        userInfo: yup.string().email('Enter valid email ').required('Email is required')
-      });
+      userInfoSchema = yup.object({ userInfo: yup.string().email('Enter valid email').required('Email is required') });
       break;
     case 'age':
-      userInfoSchema = yup.object().shape({
+      userInfoSchema = yup.object({
         userInfo: yup
           .number()
           .typeError('Age must be number')
@@ -72,117 +77,91 @@ export default function RowEditable<T extends RowData>({ getValue: initialValue,
       });
       break;
     case 'visits':
-      userInfoSchema = yup.object().shape({
-        userInfo: yup.number().typeError('Visits must be number').required('Visits are required')
-      });
+      userInfoSchema = yup.object({ userInfo: yup.number().typeError('Visits must be number').required('Visits are required') });
       break;
     default:
-      userInfoSchema = yup.object().shape({
-        userInfo: yup.string().min(2, 'Too Short!').max(50, 'Too Long!').required('Name is required')
-      });
+      userInfoSchema = yup.object({ userInfo: yup.string().min(2, 'Too Short!').max(50, 'Too Long!').required('Name is required') });
       break;
   }
 
   const isEditable = tableMeta?.selectedRow[row.id];
 
-  switch (columnDef.dataType) {
+  let element: JSX.Element;
+
+  switch (column.dataType) {
     case 'text':
-      element = (
-        <>
-          {isEditable ? (
-            <>
-              <Formik
-                initialValues={{
-                  userInfo: value
+      element = isEditable ? (
+        <Formik initialValues={{ userInfo: value }} enableReinitialize validationSchema={userInfoSchema} onSubmit={() => {}}>
+          {({ values, handleChange, handleBlur, errors, touched }) => (
+            <Form>
+              <TextField
+                value={values.userInfo}
+                id={`${row.index}-${column.id}`}
+                name="userInfo"
+                onChange={(e) => {
+                  handleChange(e);
+                  onChange(e);
                 }}
-                enableReinitialize
-                validationSchema={userInfoSchema}
-                onSubmit={() => {}}
-              >
-                {({ values, handleChange, handleBlur, errors, touched }) => (
-                  <Form>
-                    <TextField
-                      value={values.userInfo}
-                      id={`${row.index}-${id}`}
-                      name="userInfo"
-                      onChange={(e) => {
-                        handleChange(e);
-                        onChange(e);
-                      }}
-                      onBlur={(e) => {
-                        handleBlur(e);
-                        onBlur();
-                      }}
-                      error={touched.userInfo && Boolean(errors.userInfo)}
-                      helperText={touched.userInfo && errors.userInfo && (errors.userInfo as string)}
-                      sx={{ '& .MuiOutlinedInput-input': { py: 0.75, px: 1 } }}
-                    />
-                  </Form>
-                )}
-              </Formik>
-            </>
-          ) : (
-            value
+                onBlur={(e) => {
+                  handleBlur(e);
+                  onBlur();
+                }}
+                error={touched.userInfo && Boolean(errors.userInfo)}
+                helperText={touched.userInfo && errors.userInfo ? (errors.userInfo as string) : ''}
+                sx={{ '& .MuiOutlinedInput-input': { py: 0.75, px: 1 } }}
+              />
+            </Form>
           )}
-        </>
+        </Formik>
+      ) : (
+        <>{value}</>
       );
       break;
+
     case 'select':
-      element = (
-        <>
-          {isEditable ? (
-            <Select
-              labelId="editable-select-label"
-              sx={{ '& .MuiOutlinedInput-input': { py: 0.75, px: 1 } }}
-              id="editable-select"
-              value={value}
-              onChange={onChange}
-              onBlur={onBlur}
-            >
-              <MenuItem value="Complicated">
-                <Chip color="error" label="Complicated" size="small" variant="light" />
-              </MenuItem>
-              <MenuItem value="Relationship">
-                <Chip color="success" label="Relationship" size="small" variant="light" />
-              </MenuItem>
-              <MenuItem value="Single">
-                <Chip color="info" label="Single" size="small" variant="light" />
-              </MenuItem>
-            </Select>
-          ) : (
-            ShowStatus(value)
-          )}
-        </>
+      element = isEditable ? (
+        <Select
+          labelId="editable-select-label"
+          sx={{ '& .MuiOutlinedInput-input': { py: 0.75, px: 1 } }}
+          id="editable-select"
+          value={value as string}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={onBlur}
+        >
+          <MenuItem value="Complicated">
+            <Chip color="error" label="Complicated" size="small" variant="light" />
+          </MenuItem>
+          <MenuItem value="Relationship">
+            <Chip color="success" label="Relationship" size="small" variant="light" />
+          </MenuItem>
+          <MenuItem value="Single">
+            <Chip color="info" label="Single" size="small" variant="light" />
+          </MenuItem>
+        </Select>
+      ) : (
+        ShowStatus(value as string)
       );
       break;
+
     case 'progress':
-      element = (
-        <>
-          {isEditable ? (
-            <>
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ pl: 1, minWidth: 120 }}>
-                <Slider
-                  value={value}
-                  min={0}
-                  max={100}
-                  step={1}
-                  onBlur={onBlur}
-                  onChange={(event: Event, newValue: number | number[]) => {
-                    setValue(newValue);
-                  }}
-                  valueLabelDisplay="auto"
-                  aria-labelledby="non-linear-slider"
-                />
-              </Stack>
-            </>
-          ) : (
-            <div>
-              <LinearWithLabel value={value} sx={{ minWidth: 75 }} />
-            </div>
-          )}
-        </>
+      element = isEditable ? (
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ pl: 1, minWidth: 120 }}>
+          <Slider
+            value={value as number}
+            min={0}
+            max={100}
+            step={1}
+            onBlur={onBlur}
+            onChange={(_, newValue) => setValue(newValue)}
+            valueLabelDisplay="auto"
+            aria-labelledby="non-linear-slider"
+          />
+        </Stack>
+      ) : (
+        <LinearWithLabel value={value as number} sx={{ minWidth: 75 }} />
       );
       break;
+
     default:
       element = <span></span>;
       break;
