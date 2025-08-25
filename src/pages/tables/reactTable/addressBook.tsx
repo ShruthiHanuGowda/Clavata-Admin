@@ -18,14 +18,25 @@ import ReactTableWrapper from 'components/ReactTableWrapper';
 import { Context } from 'App';
 import useAuth from 'hooks/useAuth';
 
+type TableDataItem = {
+  id: string | number;
+  name: string;
+  walletAddress: string;
+  beneficiaryAddress: string;
+  chain: string;
+};
+
 export default function AddressBookTable() {
   const { logout } = useAuth();
   const context = useContext(Context);
-  const { searchTerm }: any = context;
+  if (!context) {
+    throw new Error('Context must be used within a Context.Provider');
+  }
+  const { searchTerm } = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<TableDataItem[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -137,7 +148,7 @@ export default function AddressBookTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageSize]);
 
-  const columns = useMemo<ColumnDef<T>[]>(
+  const columns = useMemo<ColumnDef<TableDataItem>[]>(
     () => [
       {
         header: 'Name',
@@ -146,26 +157,10 @@ export default function AddressBookTable() {
       {
         header: 'Wallet Address',
         accessorKey: 'walletAddress'
-        // cell: (cell) => {
-        //   const hash = cell.getValue() as string;
-        //   return (
-        //     <Link to={getBlockExploreLink(hash)} target="_blank">
-        //       {shortenAddress(hash)}
-        //     </Link>
-        //   );
-        // }
       },
       {
         header: 'Beneficiary Address',
         accessorKey: 'beneficiaryAddress'
-        // cell: (cell) => {
-        //   const hash = cell.getValue() as string;
-        //   return (
-        //     <Link to={getBlockExploreLink(hash)} target="_blank">
-        //       {shortenAddress(hash)}
-        //     </Link>
-        //   );
-        // }
       },
       {
         header: 'Chain',

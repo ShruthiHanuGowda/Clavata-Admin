@@ -11,7 +11,7 @@ import { LIST_TRANSACTION_HISTORY } from '../../../graphql/queries';
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
 // types
-import { TableDataProps } from 'types/table';
+import { ListTransactionHistoryResponse, TransactionHistoryItem } from 'types/table';
 
 //query
 import { Context } from 'App';
@@ -21,11 +21,14 @@ import useAuth from 'hooks/useAuth';
 export default function TransactionTable() {
   const { logout } = useAuth();
   const context = useContext(Context);
-  const { searchTerm }: any = context;
+  if (!context) {
+    throw new Error('Context must be used within a Context.Provider');
+  }
+  const { searchTerm } = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<TransactionHistoryItem[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -58,18 +61,19 @@ export default function TransactionTable() {
       logout();
     }
   }
-
-  const transformedResponseData = (resData: any) => {
-    return resData.listTransactionsHistories?.items.map((item: any, index: number) => ({
-      id: item?.id || index || '',
-      amount: item.amount,
-      destinationAccount: item.destinationAccount,
-      sourceAccount: item.sourceAccount,
-      status: item.status,
-      timestamp: item.timestamp,
-      transactionId: item.transactionId,
-      transactionType: item.transactionType
-    }));
+  const transformedResponseData = (resData: ListTransactionHistoryResponse): TransactionHistoryItem[] => {
+    return (
+      resData.listTransactionsHistories?.items?.map((item, index) => ({
+        id: item.id || index.toString(),
+        amount: item.amount,
+        destinationAccount: item.destinationAccount,
+        sourceAccount: item.sourceAccount,
+        status: item.status,
+        timestamp: item.timestamp,
+        transactionId: item.transactionId,
+        transactionType: item.transactionType
+      })) ?? []
+    );
   };
 
   useEffect(() => {
@@ -112,13 +116,13 @@ export default function TransactionTable() {
       }
       fetchMore({
         variables
-      }).then((fetchMoreResult: any) => {
+      }).then((fetchMoreResult: { data: ListTransactionHistoryResponse }) => {
         const fetchedData = fetchMoreResult.data;
 
         const transformedData = transformedResponseData(fetchedData);
 
         setData(transformedData);
-        setNextToken(fetchedData.listTransactionsHistories.nextToken);
+        setNextToken(fetchedData.listTransactionsHistories?.nextToken ?? null);
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
@@ -143,7 +147,7 @@ export default function TransactionTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageSize]);
 
-  const columns = useMemo<ColumnDef<TableDataProps>[]>(
+  const columns = useMemo<ColumnDef<TransactionHistoryItem>[]>(
     () => [
       {
         header: 'Amount',

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchDashboardData } from './dashboardApi';
+import { fetchDashboardData, ApiBaseUrlKey } from './dashboardApi';
 
 // Define interfaces for analytics data structure
 interface AnalyticItem {
@@ -32,36 +32,52 @@ interface DashboardApiResponse {
   };
 }
 
-export const useDashboardData = (type = 'D_WALLET_API_BASE_URL') => {
+type TimeSlot = 'week' | 'month';
+
+export const useDashboardData = (type: ApiBaseUrlKey = 'D_WALLET_API_BASE_URL') => {
   const [analytics, setAnalytics] = useState<AnalyticsData>({});
   const [chartData, setChartData] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [timeSlot, setTimeSlot] = useState('week');
+  const [timeSlot, setTimeSlot] = useState<TimeSlot>('week');
 
-  const normalizeApiResponse = (response: any): DashboardApiResponse | null => {
-    if (!response) return null;
+  const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
-    // Handle different API response formats
-    if (response.success) {
-      return response as DashboardApiResponse;
+  const isDashboardApiResponse = (value: unknown): value is DashboardApiResponse => {
+    if (!isObject(value)) return false;
+    if (typeof value.success !== 'boolean') return false;
+    if (!isObject(value.data)) return false;
+
+    const { analytics, chartData } = value.data;
+    if (!isObject(analytics)) return false;
+    if (!Array.isArray(chartData)) return false;
+
+    return true;
+  };
+
+  const normalizeApiResponse = (response: unknown): DashboardApiResponse | null => {
+    if (!isObject(response)) return null;
+
+    if (isDashboardApiResponse(response)) {
+      return response;
     }
 
-    // Fallback for different response structures
+    const r = response as Record<string, unknown>;
+
     return {
       success: true,
       data: {
         analytics: {
-          totalTitle: response.totalTitle || 'Total',
-          totalUsers: response.totalUsers || 0,
-          totalUsersPercentage: response.totalUsersPercentage,
-          totalUsersExtra: response.totalUsersExtra,
-          dailyTitle: response.dailyTitle || 'Daily',
-          dailyUsers: response.dailyUsers || 0,
-          dailyUsersPercentage: response.dailyUsersPercentage,
-          dailyUsersExtra: response.dailyUsersExtra
+          totalTitle: typeof r.totalTitle === 'string' ? r.totalTitle : 'Total',
+          totalUsers: typeof r.totalUsers === 'number' || typeof r.totalUsers === 'string' ? r.totalUsers : 0,
+          totalUsersPercentage: typeof r.totalUsersPercentage === 'number' ? r.totalUsersPercentage : undefined,
+          totalUsersExtra: typeof r.totalUsersExtra === 'string' ? r.totalUsersExtra : undefined,
+          dailyTitle: typeof r.dailyTitle === 'string' ? r.dailyTitle : 'Daily',
+          dailyUsers: typeof r.dailyUsers === 'number' || typeof r.dailyUsers === 'string' ? r.dailyUsers : 0,
+          dailyUsersPercentage: typeof r.dailyUsersPercentage === 'number' ? r.dailyUsersPercentage : undefined,
+          dailyUsersExtra: typeof r.dailyUsersExtra === 'string' ? r.dailyUsersExtra : undefined
         },
-        chartData: Array.isArray(response.chartData) ? response.chartData : []
+        chartData: Array.isArray(r.chartData) && r.chartData.every((item) => typeof item === 'number') ? (r.chartData as number[]) : []
       }
     };
   };
@@ -116,7 +132,7 @@ export const useDashboardData = (type = 'D_WALLET_API_BASE_URL') => {
   };
 
   // Handle time slot change
-  const handleTimeSlotChange = async (newSlot: string) => {
+  const handleTimeSlotChange = async (newSlot: TimeSlot) => {
     setTimeSlot(newSlot);
     await loadDashboardData(newSlot);
   };
@@ -124,6 +140,7 @@ export const useDashboardData = (type = 'D_WALLET_API_BASE_URL') => {
   // Initial data load
   useEffect(() => {
     loadDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {

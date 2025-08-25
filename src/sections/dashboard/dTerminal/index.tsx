@@ -73,10 +73,10 @@ export default function DTerminal() {
             {analytics && (
               <>
                 <Grid item xs={12}>
-                  <AnalyticCard title={analytics.total.title} count={analytics.total.count} isLoss={analytics.total.isLoss} />
+                  <AnalyticCard title={analytics?.total?.title} count={analytics?.total?.count} isLoss={analytics?.total?.isLoss} />
                 </Grid>
                 <Grid item xs={12}>
-                  <AnalyticCard title={analytics.daily.title} count={analytics.daily.count} isLoss={analytics.daily.isLoss} />
+                  <AnalyticCard title={analytics?.daily?.title} count={analytics?.daily?.count} isLoss={analytics?.daily?.isLoss} />
                 </Grid>
               </>
             )}

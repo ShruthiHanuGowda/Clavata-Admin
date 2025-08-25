@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { LIST_AIRDROP_COLLECTIONS } from '../../../graphql/queries';
 
 // types
-import { TableDataProps } from 'types/table';
+import { ListAirdropClaimsResponse } from 'types/table';
 
 //query
 import { Context } from 'App';
@@ -21,10 +21,21 @@ import useAuth from 'hooks/useAuth';
 
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
+type TableDataProps = {
+  id: string | number;
+  txHash: string;
+  walletAddress: string;
+  claimedAt: string;
+  amount: string;
+};
+
 export default function TransactionTable() {
   const { logout } = useAuth();
   const context = useContext(Context);
-  const { searchTerm }: any = context;
+  if (!context) {
+    throw new Error('Context must be used within a Context.Provider');
+  }
+  const { searchTerm } = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
@@ -59,20 +70,11 @@ export default function TransactionTable() {
     }
   }
 
-  // Transform company data to fit column structure
-  // const transformedData =
-  //   data?.listAirdropClaims?.items.map((item: any) => ({
-  //     txHash: item.txHash,
-  //     walletAddress: item.walletAddress,
-  //     claimedAt: item.claimedAt,
-  //     amount: item.amount
-  //   })) || [];
-
   // Filter data based on search term
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(
-      (item: any) =>
+      (item: TableDataProps) =>
         (item.txHash && item.txHash.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.walletAddress && item.walletAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.claimedAt && item.claimedAt.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -80,8 +82,8 @@ export default function TransactionTable() {
     );
   }, [searchTerm, data]);
 
-  const transformedResponseData = (resData: any) => {
-    return resData.listAirdropClaims?.items.map((item: any, index: number) => ({
+  const transformedResponseData = (resData: ListAirdropClaimsResponse) => {
+    return resData.listAirdropClaims?.items.map((item, index) => ({
       id: item.id || index || '',
       txHash: item.txHash,
       walletAddress: item.walletAddress,
@@ -130,7 +132,7 @@ export default function TransactionTable() {
       }
       fetchMore({
         variables
-      }).then((fetchMoreResult: any) => {
+      }).then((fetchMoreResult: { data: ListAirdropClaimsResponse }) => {
         const fetchedData = fetchMoreResult.data;
 
         const transformedData = transformedResponseData(fetchedData);
