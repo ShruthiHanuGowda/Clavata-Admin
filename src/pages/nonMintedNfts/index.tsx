@@ -1,12 +1,8 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
-import { Grid, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, Box, Divider, CardContent, Stack } from '@mui/material';
-import { useReactTable, getCoreRowModel, flexRender, ColumnDef, getSortedRowModel } from '@tanstack/react-table';
+import { Grid } from '@mui/material';
+import { ColumnDef } from '@tanstack/react-table';
 import { Context } from 'App';
-import MainCard from 'components/MainCard';
-import { CSVExport, TablePaginationToken } from 'components/third-party/reactTable';
-import ScrollX from 'components/ScrollX';
-import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { LIST_NON_MINTED_NFTS } from 'graphql/queries';
 import { formatDate } from 'utils/date';
 import useAuth from 'hooks/useAuth';

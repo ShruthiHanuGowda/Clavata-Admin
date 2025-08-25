@@ -1,20 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import Stack from '@mui/material/Stack';
-import Box from '@mui/material/Box';
-import TableContainer from '@mui/material/TableContainer';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import { ColumnDef, flexRender, getCoreRowModel, getPaginationRowModel, HeaderGroup, useReactTable } from '@tanstack/react-table';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import TableBody from '@mui/material/TableBody';
-import Divider from '@mui/material/Divider';
-import { LabelKeyObject } from 'react-csv/lib/core';
+import { ColumnDef } from '@tanstack/react-table';
 import { useMemo } from 'react';
 
-import ScrollX from '../../components/ScrollX';
-import { TablePagination } from '../../components/third-party/reactTable';
-import MainCard from '../../components/MainCard';
 import { formatDate } from 'utils/date';
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
@@ -65,15 +52,12 @@ export default function Registries() {
   );
 
   // dummy pagination handler (since API doesn’t provide tokens)
-  const handlePagination = useCallback(
-    async (direction: 'next' | 'previous' | 'first') => {
-      // for now just reset page index since API gives full data
-      if (direction === 'first') setCurrentPageIndex(1);
-      if (direction === 'next') setCurrentPageIndex((p) => p + 1);
-      if (direction === 'previous') setCurrentPageIndex((p) => Math.max(1, p - 1));
-    },
-    []
-  );
+  const handlePagination = useCallback(async (direction: 'next' | 'previous' | 'first') => {
+    // for now just reset page index since API gives full data
+    if (direction === 'first') setCurrentPageIndex(1);
+    if (direction === 'next') setCurrentPageIndex((p) => p + 1);
+    if (direction === 'previous') setCurrentPageIndex((p) => Math.max(1, p - 1));
+  }, []);
 
   return (
     <ReactTableWrapper

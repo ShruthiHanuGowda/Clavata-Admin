@@ -1,31 +1,9 @@
 import React, { useContext, useMemo, useEffect, useState } from 'react';
 import Grid from '@mui/material/Grid';
 import Divider from '@mui/material/Divider';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableContainer from '@mui/material/TableContainer';
-import TableCell from '@mui/material/TableCell';
-import Box from '@mui/material/Box';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Stack from '@mui/material/Stack';
-import {
-  useReactTable,
-  getCoreRowModel,
-  getPaginationRowModel,
-  ColumnDef,
-  HeaderGroup,
-  flexRender,
-  getSortedRowModel
-} from '@tanstack/react-table';
-import { LabelKeyObject } from 'react-csv/lib/core';
-import { CardContent, Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
+import { ColumnDef } from '@tanstack/react-table';
+import { Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import Search from '../../../layout/Dashboard/Header/HeaderContent/Search';
-import ScrollX from 'components/ScrollX';
-import MainCard from 'components/MainCard';
-import { CSVExport, TablePagination } from 'components/third-party/reactTable';
-import { TableDataProps } from 'types/table';
 import { Context } from 'App';
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
@@ -151,7 +129,7 @@ export default function Validator() {
           topPagination={false}
           csvFilename="validators.csv"
           // 👇 Optional: handle row clicks
-          onRowClick={(row: { validatorId: string; }) => fetchValidatorDetails(row.validatorId)}
+          onRowClick={(row: { validatorId: string }) => fetchValidatorDetails(row.validatorId)}
         />
       </Grid>
 

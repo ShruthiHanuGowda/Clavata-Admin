@@ -1,30 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import Stack from '@mui/material/Stack';
-import Box from '@mui/material/Box';
-import TableContainer from '@mui/material/TableContainer';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  HeaderGroup,
-  useReactTable
-} from '@tanstack/react-table';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import TableBody from '@mui/material/TableBody';
-import Divider from '@mui/material/Divider';
-import { LabelKeyObject } from 'react-csv/lib/core';
+import { ColumnDef } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { ApolloClient, InMemoryCache, useQuery } from '@apollo/client';
-import { FormControl, InputAdornment, OutlinedInput } from '@mui/material';
-import { SearchOutlined } from '@ant-design/icons';
 import { WebSocketLink } from '@apollo/client/link/ws';
-import ScrollX from '../../components/ScrollX';
-import { TablePaginationToken } from '../../components/third-party/reactTable';
 import MainCard from '../../components/MainCard';
 import useAuth from 'hooks/useAuth';
 import { ON_CREATE_EVIDENT_ITEM, ON_UPDATE_EVIDENT_ITEM, ON_DELETE_EVIDENT_ITEM } from 'graphql/subscriptions';
@@ -52,11 +30,7 @@ export default function EvidentItems() {
     variables: {
       limit: pageSize,
       filter: {
-        or: [
-          { assetId: { contains: search } },
-          { uid: { contains: search } },
-          { asset: { contains: search } }
-        ]
+        or: [{ assetId: { contains: search } }, { uid: { contains: search } }, { asset: { contains: search } }]
       }
     }
   });
@@ -98,9 +72,7 @@ export default function EvidentItems() {
       next({ data }) {
         const updatedItem = data?.onUpdateEvidentItems;
         if (updatedItem) {
-          setData((prevData) =>
-            prevData.map((item) => (item.uid === updatedItem.uid ? updatedItem : item))
-          );
+          setData((prevData) => prevData.map((item) => (item.uid === updatedItem.uid ? updatedItem : item)));
         }
       }
     });
@@ -182,8 +154,7 @@ export default function EvidentItems() {
     () => [
       {
         header: 'Energy Type',
-        accessorFn: (row) =>
-          row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.deviceType?.deviceGroup : ''
+        accessorFn: (row) => (row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.deviceType?.deviceGroup : '')
       },
       {
         header: 'Country',
@@ -209,8 +180,7 @@ export default function EvidentItems() {
       },
       {
         header: 'Facility Commissioning Date',
-        accessorFn: (row) =>
-          row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.commissioningDate : '',
+        accessorFn: (row) => (row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.commissioningDate : ''),
         cell: ({ getValue }) => formatDate(getValue<string>() || '')
       }
     ],
