@@ -39,7 +39,7 @@ export default function PaginationTable() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_COMPANY_WALLETS, {
+  } = useQuery<ListCompanyResponse>(LIST_COMPANY_WALLETS, {
     variables: { limit: pageSize }
   });
 
@@ -98,7 +98,7 @@ export default function PaginationTable() {
     if (queryData) {
       const transformedData = transformedResponseData(queryData);
       setData(transformedData);
-      setNextToken(queryData.listUserWallets.nextToken);
+      setNextToken(queryData?.listUserWallets?.nextToken ?? null);
     }
   }, [queryData]);
 
@@ -177,7 +177,7 @@ export default function PaginationTable() {
         cell: (cell) => {
           const address = cell.getValue() as string;
           return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
+            <Link to={getBlockExploreLink(address)} target="_blank" rel="noopener noreferrer">
               {shortenAddress(address)}
             </Link>
           );

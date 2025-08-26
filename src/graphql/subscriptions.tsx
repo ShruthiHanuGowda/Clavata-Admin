@@ -14,7 +14,7 @@ export const ON_UPDATE_EVIDENT_ITEM = gql`
   subscription OnUpdateEvidentItems {
     onUpdateEvidentItems {
       uid
-      assetQ
+      asset
       volume
     }
   }

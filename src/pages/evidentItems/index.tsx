@@ -31,7 +31,7 @@ export default function EvidentItems() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_EVIDENT_ITEMS, {
+  } = useQuery<{ listEvidentItems: { items: EvidentItem[]; nextToken: string | null } }>(LIST_EVIDENT_ITEMS, {
     notifyOnNetworkStatusChange: true,
     variables: {
       limit: pageSize,
@@ -48,8 +48,7 @@ export default function EvidentItems() {
     }
   }
 
-  useEffect(() => {
-    // --- Subscriptions setup
+  const apolloClient = useMemo(() => {
     const wsLink = new WebSocketLink({
       uri: import.meta.env.VITE_APP_EVIDENT_GRAPHQL_WS_URL,
       options: {
@@ -60,35 +59,50 @@ export default function EvidentItems() {
       }
     });
 
-    const client = new ApolloClient({
+    return new ApolloClient({
       link: wsLink,
       cache: new InMemoryCache()
     });
+  }, []);
 
-    const createSub = client.subscribe({ query: ON_CREATE_EVIDENT_ITEM }).subscribe({
+  useEffect(() => {
+    const createSub = apolloClient.subscribe<{ onCreateEvidentItems: EvidentItem }>({ query: ON_CREATE_EVIDENT_ITEM }).subscribe({
       next({ data }) {
         const newItem = data?.onCreateEvidentItems;
         if (newItem) {
-          setData((prevData) => [...prevData, newItem]);
+          setData((prevData) => {
+            if (prevData.some((item) => item.uid === newItem.uid)) return prevData;
+            return [...prevData, newItem];
+          });
         }
+      },
+      error(err) {
+        console.error('Create subscription error', err);
+        // Optionally, trigger logout or re-subscribe logic if unauthorized
       }
     });
 
-    const updateSub = client.subscribe({ query: ON_UPDATE_EVIDENT_ITEM }).subscribe({
+    const updateSub = apolloClient.subscribe<{ onUpdateEvidentItems: EvidentItem }>({ query: ON_UPDATE_EVIDENT_ITEM }).subscribe({
       next({ data }) {
         const updatedItem = data?.onUpdateEvidentItems;
         if (updatedItem) {
           setData((prevData) => prevData.map((item) => (item.uid === updatedItem.uid ? updatedItem : item)));
         }
+      },
+      error(err) {
+        console.error('Update subscription error', err);
       }
     });
 
-    const deleteSub = client.subscribe({ query: ON_DELETE_EVIDENT_ITEM }).subscribe({
+    const deleteSub = apolloClient.subscribe<{ onDeleteEvidentItems: EvidentItem }>({ query: ON_DELETE_EVIDENT_ITEM }).subscribe({
       next({ data }) {
         const deletedItem = data?.onDeleteEvidentItems;
         if (deletedItem) {
           setData((prevData) => prevData.filter((item) => item.uid !== deletedItem.uid));
         }
+      },
+      error(err) {
+        console.error('Delete subscription error', err);
       }
     });
 
@@ -97,7 +111,7 @@ export default function EvidentItems() {
       updateSub.unsubscribe();
       deleteSub.unsubscribe();
     };
-  }, []);
+  }, [apolloClient]);
 
   useEffect(() => {
     if (queryData?.listEvidentItems?.items) {

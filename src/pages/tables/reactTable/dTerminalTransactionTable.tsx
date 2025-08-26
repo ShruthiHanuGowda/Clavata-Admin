@@ -1,71 +1,83 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-
-// material-ui
 import Grid from '@mui/material/Grid';
-// third-party
 import { ColumnDef } from '@tanstack/react-table';
-
-// project-import
 import { useQuery } from '@apollo/client';
 import { Link } from 'react-router-dom';
 import { LIST_DTERMINAL_TRANSACTION_HISTORY } from '../../../graphql/queries';
+import useDebounce from 'hooks/useDebounce';
 
 // types
 import { DTerminalTransactionItem, ListDTerminalTransactionHistoryResponse } from 'types/table';
-
-//query
 import { Context } from 'App';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import useAuth from 'hooks/useAuth';
-
 import ReactTableWrapper from 'components/ReactTableWrapper';
+
+interface QueryVariables {
+  limit: number;
+  nextToken?: string | null;
+  filter?: {
+    or: {
+      transactionHash?: { contains: string };
+      method?: { contains: string };
+      coin?: { contains: string };
+      age?: { contains: string };
+      from?: { contains: string };
+      to?: { contains: string };
+    }[];
+  };
+}
 
 export default function DTerminalTransactionTable() {
   const { logout } = useAuth();
   const context = useContext(Context);
-  if (!context) {
-    throw new Error('Context must be used within a Context.Provider');
-  }
+  if (!context) throw new Error('Context must be used within a Context.Provider');
+
   const { searchTerm } = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState<DTerminalTransactionItem[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const debouncedSearch = useDebounce(searchTerm, 1000);
 
   const {
     data: queryData,
     loading,
     error,
-    fetchMore
-  } = useQuery(LIST_DTERMINAL_TRANSACTION_HISTORY, {
+    fetchMore,
+    refetch
+  } = useQuery<ListDTerminalTransactionHistoryResponse, QueryVariables>(LIST_DTERMINAL_TRANSACTION_HISTORY, {
     variables: {
-      nextToken: null,
       limit: pageSize,
-      filter: {
-        or: [
-          { transactionHash: { contains: searchTerm } },
-          { method: { contains: searchTerm } },
-          { coin: { contains: searchTerm } },
-          { age: { contains: searchTerm } },
-          { from: { contains: searchTerm } },
-          { to: { contains: searchTerm } }
-        ]
-      }
-    }
+      nextToken: null,
+      filter: searchTerm
+        ? {
+            or: [
+              { transactionHash: { contains: searchTerm } },
+              { method: { contains: searchTerm } },
+              { coin: { contains: searchTerm } },
+              { age: { contains: searchTerm } },
+              { from: { contains: searchTerm } },
+              { to: { contains: searchTerm } }
+            ]
+          }
+        : undefined
+    },
+    fetchPolicy: 'network-only'
   });
 
-  if (error) {
-    console.error('GraphQL Error:', error);
-    if (error?.message?.includes('code 401')) {
-      logout();
+  useEffect(() => {
+    if (error) {
+      console.error('GraphQL Error:', error);
+      if (error.message.includes('code 401')) logout();
     }
-  }
-  const transformedResponseData = (resData: ListDTerminalTransactionHistoryResponse): DTerminalTransactionItem[] => {
+  }, [error, logout]);
+
+  const transformedData = useMemo<DTerminalTransactionItem[]>(() => {
     return (
-      resData.listDterminalTransactionHistories?.items?.map((item) => ({
+      queryData?.listDterminalTransactionHistories?.items?.map((item) => ({
         transactionHash: item.transactionHash,
         method: item.method,
         age: item.age,
@@ -75,78 +87,83 @@ export default function DTerminalTransactionTable() {
         txnFee: item.txnFee
       })) ?? []
     );
-  };
+  }, [queryData]);
 
   useEffect(() => {
-    if (queryData) {
-      const transformedData = transformedResponseData(queryData);
-      setData(transformedData);
-      setNextToken(queryData.listDterminalTransactionHistories.nextToken);
-    }
+    setNextToken(queryData?.listDterminalTransactionHistories?.nextToken ?? null);
   }, [queryData]);
 
   const handlePagination = useCallback(
     async (direction: 'next' | 'previous' | 'first') => {
-      let token = direction === 'next' ? nextToken : previousTokens[previousTokens.length - 1];
+      let token: string | null = null;
 
-      if (!token) token = null;
-      if (nextToken === null) {
-        token = previousTokens[previousTokens.length - 2];
+      if (direction === 'next') token = nextToken;
+      else if (direction === 'previous') token = previousTokens[previousTokens.length - 1] || null;
+      else if (direction === 'first') {
+        token = null;
+        setPreviousTokens([]);
+        setCurrentPageIndex(1);
       }
-      switch (direction) {
-        case 'first':
-          token = null;
-          setPreviousTokens([]);
-          break;
-        case 'previous':
-          if (currentPageIndex === 2) {
-            token = null;
+
+      try {
+        const { data: newData } = await fetchMore({
+          variables: {
+            limit: pageSize,
+            nextToken: token,
+            filter: searchTerm
+              ? {
+                  or: [
+                    { transactionHash: { contains: searchTerm } },
+                    { method: { contains: searchTerm } },
+                    { coin: { contains: searchTerm } },
+                    { age: { contains: searchTerm } },
+                    { from: { contains: searchTerm } },
+                    { to: { contains: searchTerm } }
+                  ]
+                }
+              : undefined
           }
-          break;
-        case 'next':
-          break;
-        default:
-          break;
-      }
+        });
 
-      const variables: { limit: number; nextToken?: string } = {
-        limit: pageSize
-      };
-      if (token) {
-        variables.nextToken = token;
-      }
-      fetchMore({
-        variables
-      }).then((fetchMoreResult: { data: ListDTerminalTransactionHistoryResponse }) => {
-        const fetchedData = fetchMoreResult.data;
-
-        const transformedData = transformedResponseData(fetchedData);
-
-        setData(transformedData);
-        setNextToken(fetchedData?.listDterminalTransactionHistories?.nextToken ?? null);
+        const newNextToken = newData?.listDterminalTransactionHistories?.nextToken ?? null;
+        setNextToken(newNextToken);
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
           setCurrentPageIndex((prev) => prev + 1);
         } else if (direction === 'previous') {
-          setCurrentPageIndex((prev) => prev - 1);
-          if (nextToken === null) {
-            setPreviousTokens((prev) => prev.slice(0, prev.length - 2));
-          } else {
-            setPreviousTokens((prev) => prev.slice(0, prev.length - 1));
-          }
-        } else {
+          setPreviousTokens((prev) => prev.slice(0, -1));
+          setCurrentPageIndex((prev) => Math.max(prev - 1, 1));
+        } else if (direction === 'first') {
           setCurrentPageIndex(1);
         }
-      });
+      } catch (err) {
+        console.error('Pagination error:', err);
+      }
     },
-    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
+    [nextToken, previousTokens, fetchMore, pageSize, searchTerm]
   );
 
   useEffect(() => {
-    handlePagination('first');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageSize]);
+    refetch({
+      limit: pageSize,
+      nextToken: null,
+      filter: debouncedSearch
+        ? {
+            or: [
+              { transactionHash: { contains: debouncedSearch } },
+              { method: { contains: debouncedSearch } },
+              { coin: { contains: debouncedSearch } },
+              { age: { contains: debouncedSearch } },
+              { from: { contains: debouncedSearch } },
+              { to: { contains: debouncedSearch } }
+            ]
+          }
+        : undefined
+    });
+    setCurrentPageIndex(1);
+    setPreviousTokens([]);
+  }, [debouncedSearch, pageSize, refetch]);
 
   const columns = useMemo<ColumnDef<DTerminalTransactionItem>[]>(
     () => [
@@ -156,7 +173,7 @@ export default function DTerminalTransactionTable() {
         cell: (cell) => {
           const hash = cell.getValue() as string;
           return (
-            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank">
+            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank" rel="noopener noreferrer">
               {shortenAddress(hash)}
             </Link>
           );
@@ -168,7 +185,7 @@ export default function DTerminalTransactionTable() {
         cell: (cell) => {
           const address = cell.getValue() as string;
           return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
+            <Link to={getBlockExploreLink(address)} target="_blank" rel="noopener noreferrer">
               {shortenAddress(address)}
             </Link>
           );
@@ -180,7 +197,7 @@ export default function DTerminalTransactionTable() {
         cell: (cell) => {
           const address = cell.getValue() as string;
           return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
+            <Link to={getBlockExploreLink(address)} target="_blank" rel="noopener noreferrer">
               {shortenAddress(address)}
             </Link>
           );
@@ -210,7 +227,7 @@ export default function DTerminalTransactionTable() {
     <Grid container spacing={3}>
       <Grid item xs={12}>
         <ReactTableWrapper
-          data={data}
+          data={transformedData}
           columns={columns}
           currentPageIndex={currentPageIndex}
           handlePagination={handlePagination}

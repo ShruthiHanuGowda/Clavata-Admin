@@ -29,6 +29,30 @@ interface NftCollection {
   updatedAt: string;
   collection_image?: string;
 }
+interface ListNftCollectionsData {
+  listNftCollections: {
+    items: NftCollection[];
+    nextToken: string | null;
+  };
+}
+
+interface ListNftCollectionsVars {
+  limit: number;
+  nextToken?: string | null;
+  filter?: {
+    or: Array<{
+      contractAddress?: { contains: string };
+      collectionName?: { contains: string };
+      symbol?: { contains: string };
+      year?: { contains: string };
+      country?: { contains: string };
+      ownerAddress?: { contains: string };
+      type?: { contains: string };
+      createdAt?: { contains: string };
+      updatedAt?: { contains: string };
+    }>;
+  };
+}
 
 function NftCardView({
   data,
@@ -129,7 +153,7 @@ function NftCardView({
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         <b>Owner:</b>{' '}
-                        <Link to={getBlockExploreLink(item.ownerAddress)} target="_blank">
+                        <Link to={getBlockExploreLink(item.ownerAddress)} target="_blank" rel="noopener noreferrer">
                           {shortenAddress(item.ownerAddress)}
                         </Link>
                       </Typography>
@@ -192,7 +216,7 @@ export default function NftCollectionTable() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_NFT_COLLECTIONS, {
+  } = useQuery<ListNftCollectionsData, ListNftCollectionsVars>(LIST_NFT_COLLECTIONS, {
     variables: {
       limit: pageSize,
       ...(searchTerm
