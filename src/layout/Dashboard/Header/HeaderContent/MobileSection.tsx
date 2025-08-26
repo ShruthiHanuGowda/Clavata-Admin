@@ -25,26 +25,25 @@ export default function MobileSection() {
   const theme = useTheme();
 
   const [open, setOpen] = useState(false);
-  const anchorRef = useRef<any>(null);
+  const anchorRef = useRef<HTMLButtonElement | null>(null);
 
   const handleToggle = () => {
     setOpen((prevOpen) => !prevOpen);
   };
 
   const handleClose = (event: MouseEvent | TouchEvent) => {
-    if (anchorRef.current && anchorRef.current.contains(event.target)) {
+    if (anchorRef.current && anchorRef.current.contains(event.target as Node)) {
       return;
     }
-
     setOpen(false);
   };
 
   const prevOpen = useRef(open);
+
   useEffect(() => {
     if (prevOpen.current === true && open === false) {
-      anchorRef.current.focus();
+      anchorRef.current?.focus(); // safe optional chaining
     }
-
     prevOpen.current = open;
   }, [open]);
 

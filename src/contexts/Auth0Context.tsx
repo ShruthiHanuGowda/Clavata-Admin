@@ -1,15 +1,23 @@
-// @ts-nocheck
 import React, { createContext, useEffect, useState } from 'react';
 // third-party
-import { Auth0Provider as AuthProvider, useAuth0 } from '@auth0/auth0-react';
+import { Auth0Provider as AuthProvider, useAuth0, PopupLoginOptions } from '@auth0/auth0-react';
 
 // project imports
 import Loader from 'components/Loader';
 
 // types
-import { Auth0ContextType, InitialLoginContextProps } from 'types/auth';
+import { InitialLoginContextProps, UserProfile } from 'types/auth';
 
-// constant
+// ------------------- CONTEXT TYPE -------------------
+
+export type Auth0ContextType = InitialLoginContextProps & {
+  loginAuth: (options?: PopupLoginOptions) => Promise<void>;
+  logout: () => void;
+  resetPassword: (_email: string) => Promise<void>;
+  updateProfile: VoidFunction;
+};
+
+// ------------------- INITIAL STATE -------------------
 
 const initialState: InitialLoginContextProps = {
   isLoggedIn: false,
@@ -43,24 +51,25 @@ const Auth0ContextProvider = ({ children }: { children: React.ReactElement }) =>
 
   useEffect(() => {
     if (!isLoading) {
-      // Update state when authentication status is available
+      const userProfile: UserProfile | null = isAuthenticated
+        ? {
+            id: user?.sub,
+            avatar: user?.picture,
+            email: user?.email,
+            name: user?.name,
+            tier: 'Premium' // Add more user-specific data if needed
+          }
+        : null;
+
       setState({
         isLoggedIn: isAuthenticated,
         isInitialized: true,
-        user: isAuthenticated
-          ? {
-              id: user?.sub,
-              avatar: user?.picture,
-              email: user?.email,
-              name: user?.name,
-              tier: 'Premium' // Set tier or other user-specific data if needed
-            }
-          : null
+        user: userProfile
       });
     }
   }, [isAuthenticated, isLoading, user]);
 
-  const loginAuth = async (options?: any) => {
+  const loginAuth = async (options?: PopupLoginOptions) => {
     await loginWithPopup(options);
   };
 
@@ -68,7 +77,7 @@ const Auth0ContextProvider = ({ children }: { children: React.ReactElement }) =>
     logout();
   };
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = async (_email: string) => {
     // Implement reset password functionality if needed
   };
 
@@ -81,7 +90,7 @@ const Auth0ContextProvider = ({ children }: { children: React.ReactElement }) =>
   }
 
   const contextValue: Auth0ContextType = {
-    ...state, // Spread the current state (isLoggedIn, isInitialized, user)
+    ...state,
     loginAuth,
     logout: logoutAuth,
     resetPassword,

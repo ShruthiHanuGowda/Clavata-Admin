@@ -34,12 +34,11 @@ export default function DashboardLayout() {
   const { container, miniDrawer, menuOrientation } = useConfig();
 
   const isHorizontal = menuOrientation === MenuOrientation.HORIZONTAL && !downLG;
-  const context: any = useContext(Context);
-
-  const { setSearchTerm }: any = context;
+  const context = useContext(Context); // context is ContextType | undefined
+  const setSearchTerm = context?.setSearchTerm;
 
   useEffect(() => {
-    if (pathname) setSearchTerm('');
+    if (pathname && setSearchTerm) setSearchTerm('');
   }, [pathname, setSearchTerm]);
 
   // set media wise responsive drawer

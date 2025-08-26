@@ -6,7 +6,7 @@ const BlogContainer = () => {
   return (
     <>
       <BlogEditor
-        onSubmit={function (post: { blogId: string; title: string; content: string; createdAt: string }): void {
+        onSubmit={function (): void {
           throw new Error('Function not implemented.');
         }}
       />

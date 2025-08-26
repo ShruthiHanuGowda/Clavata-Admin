@@ -29,7 +29,6 @@ export default function TablePagination({
   setPageSize,
   pageSize,
   nextToken,
-  previousTokens,
   currentPageIndex,
   isLoading
 }: TablePaginationProps) {

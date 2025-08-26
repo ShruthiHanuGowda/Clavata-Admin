@@ -47,12 +47,12 @@ const sizes = [
 export default function ContactForm() {
   const [budget, setBudget] = useState(1);
   const handleProjectBudget = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setBudget(Number(event.target?.value!));
+    setBudget(Number(event.target.value));
   };
 
   const [size, setSize] = useState(1);
   const handleCompanySize = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setSize(Number(event.target?.value!));
+    setSize(Number(event.target.value));
   };
 
   return (

@@ -71,10 +71,11 @@ export default function AuthLogin({ isDemo = false }: { isDemo?: boolean }) {
             setStatus({ success: true });
             setSubmitting(false);
             preload('api/menu/dashboard', fetcher); // load menu on login success
-          } catch (err: any) {
-            console.error(err);
+          } catch (err) {
+            const error = err as Error;
+            console.error(error);
             setStatus({ success: false });
-            setErrors({ submit: err.message });
+            setErrors({ submit: error.message });
             setSubmitting(false);
           }
         }}

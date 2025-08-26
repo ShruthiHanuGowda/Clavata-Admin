@@ -35,8 +35,13 @@ import { APP_DEFAULT_PATH, ThemeMode } from 'config';
 
 // ==============================|| COMPONENTS - APP BAR ||============================== //
 
+interface ElevationScrollProps {
+  children: React.ReactElement;
+  window?: () => Window;
+}
+
 // elevation scroll
-function ElevationScroll({ children, window }: any) {
+function ElevationScroll({ children, window }: ElevationScrollProps) {
   const theme = useTheme();
 
   const trigger = useScrollTrigger({
@@ -63,13 +68,14 @@ export default function Header() {
   const [drawerToggle, setDrawerToggle] = useState<boolean>(false);
 
   /** Method called on multiple components with different event types */
-  const drawerToggler = (open: boolean) => (event: any) => {
-    if (event.type! === 'keydown' && (event.key! === 'Tab' || event.key! === 'Shift')) {
-      return;
-    }
-    setDrawerToggle(open);
-  };
-
+  const drawerToggler =
+    (open: boolean) =>
+    (event: React.KeyboardEvent | React.MouseEvent): void => {
+      if (event.type === 'keydown' && ((event as React.KeyboardEvent).key === 'Tab' || (event as React.KeyboardEvent).key === 'Shift')) {
+        return;
+      }
+      setDrawerToggle(open);
+    };
   return (
     <ElevationScroll>
       <AppBar sx={{ bgcolor: 'transparent', color: 'text.primary', boxShadow: 'none' }}>

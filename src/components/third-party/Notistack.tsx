@@ -1,4 +1,4 @@
-//material-ui
+// material-ui
 import { styled } from '@mui/material/styles';
 
 // third-party
@@ -11,6 +11,7 @@ import CheckCircleOutlined from '@ant-design/icons/CheckCircleOutlined';
 import CloseCircleOutlined from '@ant-design/icons/CloseCircleOutlined';
 import InfoCircleOutlined from '@ant-design/icons/InfoCircleOutlined';
 import WarningOutlined from '@ant-design/icons/WarningOutlined';
+import { ReactNode } from 'react';
 import { useGetSnackbar } from 'api/snackbar';
 import Loader from 'components/Loader';
 
@@ -35,7 +36,11 @@ const StyledSnackbarProvider = styled(SnackbarProvider)(({ theme }) => ({
 
 // ===========================|| SNACKBAR - NOTISTACK ||=========================== //
 
-export default function Notistack({ children }: any) {
+interface NotistackProps {
+  children: ReactNode;
+}
+
+export default function Notistack({ children }: NotistackProps) {
   const { snackbar } = useGetSnackbar();
   const iconSX = { marginRight: 8, fontSize: '1.15rem' };
 
@@ -55,7 +60,7 @@ export default function Notistack({ children }: any) {
             }
           : undefined
       }
-      hideIconVariant={snackbar.iconVariant === 'hide' ? true : false}
+      hideIconVariant={snackbar.iconVariant === 'hide'}
     >
       {children}
     </StyledSnackbarProvider>

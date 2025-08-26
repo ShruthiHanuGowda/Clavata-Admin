@@ -25,7 +25,34 @@ import { LIST_BLOGS, CREATE_BLOG, UPDATE_BLOG, DELETE_BLOG } from 'graphql/queri
 import { TablePaginationToken } from 'components/third-party/reactTable';
 import useAuth from 'hooks/useAuth';
 
-const initialFormState = {
+interface BlogItem {
+  id: string;
+  title: string;
+  image_url?: string;
+  content: string;
+  author_name: string;
+  tags: string[];
+  status: 'Draft' | 'Published' | 'Archived';
+}
+
+interface ListBlogsResponse {
+  listBlogs: {
+    items: BlogItem[];
+    nextToken?: string | null;
+  };
+}
+
+interface BlogForm {
+  id: string;
+  title: string;
+  image_url?: string; // optional
+  content: string;
+  author_name: string;
+  tags: string[];
+  status: 'Draft' | 'Published' | 'Archived';
+}
+
+const initialFormState: BlogForm = {
   id: '',
   title: '',
   image_url: '',
@@ -51,7 +78,7 @@ export default function BlogManager() {
   const { logout } = useAuth();
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<BlogItem[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -68,14 +95,12 @@ export default function BlogManager() {
   const [updateBlog] = useMutation(UPDATE_BLOG);
   const [deleteBlog] = useMutation(DELETE_BLOG);
 
-  const [form, setForm] = useState(initialFormState);
+  const [form, setForm] = useState<BlogForm>(initialFormState);
   const [isEdit, setIsEdit] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [selectedBlogId, setSelectedBlogId] = useState<string | null>(null);
 
   //image state
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageURL, setImageURL] = useState<string>('');
   const [uploading, setUploading] = useState(false);
 
@@ -83,13 +108,12 @@ export default function BlogManager() {
   const navigate = useNavigate();
 
   if (error) {
-    console.error('GraphQL Error:', error);
     if (error?.message?.includes('code 401')) {
       logout();
     }
   }
 
-  const handleOpen = (blog?: any) => {
+  const handleOpen = (blog?: BlogForm) => {
     if (blog) {
       setForm({ ...blog, tags: blog.tags || [] });
       setIsEdit(true);
@@ -110,9 +134,6 @@ export default function BlogManager() {
       image_url: imageURL
     };
 
-    console.log('Saving blog with input:', input); // 👈 Log full payload
-    console.log('Final imageURL before save:', imageURL);
-
     if (isEdit) {
       await updateBlog({ variables: { updateblogsinput: { ...input, id: form.id } } });
     } else {
@@ -121,7 +142,6 @@ export default function BlogManager() {
 
     await refetch();
     setForm(initialFormState);
-    setImageFile(null);
     setImageURL('');
     setTagInput('');
     setShowForm(false);
@@ -139,7 +159,6 @@ export default function BlogManager() {
   };
 
   const handleImageUpload = async (file: File) => {
-    console.log('file.type', file.type);
     try {
       setUploading(true);
 
@@ -153,8 +172,6 @@ export default function BlogManager() {
 
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
-      console.log('image data data', data);
-      console.log('data.url', data.data.url);
       setImageURL(data.data.url); // Adjust based on actual response
       setForm((prev) => ({ ...prev, image_url: data.data.url }));
     } catch (error) {
@@ -204,11 +221,10 @@ export default function BlogManager() {
       }
       fetchMore({
         variables
-      }).then((fetchMoreResult: any) => {
+      }).then((fetchMoreResult: { data: ListBlogsResponse }) => {
         const fetchedData = fetchMoreResult.data;
-
         setData(fetchedData.listBlogs.items);
-        setNextToken(fetchedData.listBlogs.nextToken);
+        setNextToken(fetchedData.listBlogs.nextToken ?? null);
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
@@ -225,12 +241,12 @@ export default function BlogManager() {
         }
       });
     },
-    [nextToken, previousTokens, pageSize, fetchMore]
+    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
   useEffect(() => {
     handlePagination('first');
-  }, [pageSize]);
+  }, [pageSize, handlePagination]);
 
   return (
     <Box p={3}>
@@ -255,7 +271,6 @@ export default function BlogManager() {
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    setImageFile(file);
                     await handleImageUpload(file);
                   }
                 }}
@@ -343,7 +358,7 @@ export default function BlogManager() {
           </TableHead>
           <TableBody>
             {data?.length > 0 &&
-              data.map((blog: any) => (
+              data.map((blog: BlogItem) => (
                 <TableRow key={blog.id}>
                   <TableCell>
                     {blog.image_url ? (

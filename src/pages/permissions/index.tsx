@@ -15,12 +15,16 @@ import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import CloseOutlined from '@ant-design/icons/CloseOutlined';
 import EditTwoTone from '@ant-design/icons/EditTwoTone';
-import { TableDataProps } from '../../types/table';
 import ScrollX from '../../components/ScrollX';
 import { TablePagination } from '../../components/third-party/reactTable';
 import MainCard from '../../components/MainCard';
 
-const data = [
+interface Permission {
+  name: string;
+  description: string;
+}
+
+const data: Permission[] = [
   { name: 'Dashboard View', description: 'Dashboard View' },
   { name: 'User View', description: 'User View' },
   { name: 'User List', description: 'User List' },
@@ -30,7 +34,7 @@ const data = [
 ];
 
 export default function Permissions() {
-  const columns: any = useMemo<ColumnDef<TableDataProps>[]>(
+  const columns = useMemo<ColumnDef<Permission>[]>(
     () => [
       {
         header: 'Name',
@@ -79,7 +83,7 @@ export default function Permissions() {
   table.getAllColumns().map((columns) =>
     headers.push({
       label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
-      // @ts-ignore
+      // @ts-expect-error accessorKey is optional, not always present
       key: columns.columnDef.accessorKey
     })
   );
@@ -91,7 +95,7 @@ export default function Permissions() {
           <TableContainer>
             <Table>
               <TableHead>
-                {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
+                {table.getHeaderGroups().map((headerGroup: HeaderGroup<Permission>) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <TableCell key={header.id} {...header.column.columnDef.meta}>

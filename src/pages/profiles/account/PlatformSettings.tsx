@@ -50,7 +50,7 @@ export default function PlatformSettings() {
     }
   }, [data]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, key: string) => {
     const updatedSettings = platformSettings.map((item) => (item.keyName === key ? { ...item, value: e.target.value } : item));
     setPlatformSettings(updatedSettings);
   };
@@ -99,12 +99,7 @@ export default function PlatformSettings() {
                       <Typography variant="subtitle1">{setting.keyName}</Typography>
                     </Grid>
                     <Grid item xs={12} sm={8}>
-                      <TextField
-                        fullWidth
-                        variant="outlined"
-                        value={setting.value}
-                        onChange={(e: any) => handleChange(e, setting.keyName)}
-                      />
+                      <TextField fullWidth variant="outlined" value={setting.value} onChange={(e) => handleChange(e, setting.keyName)} />
                     </Grid>
                   </Grid>
                 </div>

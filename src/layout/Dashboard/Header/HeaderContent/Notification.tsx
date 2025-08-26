@@ -53,8 +53,7 @@ const actionSX = {
 export default function Notification() {
   const theme = useTheme();
   const matchesXs = useMediaQuery(theme.breakpoints.down('md'));
-
-  const anchorRef = useRef<any>(null);
+  const anchorRef = useRef<HTMLButtonElement | null>(null);
   const [read, setRead] = useState(2);
   const [open, setOpen] = useState<boolean>(false);
   const handleToggle = () => {
@@ -62,12 +61,11 @@ export default function Notification() {
   };
 
   const handleClose = (event: MouseEvent | TouchEvent) => {
-    if (anchorRef.current && anchorRef.current.contains(event.target)) {
+    if (anchorRef.current && anchorRef.current.contains(event.target as Node)) {
       return;
     }
     setOpen(false);
   };
-
   const iconBackColorOpen = theme.palette.mode === ThemeMode.DARK ? 'background.default' : 'grey.100';
 
   return (

@@ -36,39 +36,39 @@ const denergyTestnet = {
   testnet: true
 };
 
-const sepoliaETHTestnet = {
-  id: 11155111,
-  network: 'sepolia',
-  name: 'sepolia',
-  nativeCurrency: {
-    name: 'ETH',
-    symbol: 'ETH',
-    decimals: 18
-  },
-  rpcUrls: {
-    default: {
-      http: ['https://rpc.denergytestnet.com']
-    }
-  },
-  blockExplorers: {
-    default: {
-      name: 'sepolia',
-      url: 'https://sepolia.etherscan.io/'
-    }
-  },
-  contracts: {
-    ensRegistry: { address: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e' as `0x${string}` },
-    ensUniversalResolver: {
-      address: '0xcA11bde05977b3631167028862bE2a173976CA11' as `0x${string}`,
-      blockCreated: 33377
-    },
-    multicall3: {
-      address: '0xce5c4eeb87a3fbafb6d8865777aecc5a9bdd49da' as `0x${string}`,
-      blockCreated: 33377
-    }
-  },
-  testnet: true
-};
+// const sepoliaETHTestnet = {
+//   id: 11155111,
+//   network: 'sepolia',
+//   name: 'sepolia',
+//   nativeCurrency: {
+//     name: 'ETH',
+//     symbol: 'ETH',
+//     decimals: 18
+//   },
+//   rpcUrls: {
+//     default: {
+//       http: ['https://rpc.denergytestnet.com']
+//     }
+//   },
+//   blockExplorers: {
+//     default: {
+//       name: 'sepolia',
+//       url: 'https://sepolia.etherscan.io/'
+//     }
+//   },
+//   contracts: {
+//     ensRegistry: { address: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e' as `0x${string}` },
+//     ensUniversalResolver: {
+//       address: '0xcA11bde05977b3631167028862bE2a173976CA11' as `0x${string}`,
+//       blockCreated: 33377
+//     },
+//     multicall3: {
+//       address: '0xce5c4eeb87a3fbafb6d8865777aecc5a9bdd49da' as `0x${string}`,
+//       blockCreated: 33377
+//     }
+//   },
+//   testnet: true
+// };
 
 export enum ChainId {
   ETHEREUM = 4442,

@@ -1,11 +1,7 @@
-import { ReactElement, createContext, useEffect, useReducer } from 'react';
-import { CognitoUserAttribute } from 'amazon-cognito-identity-js';
+import { ReactElement, createContext, useEffect, useReducer, useContext } from 'react';
+import { CognitoUserAttribute, CognitoUser, CognitoUserPool, CognitoUserSession, AuthenticationDetails } from 'amazon-cognito-identity-js';
 import { useDispatch } from 'react-redux';
-import { CognitoUser, CognitoUserPool, CognitoUserSession, AuthenticationDetails } from 'amazon-cognito-identity-js';
-import { useContext } from 'react';
 import { login as authLogin } from 'store/slices/authSlice';
-
-// third-party
 
 // project imports
 import Loader from 'components/Loader';
@@ -13,21 +9,29 @@ import { LOGIN, LOGOUT } from 'contexts/authReducer/actions';
 import authReducer from 'contexts/authReducer/auth';
 
 // types
-import { AWSCognitoContextType, InitialLoginContextProps } from 'types/auth';
+import { AWSCognitoContextType, InitialLoginContextProps, UserProfile } from 'types/auth';
 import { Context } from 'App';
 
-// constant
+interface CognitoIdTokenPayload {
+  sub: string;
+  email?: string;
+  name?: string;
+}
+
+// ------------------- INITIAL STATE -------------------
 const initialState: InitialLoginContextProps = {
   isLoggedIn: false,
   isInitialized: false,
   user: null
 };
 
+// ------------------- COGNITO POOL -------------------
 export const userPool = new CognitoUserPool({
   UserPoolId: import.meta.env.VITE_APP_AWS_POOL_ID || '',
   ClientId: import.meta.env.VITE_APP_AWS_APP_CLIENT_ID || ''
 });
 
+// ------------------- SESSION MANAGEMENT -------------------
 const setSession = (serviceToken?: string | null) => {
   if (serviceToken) {
     localStorage.setItem('serviceToken', serviceToken);
@@ -36,21 +40,20 @@ const setSession = (serviceToken?: string | null) => {
   }
 };
 
-// ==============================|| AWS COGNITO - CONTEXT & PROVIDER ||============================== //
-
+// ==============================|| AWS COGNITO CONTEXT & PROVIDER ||============================== //
 const AWSCognitoContext = createContext<AWSCognitoContextType | null>(null);
 
 export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => {
   const context = useContext(Context);
-  const { authenticationToken, setAuthenticationToken }: any = context;
+  const { setAuthenticationToken } = context as { setAuthenticationToken: (token: string | null) => void };
   const [state, dispatch] = useReducer(authReducer, initialState);
   const dispatchRedux = useDispatch();
 
   useEffect(() => {
     const init = async () => {
       try {
-        const serviceToken = window.localStorage.getItem('serviceToken');
-        const storedUsername = window.localStorage.getItem('username');
+        const serviceToken = localStorage.getItem('serviceToken');
+        const storedUsername = localStorage.getItem('username');
 
         if (serviceToken && storedUsername) {
           setSession(serviceToken);
@@ -58,90 +61,62 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
             type: LOGIN,
             payload: {
               isLoggedIn: true,
-              user: {
-                email: storedUsername
-              }
+              user: { email: storedUsername }
             }
           });
-          console.log('Initialized username from localStorage:', storedUsername);
         } else {
-          dispatch({
-            type: LOGOUT
-          });
+          dispatch({ type: LOGOUT });
         }
-      } catch (err) {
-        console.error(err);
-        dispatch({
-          type: LOGOUT
-        });
+      } catch {
+        dispatch({ type: LOGOUT });
       }
     };
 
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'serviceToken' && !event.newValue) {
-        // If the serviceToken is removed, log out the user
         dispatch({ type: LOGOUT });
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
-
-    // Initialize the app state on mount
     init();
 
-    // Cleanup the event listener when the component is unmounted
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  // ------------------- AUTH FUNCTIONS -------------------
   const login = async (email: string, password: string): Promise<void> => {
-    const usr = new CognitoUser({
-      Username: email,
-      Pool: userPool
-    });
-
-    const authData = new AuthenticationDetails({
-      Username: email,
-      Password: password
-    });
+    const usr = new CognitoUser({ Username: email, Pool: userPool });
+    const authData = new AuthenticationDetails({ Username: email, Password: password });
 
     await new Promise<void>((resolve, reject) => {
       usr.authenticateUser(authData, {
         onSuccess: (session: CognitoUserSession) => {
-          // const accessToken = session.getAccessToken().getJwtToken();
-          // // console.log("Access Token: ", accessToken);
-          // setSession(accessToken);
-          // setAuthenticationToken(accessToken)
           const idToken = session.getIdToken().getJwtToken();
-          const payload = session.getIdToken().decodePayload();
+          const payload = session.getIdToken().decodePayload() as CognitoIdTokenPayload;
+
           setSession(idToken);
           setAuthenticationToken(idToken);
           localStorage.setItem('username', authData.getUsername());
-          dispatch({
-            type: LOGIN,
-            payload: {
-              isLoggedIn: true,
-              user: {
-                email: authData.getUsername()
-                // name: 'John AWS'
-              }
-            }
-          });
+
+          const userProfile: UserProfile = { email: authData.getUsername() };
+          dispatch({ type: LOGIN, payload: { isLoggedIn: true, user: userProfile } });
+
           dispatchRedux(
             authLogin({
-              user: { id: payload.id, email: payload.email, name: payload.name },
+              user: {
+                id: payload.sub,
+                email: payload.email || '',
+                name: payload.name || ''
+              },
               token: idToken
             })
           );
+
           resolve();
         },
-        onFailure: (err) => {
-          reject(err);
-        },
-        newPasswordRequired: () => {
-          // Handle the new password challenge (optional, based on your flow)
-        }
+        onFailure: (err) => reject(err),
+        newPasswordRequired: () => {}
       });
     });
   };
@@ -156,11 +131,8 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
           new CognitoUserAttribute({ Name: 'name', Value: `${firstName} ${lastName}` })
         ],
         [],
-        (err, result) => {
-          if (err) {
-            reject(err);
-            return;
-          }
+        (err) => {
+          if (err) return reject(err);
           localStorage.setItem('email', email);
           resolve();
         }
@@ -170,114 +142,57 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
 
   const logout = () => {
     const loggedInUser = userPool.getCurrentUser();
+    if (!loggedInUser) return;
 
-    if (loggedInUser) {
-      setSession(null);
-      localStorage.removeItem('email');
-      localStorage.removeItem('serviceToken');
-      localStorage.removeItem('username'); // Clear username from localStorage
-      console.log('Email cleared:', localStorage.getItem('email'));
-      console.log('ServiceToken cleared:', localStorage.getItem('serviceToken'));
-      loggedInUser.signOut();
-      dispatch({
-        type: LOGOUT,
-        payload: {
-          isLoggedIn: false,
-          user: null
-        }
-      });
-      sessionStorage.clear();
-      console.log('Session cleared:', sessionStorage);
-
-      // Only trigger the storage event if the serviceToken is cleared (avoid re-triggering when it's already cleared)
-      if (localStorage.getItem('serviceToken')) {
-        localStorage.setItem('serviceToken', ''); // This will fire the storage event
-      }
-    } else {
-      console.log('No logged-in user found.');
-    }
+    setSession(null);
+    localStorage.removeItem('email');
+    localStorage.removeItem('serviceToken');
+    localStorage.removeItem('username');
+    loggedInUser.signOut();
+    dispatch({ type: LOGOUT, payload: { isLoggedIn: false, user: null } });
+    sessionStorage.clear();
   };
 
   const forgotPassword = async (email: string): Promise<void> => {
-    const user = new CognitoUser({
-      Username: email,
-      Pool: userPool
-    });
-    user.forgotPassword({
-      onSuccess: () => {},
-      onFailure: () => {}
-    });
+    const user = new CognitoUser({ Username: email, Pool: userPool });
+    user.forgotPassword({ onSuccess: () => {}, onFailure: () => {} });
   };
 
   const awsResetPassword = async (verificationCode: string, newPassword: string): Promise<void> => {
     const email = localStorage.getItem('email');
-    const user = new CognitoUser({
-      Username: email as string,
-      Pool: userPool
-    });
+    if (!email) throw new Error('Email is required');
+    const user = new CognitoUser({ Username: email, Pool: userPool });
+
     await new Promise<void>((resolve, reject) => {
-      user.confirmPassword(verificationCode, newPassword, {
-        onSuccess: () => {
-          localStorage.removeItem('email');
-          resolve();
-        },
-        onFailure: (error) => {
-          reject(error.message);
-        }
-      });
+      user.confirmPassword(verificationCode, newPassword, { onSuccess: resolve, onFailure: (err) => reject(err) });
+      localStorage.removeItem('email');
     });
   };
 
   const codeVerification = async (verificationCode: string): Promise<void> => {
     const email = localStorage.getItem('email');
-    if (!email) {
-      throw new Error('Username and Pool information are required');
-    }
-
-    const user = new CognitoUser({
-      Username: email as string,
-      Pool: userPool
-    });
+    if (!email) throw new Error('Email is required');
+    const user = new CognitoUser({ Username: email, Pool: userPool });
 
     await new Promise<void>((resolve, reject) => {
-      user.confirmRegistration(verificationCode, true, (error, result) => {
-        if (error) {
-          reject(error.message || JSON.stringify(error));
-        } else {
-          localStorage.removeItem('email');
-          resolve();
-        }
-      });
+      user.confirmRegistration(verificationCode, true, (error) => (error ? reject(error) : resolve()));
+      localStorage.removeItem('email');
     });
   };
 
   const resendConfirmationCode = async (): Promise<void> => {
     const email = localStorage.getItem('email');
-    if (!email) {
-      throw new Error('Username and Pool information are required');
-    }
-
-    const user = new CognitoUser({
-      Username: email as string,
-      Pool: userPool
-    });
+    if (!email) throw new Error('Email is required');
+    const user = new CognitoUser({ Username: email, Pool: userPool });
 
     await new Promise<void>((resolve, reject) => {
-      user.resendConfirmationCode((error, result) => {
-        if (error) {
-          reject(error.message || JSON.stringify(error));
-        } else {
-          resolve();
-        }
-      });
+      user.resendConfirmationCode((error) => (error ? reject(error) : resolve()));
     });
   };
 
   const updateProfile = () => {};
 
-  if (state.isInitialized !== undefined && !state.isInitialized) {
-    return <Loader />;
-  }
+  if (!state.isInitialized) return <Loader />;
 
   return (
     <AWSCognitoContext.Provider

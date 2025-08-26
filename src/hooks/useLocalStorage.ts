@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 // ----------------------------------------------------------------------
 
 export default function useLocalStorage<ValueType>(key: string, defaultValue: ValueType) {
-  const [value, setValue] = useState(() => {
+  const [value, setValue] = useState<ValueType>(() => {
     const storedValue = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
     return storedValue === null ? defaultValue : JSON.parse(storedValue);
   });
@@ -22,12 +22,12 @@ export default function useLocalStorage<ValueType>(key: string, defaultValue: Va
   }, [key, defaultValue]);
 
   const setValueInLocalStorage = (newValue: ValueType) => {
-    setValue((currentValue: any) => {
-      const result = typeof newValue === 'function' ? newValue(currentValue) : newValue;
+    setValue((currentValue: ValueType) => {
+      const result = typeof newValue === 'function' ? (newValue as (prevValue: ValueType) => ValueType)(currentValue) : newValue;
       if (typeof window !== 'undefined') localStorage.setItem(key, JSON.stringify(result));
       return result;
     });
   };
 
-  return [value, setValueInLocalStorage];
+  return [value, setValueInLocalStorage] as const;
 }

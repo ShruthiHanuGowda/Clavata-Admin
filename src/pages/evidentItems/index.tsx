@@ -1,30 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import Stack from '@mui/material/Stack';
-import Box from '@mui/material/Box';
-import TableContainer from '@mui/material/TableContainer';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  HeaderGroup,
-  useReactTable
-} from '@tanstack/react-table';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import TableBody from '@mui/material/TableBody';
-import Divider from '@mui/material/Divider';
-import { LabelKeyObject } from 'react-csv/lib/core';
+import { ColumnDef } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { ApolloClient, InMemoryCache, useQuery } from '@apollo/client';
-import { FormControl, InputAdornment, OutlinedInput } from '@mui/material';
-import { SearchOutlined } from '@ant-design/icons';
 import { WebSocketLink } from '@apollo/client/link/ws';
-import ScrollX from '../../components/ScrollX';
-import { TablePaginationToken } from '../../components/third-party/reactTable';
 import MainCard from '../../components/MainCard';
 import useAuth from 'hooks/useAuth';
 import { ON_CREATE_EVIDENT_ITEM, ON_UPDATE_EVIDENT_ITEM, ON_DELETE_EVIDENT_ITEM } from 'graphql/subscriptions';
@@ -32,11 +10,17 @@ import { formatDate } from 'utils/date';
 import { LIST_EVIDENT_ITEMS } from 'graphql/queries';
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
+interface EvidentItem {
+  uid: string;
+  assetId: string;
+  asset: string;
+  volume?: number;
+}
+
 export default function EvidentItems() {
   const { logout } = useAuth();
-
-  const [data, setData] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
+  const [data, setData] = useState<EvidentItem[]>([]);
+  const [search] = useState('');
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
@@ -52,11 +36,7 @@ export default function EvidentItems() {
     variables: {
       limit: pageSize,
       filter: {
-        or: [
-          { assetId: { contains: search } },
-          { uid: { contains: search } },
-          { asset: { contains: search } }
-        ]
+        or: [{ assetId: { contains: search } }, { uid: { contains: search } }, { asset: { contains: search } }]
       }
     }
   });
@@ -68,23 +48,23 @@ export default function EvidentItems() {
     }
   }
 
-  // --- Subscriptions setup
-  const wsLink = new WebSocketLink({
-    uri: import.meta.env.VITE_APP_EVIDENT_GRAPHQL_WS_URL,
-    options: {
-      reconnect: true,
-      connectionParams: {
-        'x-api-key': import.meta.env.VITE_APP_EVIDENT_GRAPHQL_API_KEY
-      }
-    }
-  });
-
-  const client = new ApolloClient({
-    link: wsLink,
-    cache: new InMemoryCache()
-  });
-
   useEffect(() => {
+    // --- Subscriptions setup
+    const wsLink = new WebSocketLink({
+      uri: import.meta.env.VITE_APP_EVIDENT_GRAPHQL_WS_URL,
+      options: {
+        reconnect: true,
+        connectionParams: {
+          'x-api-key': import.meta.env.VITE_APP_EVIDENT_GRAPHQL_API_KEY
+        }
+      }
+    });
+
+    const client = new ApolloClient({
+      link: wsLink,
+      cache: new InMemoryCache()
+    });
+
     const createSub = client.subscribe({ query: ON_CREATE_EVIDENT_ITEM }).subscribe({
       next({ data }) {
         const newItem = data?.onCreateEvidentItems;
@@ -98,9 +78,7 @@ export default function EvidentItems() {
       next({ data }) {
         const updatedItem = data?.onUpdateEvidentItems;
         if (updatedItem) {
-          setData((prevData) =>
-            prevData.map((item) => (item.uid === updatedItem.uid ? updatedItem : item))
-          );
+          setData((prevData) => prevData.map((item) => (item.uid === updatedItem.uid ? updatedItem : item)));
         }
       }
     });
@@ -119,7 +97,7 @@ export default function EvidentItems() {
       updateSub.unsubscribe();
       deleteSub.unsubscribe();
     };
-  }, [client]);
+  }, []);
 
   useEffect(() => {
     if (queryData?.listEvidentItems?.items) {
@@ -151,7 +129,7 @@ export default function EvidentItems() {
       const variables: { limit: number; nextToken?: string } = { limit: pageSize };
       if (token) variables.nextToken = token;
 
-      fetchMore({ variables }).then((res: any) => {
+      fetchMore({ variables }).then((res: { data: { listEvidentItems: { items: EvidentItem[]; nextToken: string | null } } }) => {
         const fetchedData = res.data?.listEvidentItems;
         setData(fetchedData?.items);
         setNextToken(fetchedData?.nextToken);
@@ -171,19 +149,28 @@ export default function EvidentItems() {
         }
       });
     },
-    [nextToken, previousTokens, pageSize, fetchMore]
+    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
   useEffect(() => {
-    handlePagination('first');
-  }, [pageSize]);
+    const fetchFirstPage = async () => {
+      const variables = { limit: pageSize };
+      const res = await fetchMore({ variables });
+      const fetchedData = res.data?.listEvidentItems;
+      setData(fetchedData?.items);
+      setNextToken(fetchedData?.nextToken);
+      setPreviousTokens([]);
+      setCurrentPageIndex(1);
+    };
 
-  const columns: ColumnDef<any>[] = useMemo(
+    fetchFirstPage();
+  }, [pageSize, fetchMore]);
+
+  const columns: ColumnDef<EvidentItem>[] = useMemo(
     () => [
       {
         header: 'Energy Type',
-        accessorFn: (row) =>
-          row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.deviceType?.deviceGroup : ''
+        accessorFn: (row) => (row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.deviceType?.deviceGroup : '')
       },
       {
         header: 'Country',
@@ -209,8 +196,7 @@ export default function EvidentItems() {
       },
       {
         header: 'Facility Commissioning Date',
-        accessorFn: (row) =>
-          row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.commissioningDate : '',
+        accessorFn: (row) => (row.asset ? JSON.parse(row.asset)?.issue?.deviceDetails?.commissioningDate : ''),
         cell: ({ getValue }) => formatDate(getValue<string>() || '')
       }
     ],

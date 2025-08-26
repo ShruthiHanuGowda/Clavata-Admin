@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useMemo, useEffect, useReducer, useCallback, ReactElement, createContext } from 'react';
 
 // third party

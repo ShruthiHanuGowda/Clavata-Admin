@@ -28,8 +28,6 @@ export default function AuthCodeVerification() {
       })}
       onSubmit={(values, { resetForm }) => {
         resetForm();
-        console.log(values);
-
         // reset focus after submission
         const activeElement = document.activeElement as HTMLElement | null;
         if (activeElement) activeElement.blur();

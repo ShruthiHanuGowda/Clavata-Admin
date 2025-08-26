@@ -4,6 +4,28 @@ import { useQuery } from '@apollo/client';
 import { Typography, Box, Button, Grid, Card, CardContent, Divider } from '@mui/material';
 import { LIST_USER_WALLETS } from 'graphql/queries';
 
+interface KYCInfo {
+  firstName?: string;
+  lastName?: string;
+  dob?: string;
+  country?: string;
+}
+
+interface KYCDetails {
+  fullResponse?: {
+    info?: KYCInfo;
+  };
+}
+
+interface User {
+  applicantId: string;
+  emailAddress?: string;
+  userWallet?: string;
+  isKycVerified?: boolean;
+  createdAt?: string;
+  kycDetails?: string | KYCDetails;
+}
+
 export default function UserKYCDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -12,7 +34,7 @@ export default function UserKYCDetail() {
   if (loading) return <Typography>Loading...</Typography>;
   if (error) return <Typography>Error loading data.</Typography>;
 
-  const user = data?.listUserWalletAddresses?.items.find((item: any) => item.applicantId === id);
+  const user = data?.listUserWalletAddresses?.items.find((item: User) => item.applicantId === id);
 
   if (!user) return <Typography>No user found with ID: {id}</Typography>;
 

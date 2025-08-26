@@ -104,10 +104,11 @@ export default function AuthRegister() {
                 navigate(auth ? `/${auth}/login?auth=jwt` : '/login', { replace: true });
               }, 1500);
             }
-          } catch (err: any) {
-            console.error(err);
+          } catch (err) {
+            const error = err as Error;
+            console.error(error);
             setStatus({ success: false });
-            setErrors({ submit: err.message });
+            setErrors({ submit: error.message });
             setSubmitting(false);
           }
         }}

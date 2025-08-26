@@ -23,57 +23,54 @@ const MenuProps = {
   }
 };
 
-interface Props {
+interface Props<T extends object> {
   getState: () => TableState;
   setSorting: (value: SetStateAction<SortingState>) => void;
-  getAllColumns: () => Column<any, unknown>[];
+  getAllColumns: () => Column<T, unknown>[];
   size?: InputBaseProps['size'];
 }
 
 // ==============================|| COLUMN SORTING - SELECT ||============================== //
 
-export default function SelectColumnSorting({ getState, getAllColumns, setSorting, size = 'medium' }: Props) {
+export default function SelectColumnSorting<T extends object>({ getState, getAllColumns, setSorting, size = 'medium' }: Props<T>) {
+  const sorting = getState().sorting;
+
   return (
     <FormControl sx={{ width: 200 }}>
       <Select
         id="column-sorting"
         multiple
         displayEmpty
-        value={getState().sorting.length > 0 ? getState().sorting : []}
+        value={sorting.map((s) => s.id)}
         input={<OutlinedInput id="select-column-sorting" placeholder="select column" />}
-        renderValue={(selected) => {
-          const selectedColumn = getAllColumns().filter((column) => selected.length > 0 && column.id === selected[0].id)[0];
+        renderValue={() => {
+          if (sorting.length === 0) return <Typography variant="subtitle2">Sort By</Typography>;
+
+          const selectedColumn = getAllColumns().find((col) => col.id === sorting[0].id);
           if (selectedColumn) {
             return (
               <Typography variant="subtitle2">
-                Sort by ({typeof selectedColumn.columnDef.header === 'string' ? selectedColumn.columnDef.header : '#'})
+                Sort by {typeof selectedColumn.columnDef.header === 'string' ? selectedColumn.columnDef.header : '#'}
               </Typography>
             );
           }
+
           return <Typography variant="subtitle2">Sort By</Typography>;
         }}
         MenuProps={MenuProps}
         size={size}
       >
-        {getAllColumns().map(
-          (column) =>
-            // @ts-ignore
-            column.columnDef.accessorKey &&
-            column.getCanSort() && (
-              <MenuItem
-                key={column.id}
-                value={column.id}
-                onClick={() =>
-                  setSorting(
-                    getState().sorting.length > 0 && column.id === getState().sorting[0].id ? [] : [{ id: column.id, desc: false }]
-                  )
-                }
-              >
-                <Checkbox checked={getState().sorting.length > 0 && column.id === getState().sorting[0].id} color="success" />
-                <ListItemText primary={column.columnDef.header as string} />
+        {getAllColumns()
+          .filter((col) => col.columnDef.accessorKey && col.getCanSort())
+          .map((column) => {
+            const isSorted = sorting.length > 0 && column.id === sorting[0].id;
+            return (
+              <MenuItem key={column.id} value={column.id} onClick={() => setSorting(isSorted ? [] : [{ id: column.id, desc: false }])}>
+                <Checkbox checked={isSorted} color="success" />
+                <ListItemText primary={String(column.columnDef.header)} />
               </MenuItem>
-            )
-        )}
+            );
+          })}
       </Select>
     </FormControl>
   );
