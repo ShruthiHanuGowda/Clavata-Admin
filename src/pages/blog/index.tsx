@@ -246,7 +246,7 @@ export default function BlogManager() {
 
   // useEffect(() => {
   //   handlePagination('first');
-  // }, [pageSize, handlePagination]);
+  // }, [pageSize, handlePagination])
 
   return (
     <Box p={3}>
