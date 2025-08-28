@@ -1,16 +1,14 @@
-import { ReactElement, createContext, useEffect, useReducer, useContext } from 'react';
+import { ReactElement, createContext, useEffect, useReducer } from 'react';
 import { CognitoUserAttribute, CognitoUser, CognitoUserPool, CognitoUserSession, AuthenticationDetails } from 'amazon-cognito-identity-js';
-import { useDispatch } from 'react-redux';
-import { login as authLogin } from 'store/slices/authSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { login as authLogin, logout as authLogout } from 'store/slices/authSlice';
 
-// project imports
 import Loader from 'components/Loader';
 import { LOGIN, LOGOUT } from 'contexts/authReducer/actions';
 import authReducer from 'contexts/authReducer/auth';
 
-// types
 import { AWSCognitoContextType, InitialLoginContextProps, UserProfile } from 'types/auth';
-import { Context } from 'App';
+import { RootState } from 'store';
 
 interface CognitoIdTokenPayload {
   sub: string;
@@ -18,89 +16,90 @@ interface CognitoIdTokenPayload {
   name?: string;
 }
 
-// ------------------- INITIAL STATE -------------------
 const initialState: InitialLoginContextProps = {
   isLoggedIn: false,
   isInitialized: false,
   user: null
 };
 
-// ------------------- COGNITO POOL -------------------
 export const userPool = new CognitoUserPool({
   UserPoolId: import.meta.env.VITE_APP_AWS_POOL_ID || '',
   ClientId: import.meta.env.VITE_APP_AWS_APP_CLIENT_ID || ''
 });
 
-// ------------------- SESSION MANAGEMENT -------------------
-const setSession = (serviceToken?: string | null) => {
-  if (serviceToken) {
-    localStorage.setItem('serviceToken', serviceToken);
-  } else {
-    localStorage.removeItem('serviceToken');
-  }
-};
-
-// ==============================|| AWS COGNITO CONTEXT & PROVIDER ||============================== //
 const AWSCognitoContext = createContext<AWSCognitoContextType | null>(null);
 
 export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => {
-  const context = useContext(Context);
-  const { setAuthenticationToken } = context as { setAuthenticationToken: (token: string | null) => void };
   const [state, dispatch] = useReducer(authReducer, initialState);
   const dispatchRedux = useDispatch();
+  const authState = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     const init = async () => {
-      try {
-        const serviceToken = localStorage.getItem('serviceToken');
-        const storedUsername = localStorage.getItem('username');
+      const currentUser = userPool.getCurrentUser();
 
-        if (serviceToken && storedUsername) {
-          setSession(serviceToken);
-          dispatch({
-            type: LOGIN,
-            payload: {
-              isLoggedIn: true,
-              user: { email: storedUsername }
-            }
-          });
-        } else {
+      if (!currentUser) {
+        dispatch({ type: LOGOUT });
+        dispatchRedux(authLogout());
+        return;
+      }
+
+      currentUser.getSession((err: Error | null, session: CognitoUserSession | null) => {
+        if (err || !session || !session.isValid()) {
           dispatch({ type: LOGOUT });
+          dispatchRedux(authLogout());
+          return;
         }
-      } catch {
-        dispatch({ type: LOGOUT });
-      }
+
+        const idToken = session.getIdToken().getJwtToken();
+        const payload = session.getIdToken().decodePayload() as CognitoIdTokenPayload;
+
+        const userProfile: UserProfile = { email: payload.email ?? '' };
+
+        dispatch({
+          type: LOGIN,
+          payload: {
+            isLoggedIn: true,
+            user: userProfile
+          }
+        });
+
+        dispatchRedux(
+          authLogin({
+            user: {
+              id: payload.sub,
+              email: payload.email || '',
+              name: payload.name || ''
+            },
+            token: idToken
+          })
+        );
+      });
     };
 
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'serviceToken' && !event.newValue) {
-        dispatch({ type: LOGOUT });
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
     init();
-
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [dispatchRedux]);
 
   // ------------------- AUTH FUNCTIONS -------------------
   const login = async (email: string, password: string): Promise<void> => {
-    const usr = new CognitoUser({ Username: email, Pool: userPool });
+    const user = new CognitoUser({ Username: email, Pool: userPool });
     const authData = new AuthenticationDetails({ Username: email, Password: password });
 
     await new Promise<void>((resolve, reject) => {
-      usr.authenticateUser(authData, {
+      user.authenticateUser(authData, {
         onSuccess: (session: CognitoUserSession) => {
           const idToken = session.getIdToken().getJwtToken();
           const payload = session.getIdToken().decodePayload() as CognitoIdTokenPayload;
 
-          setSession(idToken);
-          setAuthenticationToken(idToken);
-          localStorage.setItem('username', authData.getUsername());
+          const userProfile: UserProfile = { email: payload.email ?? '' };
 
-          const userProfile: UserProfile = { email: authData.getUsername() };
-          dispatch({ type: LOGIN, payload: { isLoggedIn: true, user: userProfile } });
+          dispatch({
+            type: LOGIN,
+            payload: {
+              isLoggedIn: true,
+              user: userProfile
+            }
+          });
 
           dispatchRedux(
             authLogin({
@@ -116,7 +115,7 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
           resolve();
         },
         onFailure: (err) => reject(err),
-        newPasswordRequired: () => {}
+        newPasswordRequired: () => { } // Handle if needed
       });
     });
   };
@@ -131,58 +130,58 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
           new CognitoUserAttribute({ Name: 'name', Value: `${firstName} ${lastName}` })
         ],
         [],
-        (err) => {
-          if (err) return reject(err);
-          localStorage.setItem('email', email);
-          resolve();
-        }
+        (err) => (err ? reject(err) : resolve())
       );
     });
   };
 
   const logout = () => {
     const loggedInUser = userPool.getCurrentUser();
-    if (!loggedInUser) return;
+    if (loggedInUser) loggedInUser.signOut();
 
-    setSession(null);
-    localStorage.removeItem('email');
-    localStorage.removeItem('serviceToken');
-    localStorage.removeItem('username');
-    loggedInUser.signOut();
     dispatch({ type: LOGOUT, payload: { isLoggedIn: false, user: null } });
+    dispatchRedux(authLogout());
+    localStorage.clear();
     sessionStorage.clear();
   };
 
   const forgotPassword = async (email: string): Promise<void> => {
     const user = new CognitoUser({ Username: email, Pool: userPool });
-    user.forgotPassword({ onSuccess: () => {}, onFailure: () => {} });
+    user.forgotPassword({
+      onSuccess: () => { },
+      onFailure: () => { }
+    });
   };
 
   const awsResetPassword = async (verificationCode: string, newPassword: string): Promise<void> => {
-    const email = localStorage.getItem('email');
-    if (!email) throw new Error('Email is required');
+    const email = authState.user?.email;
+    if (!email) throw new Error('Email is required for password reset');
+
     const user = new CognitoUser({ Username: email, Pool: userPool });
 
     await new Promise<void>((resolve, reject) => {
-      user.confirmPassword(verificationCode, newPassword, { onSuccess: resolve, onFailure: (err) => reject(err) });
-      localStorage.removeItem('email');
+      user.confirmPassword(verificationCode, newPassword, {
+        onSuccess: resolve,
+        onFailure: (err) => reject(err)
+      });
     });
   };
 
   const codeVerification = async (verificationCode: string): Promise<void> => {
-    const email = localStorage.getItem('email');
-    if (!email) throw new Error('Email is required');
+    const email = authState.user?.email;
+    if (!email) throw new Error('Email is required for code verification');
+
     const user = new CognitoUser({ Username: email, Pool: userPool });
 
     await new Promise<void>((resolve, reject) => {
       user.confirmRegistration(verificationCode, true, (error) => (error ? reject(error) : resolve()));
-      localStorage.removeItem('email');
     });
   };
 
   const resendConfirmationCode = async (): Promise<void> => {
-    const email = localStorage.getItem('email');
-    if (!email) throw new Error('Email is required');
+    const email = authState.user?.email;
+    if (!email) throw new Error('Email is required to resend confirmation code');
+
     const user = new CognitoUser({ Username: email, Pool: userPool });
 
     await new Promise<void>((resolve, reject) => {
@@ -190,7 +189,9 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
     });
   };
 
-  const updateProfile = () => {};
+  const updateProfile = () => {
+    // Placeholder
+  };
 
   if (!state.isInitialized) return <Loader />;
 
