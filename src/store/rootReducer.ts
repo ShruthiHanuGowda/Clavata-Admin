@@ -8,7 +8,7 @@ import settingsReducer from './slices/settingsSlice';
 const rootPersistConfig = {
   key: 'root',
   storage,
-  whitelist: ['auth', 'settings'] // persist auth and settings slices
+  whitelist: ['auth', 'settings'], // persist auth and settings slices
 };
 
 const rootReducer = combineReducers({
