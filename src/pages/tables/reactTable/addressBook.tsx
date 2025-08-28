@@ -45,7 +45,7 @@ export default function AddressBookTable() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_BENEFICIARIES, {
+  } = useQuery<AddressBookResponse>(LIST_BENEFICIARIES, {
     variables: {
       nextToken: null,
       limit: pageSize,

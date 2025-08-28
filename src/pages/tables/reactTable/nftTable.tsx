@@ -42,7 +42,7 @@ export default function NftTable() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_NFT_WALLETS, {
+  } = useQuery<ListMintedNftsResponse>(LIST_NFT_WALLETS, {
     variables: { limit: pageSize, contractAddress }
   });
 
@@ -95,7 +95,7 @@ export default function NftTable() {
     if (queryData) {
       const transformedData = transformedResponseData(queryData);
       setData(transformedData);
-      setNextToken(queryData.listMintedNfts.nextToken);
+      setNextToken(queryData.listMintedNfts?.nextToken ?? null);
     }
   }, [queryData]);
 
@@ -174,7 +174,7 @@ export default function NftTable() {
         cell: (cell) => {
           const address = cell.getValue() as string;
           return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
+            <Link to={getBlockExploreLink(address)} target="_blank" rel="noopener noreferrer">
               {shortenAddress(address)}
             </Link>
           );

@@ -150,7 +150,7 @@ export default function MobileTransactionHistory() {
         cell: (cell) => {
           const hash = cell.getValue() as string;
           return (
-            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank">
+            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank" rel="noopener noreferrer">
               {shortenAddress(hash)}
             </Link>
           );
@@ -162,7 +162,7 @@ export default function MobileTransactionHistory() {
         cell: (cell) => {
           const address = cell.getValue() as string;
           return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
+            <Link to={getBlockExploreLink(address)} target="_blank" rel="noopener noreferrer">
               {shortenAddress(address)}
             </Link>
           );
@@ -174,7 +174,7 @@ export default function MobileTransactionHistory() {
         cell: (cell) => {
           const address = cell.getValue() as string;
           return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
+            <Link to={getBlockExploreLink(address)} target="_blank" rel="noopener noreferrer">
               {shortenAddress(address)}
             </Link>
           );

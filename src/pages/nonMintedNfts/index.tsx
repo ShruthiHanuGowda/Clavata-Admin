@@ -24,6 +24,30 @@ interface NonMintedNft {
   volume: number;
   year: number;
 }
+interface ListNonMintedNftsData {
+  listNonMintedNfts: {
+    items: NonMintedNft[];
+    nextToken: string | null;
+  };
+}
+
+interface ListNonMintedNftsVars {
+  limit: number;
+  nextToken?: string | null;
+  filter?: {
+    or: Array<
+      | { assetId?: { contains: string } }
+      | { country?: { contains: string } }
+      | { facilityName?: { contains: string } }
+      | { type?: { contains: string } }
+      | { commissioningDate?: { contains: string } }
+      | { startDate?: { contains: string } }
+      | { endDate?: { contains: string } }
+      | { createdAt?: { contains: string } }
+      | { itemId?: { contains: string } }
+    >;
+  };
+}
 
 export default function NonMintedNftsTable() {
   const { logout } = useAuth();
@@ -40,7 +64,7 @@ export default function NonMintedNftsTable() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_NON_MINTED_NFTS, {
+  } = useQuery<ListNonMintedNftsData, ListNonMintedNftsVars>(LIST_NON_MINTED_NFTS, {
     variables: {
       limit: pageSize,
       filter: {

@@ -33,7 +33,7 @@ export default function PaginationUserTable() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_USER_WALLETS, {
+  } = useQuery<ListUserWalletsResponse>(LIST_USER_WALLETS, {
     variables: { limit: pageSize }
   });
 
@@ -182,7 +182,7 @@ export default function PaginationUserTable() {
         cell: (cell) => {
           const address = cell.getValue() as string;
           return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
+            <Link to={getBlockExploreLink(address)} target="_blank" rel="noopener noreferrer">
               {shortenAddress(address)}
             </Link>
           );

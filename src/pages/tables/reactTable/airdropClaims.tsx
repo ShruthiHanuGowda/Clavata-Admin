@@ -1,26 +1,47 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 // material-ui
 import Grid from '@mui/material/Grid';
-// third-party
+
+// table
 import { ColumnDef } from '@tanstack/react-table';
 
-// project-import
+// apollo
 import { useQuery } from '@apollo/client';
-import { Link } from 'react-router-dom';
 import { LIST_AIRDROP_COLLECTIONS } from '../../../graphql/queries';
 
 // types
-import { ListAirdropClaimsResponse } from 'types/table';
+import { ListAirdropClaimsResponse, AirdropClaim } from 'types/table'; // Make sure types match schema
 
-//query
+// context and hooks
 import { Context } from 'App';
 import { getBlockExploreLink } from 'utils/explorer';
 import { shortenAddress } from 'utils/shortenAddress';
 import useAuth from 'hooks/useAuth';
 
+// components
 import ReactTableWrapper from 'components/ReactTableWrapper';
 
+// =============================
+// GraphQL Query Variable Types
+// =============================
+interface QueryVariables {
+  limit: number;
+  nextToken?: string | null;
+  filter?: {
+    or: {
+      walletAddress?: { contains: string };
+      amount?: { contains: string };
+      claimedAt?: { contains: string };
+      txHash?: { contains: string };
+    }[];
+  };
+}
+
+// =============================
+// Table Data Type
+// =============================
 type TableDataProps = {
   id: string | number;
   txHash: string;
@@ -32,137 +53,151 @@ type TableDataProps = {
 export default function TransactionTable() {
   const { logout } = useAuth();
   const context = useContext(Context);
+
   if (!context) {
     throw new Error('Context must be used within a Context.Provider');
   }
+
   const { searchTerm } = context;
 
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
-  const [data, setData] = useState<TableDataProps[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // GraphQL Query
   const {
     data: queryData,
     loading,
     error,
-    fetchMore
-  } = useQuery(LIST_AIRDROP_COLLECTIONS, {
+    fetchMore,
+    refetch
+  } = useQuery<ListAirdropClaimsResponse, QueryVariables>(LIST_AIRDROP_COLLECTIONS, {
     variables: {
-      nextToken: null,
       limit: pageSize,
-      filter: {
-        or: [
-          { walletAddress: { contains: searchTerm } },
-          { amount: { contains: searchTerm } },
-          { claimedAt: { contains: searchTerm } },
-          { txHash: { contains: searchTerm } }
-        ]
-      }
-    }
+      nextToken: null,
+      filter: searchTerm
+        ? {
+            or: [
+              { walletAddress: { contains: searchTerm } },
+              { amount: { contains: searchTerm } },
+              { claimedAt: { contains: searchTerm } },
+              { txHash: { contains: searchTerm } }
+            ]
+          }
+        : undefined
+    },
+    fetchPolicy: 'network-only'
   });
 
-  if (error) {
-    console.error('GraphQL Error:', error);
-    if (error?.message?.includes('code 401')) {
-      logout();
-    }
-  }
-
-  // Filter data based on search term
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-    return data.filter(
-      (item: TableDataProps) =>
-        (item.txHash && item.txHash.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.walletAddress && item.walletAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.claimedAt && item.claimedAt.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.amount && item.amount.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [searchTerm, data]);
-
-  const transformedResponseData = (resData: ListAirdropClaimsResponse) => {
-    return resData.listAirdropClaims?.items.map((item, index) => ({
-      id: item.id || index || '',
-      txHash: item.txHash,
-      walletAddress: item.walletAddress,
-      claimedAt: item.claimedAt,
-      amount: item.amount
-    }));
-  };
-
+  // Error handling
   useEffect(() => {
-    if (queryData) {
-      const transformedData = transformedResponseData(queryData);
-      setData(transformedData);
-      setNextToken(queryData.listAirdropClaims.nextToken);
+    if (error) {
+      console.error('GraphQL Error:', error);
+      if (error.message.includes('code 401')) {
+        logout();
+      }
     }
+  }, [error, logout]);
+
+  // Transform GraphQL data to table format
+  const transformedData: TableDataProps[] = useMemo(() => {
+    return (
+      queryData?.listAirdropClaims?.items?.map((item: AirdropClaim, index) => ({
+        id: item.id || index,
+        txHash: item.txHash,
+        walletAddress: item.walletAddress,
+        claimedAt: item.claimedAt,
+        amount: item.amount
+      })) ?? []
+    );
   }, [queryData]);
 
+  useEffect(() => {
+    setNextToken(queryData?.listAirdropClaims?.nextToken || null);
+  }, [queryData]);
+
+  // Pagination Handler
   const handlePagination = useCallback(
     async (direction: 'next' | 'previous' | 'first') => {
-      let token = direction === 'next' ? nextToken : previousTokens[previousTokens.length - 1];
+      let token: string | null = null;
 
-      if (!token) token = null;
-      if (nextToken === null) {
-        token = previousTokens[previousTokens.length - 2];
-      }
       switch (direction) {
+        case 'next':
+          token = nextToken;
+          break;
+        case 'previous':
+          token = previousTokens[previousTokens.length - 1] || null;
+          break;
         case 'first':
           token = null;
           setPreviousTokens([]);
-          break;
-        case 'previous':
-          if (currentPageIndex === 2) {
-            token = null;
-          }
-          break;
-        case 'next':
+          setCurrentPageIndex(1);
           break;
         default:
           break;
       }
 
-      const variables: { limit: number; nextToken?: string } = {
-        limit: pageSize
-      };
-      if (token) {
-        variables.nextToken = token;
-      }
-      fetchMore({
-        variables
-      }).then((fetchMoreResult: { data: ListAirdropClaimsResponse }) => {
-        const fetchedData = fetchMoreResult.data;
+      try {
+        const result = await fetchMore({
+          variables: {
+            limit: pageSize,
+            nextToken: token,
+            filter: searchTerm
+              ? {
+                  or: [
+                    { walletAddress: { contains: searchTerm } },
+                    { amount: { contains: searchTerm } },
+                    { claimedAt: { contains: searchTerm } },
+                    { txHash: { contains: searchTerm } }
+                  ]
+                }
+              : undefined
+          }
+        });
 
-        const transformedData = transformedResponseData(fetchedData);
-
-        setData(transformedData);
-        setNextToken(fetchedData.listAirdropClaims.nextToken);
+        const fetchedData = result.data;
 
         if (direction === 'next') {
           setPreviousTokens((prev) => [...prev, nextToken!]);
           setCurrentPageIndex((prev) => prev + 1);
         } else if (direction === 'previous') {
-          setCurrentPageIndex((prev) => prev - 1);
-          if (nextToken === null) {
-            setPreviousTokens((prev) => prev.slice(0, prev.length - 2));
-          } else {
-            setPreviousTokens((prev) => prev.slice(0, prev.length - 1));
-          }
-        } else {
+          setPreviousTokens((prev) => prev.slice(0, prev.length - 1));
+          setCurrentPageIndex((prev) => Math.max(prev - 1, 1));
+        } else if (direction === 'first') {
+          setPreviousTokens([]);
           setCurrentPageIndex(1);
         }
-      });
+
+        setNextToken(fetchedData?.listAirdropClaims?.nextToken || null);
+      } catch (err) {
+        console.error('Pagination error:', err);
+      }
     },
-    [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
+    [fetchMore, nextToken, previousTokens, pageSize, searchTerm]
   );
 
+  // Refetch on search term or page size change
   useEffect(() => {
-    handlePagination('first');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageSize]);
+    refetch({
+      limit: pageSize,
+      nextToken: null,
+      filter: searchTerm
+        ? {
+            or: [
+              { walletAddress: { contains: searchTerm } },
+              { amount: { contains: searchTerm } },
+              { claimedAt: { contains: searchTerm } },
+              { txHash: { contains: searchTerm } }
+            ]
+          }
+        : undefined
+    });
+    setCurrentPageIndex(1);
+    setPreviousTokens([]);
+  }, [searchTerm, pageSize, refetch]);
 
+  // Table columns
   const columns = useMemo<ColumnDef<TableDataProps>[]>(
     () => [
       {
@@ -171,7 +206,7 @@ export default function TransactionTable() {
         cell: (cell) => {
           const hash = cell.getValue() as string;
           return (
-            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank">
+            <Link to={getBlockExploreLink(hash, 'transaction')} target="_blank" rel="noopener noreferrer">
               {shortenAddress(hash)}
             </Link>
           );
@@ -183,7 +218,7 @@ export default function TransactionTable() {
         cell: (cell) => {
           const address = cell.getValue() as string;
           return (
-            <Link to={getBlockExploreLink(address)} target="_blank">
+            <Link to={getBlockExploreLink(address)} target="_blank" rel="noopener noreferrer">
               {shortenAddress(address)}
             </Link>
           );
@@ -205,7 +240,7 @@ export default function TransactionTable() {
     <Grid container spacing={3}>
       <Grid item xs={12}>
         <ReactTableWrapper
-          data={filteredData}
+          data={transformedData}
           columns={columns}
           currentPageIndex={currentPageIndex}
           handlePagination={handlePagination}

@@ -37,7 +37,7 @@ export default function TransactionTable() {
     loading,
     error,
     fetchMore
-  } = useQuery(LIST_TRANSACTION_HISTORY, {
+  } = useQuery<ListTransactionHistoryResponse>(LIST_TRANSACTION_HISTORY, {
     variables: {
       nextToken: null,
       limit: pageSize,
@@ -80,7 +80,7 @@ export default function TransactionTable() {
     if (queryData) {
       const transformedData = transformedResponseData(queryData);
       setData(transformedData);
-      setNextToken(queryData.listTransactionsHistories.nextToken);
+      setNextToken(queryData?.listTransactionsHistories?.nextToken ?? null);
     }
   }, [queryData]);
 

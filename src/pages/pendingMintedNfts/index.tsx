@@ -71,6 +71,32 @@ type EthersError = { error?: { message?: string } };
 type GraphQlError = { data?: { message?: string } };
 type GenericError = { message?: string };
 
+type QueryVariables = {
+  limit: number;
+};
+
+type QueryResult = {
+  listGroupedNftPendingMintItems: {
+    items: NftPendingGroup[];
+  };
+};
+
+interface MintedNft {
+  assetId: string;
+  tokenId: string;
+  mintedVolume: string;
+  contractAddress: string;
+  createdAt: string;
+  updatedAt: string;
+}
+interface GetMintedNftByAssetIdData {
+  getMintedNfts: MintedNft | null;
+}
+
+interface GetMintedNftByAssetIdVars {
+  assetId: string;
+}
+
 export default function PendingMintedNftsTable() {
   const { open } = useAppKit();
   const { address, isConnected } = useAppKitAccount();
@@ -85,11 +111,11 @@ export default function PendingMintedNftsTable() {
   const [createMintedNft] = useMutation(CREATE_MINTED_NFT);
   const [updateMintedNftByAssetId] = useMutation(UPDATE_MINTED_NFT_BY_ASSET_ID);
 
-  const { data, loading, error, refetch } = useQuery(LIST_NFT_PENDING_MINT_ITEMS, {
+  const { data, loading, error, refetch } = useQuery<QueryResult, QueryVariables>(LIST_NFT_PENDING_MINT_ITEMS, {
     variables: { limit: 50 }
   });
 
-  const { refetch: refetchMintedNft } = useQuery(GET_MINTED_NFT_BY_ASSET_ID, {
+  const { refetch: refetchMintedNft } = useQuery<GetMintedNftByAssetIdData, GetMintedNftByAssetIdVars>(GET_MINTED_NFT_BY_ASSET_ID, {
     variables: { assetId: '' },
     skip: true
   });
