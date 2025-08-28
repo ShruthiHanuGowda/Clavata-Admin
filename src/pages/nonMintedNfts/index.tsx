@@ -149,9 +149,9 @@ export default function NonMintedNftsTable() {
     [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
-  useEffect(() => {
-    handlePagination('first');
-  }, [pageSize, handlePagination]);
+  // useEffect(() => {
+  //   handlePagination('first');
+  // }, [pageSize, handlePagination]);
 
   const columns = useMemo<ColumnDef<NonMintedNft>[]>(
     () => [

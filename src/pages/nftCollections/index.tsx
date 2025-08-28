@@ -221,20 +221,20 @@ export default function NftCollectionTable() {
       limit: pageSize,
       ...(searchTerm
         ? {
-            filter: {
-              or: [
-                { contractAddress: { contains: searchTerm } },
-                { collectionName: { contains: searchTerm } },
-                { symbol: { contains: searchTerm } },
-                { year: { contains: searchTerm } },
-                { country: { contains: searchTerm } },
-                { ownerAddress: { contains: searchTerm } },
-                { type: { contains: searchTerm } },
-                { createdAt: { contains: searchTerm } },
-                { updatedAt: { contains: searchTerm } }
-              ]
-            }
+          filter: {
+            or: [
+              { contractAddress: { contains: searchTerm } },
+              { collectionName: { contains: searchTerm } },
+              { symbol: { contains: searchTerm } },
+              { year: { contains: searchTerm } },
+              { country: { contains: searchTerm } },
+              { ownerAddress: { contains: searchTerm } },
+              { type: { contains: searchTerm } },
+              { createdAt: { contains: searchTerm } },
+              { updatedAt: { contains: searchTerm } }
+            ]
           }
+        }
         : {})
     }
   });
@@ -308,9 +308,9 @@ export default function NftCollectionTable() {
     [nextToken, previousTokens, pageSize, fetchMore, currentPageIndex]
   );
 
-  useEffect(() => {
-    handlePagination('first');
-  }, [pageSize, handlePagination]);
+  // useEffect(() => {
+  //   handlePagination('first');
+  // }, [pageSize, handlePagination]);
 
   return (
     <Grid container spacing={3}>
