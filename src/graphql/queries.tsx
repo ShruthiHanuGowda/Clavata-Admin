@@ -102,27 +102,27 @@ export const LIST_DTERMINAL_TRANSACTION_HISTORY = gql`
   }
 `;
 
-  export const LIST_NFT_COLLECTIONS = gql`
-    query listNftCollections($limit: Int, $nextToken: String, $filter: TableNftCollectionsFilterInput) {
-      listNftCollections(limit: $limit, nextToken: $nextToken, filter: $filter) {
-        items {
-          contractAddress
-          collectionName
-          collection_image
-          country_image
-          energy_type_image
-          symbol
-          year
-          country
-          ownerAddress
-          type
-          createdAt
-          updatedAt
-        }
-        nextToken
+export const LIST_NFT_COLLECTIONS = gql`
+  query listNftCollections($limit: Int, $nextToken: String, $filter: TableNftCollectionsFilterInput) {
+    listNftCollections(limit: $limit, nextToken: $nextToken, filter: $filter) {
+      items {
+        contractAddress
+        collectionName
+        collection_image
+        country_image
+        energy_type_image
+        symbol
+        year
+        country
+        ownerAddress
+        type
+        createdAt
+        updatedAt
       }
+      nextToken
     }
-  `;
+  }
+`;
 
 export const LIST_AIRDROP_COLLECTIONS = gql`
   query ListAirdropClaims($limit: Int, $nextToken: String, $filter: TableAirdropClaimsFilterInput) {
@@ -192,8 +192,8 @@ export const LIST_NON_MINTED_NFTS = gql`
 `;
 
 export const LIST_NFT_PENDING_MINT_ITEMS = gql`
-  query ListGroupedNftPendingMintItems($limit: Int, $nextToken: String) {
-    listGroupedNftPendingMintItems(limit: $limit, nextToken: $nextToken) {
+  query ListGroupedNftPendingMintItems($limit: Int, $nextToken: String, $searchTerm: String) {
+    listGroupedNftPendingMintItems(limit: $limit, nextToken: $nextToken, searchTerm: $searchTerm) {
       items {
         assetId
         items {

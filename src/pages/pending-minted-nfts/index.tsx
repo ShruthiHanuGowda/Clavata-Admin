@@ -20,16 +20,17 @@ import {
   Chip,
   InputAdornment,
   IconButton,
-  Pagination,
   Stack,
-  Collapse
+  Collapse,
+  CircularProgress
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Clear as ClearIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  AccountBalanceWallet as WalletIcon
+  AccountBalanceWallet as WalletIcon,
+  NavigateNext as NavigateNextIcon
 } from '@mui/icons-material';
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 import { useMutation, useQuery } from '@apollo/client';
@@ -53,12 +54,12 @@ import { shortenAddress } from 'utils/shortenAddress';
 import { formatDate } from 'utils/date';
 import { SnackbarProps } from 'types/snackbar';
 import { Context } from 'App';
-
-const ITEMS_PER_PAGE = 10;
+import useAuth from 'hooks/useAuth';
 
 export default function PendingMintedNftsTable() {
   const context = useContext(Context);
   const { open } = useAppKit();
+  const { logout } = useAuth();
   const { address, isConnected } = useAppKitAccount();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,15 +67,27 @@ export default function PendingMintedNftsTable() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [inputVolume, setInputVolume] = useState('');
   const [isMinting, setIsMinting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [nextToken, setNextToken] = useState<string | null>(null);
+  const [allGroups, setAllGroups] = useState<any[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentSearchTerm, setCurrentSearchTerm] = useState<string>('');
 
   const [updateNft] = useMutation(UPDATE_NFT_PENDING_MINT);
   const [createMintedNft] = useMutation(CREATE_MINTED_NFT);
   const [updateMintedNftByAssetId] = useMutation(UPDATE_MINTED_NFT_BY_ASSET_ID);
 
-  const { data, loading, error, refetch } = useQuery(LIST_NFT_PENDING_MINT_ITEMS, {
-    variables: { limit: 50 }
+  const { data, loading, error, refetch, fetchMore } = useQuery(LIST_NFT_PENDING_MINT_ITEMS, {
+    variables: {
+      limit: 10,
+      searchTerm: currentSearchTerm || null
+    },
+    onCompleted: (data) => {
+      if (data?.listGroupedNftPendingMintItems) {
+        setAllGroups(data.listGroupedNftPendingMintItems.items || []);
+        setNextToken(data.listGroupedNftPendingMintItems.nextToken);
+      }
+    }
   });
 
   const { data: mintedNftData, refetch: refetchMintedNft } = useQuery(GET_MINTED_NFT_BY_ASSET_ID, {
@@ -82,70 +95,90 @@ export default function PendingMintedNftsTable() {
     skip: true
   });
 
-  // Filter for pending items only
+  if (error) {
+    console.error('Error fetching Non-Minted NFTs:', error);
+    if (error?.message?.includes('code 401')) {
+      logout();
+    }
+  }
+
+  // Filter for pending items only (server-side filtering handles search now)
   const pendingGroupedItems = useMemo(() => {
-    const allGroups = data?.listGroupedNftPendingMintItems?.items || [];
     return allGroups
       .map((group: any) => ({
         ...group,
         items: group.items.filter((item: any) => item.status?.toLowerCase() === 'pending')
       }))
       .filter((group: any) => group.items.length > 0);
-  }, [data]);
+  }, [allGroups]);
 
-  const filteredGroups = useMemo(() => {
-    if (!searchTerm.trim()) return pendingGroupedItems;
+  // Server-side filtering - no need for client-side filtering
+  const filteredGroups = pendingGroupedItems;
 
-    return pendingGroupedItems
-      .map((group: any) => {
-        const filteredItems = group.items.filter(
-          (item: any) =>
-            item.contractAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.assetId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.recipientWalletAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.type?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        return filteredItems.length ? { ...group, items: filteredItems } : null;
-      })
-      .filter(Boolean);
-  }, [searchTerm, pendingGroupedItems]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredGroups.length / ITEMS_PER_PAGE);
-  const paginatedGroups = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredGroups.slice(startIndex, endIndex);
-  }, [filteredGroups, currentPage]);
+  // Debounced search to avoid too many API calls
+  const debouncedSearch = useMemo(() => {
+    let timeoutId: NodeJS.Timeout;
+    return (value: string) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setCurrentSearchTerm(value.trim());
+        setAllGroups([]);
+        setNextToken(null);
+      }, 500);
+    };
+  }, []);
 
   // Event handlers
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-    setCurrentPage(1);
+    const value = event.target.value;
+    setSearchTerm(value);
+    debouncedSearch(value);
   };
 
   const handleClearSearch = () => {
     setSearchTerm('');
-    setCurrentPage(1);
+    setCurrentSearchTerm('');
+    setAllGroups([]);
+    setNextToken(null);
   };
 
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    setCurrentPage(value);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleLoadMore = async () => {
+    if (!nextToken || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const { data: moreData } = await fetchMore({
+        variables: {
+          limit: 10,
+          nextToken: nextToken,
+          searchTerm: currentSearchTerm || null
+        }
+      });
+
+      if (moreData?.listGroupedNftPendingMintItems) {
+        const newGroups = moreData.listGroupedNftPendingMintItems.items || [];
+        setAllGroups((prev) => [...prev, ...newGroups]);
+        setNextToken(moreData.listGroupedNftPendingMintItems.nextToken);
+      }
+    } catch (error) {
+      console.error('Error loading more data:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
-  const toggleGroupExpansion = (assetId: string) => {
+  const toggleGroupExpansion = (groupKey: string) => {
     const newExpandedGroups = new Set(expandedGroups);
-    if (newExpandedGroups.has(assetId)) {
-      newExpandedGroups.delete(assetId);
+    if (newExpandedGroups.has(groupKey)) {
+      newExpandedGroups.delete(groupKey);
     } else {
-      newExpandedGroups.add(assetId);
+      newExpandedGroups.add(groupKey);
     }
     setExpandedGroups(newExpandedGroups);
   };
 
   const expandAllGroups = () => {
-    const allGroupKeys: Set<string> = new Set(paginatedGroups.map((group: any) => `${group.assetId}_${group.recipientWalletAddress}`));
+    const allGroupKeys: Set<string> = new Set(filteredGroups.map((group: any) => `${group.assetId}_${group.recipientWalletAddress}`));
     setExpandedGroups(allGroupKeys);
   };
 
@@ -212,7 +245,11 @@ export default function PendingMintedNftsTable() {
       };
 
       await axios.post(import.meta.env.VITE_APP_EVIDENT_UPDATE_URL, payload);
-      refetch();
+
+      // Reset pagination state and refetch
+      setAllGroups([]);
+      setNextToken(null);
+      await refetch();
 
       openSnackbar({
         open: true,
@@ -287,10 +324,10 @@ export default function PendingMintedNftsTable() {
                 </Grid>
                 <Grid item xs={12} md={4}>
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
-                    <Button variant="outlined" size="small" onClick={expandAllGroups} disabled={paginatedGroups.length === 0}>
+                    <Button variant="outlined" size="small" onClick={expandAllGroups} disabled={filteredGroups.length === 0}>
                       Expand All
                     </Button>
-                    <Button variant="outlined" size="small" onClick={collapseAllGroups} disabled={paginatedGroups.length === 0}>
+                    <Button variant="outlined" size="small" onClick={collapseAllGroups} disabled={filteredGroups.length === 0}>
                       Collapse All
                     </Button>
                   </Stack>
@@ -301,13 +338,14 @@ export default function PendingMintedNftsTable() {
             {/* Results Summary */}
             <Box>
               <Typography variant="body2" color="text.secondary">
-                Showing {paginatedGroups.length} of {filteredGroups.length} pending asset groups
+                Showing {filteredGroups.length} pending asset groups
                 {searchTerm && ` (filtered from ${pendingGroupedItems.length} total)`}
+                {nextToken && ' • More available'}
               </Typography>
             </Box>
 
             {/* Groups Display */}
-            {paginatedGroups.length === 0 ? (
+            {filteredGroups.length === 0 ? (
               <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   {searchTerm ? 'No matching pending items found' : 'No pending mints available'}
@@ -318,7 +356,7 @@ export default function PendingMintedNftsTable() {
               </Paper>
             ) : (
               <Stack spacing={2}>
-                {paginatedGroups.map((group: any, index: number) => {
+                {filteredGroups.map((group: any) => {
                   const groupKey = `${group.assetId}_${group.recipientWalletAddress}`;
                   return (
                     <Paper key={groupKey} sx={{ border: '1px solid', borderColor: 'divider' }}>
@@ -436,17 +474,18 @@ export default function PendingMintedNftsTable() {
               </Stack>
             )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
+            {/* Load More Button */}
+            {nextToken && (
               <Box sx={{ display: 'flex', justifyContent: 'center', pt: 2 }}>
-                <Pagination
-                  count={totalPages}
-                  page={currentPage}
-                  onChange={handlePageChange}
-                  color="primary"
-                  showFirstButton
-                  showLastButton
-                />
+                <Button
+                  variant="outlined"
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  startIcon={isLoadingMore ? <CircularProgress size={16} /> : <NavigateNextIcon />}
+                  sx={{ minWidth: 120 }}
+                >
+                  {isLoadingMore ? 'Loading...' : 'Load More'}
+                </Button>
               </Box>
             )}
           </Stack>
