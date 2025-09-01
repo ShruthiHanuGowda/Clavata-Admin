@@ -19,7 +19,7 @@ interface CognitoIdTokenPayload {
 const initialState: InitialLoginContextProps = {
   isLoggedIn: false,
   isInitialized: false,
-  user: null,
+  user: null
 };
 
 export const userPool = new CognitoUserPool({
@@ -115,7 +115,7 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
           resolve();
         },
         onFailure: (err) => reject(err),
-        newPasswordRequired: () => { } // Handle if needed
+        newPasswordRequired: () => {} // Handle if needed
       });
     });
   };
@@ -148,8 +148,8 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
   const forgotPassword = async (email: string): Promise<void> => {
     const user = new CognitoUser({ Username: email, Pool: userPool });
     user.forgotPassword({
-      onSuccess: () => { },
-      onFailure: () => { }
+      onSuccess: () => {},
+      onFailure: () => {}
     });
   };
 

@@ -221,20 +221,20 @@ export default function NftCollectionTable() {
       limit: pageSize,
       ...(searchTerm
         ? {
-          filter: {
-            or: [
-              { contractAddress: { contains: searchTerm } },
-              { collectionName: { contains: searchTerm } },
-              { symbol: { contains: searchTerm } },
-              { year: { contains: searchTerm } },
-              { country: { contains: searchTerm } },
-              { ownerAddress: { contains: searchTerm } },
-              { type: { contains: searchTerm } },
-              { createdAt: { contains: searchTerm } },
-              { updatedAt: { contains: searchTerm } }
-            ]
+            filter: {
+              or: [
+                { contractAddress: { contains: searchTerm } },
+                { collectionName: { contains: searchTerm } },
+                { symbol: { contains: searchTerm } },
+                { year: { contains: searchTerm } },
+                { country: { contains: searchTerm } },
+                { ownerAddress: { contains: searchTerm } },
+                { type: { contains: searchTerm } },
+                { createdAt: { contains: searchTerm } },
+                { updatedAt: { contains: searchTerm } }
+              ]
+            }
           }
-        }
         : {})
     }
   });

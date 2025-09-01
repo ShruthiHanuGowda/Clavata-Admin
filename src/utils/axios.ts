@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig } from 'axios';
-
+import { store, RootState } from 'store';
 const axiosServices = axios.create({ baseURL: import.meta.env.VITE_APP_API_URL || 'http://localhost:3010/' });
 
 // ==============================|| AXIOS - FOR MOCK SERVICES ||============================== //
@@ -17,23 +17,13 @@ const axiosServices = axios.create({ baseURL: import.meta.env.VITE_APP_API_URL |
 //   }
 // );
 
-
 axiosServices.interceptors.request.use(
   async (config) => {
-    try {
-      const root = localStorage.getItem("persist:root");
-      if (root) {
-        const parsedRoot = JSON.parse(root);
-        const auth = parsedRoot?.auth ? JSON.parse(parsedRoot.auth) : null;
-        const accessToken = auth?.token;
+    const state: RootState = store.getState();
+    const token = state.auth.token;
 
-        if (accessToken) {
-          config.headers = config.headers || {};
-          config.headers['Authorization'] = `Bearer ${accessToken}`;
-        }
-      }
-    } catch (err) {
-      console.error("Error parsing persist:root", err);
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
 
     return config;
