@@ -4,28 +4,42 @@ const axiosServices = axios.create({ baseURL: import.meta.env.VITE_APP_API_URL |
 
 // ==============================|| AXIOS - FOR MOCK SERVICES ||============================== //
 
-axiosServices.interceptors.request.use(
-  async (config) => {
-    const accessToken = localStorage.getItem('serviceToken');
-    if (accessToken) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// axiosServices.interceptors.response.use(
-//   (response) => response,
-//   (error) => {
-//     if (error.response.status === 401 && !window.location.href.includes('/login')) {
-//       window.location.pathname = '/maintenance/500';
+// axiosServices.interceptors.request.use(
+//   async (config) => {
+//     const accessToken = localStorage.getItem('serviceToken');
+//     if (accessToken) {
+//       config.headers['Authorization'] = `Bearer ${accessToken}`;
 //     }
-//     return Promise.reject((error.response && error.response.data) || 'Wrong Services');
+//     return config;
+//   },
+//   (error) => {
+//     return Promise.reject(error);
 //   }
 // );
+
+
+axiosServices.interceptors.request.use(
+  async (config) => {
+    try {
+      const root = localStorage.getItem("persist:root");
+      if (root) {
+        const parsedRoot = JSON.parse(root);
+        const auth = parsedRoot?.auth ? JSON.parse(parsedRoot.auth) : null;
+        const accessToken = auth?.token;
+
+        if (accessToken) {
+          config.headers = config.headers || {};
+          config.headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+      }
+    } catch (err) {
+      console.error("Error parsing persist:root", err);
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export default axiosServices;
 
