@@ -59,6 +59,7 @@ export type TableDataProps = {
   time: string[];
   validatorId: string;
 };
+
 export interface AddressBookItem {
   id: string;
   name: string;

@@ -31,7 +31,7 @@ export default function ThemeModeLayout() {
   const { updateSetting } = useSettings();
 
   const handleModeChange = (event: ChangeEvent<HTMLInputElement>) => {
-    updateSetting('theme_mode', event.target.value);
+    updateSetting('theme_mode', event.target.value as ThemeMode);
   };
 
   return (

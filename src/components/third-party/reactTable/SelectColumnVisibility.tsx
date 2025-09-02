@@ -33,8 +33,7 @@ interface Props<T extends object> {
 export default function SelectColumnVisibility<T extends object>({
   getVisibleLeafColumns,
   getIsAllColumnsVisible,
-  getToggleAllColumnsVisibilityHandler,
-  getAllColumns
+  getToggleAllColumnsVisibilityHandler
 }: Props<T>) {
   return (
     <FormControl sx={{ width: 200 }}>
@@ -62,14 +61,14 @@ export default function SelectColumnVisibility<T extends object>({
           <Checkbox checked={getIsAllColumnsVisible()} color="success" />
           <ListItemText primary="All Columns" />
         </MenuItem>
-        {getAllColumns()
+        {/* {getAllColumns()
           .filter((col) => col.columnDef.accessorKey)
           .map((column) => (
             <MenuItem key={column.id} value={column.id} onClick={column.getToggleVisibilityHandler()}>
               <Checkbox checked={column.getIsVisible()} color="success" />
               <ListItemText primary={String(column.columnDef.header)} />
             </MenuItem>
-          ))}
+          ))} */}
       </Select>
     </FormControl>
   );

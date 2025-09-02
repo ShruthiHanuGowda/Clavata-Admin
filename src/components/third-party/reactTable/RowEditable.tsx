@@ -23,10 +23,16 @@ export type TableMeta = {
 };
 
 // ------------------- PROPS -------------------
+// Extend ColumnDef to include dataType property
+type ExtendedColumnDef<TData> = ColumnDef<TData> & {
+  dataType?: 'text' | 'select' | 'progress'; // Custom dataType property
+};
+
+// Update RowEditProps to use the extended ColumnDef type
 type RowEditProps = {
   getValue: () => unknown;
   row: Row<RowData>;
-  column: ColumnDef<RowData, unknown>;
+  column: ExtendedColumnDef<RowData>;
   table: Table<RowData>;
 };
 
@@ -41,7 +47,9 @@ export default function RowEditable({ getValue: initialValue, row, column, table
   };
 
   const onBlur = () => {
-    tableMeta?.updateData(row.index, column.id, value);
+    if (column.id) {
+      tableMeta?.updateData(row.index, column.id, value);
+    }
   };
 
   useEffect(() => {
@@ -88,83 +96,89 @@ export default function RowEditable({ getValue: initialValue, row, column, table
 
   let element: JSX.Element;
 
-  switch (column.dataType) {
-    case 'text':
-      element = isEditable ? (
-        <Formik initialValues={{ userInfo: value }} enableReinitialize validationSchema={userInfoSchema} onSubmit={() => {}}>
-          {({ values, handleChange, handleBlur, errors, touched }) => (
-            <Form>
-              <TextField
-                value={values.userInfo}
-                id={`${row.index}-${column.id}`}
-                name="userInfo"
-                onChange={(e) => {
-                  handleChange(e);
-                  onChange(e);
-                }}
-                onBlur={(e) => {
-                  handleBlur(e);
-                  onBlur();
-                }}
-                error={touched.userInfo && Boolean(errors.userInfo)}
-                helperText={touched.userInfo && errors.userInfo ? (errors.userInfo as string) : ''}
-                sx={{ '& .MuiOutlinedInput-input': { py: 0.75, px: 1 } }}
-              />
-            </Form>
-          )}
-        </Formik>
-      ) : (
-        <>{value}</>
-      );
-      break;
+  const dataType = column.dataType ?? ''; // Default to empty string if undefined
 
-    case 'select':
-      element = isEditable ? (
-        <Select
-          labelId="editable-select-label"
-          sx={{ '& .MuiOutlinedInput-input': { py: 0.75, px: 1 } }}
-          id="editable-select"
-          value={value as string}
-          onChange={(e) => setValue(e.target.value)}
-          onBlur={onBlur}
-        >
-          <MenuItem value="Complicated">
-            <Chip color="error" label="Complicated" size="small" variant="light" />
-          </MenuItem>
-          <MenuItem value="Relationship">
-            <Chip color="success" label="Relationship" size="small" variant="light" />
-          </MenuItem>
-          <MenuItem value="Single">
-            <Chip color="info" label="Single" size="small" variant="light" />
-          </MenuItem>
-        </Select>
-      ) : (
-        ShowStatus(value as string)
-      );
-      break;
+  if (dataType === '') {
+    element = <span>No Data Type</span>; // Custom fallback
+  } else {
+    switch (dataType) {
+      case 'text':
+        element = isEditable ? (
+          <Formik initialValues={{ userInfo: value }} enableReinitialize validationSchema={userInfoSchema} onSubmit={() => {}}>
+            {({ values, handleChange, handleBlur, errors, touched }) => (
+              <Form>
+                <TextField
+                  value={values.userInfo}
+                  id={`${row.index}-${column.id}`}
+                  name="userInfo"
+                  onChange={(e) => {
+                    handleChange(e);
+                    onChange(e);
+                  }}
+                  onBlur={(e) => {
+                    handleBlur(e);
+                    onBlur();
+                  }}
+                  error={touched.userInfo && Boolean(errors.userInfo)}
+                  helperText={touched.userInfo && errors.userInfo ? (errors.userInfo as string) : ''}
+                  sx={{ '& .MuiOutlinedInput-input': { py: 0.75, px: 1 } }}
+                />
+              </Form>
+            )}
+          </Formik>
+        ) : (
+          <>{value}</>
+        );
+        break;
 
-    case 'progress':
-      element = isEditable ? (
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ pl: 1, minWidth: 120 }}>
-          <Slider
-            value={value as number}
-            min={0}
-            max={100}
-            step={1}
+      case 'select':
+        element = isEditable ? (
+          <Select
+            labelId="editable-select-label"
+            sx={{ '& .MuiOutlinedInput-input': { py: 0.75, px: 1 } }}
+            id="editable-select"
+            value={value as string}
+            onChange={(e) => setValue(e.target.value)}
             onBlur={onBlur}
-            onChange={(_, newValue) => setValue(newValue)}
-            valueLabelDisplay="auto"
-            aria-labelledby="non-linear-slider"
-          />
-        </Stack>
-      ) : (
-        <LinearWithLabel value={value as number} sx={{ minWidth: 75 }} />
-      );
-      break;
+          >
+            <MenuItem value="Complicated">
+              <Chip color="error" label="Complicated" size="small" variant="light" />
+            </MenuItem>
+            <MenuItem value="Relationship">
+              <Chip color="success" label="Relationship" size="small" variant="light" />
+            </MenuItem>
+            <MenuItem value="Single">
+              <Chip color="info" label="Single" size="small" variant="light" />
+            </MenuItem>
+          </Select>
+        ) : (
+          ShowStatus(value as string)
+        );
+        break;
 
-    default:
-      element = <span></span>;
-      break;
+      case 'progress':
+        element = isEditable ? (
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ pl: 1, minWidth: 120 }}>
+            <Slider
+              value={value as number}
+              min={0}
+              max={100}
+              step={1}
+              onBlur={onBlur}
+              onChange={(_, newValue) => setValue(newValue)}
+              valueLabelDisplay="auto"
+              aria-labelledby="non-linear-slider"
+            />
+          </Stack>
+        ) : (
+          <LinearWithLabel value={value as number} sx={{ minWidth: 75 }} />
+        );
+        break;
+
+      default:
+        element = <span>No Data Type</span>; // Custom fallback
+        break;
+    }
   }
 
   return element;

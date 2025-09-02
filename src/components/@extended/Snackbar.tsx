@@ -16,7 +16,9 @@ import { closeSnackbar, useGetSnackbar } from 'api/snackbar';
 // assets
 
 // types
-import { KeyedObject } from 'types/root';
+
+// Define a type for the transition components
+type TransitionComponentType = React.JSXElementConstructor<SlideProps>;
 
 // animation function
 function TransitionSlideLeft(props: SlideProps) {
@@ -40,13 +42,13 @@ function GrowTransition(props: SlideProps) {
 }
 
 // animation options
-const animation: KeyedObject = {
+const animation: Record<string, TransitionComponentType> = {
   SlideLeft: TransitionSlideLeft,
   SlideUp: TransitionSlideUp,
   SlideRight: TransitionSlideRight,
   SlideDown: TransitionSlideDown,
   Grow: GrowTransition,
-  Fade
+  Fade: Fade // Fade transition is a standard one
 };
 
 // ==============================|| SNACKBAR ||============================== //
@@ -71,7 +73,7 @@ export default function Snackbar() {
           autoHideDuration={1500}
           onClose={handleClose}
           message={snackbar.message}
-          TransitionComponent={animation[snackbar.transition]}
+          TransitionComponent={animation[snackbar.transition]} // No error now
           action={
             <>
               <Button size="small" onClick={handleClose}>
@@ -87,7 +89,7 @@ export default function Snackbar() {
       {/* alert snackbar */}
       {snackbar.variant === 'alert' && (
         <MuiSnackbar
-          TransitionComponent={animation[snackbar.transition]}
+          TransitionComponent={animation[snackbar.transition]} // No error now
           anchorOrigin={snackbar.anchorOrigin}
           open={snackbar.open}
           autoHideDuration={1500}

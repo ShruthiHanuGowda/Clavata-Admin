@@ -52,6 +52,7 @@ export default function Navigation() {
     lastItemId = menuItems.items[lastItem - 1].id!;
     lastItemIndex = lastItem - 1;
     remItems = menuItems.items.slice(lastItem - 1, menuItems.items.length).map((item) => ({
+      id: item.id,
       title: item.title,
       elements: item.children,
       icon: item.icon,
@@ -68,11 +69,10 @@ export default function Navigation() {
           return (
             <List key={item.id} {...(isHorizontal && { sx: { mt: 0.5 } })}>
               {!isHorizontal && index !== 0 && <Divider sx={{ my: 0.5 }} />}
-              <NavItem item={item} level={1} isParents setSelectedID={setSelectedID} />
+              <NavItem item={item} level={1} isParents setSelectedID={() => setSelectedID(item.id)} />
             </List>
           );
         }
-
         return (
           <NavGroup
             key={item.id}

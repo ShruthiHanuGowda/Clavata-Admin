@@ -25,7 +25,7 @@ import { NavItemType } from 'types/menu';
 interface BreadcrumbLinkProps {
   title: string;
   to?: string;
-  icon?: string | OverrideIcon;
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>> | string | OverrideIcon; // updated type for icon prop
 }
 
 // ==============================|| BREADCRUMBS ||============================== //
@@ -89,19 +89,18 @@ export default function Breadcrumbs({
           setMain(menu);
           setItem(menu);
         } else {
-          getCollapse(menu as { children: NavItemType[]; type?: string });
+          getCollapse(menu);
         }
       }
       return false;
     });
   });
 
-  // set active item state
   const getCollapse = (menu: NavItemType) => {
     if (!custom && menu.children) {
       menu.children.filter((collapse: NavItemType) => {
         if (collapse.type && collapse.type === 'collapse') {
-          getCollapse(collapse as { children: NavItemType[]; type?: string });
+          getCollapse(collapse);
           if (collapse.url === customLocation) {
             setMain(collapse);
             setItem(collapse);
@@ -117,7 +116,6 @@ export default function Breadcrumbs({
     }
   };
 
-  // item separator
   const SeparatorIcon = separator!;
   const separatorIcon = separator ? <SeparatorIcon style={{ fontSize: '0.75rem', marginTop: 2 }} /> : '/';
 
@@ -125,12 +123,19 @@ export default function Breadcrumbs({
   let itemContent;
   let breadcrumbContent: ReactElement = <Typography />;
   let itemTitle: NavItemType['title'] = '';
-  let CollapseIcon;
-  let ItemIcon;
+
+  // CollapseIcon and ItemIcon should always be valid React component types or undefined
+  let CollapseIcon: React.ComponentType<any> | undefined;
+  let ItemIcon: React.ComponentType<any> | undefined;
+
+  // Helper function to check if an icon is a valid React component
+  const isReactComponent = (icon: any): icon is React.ComponentType<any> => {
+    return typeof icon === 'function' && icon.prototype.isReactComponent;
+  };
 
   // collapse item
   if (!custom && main && main.type === 'collapse' && main.breadcrumbs === true) {
-    CollapseIcon = main.icon ? main.icon : ApartmentOutlined;
+    CollapseIcon = isReactComponent(main.icon) ? main.icon : ApartmentOutlined;
     mainContent = (
       <Typography
         component={Link}
@@ -139,7 +144,7 @@ export default function Breadcrumbs({
         sx={{ textDecoration: 'none' }}
         color={window.location.pathname === main.url ? 'text.primary' : 'text.secondary'}
       >
-        {icons && <CollapseIcon style={iconSX} />}
+        {icons && CollapseIcon && <CollapseIcon style={iconSX as React.CSSProperties} />}
         {main.title}
       </Typography>
     );
@@ -183,10 +188,10 @@ export default function Breadcrumbs({
   if ((item && item.type === 'item') || (item?.type === 'group' && item?.url) || custom) {
     itemTitle = item?.title;
 
-    ItemIcon = item?.icon ? item.icon : ApartmentOutlined;
+    ItemIcon = isReactComponent(item?.icon) ? item?.icon : ApartmentOutlined;
     itemContent = (
       <Typography variant="subtitle1" color="text.primary">
-        {icons && <ItemIcon style={iconSX} />}
+        {icons && ItemIcon && <ItemIcon style={iconSX} />}
         {itemTitle}
       </Typography>
     );
@@ -207,7 +212,7 @@ export default function Breadcrumbs({
       tempContent = (
         <MuiBreadcrumbs aria-label="breadcrumb" maxItems={maxItems || 8} separator={separatorIcon}>
           {links?.map((link: BreadcrumbLinkProps, index: number) => {
-            CollapseIcon = link.icon ? link.icon : ApartmentOutlined;
+            CollapseIcon = isReactComponent(link.icon) ? link.icon : ApartmentOutlined;
 
             return (
               <Typography
@@ -217,7 +222,7 @@ export default function Breadcrumbs({
                 sx={{ textDecoration: 'none' }}
                 color={!link.to ? 'text.primary' : 'text.secondary'}
               >
-                {link.icon && <CollapseIcon style={iconSX} />}
+                {link.icon && CollapseIcon && <CollapseIcon style={iconSX} />}
                 {link.title}
               </Typography>
             );

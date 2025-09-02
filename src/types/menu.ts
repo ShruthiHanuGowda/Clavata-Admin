@@ -1,9 +1,10 @@
-import { ReactNode } from 'react';
+import { ForwardRefExoticComponent, ReactNode } from 'react';
 
 // material-ui
 import { ChipProps } from '@mui/material/Chip';
 
 // project-import
+import { AntdIconProps } from '@ant-design/icons/lib/components/AntdIcon';
 import { GenericCardProps } from './root';
 import { NavActionType } from 'config';
 
@@ -28,7 +29,8 @@ export type NavItemType = {
   disabled?: boolean;
   external?: boolean;
   isDropdown?: boolean;
-  icon?: GenericCardProps['iconPrimary'] | string;
+  // icon?: GenericCardProps['iconPrimary'] | string;
+  icon?: ReactNode | ForwardRefExoticComponent<AntdIconProps>;
   id: string;
   link?: string;
   search?: string;

@@ -1,4 +1,4 @@
-import { ElementType, Fragment, useEffect, useState } from 'react';
+import { ComponentType, Fragment, useEffect, useState } from 'react';
 import { matchPath, useLocation } from 'react-router-dom';
 
 // material-ui
@@ -158,8 +158,8 @@ export default function NavGroup({
   };
 
   const isSelected = selectedID === currentItem.id;
-
-  const IconComponent: ElementType | null = typeof currentItem.icon === 'function' ? currentItem.icon : null;
+  type IconProps = { style?: React.CSSProperties };
+  const IconComponent = currentItem.icon as ComponentType<IconProps> | null;
 
   const itemIcon = IconComponent ? (
     <IconComponent

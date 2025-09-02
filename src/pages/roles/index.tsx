@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import TableContainer from '@mui/material/TableContainer';
 import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
-import { ColumnDef, flexRender, getCoreRowModel, getPaginationRowModel, HeaderGroup, useReactTable } from '@tanstack/react-table';
+import { ColumnDef, flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
@@ -15,12 +15,16 @@ import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import CloseOutlined from '@ant-design/icons/CloseOutlined';
 import EditTwoTone from '@ant-design/icons/EditTwoTone';
-import { TableDataProps } from '../../types/table';
 import ScrollX from '../../components/ScrollX';
 import { TablePagination } from '../../components/third-party/reactTable';
 import MainCard from '../../components/MainCard';
 
-const data = [
+type RoleData = {
+  name: string;
+  description: string;
+};
+
+const data: RoleData[] = [
   { name: 'Super Admin', description: 'Super Admin' },
   { name: 'Admin', description: 'Admin' },
   { name: 'Manager', description: 'Manager' },
@@ -28,7 +32,7 @@ const data = [
 ];
 
 export default function Roles() {
-  const columns: ColumnDef<TableDataProps>[] = useMemo(
+  const columns: ColumnDef<unknown>[] = useMemo(
     () => [
       {
         header: 'Name',
@@ -89,7 +93,7 @@ export default function Roles() {
           <TableContainer>
             <Table>
               <TableHead>
-                {table.getHeaderGroups().map((headerGroup: HeaderGroup<TableDataProps>) => (
+                {/* {table.getHeaderGroups().map((headerGroup: HeaderGroup<TableDataProps>) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <TableCell key={header.id} {...header.column.columnDef.meta}>
@@ -97,7 +101,7 @@ export default function Roles() {
                       </TableCell>
                     ))}
                   </TableRow>
-                ))}
+                ))} */}
               </TableHead>
               <TableBody>
                 {table.getRowModel().rows.map((row) => (

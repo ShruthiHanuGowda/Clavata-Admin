@@ -1,7 +1,7 @@
 import TransactionTable from 'pages/tables/reactTable/dTerminalTransactionTable';
 
-function TransactionHistory() {
+function DterminalTransactionHistory() {
   return <TransactionTable />;
 }
 
-export default TransactionHistory;
+export default DterminalTransactionHistory;

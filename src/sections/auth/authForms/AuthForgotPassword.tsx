@@ -1,4 +1,3 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
 // material-ui
 import Button from '@mui/material/Button';
 import FormHelperText from '@mui/material/FormHelperText';
@@ -11,25 +10,13 @@ import Typography from '@mui/material/Typography';
 // third party
 import * as Yup from 'yup';
 import { Formik } from 'formik';
-
-// project import
-import useAuth from 'hooks/useAuth';
 import AnimateButton from 'components/@extended/AnimateButton';
-import { openSnackbar } from 'api/snackbar';
 
 // types
-import { SnackbarProps } from 'types/snackbar';
 
 // ============================|| JWT - FORGOT PASSWORD ||============================ //
 
 export default function AuthForgotPassword() {
-  const navigate = useNavigate();
-
-  const { isLoggedIn, resetPassword } = useAuth();
-
-  const [searchParams] = useSearchParams();
-  const auth = searchParams.get('auth'); // get auth and set route based on that
-
   return (
     <>
       <Formik
@@ -42,33 +29,32 @@ export default function AuthForgotPassword() {
         })}
         onSubmit={async (values, { setErrors, setStatus, setSubmitting }) => {
           try {
-            await resetPassword(values.email).then(
-              () => {
-                setStatus({ success: true });
-                setSubmitting(false);
-                openSnackbar({
-                  open: true,
-                  message: 'Check mail for reset password link',
-                  variant: 'alert',
-                  alert: {
-                    color: 'success'
-                  }
-                } as SnackbarProps);
-                setTimeout(() => {
-                  navigate(isLoggedIn ? '/auth/check-mail' : auth ? `/${auth}/check-mail?auth=jwt` : '/check-mail', { replace: true });
-                }, 1500);
-
-                // WARNING: do not set any formik state here as formik might be already destroyed here. You may get following error by doing so.
-                // Warning: Can't perform a React state update on an unmounted component. This is a no-op, but it indicates a memory leak in your application.
-                // To fix, cancel all subscriptions and asynchronous tasks in a useEffect cleanup function.
-                // github issue: https://github.com/formium/formik/issues/2430
-              },
-              (err: Error) => {
-                setStatus({ success: false });
-                setErrors({ submit: err.message });
-                setSubmitting(false);
-              }
-            );
+            // await resetPassword(values.email).then(
+            //   () => {
+            //     setStatus({ success: true });
+            //     setSubmitting(false);
+            //     openSnackbar({
+            //       open: true,
+            //       message: 'Check mail for reset password link',
+            //       variant: 'alert',
+            //       alert: {
+            //         color: 'success'
+            //       }
+            //     } as SnackbarProps);
+            //     setTimeout(() => {
+            //       navigate(isLoggedIn ? '/auth/check-mail' : auth ? `/${auth}/check-mail?auth=jwt` : '/check-mail', { replace: true });
+            //     }, 1500);
+            //     // WARNING: do not set any formik state here as formik might be already destroyed here. You may get following error by doing so.
+            //     // Warning: Can't perform a React state update on an unmounted component. This is a no-op, but it indicates a memory leak in your application.
+            //     // To fix, cancel all subscriptions and asynchronous tasks in a useEffect cleanup function.
+            //     // github issue: https://github.com/formium/formik/issues/2430
+            //   },
+            //   (err: Error) => {
+            //     setStatus({ success: false });
+            //     setErrors({ submit: err.message });
+            //     setSubmitting(false);
+            //   }
+            // );
           } catch (err: unknown) {
             console.error(err);
             const errorMessage = err instanceof Error ? err.message : 'Something went wrong';

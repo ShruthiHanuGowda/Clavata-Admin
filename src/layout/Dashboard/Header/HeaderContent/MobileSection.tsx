@@ -91,7 +91,11 @@ export default function MobileSection() {
               <ClickAwayListener onClickAway={handleClose}>
                 <AppBar color="inherit">
                   <Toolbar>
-                    <Search />
+                    <Search
+                      onSearch={function (): void {
+                        throw new Error('Function not implemented.');
+                      }}
+                    />
                     <Profile />
                   </Toolbar>
                 </AppBar>

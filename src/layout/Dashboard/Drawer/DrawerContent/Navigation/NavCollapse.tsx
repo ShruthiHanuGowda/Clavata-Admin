@@ -233,7 +233,7 @@ export default function NavCollapse({ menu, level, parentId, setSelectedItems, s
 
   const isSelected = selected === menu.id;
   const borderIcon = level === 1 ? <BorderOutlined style={{ fontSize: '1rem' }} /> : null;
-  const Icon = menu.icon!;
+  const Icon = menu.icon as unknown as React.ComponentType<React.SVGProps<SVGSVGElement>>;
   const menuIcon = menu.icon ? <Icon style={{ fontSize: drawerOpen ? '1rem' : '1.25rem' }} /> : borderIcon;
   const textColor = mode === ThemeMode.DARK ? 'grey.400' : 'text.primary';
   const iconSelectedColor = mode === ThemeMode.DARK && drawerOpen ? 'text.primary' : 'primary.main';

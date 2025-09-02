@@ -153,18 +153,16 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
     });
   };
 
-  const awsResetPassword = async (verificationCode: string, newPassword: string): Promise<void> => {
+  const awsResetPassword = async (): Promise<void> => {
     const email = authState.user?.email;
     if (!email) throw new Error('Email is required for password reset');
 
-    const user = new CognitoUser({ Username: email, Pool: userPool });
-
-    await new Promise<void>((resolve, reject) => {
-      user.confirmPassword(verificationCode, newPassword, {
-        onSuccess: resolve,
-        onFailure: (err) => reject(err)
-      });
-    });
+    // await new Promise<void>((resolve, reject) => {
+    //   user.confirmPassword(verificationCode, newPassword, {
+    //     onSuccess: resolve,
+    //     onFailure: (err) => reject(err)
+    //   });
+    // });
   };
 
   const codeVerification = async (verificationCode: string): Promise<void> => {

@@ -1,4 +1,5 @@
-// material-ui
+import { Column, ColumnDef, SortingState, TableState } from '@tanstack/react-table';
+import { SetStateAction } from 'react';
 import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
 import { InputBaseProps } from '@mui/material/InputBase';
@@ -8,9 +9,11 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 import Select from '@mui/material/Select';
 import Typography from '@mui/material/Typography';
 
-// third-party
-import { Column, SortingState, TableState } from '@tanstack/react-table';
-import { SetStateAction } from 'react';
+// Extend ColumnDef to include accessorKey or accessorFn
+type ExtendedColumnDef<TData> = ColumnDef<TData, unknown> & {
+  accessorKey?: string;
+  accessorFn?: (row: TData) => unknown;
+};
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -26,7 +29,7 @@ const MenuProps = {
 interface Props<T extends object> {
   getState: () => TableState;
   setSorting: (value: SetStateAction<SortingState>) => void;
-  getAllColumns: () => Column<T, unknown>[];
+  getAllColumns: () => Column<T, unknown>[]; // Get columns correctly
   size?: InputBaseProps['size'];
 }
 
@@ -61,7 +64,11 @@ export default function SelectColumnSorting<T extends object>({ getState, getAll
         size={size}
       >
         {getAllColumns()
-          .filter((col) => col.columnDef.accessorKey && col.getCanSort())
+          .filter((col) => {
+            const columnDef = col.columnDef as ExtendedColumnDef<T>; // Cast to ExtendedColumnDef
+            // Check if either accessorKey or accessorFn exists for sorting
+            return (columnDef.accessorKey || columnDef.accessorFn) && col.getCanSort();
+          })
           .map((column) => {
             const isSorted = sorting.length > 0 && column.id === sorting[0].id;
             return (

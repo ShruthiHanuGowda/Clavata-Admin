@@ -10,9 +10,10 @@ import Search from 'layout/Dashboard/Header/HeaderContent/Search';
 import { CSVExport, TablePaginationToken } from 'components/third-party/reactTable';
 import { Context } from 'App';
 
-type Props<T> = {
-  data: T[];
-  columns: ColumnDef<T>[];
+// Constrain `T` to be an object type
+type Props<T extends object> = {
+  data: T[]; // Data is an array of objects
+  columns: ColumnDef<T>[]; // Column definitions are for T
   currentPageIndex: number;
   handlePagination: (direction: 'next' | 'previous' | 'first') => Promise<void>;
   nextToken: string | null;
@@ -25,9 +26,10 @@ type Props<T> = {
   csvFilename?: string;
   expandedRowId?: string | null;
   renderExpandedRow?: (row: Row<T>) => React.ReactNode;
+  onRowClick?: (row: T) => Promise<void>;
 };
 
-function ReactTableWrapper<T>({
+function ReactTableWrapper<T extends object>({
   data,
   columns,
   currentPageIndex,

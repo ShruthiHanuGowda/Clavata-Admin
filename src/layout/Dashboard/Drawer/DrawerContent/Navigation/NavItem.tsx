@@ -33,7 +33,6 @@ interface Props {
 
 export default function NavItem({ item, level, isParents = false, setSelectedID }: Props) {
   const theme = useTheme();
-
   const { menuMaster } = useGetMenuMaster();
   const drawerOpen = menuMaster.isDashboardDrawerOpened;
 
@@ -47,13 +46,12 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
 
   const itemHandler = () => {
     if (downLG) handlerDrawerOpen(false);
-
     if (isParents && setSelectedID) {
       setSelectedID();
     }
   };
 
-  const Icon = item.icon!;
+  const Icon = item.icon as unknown as React.ComponentType<React.SVGProps<SVGSVGElement>>;
   const itemIcon = item.icon ? (
     <Icon
       style={{
@@ -152,7 +150,7 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
             item?.actions &&
             item?.actions.map((action, index) => {
               const ActionIcon = action.icon!;
-              const callAction = action?.function;
+              const callAction = action?.function as () => void;
               return (
                 <IconButton
                   key={index}

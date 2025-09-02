@@ -21,7 +21,8 @@ const Companies = Loadable(lazy(() => import('pages/companies/companies')));
 const Registries = Loadable(lazy(() => import('pages/registries/registries')));
 const NFT = Loadable(lazy(() => import('pages/nft/nft')));
 const TransactionHistory = Loadable(lazy(() => import('pages/transactionHistory/transactionHistory')));
-const DTerminalTransactionHistory = Loadable(lazy(() => import('pages/dTerminal/transactionHistory')));
+const DTerminalHistory = Loadable(lazy(() => import('pages/dterminal/DterminalTransactionHistory')));
+// const DTerminalTransactionHistory = Loadable(lazy(() => import('pages/dTerminal/DterminalTransactionHistory')));
 const Airdrop = Loadable(lazy(() => import('pages/airdrop/Airdrop')));
 const Setting = Loadable(lazy(() => import('pages/setting')));
 const NonMintedNFT = Loadable(lazy(() => import('pages/nonMintedNfts/index')));
@@ -93,7 +94,7 @@ const MainRoutes = {
         },
         {
           path: '/dterminal',
-          element: <DTerminalTransactionHistory />
+          element: <DTerminalHistory />
         },
         {
           path: '/transaction-history-mobile',

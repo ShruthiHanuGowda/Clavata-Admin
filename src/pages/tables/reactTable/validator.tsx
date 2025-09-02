@@ -111,8 +111,8 @@ export default function Validator() {
     );
   }, [searchTerm, transformedData]);
 
-  const columns = useMemo<ColumnDef<TransformedValidator>[]>(
-    () => [
+  const columns = useMemo(
+    (): ColumnDef<TransformedValidator>[] => [
       { header: 'Validator Name', accessorKey: 'name' },
       { header: 'Validator ID', accessorKey: 'validatorId' },
       {
@@ -147,14 +147,26 @@ export default function Validator() {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
-        <ReactTableWrapper
+        <ReactTableWrapper<TransformedValidator>
           data={filteredData}
-          columns={columns}
+          columns={columns} // Now columns are of type `ColumnDef<object>[]`
           isLoading={loading}
           topPagination={false}
           csvFilename="validators.csv"
           // 👇 Optional: handle row clicks
-          onRowClick={(row: { validatorId: string }) => fetchValidatorDetails(row.validatorId)}
+          onRowClick={async (row: { validatorId: string }) => {
+            await fetchValidatorDetails(row.validatorId);
+          }}
+          currentPageIndex={0}
+          handlePagination={function (): Promise<void> {
+            throw new Error('Function not implemented.');
+          }}
+          nextToken={null}
+          previousTokens={[]}
+          pageSize={0}
+          setPageSize={function (): void {
+            throw new Error('Function not implemented.');
+          }}
         />
       </Grid>
 

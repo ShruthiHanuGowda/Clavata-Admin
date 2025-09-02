@@ -317,7 +317,11 @@ export default function BlogManager() {
 
             <FormControl fullWidth>
               <InputLabel>Status</InputLabel>
-              <Select value={form.status} label="Status" onChange={(e) => setForm({ ...form, status: e.target.value })}>
+              <Select
+                value={form.status}
+                label="Status"
+                onChange={(e) => setForm({ ...form, status: e.target.value as 'Draft' | 'Published' | 'Archived' })}
+              >
                 <MenuItem value="Draft">Draft</MenuItem>
                 <MenuItem value="Published">Published</MenuItem>
                 <MenuItem value="Archived">Archived</MenuItem>

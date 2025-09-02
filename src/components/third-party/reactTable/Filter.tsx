@@ -1,4 +1,4 @@
-// material-ui
+import React from 'react';
 import Stack from '@mui/material/Stack';
 
 // third-party
@@ -28,7 +28,10 @@ function NumberInput({ columnFilterValue, getFacetedMinMaxValues, setFilterValue
       <DebouncedInput
         type="number"
         value={columnFilterValue?.[0] ?? ''}
-        onFilterChange={(value) => setFilterValue((old) => [value, old?.[1]] as [number, number])}
+        onFilterChange={(value) => {
+          // Ensure value is treated as a number and set correctly
+          setFilterValue((old) => [Number(value) || 0, old?.[1]] as [number, number]);
+        }}
         placeholder={`Min ${minOpt ? `(${min})` : ''}`}
         fullWidth
         inputProps={{ min, max }}
@@ -39,7 +42,10 @@ function NumberInput({ columnFilterValue, getFacetedMinMaxValues, setFilterValue
       <DebouncedInput
         type="number"
         value={columnFilterValue?.[1] ?? ''}
-        onFilterChange={(value) => setFilterValue((old) => [old?.[0], value] as [number, number])}
+        onFilterChange={(value) => {
+          // Ensure value is treated as a number and set correctly
+          setFilterValue((old) => [old?.[0], Number(value) || 0] as [number, number]);
+        }}
         placeholder={`Max ${maxOpt ? `(${max})` : ''}`}
         fullWidth
         inputProps={{ min, max }}
@@ -67,7 +73,10 @@ function TextInput({ columnId, columnFilterValue, header, setFilterValue }: Text
       type="text"
       fullWidth
       value={columnFilterValue ?? ''}
-      onFilterChange={(value) => setFilterValue(value)}
+      onFilterChange={(value) => {
+        // Ensure value is treated as a string and passed correctly
+        setFilterValue(value as string | undefined);
+      }}
       placeholder={`Search ${header}`}
       inputProps={{ list: dataListId }}
       size="small"
