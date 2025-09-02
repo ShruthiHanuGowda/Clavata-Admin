@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { WritableDraft } from 'immer/dist/types/types-external';
+import type { WritableDraft } from 'immer';
 import { ThemeMode } from 'config';
 
 export interface Settings {
