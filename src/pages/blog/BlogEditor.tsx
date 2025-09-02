@@ -23,7 +23,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ onSubmit }) => {
       blogId: Date.now().toString(),
       title,
       content,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date().toISOString()
     };
     onSubmit(blog);
     setTitle('');
@@ -41,12 +41,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ onSubmit }) => {
         style={{ width: '100%', padding: 8, marginBottom: 12 }}
         required
       />
-      <ReactQuill
-        theme="snow"
-        value={content}
-        onChange={setContent}
-        style={{ height: 200, marginBottom: 20 }}
-      />
+      <ReactQuill theme="snow" value={content} onChange={setContent} style={{ height: 200, marginBottom: 20 }} />
       <button type="submit">Publish</button>
     </form>
   );

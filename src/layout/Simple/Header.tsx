@@ -22,6 +22,8 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 
 // project import
+import MenuOutlined from '@ant-design/icons/MenuOutlined';
+import LineOutlined from '@ant-design/icons/LineOutlined';
 import Logo from 'components/logo';
 import IconButton from 'components/@extended/IconButton';
 import AnimateButton from 'components/@extended/AnimateButton';
@@ -30,13 +32,16 @@ import useAuth from 'hooks/useAuth';
 import { APP_DEFAULT_PATH, ThemeMode } from 'config';
 
 // assets
-import MenuOutlined from '@ant-design/icons/MenuOutlined';
-import LineOutlined from '@ant-design/icons/LineOutlined';
 
 // ==============================|| COMPONENTS - APP BAR ||============================== //
 
+interface ElevationScrollProps {
+  children: React.ReactElement;
+  window?: () => Window;
+}
+
 // elevation scroll
-function ElevationScroll({ children, window }: any) {
+function ElevationScroll({ children, window }: ElevationScrollProps) {
   const theme = useTheme();
 
   const trigger = useScrollTrigger({
@@ -63,13 +68,14 @@ export default function Header() {
   const [drawerToggle, setDrawerToggle] = useState<boolean>(false);
 
   /** Method called on multiple components with different event types */
-  const drawerToggler = (open: boolean) => (event: any) => {
-    if (event.type! === 'keydown' && (event.key! === 'Tab' || event.key! === 'Shift')) {
-      return;
-    }
-    setDrawerToggle(open);
-  };
-
+  const drawerToggler =
+    (open: boolean) =>
+    (event: React.KeyboardEvent | React.MouseEvent): void => {
+      if (event.type === 'keydown' && ((event as React.KeyboardEvent).key === 'Tab' || (event as React.KeyboardEvent).key === 'Shift')) {
+        return;
+      }
+      setDrawerToggle(open);
+    };
   return (
     <ElevationScroll>
       <AppBar sx={{ bgcolor: 'transparent', color: 'text.primary', boxShadow: 'none' }}>

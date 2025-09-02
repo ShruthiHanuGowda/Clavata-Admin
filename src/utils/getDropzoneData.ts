@@ -1,4 +1,3 @@
-// @ts-nocheck
 // components
 import { CustomFile } from 'types/dropzone';
 

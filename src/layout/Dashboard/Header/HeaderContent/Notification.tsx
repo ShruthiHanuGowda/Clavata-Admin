@@ -19,10 +19,6 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 // project import
-import MainCard from 'components/MainCard';
-import IconButton from 'components/@extended/IconButton';
-import Transitions from 'components/@extended/Transitions';
-import { ThemeMode } from 'config';
 
 // assets
 import BellOutlined from '@ant-design/icons/BellOutlined';
@@ -30,6 +26,10 @@ import CheckCircleOutlined from '@ant-design/icons/CheckCircleOutlined';
 import GiftOutlined from '@ant-design/icons/GiftOutlined';
 import MessageOutlined from '@ant-design/icons/MessageOutlined';
 import SettingOutlined from '@ant-design/icons/SettingOutlined';
+import { ThemeMode } from 'config';
+import Transitions from 'components/@extended/Transitions';
+import IconButton from 'components/@extended/IconButton';
+import MainCard from 'components/MainCard';
 
 // sx styles
 const avatarSX = {
@@ -53,8 +53,7 @@ const actionSX = {
 export default function Notification() {
   const theme = useTheme();
   const matchesXs = useMediaQuery(theme.breakpoints.down('md'));
-
-  const anchorRef = useRef<any>(null);
+  const anchorRef = useRef<HTMLButtonElement | null>(null);
   const [read, setRead] = useState(2);
   const [open, setOpen] = useState<boolean>(false);
   const handleToggle = () => {
@@ -62,12 +61,11 @@ export default function Notification() {
   };
 
   const handleClose = (event: MouseEvent | TouchEvent) => {
-    if (anchorRef.current && anchorRef.current.contains(event.target)) {
+    if (anchorRef.current && anchorRef.current.contains(event.target as Node)) {
       return;
     }
     setOpen(false);
   };
-
   const iconBackColorOpen = theme.palette.mode === ThemeMode.DARK ? 'background.default' : 'grey.100';
 
   return (

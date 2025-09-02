@@ -10,14 +10,14 @@ import Popper from '@mui/material/Popper';
 import Toolbar from '@mui/material/Toolbar';
 
 // project import
-import Search from './Search';
+import MoreOutlined from '@ant-design/icons/MoreOutlined';
 import Profile from './Profile';
+import Search from './Search';
 import IconButton from 'components/@extended/IconButton';
 import Transitions from 'components/@extended/Transitions';
 import { ThemeMode } from 'config';
 
 // assets
-import MoreOutlined from '@ant-design/icons/MoreOutlined';
 
 // ==============================|| HEADER CONTENT - MOBILE ||============================== //
 
@@ -25,26 +25,25 @@ export default function MobileSection() {
   const theme = useTheme();
 
   const [open, setOpen] = useState(false);
-  const anchorRef = useRef<any>(null);
+  const anchorRef = useRef<HTMLButtonElement | null>(null);
 
   const handleToggle = () => {
     setOpen((prevOpen) => !prevOpen);
   };
 
   const handleClose = (event: MouseEvent | TouchEvent) => {
-    if (anchorRef.current && anchorRef.current.contains(event.target)) {
+    if (anchorRef.current && anchorRef.current.contains(event.target as Node)) {
       return;
     }
-
     setOpen(false);
   };
 
   const prevOpen = useRef(open);
+
   useEffect(() => {
     if (prevOpen.current === true && open === false) {
-      anchorRef.current.focus();
+      anchorRef.current?.focus(); // safe optional chaining
     }
-
     prevOpen.current = open;
   }, [open]);
 

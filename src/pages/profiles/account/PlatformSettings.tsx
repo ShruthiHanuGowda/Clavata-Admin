@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Grid, Stack, TextField, Typography, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { ApolloClient, HttpLink, InMemoryCache, useQuery, useMutation } from '@apollo/client';
+import React, { useEffect, useState } from 'react';
+import { Button, Grid, Stack, TextField, Typography, Dialog, DialogContent, DialogActions } from '@mui/material';
+import { useQuery, useMutation } from '@apollo/client';
 
 import MainCard from 'components/MainCard';
 import { LIST_PLATFORM_SETTINGS, UPDATE_PLATFORM_SETTINGS } from 'graphql/queries';
@@ -50,7 +50,7 @@ export default function PlatformSettings() {
     }
   }, [data]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, key: string) => {
     const updatedSettings = platformSettings.map((item) => (item.keyName === key ? { ...item, value: e.target.value } : item));
     setPlatformSettings(updatedSettings);
   };
@@ -99,12 +99,7 @@ export default function PlatformSettings() {
                       <Typography variant="subtitle1">{setting.keyName}</Typography>
                     </Grid>
                     <Grid item xs={12} sm={8}>
-                      <TextField
-                        fullWidth
-                        variant="outlined"
-                        value={setting.value}
-                        onChange={(e: any) => handleChange(e, setting.keyName)}
-                      />
+                      <TextField fullWidth variant="outlined" value={setting.value} onChange={(e) => handleChange(e, setting.keyName)} />
                     </Grid>
                   </Grid>
                 </div>

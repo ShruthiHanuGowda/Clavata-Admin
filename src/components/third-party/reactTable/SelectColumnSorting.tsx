@@ -1,0 +1,77 @@
+// material-ui
+import Checkbox from '@mui/material/Checkbox';
+import FormControl from '@mui/material/FormControl';
+import { InputBaseProps } from '@mui/material/InputBase';
+import ListItemText from '@mui/material/ListItemText';
+import MenuItem from '@mui/material/MenuItem';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Select from '@mui/material/Select';
+import Typography from '@mui/material/Typography';
+
+// third-party
+import { Column, SortingState, TableState } from '@tanstack/react-table';
+import { SetStateAction } from 'react';
+
+const ITEM_HEIGHT = 48;
+const ITEM_PADDING_TOP = 8;
+const MenuProps = {
+  PaperProps: {
+    style: {
+      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+      width: 200
+    }
+  }
+};
+
+interface Props<T extends object> {
+  getState: () => TableState;
+  setSorting: (value: SetStateAction<SortingState>) => void;
+  getAllColumns: () => Column<T, unknown>[];
+  size?: InputBaseProps['size'];
+}
+
+// ==============================|| COLUMN SORTING - SELECT ||============================== //
+
+export default function SelectColumnSorting<T extends object>({ getState, getAllColumns, setSorting, size = 'medium' }: Props<T>) {
+  const sorting = getState().sorting;
+
+  return (
+    <FormControl sx={{ width: 200 }}>
+      <Select
+        id="column-sorting"
+        multiple
+        displayEmpty
+        value={sorting.map((s) => s.id)}
+        input={<OutlinedInput id="select-column-sorting" placeholder="select column" />}
+        renderValue={() => {
+          if (sorting.length === 0) return <Typography variant="subtitle2">Sort By</Typography>;
+
+          const selectedColumn = getAllColumns().find((col) => col.id === sorting[0].id);
+          if (selectedColumn) {
+            return (
+              <Typography variant="subtitle2">
+                Sort by {typeof selectedColumn.columnDef.header === 'string' ? selectedColumn.columnDef.header : '#'}
+              </Typography>
+            );
+          }
+
+          return <Typography variant="subtitle2">Sort By</Typography>;
+        }}
+        MenuProps={MenuProps}
+        size={size}
+      >
+        {getAllColumns()
+          .filter((col) => col.columnDef.accessorKey && col.getCanSort())
+          .map((column) => {
+            const isSorted = sorting.length > 0 && column.id === sorting[0].id;
+            return (
+              <MenuItem key={column.id} value={column.id} onClick={() => setSorting(isSorted ? [] : [{ id: column.id, desc: false }])}>
+                <Checkbox checked={isSorted} color="success" />
+                <ListItemText primary={String(column.columnDef.header)} />
+              </MenuItem>
+            );
+          })}
+      </Select>
+    </FormControl>
+  );
+}

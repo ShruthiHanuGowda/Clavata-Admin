@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography';
 // project import
 import useAuth from 'hooks/useAuth';
 import AuthWrapper from 'sections/auth/AuthWrapper';
-import FirebaseRegister from 'sections/auth/auth-forms/AuthRegister';
+import FirebaseRegister from 'sections/auth/authForms/AuthRegister';
 
 // ================================|| REGISTER ||================================ //
 

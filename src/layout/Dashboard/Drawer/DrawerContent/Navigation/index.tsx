@@ -9,9 +9,9 @@ import List from '@mui/material/List';
 import Typography from '@mui/material/Typography';
 
 // project import
-import NavItem from './NavItem';
 import NavGroup from './NavGroup';
-import menuItem from 'menu-items';
+import NavItem from './NavItem';
+import menuItem from 'menuItems';
 
 import useConfig from 'hooks/useConfig';
 import { HORIZONTAL_MAX_ITEM, MenuOrientation } from 'config';

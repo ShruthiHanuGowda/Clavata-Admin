@@ -1,8 +1,6 @@
 // material-ui
-import { useTheme } from '@mui/material/styles';
 import logo from 'assets/images/logo/d_energy_logo_final_nft_ver 1.png';
 // project-import
-import { ThemeMode } from 'config';
 
 /**
  * if you want to use image instead of <svg> uncomment following.
@@ -14,8 +12,7 @@ import { ThemeMode } from 'config';
 
 // ==============================|| LOGO SVG ||============================== //
 
-export default function LogoMain({ reverse }: { reverse?: boolean }) {
-  const theme = useTheme();
+export default function LogoMain() {
   return (
     <img src={logo} alt="d_energy_logo" width="100%" />
 

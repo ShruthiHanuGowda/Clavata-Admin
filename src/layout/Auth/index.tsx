@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 
 // project import
-import GuestGuard from 'utils/route-guard/GuestGuard';
+import GuestGuard from 'utils/routeGuard/GuestGuard';
 
 // ==============================|| LAYOUT - AUTH ||============================== //
 

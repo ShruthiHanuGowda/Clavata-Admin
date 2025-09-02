@@ -6,21 +6,21 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 // project import
-import MainCard from 'components/MainCard';
 
 // assets
 import RiseOutlined from '@ant-design/icons/RiseOutlined';
 import FallOutlined from '@ant-design/icons/FallOutlined';
 import InfoCircleOutlined from '@ant-design/icons/InfoCircleOutlined';
 import Tooltip from '@mui/material/Tooltip';
+import MainCard from 'components/MainCard';
 
 const iconSX = { fontSize: '0.75rem', color: 'inherit', marginLeft: 0, marginRight: 0 };
 
 // ==============================|| STATISTICS - ECOMMERCE CARD ||============================== //
 
 interface Props {
-  title: string;
-  count: string;
+  title: string | undefined;
+  count: string | number | undefined;
   percentage?: number;
   isLoss?: boolean;
   color?: ChipProps['color'];

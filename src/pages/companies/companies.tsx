@@ -1,4 +1,4 @@
-import PaginationTable from 'pages/tables/react-table/pagination';
+import PaginationTable from 'pages/tables/reactTable/pagination';
 
 function companies() {
   return <PaginationTable />;

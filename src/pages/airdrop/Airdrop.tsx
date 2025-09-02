@@ -1,7 +1,6 @@
-import TransactionTable from 'pages/tables/react-table/AirdropClaims';
+import TransactionTable from 'pages/tables/reactTable/airdropClaims';
 function Airdrop() {
-    return <TransactionTable />;
-  }
-  
-  export default Airdrop;
-  
+  return <TransactionTable />;
+}
+
+export default Airdrop;

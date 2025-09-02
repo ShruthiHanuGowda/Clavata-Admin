@@ -1,31 +1,35 @@
 import axios, { AxiosRequestConfig } from 'axios';
-
+import { store, RootState } from 'store';
 const axiosServices = axios.create({ baseURL: import.meta.env.VITE_APP_API_URL || 'http://localhost:3010/' });
 
 // ==============================|| AXIOS - FOR MOCK SERVICES ||============================== //
 
-axiosServices.interceptors.request.use(
-  async (config) => {
-    const accessToken = localStorage.getItem('serviceToken');
-    if (accessToken) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// axiosServices.interceptors.response.use(
-//   (response) => response,
-//   (error) => {
-//     if (error.response.status === 401 && !window.location.href.includes('/login')) {
-//       window.location.pathname = '/maintenance/500';
+// axiosServices.interceptors.request.use(
+//   async (config) => {
+//     const accessToken = localStorage.getItem('serviceToken');
+//     if (accessToken) {
+//       config.headers['Authorization'] = `Bearer ${accessToken}`;
 //     }
-//     return Promise.reject((error.response && error.response.data) || 'Wrong Services');
+//     return config;
+//   },
+//   (error) => {
+//     return Promise.reject(error);
 //   }
 // );
+
+axiosServices.interceptors.request.use(
+  async (config) => {
+    const state: RootState = store.getState();
+    const token = state.auth.token;
+
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export default axiosServices;
 

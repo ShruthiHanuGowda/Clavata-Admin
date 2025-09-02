@@ -1,7 +1,9 @@
-const API_BASE_URL: any = {
-  D_WALLET_API_BASE_URL: 'https://rtb4zcgmxf.execute-api.me-central-1.amazonaws.com/default/adminDashboardAnalytics',
-  D_TERMINAL_API_BASE_URL: 'https://7ygfwsucgd.execute-api.me-central-1.amazonaws.com/default/adminDashboardDTerminalAnalytics',
-  ENERGY_CONSUMPTION_API_BASE_URL: 'https://ovecu7uou9.execute-api.me-central-1.amazonaws.com/default/adminDashboardEnergyConsumptionAPI'
+export type ApiBaseUrlKey = 'D_WALLET_API_BASE_URL' | 'D_TERMINAL_API_BASE_URL' | 'ENERGY_CONSUMPTION_API_BASE_URL';
+
+const API_BASE_URL: Record<ApiBaseUrlKey, string> = {
+  D_WALLET_API_BASE_URL: import.meta.env.VITE_APP_D_WALLET_API_URL,
+  D_TERMINAL_API_BASE_URL: import.meta.env.VITE_APP_D_TERMINAL_API_URL,
+  ENERGY_CONSUMPTION_API_BASE_URL: import.meta.env.VITE_APP_ENERGY_CONSUMPTION_API_URL
 };
 
 // // Fetch analytics data
@@ -49,23 +51,32 @@ const API_BASE_URL: any = {
 // };
 
 // Fetch all dashboard data in one call
-export const fetchDashboardData = async (type = 'D_WALLET_API_BASE_URL', timeSlot = 'week') => {
+export const fetchDashboardData = async (type: ApiBaseUrlKey = 'D_WALLET_API_BASE_URL', timeSlot: string = 'week') => {
   try {
     const response = await fetch(`${API_BASE_URL[type]}?timeSlot=${timeSlot}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      mode: 'cors'
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status === 0 || response.status === 503) {
+        throw new Error('Server is temporarily unavailable. Please try again later.');
+      }
+      throw new Error(`Server error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
+
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      throw new Error('Network Error: Unable to connect to server. Please check your connection.');
+    }
+
     throw error;
   }
 };

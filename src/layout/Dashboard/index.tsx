@@ -9,18 +9,18 @@ import Container from '@mui/material/Container';
 import Toolbar from '@mui/material/Toolbar';
 
 // project import
-import Drawer from './Drawer';
-import Header from './Header';
 // import Footer from './Footer';
+import { Context } from '../../App';
 import HorizontalBar from './Drawer/HorizontalBar';
+import Header from './Header';
+import Drawer from './Drawer';
 import Loader from 'components/Loader';
 import Breadcrumbs from 'components/@extended/Breadcrumbs';
-import AuthGuard from 'utils/route-guard/AuthGuard';
+import AuthGuard from 'utils/routeGuard/AuthGuard';
 
 import { MenuOrientation } from 'config';
 import useConfig from 'hooks/useConfig';
 import { handlerDrawerOpen, useGetMenuMaster } from 'api/menu';
-import { Context } from '../../App';
 
 // ==============================|| MAIN LAYOUT ||============================== //
 
@@ -34,12 +34,11 @@ export default function DashboardLayout() {
   const { container, miniDrawer, menuOrientation } = useConfig();
 
   const isHorizontal = menuOrientation === MenuOrientation.HORIZONTAL && !downLG;
-  const context: any = useContext(Context);
-
-  const { setSearchTerm }: any = context;
+  const context = useContext(Context); // context is ContextType | undefined
+  const setSearchTerm = context?.setSearchTerm;
 
   useEffect(() => {
-    if (pathname) setSearchTerm('');
+    if (pathname && setSearchTerm) setSearchTerm('');
   }, [pathname, setSearchTerm]);
 
   // set media wise responsive drawer

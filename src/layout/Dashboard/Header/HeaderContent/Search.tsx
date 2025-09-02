@@ -6,18 +6,24 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 
 // assets
 import SearchOutlined from '@ant-design/icons/SearchOutlined';
-import { useContext, useState } from 'react';
+import { ChangeEvent, ContextType as ReactContextType, useContext } from 'react';
 import { Context } from 'App';
 
 // ==============================|| HEADER CONTENT - SEARCH ||============================== //
 
-export default function Search({ onSearch }: any) {
-  const context = useContext(Context);
-  const { searchTerm, setSearchTerm }: any = context;
+interface SearchProps {
+  onSearch: (term: string) => void;
+}
 
-  const handleSearchChange = (event: any) => {
-    setSearchTerm(event.target.value);
-    onSearch(event.target.value); // Pass the search term to the parent component
+export default function Search({ onSearch }: SearchProps) {
+  const context = useContext<ReactContextType<typeof Context> | undefined>(Context);
+  const searchTerm = context?.searchTerm || '';
+  const setSearchTerm = context?.setSearchTerm;
+
+  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setSearchTerm?.(value);
+    onSearch(value);
   };
 
   return (

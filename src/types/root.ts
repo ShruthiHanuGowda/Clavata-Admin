@@ -7,15 +7,15 @@ import { OverridableComponent } from '@mui/material/OverridableComponent';
 // ==============================|| ROOT TYPES ||============================== //
 
 export type KeyedObject = {
-  [key: string]: string | number | KeyedObject | any;
+  [key: string]: string | number | KeyedObject | unknown;
 };
 
 export type OverrideIcon =
-  | (OverridableComponent<SvgIconTypeMap<{}, 'svg'>> & {
+  | (OverridableComponent<SvgIconTypeMap<Record<string, unknown>, 'svg'>> & {
       muiName: string;
     })
-  | ComponentClass<any>
-  | FunctionComponent<any>;
+  | ComponentClass<unknown>
+  | FunctionComponent<unknown>;
 
 export interface GenericCardProps {
   title?: string;

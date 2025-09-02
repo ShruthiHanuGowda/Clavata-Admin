@@ -1,7 +1,7 @@
 // types
-import { PaletteThemeProps } from 'types/theme';
 import { PalettesProps } from '@ant-design/colors';
 import { PaletteColorOptions } from '@mui/material/styles';
+import { PaletteThemeProps } from 'types/theme';
 
 // ==============================|| PRESET THEME - DEFAULT ||============================== //
 

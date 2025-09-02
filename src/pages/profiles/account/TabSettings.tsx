@@ -24,10 +24,10 @@ export default function TabSettings() {
 
   const themeMode = useMemo(() => <DefaultThemeMode />, []);
 
-  const myToggle = (e: any) => {
-    let { name, checked } = e.target;
+  const myToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
 
-    updateSetting(name, checked);
+    updateSetting(name as keyof typeof settings, checked);
   };
 
   return (
@@ -79,7 +79,7 @@ export default function TabSettings() {
                 <Typography variant="subtitle1">Email you with?</Typography>
                 <List sx={{ p: 0, '& .MuiListItem-root': { p: 0, py: 0.25 } }}>
                   <ListItem>
-                    <ListItemText primary={<Typography color="secondary">News about PCT-themes products and feature updates</Typography>} />
+                    <ListItemText primary={<Typography color="secondary">News about Denergy products and feature updates</Typography>} />
                     <Checkbox
                       name="news_about_pct_themes_products_and_feature_updates"
                       checked={settings.news_about_pct_themes_products_and_feature_updates}
@@ -87,7 +87,7 @@ export default function TabSettings() {
                     />
                   </ListItem>
                   <ListItem>
-                    <ListItemText primary={<Typography color="secondary">Tips on getting more out of PCT-themes</Typography>} />
+                    <ListItemText primary={<Typography color="secondary">Tips on getting more out of Denergy</Typography>} />
                     <Checkbox
                       name="tips_on_getting_more_out_of_pct_themes"
                       checked={settings.tips_on_getting_more_out_of_pct_themes}
@@ -96,7 +96,7 @@ export default function TabSettings() {
                   </ListItem>
                   <ListItem>
                     <ListItemText
-                      primary={<Typography color="secondary">Things you missed since you last logged into PCT-themes</Typography>}
+                      primary={<Typography color="secondary">Things you missed since you last logged into Denergy</Typography>}
                     />
                     <Checkbox
                       name="things_you_missed_since_you_last_logged_into_pct_themes"
@@ -153,7 +153,7 @@ export default function TabSettings() {
                   disabled
                   onChange={myToggle}
                   checked={settings.your_sent_a_direct_message}
-                  name="youre_sent_a_direct_message"
+                  name="your_sent_a_direct_message"
                   inputProps={{
                     'aria-labelledby': 'switch-list-label-email-2'
                   }}

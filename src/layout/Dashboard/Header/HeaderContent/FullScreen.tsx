@@ -6,12 +6,12 @@ import Box from '@mui/material/Box';
 import Tooltip from '@mui/material/Tooltip';
 
 // project import
+import FullscreenOutlined from '@ant-design/icons/FullscreenOutlined';
+import FullscreenExitOutlined from '@ant-design/icons/FullscreenExitOutlined';
 import IconButton from 'components/@extended/IconButton';
 import { ThemeMode } from 'config';
 
 // assets
-import FullscreenOutlined from '@ant-design/icons/FullscreenOutlined';
-import FullscreenExitOutlined from '@ant-design/icons/FullscreenExitOutlined';
 
 // types
 

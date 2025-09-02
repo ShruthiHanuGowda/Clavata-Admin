@@ -1,4 +1,4 @@
-import ValidatorTable from 'pages/tables/react-table/Validator';
+import ValidatorTable from 'pages/tables/reactTable/validator';
 
 function Index() {
   return <ValidatorTable />;

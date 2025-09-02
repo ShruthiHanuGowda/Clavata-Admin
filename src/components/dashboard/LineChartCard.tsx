@@ -5,6 +5,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 
 // project import
 import MainCard from 'components/MainCard';
@@ -15,12 +16,20 @@ import { TimeSlot } from 'hooks/useLineChart';
 interface LineChartCardProps {
   title: string;
   description?: string;
-  slot: any;
+  slot: 'week' | 'month';
   data: number[];
   handleSlotChange: (slot: TimeSlot) => void;
+  loading?: boolean;
 }
 
-export default function LineChartCard({ title, description = '', slot = 'week', data, handleSlotChange }: LineChartCardProps) {
+export default function LineChartCard({
+  title,
+  description = '',
+  slot = 'week',
+  data,
+  handleSlotChange,
+  loading = false
+}: LineChartCardProps) {
   return (
     <MainCard content={false}>
       <Grid item>
@@ -43,7 +52,12 @@ export default function LineChartCard({ title, description = '', slot = 'week', 
               justifyContent={{ xs: 'center', sm: 'flex-end' }}
               sx={{ mt: 2, mr: { xs: 0, sm: 2 } }}
             >
-              <Select value={slot} onChange={(e: SelectChangeEvent) => handleSlotChange(e.target.value as 'month' | 'week')} size="small">
+              <Select
+                value={slot}
+                onChange={(e: SelectChangeEvent) => handleSlotChange(e.target.value as 'month' | 'week')}
+                size="small"
+                disabled={loading}
+              >
                 <MenuItem value="week">Week</MenuItem>
                 <MenuItem value="month">Month</MenuItem>
               </Select>
@@ -51,8 +65,14 @@ export default function LineChartCard({ title, description = '', slot = 'week', 
           </Grid>
         </Grid>
       </Grid>
-      <Box width={1}>
-        <LineChart slot={slot} data={data} />
+      <Box width={1} position="relative">
+        {loading ? (
+          <Box display="flex" justifyContent="center" alignItems="center" height="300px">
+            <CircularProgress />
+          </Box>
+        ) : (
+          <LineChart slot={slot} data={data} />
+        )}
       </Box>
     </MainCard>
   );

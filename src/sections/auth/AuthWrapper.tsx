@@ -6,8 +6,8 @@ import Grid from '@mui/material/Grid';
 
 // project import
 // import AuthFooter from 'components/cards/AuthFooter';
-import Logo from 'components/logo';
 import AuthCard from './AuthCard';
+import Logo from 'components/logo';
 
 // assets
 // import AuthBackground from './AuthBackground';

@@ -25,14 +25,14 @@ import CloseOutlined from '@ant-design/icons/CloseOutlined';
 import MainCard from 'components/MainCard';
 import IconButton from 'components/@extended/IconButton';
 import ScrollX from 'components/ScrollX';
-import { TablePagination } from 'components/third-party/react-table';
+import { TablePagination } from 'components/third-party/reactTable';
 
 import { TableDataProps } from 'types/table';
 
-const data: any[] = [];
+const data: TableDataProps[] = [];
 
 export default function TabRole() {
-  const columns: any = useMemo<ColumnDef<TableDataProps>[]>(
+  const columns: ColumnDef<TableDataProps>[] = useMemo(
     () => [
       {
         header: 'Name',
@@ -77,11 +77,11 @@ export default function TabRole() {
     debugTable: true
   });
 
-  let headers: LabelKeyObject[] = [];
+  const headers: LabelKeyObject[] = [];
   table.getAllColumns().map((columns) =>
     headers.push({
       label: typeof columns.columnDef.header === 'string' ? columns.columnDef.header : '#',
-      // @ts-ignore
+      // @ts-expect-error accessorKey may not exist on all column types
       key: columns.columnDef.accessorKey
     })
   );
@@ -95,7 +95,7 @@ export default function TabRole() {
               <TableContainer>
                 <Table>
                   <TableHead>
-                    {table.getHeaderGroups().map((headerGroup: HeaderGroup<any>) => (
+                    {table.getHeaderGroups().map((headerGroup: HeaderGroup<TableDataProps>) => (
                       <TableRow key={headerGroup.id}>
                         {headerGroup.headers.map((header) => (
                           <TableCell key={header.id} {...header.column.columnDef.meta}>

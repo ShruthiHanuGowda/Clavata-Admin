@@ -11,7 +11,31 @@ import LineChartCard from 'components/dashboard/LineChartCard';
 import { getChartDataById } from 'utils/api/denergytestnet';
 import AnalyticCard from 'components/dashboard/AnalyticCard';
 
-const ChartCard = ({ id, chart }: { id: string; chart: any }) => {
+interface Chart {
+  id: string;
+  title: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
+interface Analytic {
+  title: string;
+  count: string | number;
+  percentage?: number;
+  extra?: string;
+  isLoss: boolean;
+}
+
+interface StatisticsCardProps {
+  title: string;
+  charts: Chart[];
+  analytics: Analytic[];
+}
+interface ChartCardProps {
+  id: string;
+  chart: Omit<Chart, 'id'>;
+}
+const ChartCard = ({ id, chart }: ChartCardProps) => {
   const { slot, data, setData, handleSlotChange: handleUserSlotChange } = useLineChart();
 
   useEffect(() => {
@@ -20,12 +44,18 @@ const ChartCard = ({ id, chart }: { id: string; chart: any }) => {
 
   return (
     <Grid item xs={12} md={6} lg={6}>
-      <LineChartCard title={chart.title} description={chart.description} slot={slot} data={data} handleSlotChange={handleUserSlotChange} />
+      <LineChartCard
+        title={chart.title as string}
+        description={chart.description as string | undefined}
+        slot={slot}
+        data={data}
+        handleSlotChange={handleUserSlotChange}
+      />
     </Grid>
   );
 };
 
-export default function StatisticsCard({ title, charts, analytics }: { title: string; charts: Array<any>; analytics: Array<any> }) {
+export default function StatisticsCard({ title, charts, analytics }: StatisticsCardProps) {
   return (
     <MainCard>
       <Grid container spacing={2}>
@@ -35,7 +65,7 @@ export default function StatisticsCard({ title, charts, analytics }: { title: st
         {analytics.length > 0 && (
           <Grid item xs={12}>
             <Grid container spacing={2}>
-              {analytics.map((analytic: any, index) => (
+              {analytics.map((analytic, index) => (
                 <Grid key={index} item xs={12} sm={6} md={3}>
                   <AnalyticCard {...analytic} />
                 </Grid>
@@ -43,7 +73,7 @@ export default function StatisticsCard({ title, charts, analytics }: { title: st
             </Grid>
           </Grid>
         )}
-        {charts.map(({ id, ...chart }: any, index) => (
+        {charts.map(({ id, ...chart }, index) => (
           <ChartCard key={`${id}-${index}`} id={id} chart={chart} />
         ))}
       </Grid>

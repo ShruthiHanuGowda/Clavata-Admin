@@ -1,6 +1,26 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: import.meta.env.VITE_APP_DENERGY_TESTNET_API_URL });
+const api = axios.create({
+  baseURL: import.meta.env.VITE_APP_DENERGY_TESTNET_API_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ERR_NETWORK') {
+      throw new Error('Network Error: Unable to connect to server. Please check your connection.');
+    }
+    if (error.response?.status === 0) {
+      throw new Error('CORS Error: Server configuration issue. Please contact support.');
+    }
+    throw error;
+  }
+);
 
 export const getStats = async () => {
   const { data } = await api.get('/api/v2/stats');

@@ -1,0 +1,9 @@
+# Ignore build output
+dist/
+build/
+
+# Ignore dependencies
+node_modules/
+
+# Ignore coverage/test output
+coverage/

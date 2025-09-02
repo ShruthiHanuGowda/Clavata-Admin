@@ -1,4 +1,3 @@
-// @ts-nocheck
 // material-ui
 import { useTheme } from '@mui/material/styles';
 

@@ -1,37 +1,37 @@
 import { lazy } from 'react';
 
 // project import
+import NftCollections from '../pages/nftCollections';
 import Loadable from 'components/Loadable';
 import DashboardLayout from 'layout/Dashboard';
 import PagesLayout from 'layout/Pages';
 import SimpleLayout from 'layout/Simple';
 import { SimpleLayoutType } from 'config';
-import NftCollections from '../pages/nft-collections';
-import MobileTransactionHistory from 'pages/transaction-history-mobile';
+import MobileTransactionHistory from 'pages/transactionHistoryMobile';
 
 const MaintenanceError = Loadable(lazy(() => import('pages/maintenance/404')));
 const MaintenanceError500 = Loadable(lazy(() => import('pages/maintenance/500')));
-const MaintenanceUnderConstruction = Loadable(lazy(() => import('pages/maintenance/under-construction')));
-const MaintenanceComingSoon = Loadable(lazy(() => import('pages/maintenance/coming-soon')));
-const AppContactUS = Loadable(lazy(() => import('pages/contact-us')));
+const MaintenanceUnderConstruction = Loadable(lazy(() => import('pages/maintenance/underConstruction')));
+const MaintenanceComingSoon = Loadable(lazy(() => import('pages/maintenance/comingSoon')));
+const AppContactUS = Loadable(lazy(() => import('pages/contactUs')));
 // render - sample page
 const Dashboard = Loadable(lazy(() => import('pages/dashboard')));
 const User = Loadable(lazy(() => import('pages/user/user')));
 const Companies = Loadable(lazy(() => import('pages/companies/companies')));
 const Registries = Loadable(lazy(() => import('pages/registries/registries')));
 const NFT = Loadable(lazy(() => import('pages/nft/nft')));
-const TransactionHistory = Loadable(lazy(() => import('pages/transaction-history/TransactionHistory')));
-const DTerminalTransactionHistory = Loadable(lazy(() => import('pages/dterminal/TransactionHistory')));
+const TransactionHistory = Loadable(lazy(() => import('pages/transactionHistory/transactionHistory')));
+const DTerminalTransactionHistory = Loadable(lazy(() => import('pages/dTerminal/transactionHistory')));
 const Airdrop = Loadable(lazy(() => import('pages/airdrop/Airdrop')));
 const Setting = Loadable(lazy(() => import('pages/setting')));
-const NonMintedNFT = Loadable(lazy(() => import('pages/non-minted-nfts/index')));
-const PendingMintedNfts = Loadable(lazy(() => import('pages/pending-minted-nfts/index')));
+const NonMintedNFT = Loadable(lazy(() => import('pages/nonMintedNfts/index')));
+const PendingMintedNfts = Loadable(lazy(() => import('pages/pendingMintedNfts/index')));
 const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
 const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRole')));
 const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/TabSettings')));
 const PlatformSettings = Loadable(lazy(() => import('pages/profiles/account/PlatformSettings')));
-const EvidentItems = Loadable(lazy(() => import('pages/evident-items')));
-const Beneficiary = Loadable(lazy(() => import('pages/beneficiary')));
+const EvidentItems = Loadable(lazy(() => import('pages/evidentItems')));
+const Beneficiary = Loadable(lazy(() => import('pages/addressBook')));
 const Validator = Loadable(lazy(() => import('pages/validator')));
 const Blog = Loadable(lazy(() => import('pages/blog')));
 const BlogDetails = Loadable(lazy(() => import('pages/blogDetails')));

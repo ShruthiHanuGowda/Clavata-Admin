@@ -14,11 +14,6 @@ import Typography from '@mui/material/Typography';
 import { motion } from 'framer-motion';
 
 // project import
-import AnimateButton from 'components/@extended/AnimateButton';
-
-import useConfig from 'hooks/useConfig';
-import { ThemeDirection, ThemeMode } from 'config';
-import { getImageUrl, ImagePath } from 'utils/getImageUrl';
 
 // assets
 import SendOutlined from '@ant-design/icons/SendOutlined';
@@ -26,6 +21,10 @@ import FacebookFilled from '@ant-design/icons/FacebookFilled';
 import InstagramFilled from '@ant-design/icons/InstagramFilled';
 import LinkedinFilled from '@ant-design/icons/LinkedinFilled';
 import TwitterOutlined from '@ant-design/icons/TwitterOutlined';
+import { getImageUrl, ImagePath } from 'utils/getImageUrl';
+import { ThemeDirection, ThemeMode } from 'config';
+import useConfig from 'hooks/useConfig';
+import AnimateButton from 'components/@extended/AnimateButton';
 
 import imgfooterlogo from 'assets/images/landing/codedthemes-logo.svg';
 

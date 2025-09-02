@@ -1,6 +1,6 @@
 import { Box, Chip, CircularProgress, Container, Typography, Paper, Divider } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import { useQuery, ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { GET_BLOG_BY_ID } from 'graphql/queries';
 import Breadcrumbs from 'components/@extended/Breadcrumbs';
 import { APP_DEFAULT_PATH } from 'config';

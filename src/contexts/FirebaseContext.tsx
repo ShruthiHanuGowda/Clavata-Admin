@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { createContext, useEffect, useReducer } from 'react';
 
 // third-party
@@ -6,12 +5,13 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 
 // action - state management
-import { LOGIN, LOGOUT } from 'contexts/auth-reducer/actions';
-import authReducer from 'contexts/auth-reducer/auth';
+import { LOGIN, LOGOUT } from 'contexts/authReducer/actions';
+import authReducer from 'contexts/authReducer/auth';
 
 // project import
 import Loader from 'components/Loader';
 import { AuthProps, FirebaseContextType } from 'types/auth';
+import User = firebase.User;
 
 // firebase initialize
 if (!firebase.apps.length) {
@@ -42,7 +42,7 @@ export const FirebaseProvider = ({ children }: { children: React.ReactElement })
 
   useEffect(
     () =>
-      firebase.auth().onAuthStateChanged((user: any) => {
+      firebase.auth().onAuthStateChanged((user: User | null) => {
         if (user) {
           dispatch({
             type: LOGIN,
@@ -57,12 +57,9 @@ export const FirebaseProvider = ({ children }: { children: React.ReactElement })
             }
           });
         } else {
-          dispatch({
-            type: LOGOUT
-          });
+          dispatch({ type: LOGOUT });
         }
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [dispatch]
   );
 
