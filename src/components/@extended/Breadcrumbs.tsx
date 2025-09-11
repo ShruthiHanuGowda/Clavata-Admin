@@ -49,6 +49,7 @@ interface Props {
   title?: boolean;
   titleBottom?: boolean;
   sx?: BreadCrumbSxProps;
+  [key: string]: unknown;
 }
 
 export default function Breadcrumbs({
@@ -125,12 +126,12 @@ export default function Breadcrumbs({
   let itemTitle: NavItemType['title'] = '';
 
   // CollapseIcon and ItemIcon should always be valid React component types or undefined
-  let CollapseIcon: React.ComponentType<any> | undefined;
-  let ItemIcon: React.ComponentType<any> | undefined;
+  let CollapseIcon: React.ElementType | undefined;
+  let ItemIcon: React.ElementType | undefined;
 
   // Helper function to check if an icon is a valid React component
-  const isReactComponent = (icon: any): icon is React.ComponentType<any> => {
-    return typeof icon === 'function' && icon.prototype.isReactComponent;
+  const isReactComponent = (icon: unknown): icon is React.ComponentType<React.SVGProps<SVGSVGElement>> => {
+    return typeof icon === 'function' || typeof icon === 'object';
   };
 
   // collapse item

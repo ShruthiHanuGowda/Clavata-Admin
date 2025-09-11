@@ -25,11 +25,17 @@ interface User {
   createdAt?: string;
   kycDetails?: string | KYCDetails;
 }
+interface ListUserWalletsData {
+  listUserWalletAddresses: {
+    items: User[];
+    nextToken?: string;
+  };
+}
 
 export default function UserKYCDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data, loading, error } = useQuery(LIST_USER_WALLETS);
+  const { data, loading, error } = useQuery<ListUserWalletsData>(LIST_USER_WALLETS);
 
   if (loading) return <Typography>Loading...</Typography>;
   if (error) return <Typography>Error loading data.</Typography>;

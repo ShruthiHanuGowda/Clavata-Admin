@@ -34,10 +34,17 @@ interface Company {
   date?: string;
 }
 
+interface ListUserWalletsData {
+  listUserWallets: {
+    items: Company[];
+    nextToken?: string | null;
+  };
+}
+
 export default function CompanyKybDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data, loading, error } = useQuery(LIST_COMPANY_WALLETS);
+  const { data, loading, error } = useQuery<ListUserWalletsData>(LIST_COMPANY_WALLETS);
 
   if (loading) return <Typography>Loading...</Typography>;
   if (error) return <Typography>Error loading data.</Typography>;
