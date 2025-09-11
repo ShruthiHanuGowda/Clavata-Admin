@@ -6,22 +6,24 @@ import Breadcrumbs from 'components/@extended/Breadcrumbs';
 import { APP_DEFAULT_PATH } from 'config';
 import useAuth from 'hooks/useAuth';
 
-// const token = localStorage.getItem('serviceToken');
-// const client = new ApolloClient({
-//   link: new HttpLink({
-//     uri: import.meta.env.VITE_APP_BLOG_GRAPHQL_URL,
-//     headers: {
-//       // 'x-api-key': import.meta.env.VITE_APP_BLOG_GRAPHQL_API_KEY
-//       Authorization: token ? `Bearer ${token}` : ''
-//     }
-//   }),
-//   cache: new InMemoryCache()
-// });
+interface Blog {
+  id: string;
+  image_url?: string;
+  title: string;
+  content: string;
+  author_name: string;
+  tags: string[];
+  status: 'Draft' | 'Published' | 'Archived';
+}
+
+interface GetBlogByIdResponse {
+  getBlogs: Blog;
+}
 
 export default function BlogDetails() {
   const { logout } = useAuth();
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error } = useQuery(GET_BLOG_BY_ID, {
+  const { data, loading, error } = useQuery<GetBlogByIdResponse>(GET_BLOG_BY_ID, {
     variables: { id }
   });
 
@@ -41,22 +43,29 @@ export default function BlogDetails() {
 
   const blog = data?.getBlogs;
 
-  const breadcrumbLinks = [{ title: 'Home', to: APP_DEFAULT_PATH }, { title: 'Blog', to: '/blog' }, { title: blog.title }];
+  const breadcrumbLinks = [
+    { title: 'Home', to: APP_DEFAULT_PATH },
+    { title: 'Blog', to: '/blog' },
+    { title: blog?.title ?? 'Blog Detail' }
+  ];
 
+  if (!blog) {
+    return <Typography>Blog not found</Typography>;
+  }
   return (
     <>
-      <Breadcrumbs custom heading={blog.title} links={breadcrumbLinks} />
+      <Breadcrumbs custom heading={blog?.title} links={breadcrumbLinks} />
       <Container maxWidth="md">
         <Paper elevation={2} sx={{ p: { xs: 2, sm: 4 }, mt: 4, mb: 6, borderRadius: 3 }}>
           <Typography variant="h3" fontWeight={600} gutterBottom>
-            {blog.title}
+            {blog?.title}
           </Typography>
 
           <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            By <strong>{blog.author_name}</strong> • Status: <em>{blog.status}</em>
+            By <strong>{blog?.author_name}</strong> • Status: <em>{blog?.status}</em>
           </Typography>
 
-          {blog.tags?.length > 0 && (
+          {blog?.tags?.length > 0 && (
             <Box mt={2} mb={3} display="flex" flexWrap="wrap" gap={1}>
               {blog.tags.map((tag: string, i: number) => (
                 <Chip key={i} label={tag} variant="outlined" />
@@ -64,7 +73,7 @@ export default function BlogDetails() {
             </Box>
           )}
 
-          {blog.image_url && (
+          {blog?.image_url && (
             <Box mb={4} display="flex" justifyContent="center">
               <img
                 src={blog.image_url}
@@ -92,7 +101,7 @@ export default function BlogDetails() {
                 mb: 2
               }
             }}
-            dangerouslySetInnerHTML={{ __html: blog.content }}
+            dangerouslySetInnerHTML={{ __html: blog?.content }}
           />
         </Paper>
       </Container>

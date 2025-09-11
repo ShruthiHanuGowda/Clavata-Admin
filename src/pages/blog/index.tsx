@@ -62,17 +62,12 @@ const initialFormState: BlogForm = {
   status: 'Draft'
 };
 
-// const token = localStorage.getItem('serviceToken');
-// const client = new ApolloClient({
-//   link: new HttpLink({
-//     uri: import.meta.env.VITE_APP_BLOG_GRAPHQL_URL,
-//     headers: {
-//       // 'x-api-key': import.meta.env.VITE_APP_BLOG_GRAPHQL_API_KEY
-//       Authorization: token ? `Bearer ${token}` : ''
-//     }
-//   }),
-//   cache: new InMemoryCache()
-// });
+interface ListBlogsResponse {
+  listBlogs: {
+    items: BlogItem[];
+    nextToken?: string | null;
+  };
+}
 
 export default function BlogManager() {
   const { logout } = useAuth();
@@ -88,7 +83,7 @@ export default function BlogManager() {
     error,
     fetchMore,
     refetch
-  } = useQuery(LIST_BLOGS, {
+  } = useQuery<ListBlogsResponse>(LIST_BLOGS, {
     variables: { nextToken: null, limit: pageSize }
   });
   const [createBlog] = useMutation(CREATE_BLOG);
@@ -185,7 +180,7 @@ export default function BlogManager() {
   useEffect(() => {
     if (queryData) {
       setData(queryData.listBlogs.items);
-      setNextToken(queryData.listBlogs.nextToken);
+      setNextToken(queryData?.listBlogs?.nextToken || null);
     }
   }, [queryData]);
 
