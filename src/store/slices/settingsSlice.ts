@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { WritableDraft } from 'immer';
 import { ThemeMode } from 'config';
 
 export interface Settings {
@@ -104,10 +103,7 @@ const settingsSlice = createSlice({
   name: 'settings',
   initialState,
   reducers: {
-    updateSetting: <K extends keyof Settings>(
-      state: WritableDraft<SettingsState>,
-      action: PayloadAction<{ key: K; value: Settings[K] }>
-    ) => {
+    updateSetting: <K extends keyof Settings>(state: SettingsState, action: PayloadAction<{ key: K; value: Settings[K] }>) => {
       const { key, value } = action.payload;
       state.settings[key] = value;
     },
