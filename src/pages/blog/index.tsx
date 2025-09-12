@@ -22,7 +22,7 @@ import 'react-quill/dist/quill.snow.css';
 import { useQuery, useMutation } from '@apollo/client';
 import { useNavigate } from 'react-router';
 import { LIST_BLOGS, CREATE_BLOG, UPDATE_BLOG, DELETE_BLOG } from 'graphql/queries';
-import { TablePaginationToken } from 'components/third-party/reactTable';
+import { TablePaginationToken } from 'components/thirdParty/reactTable';
 import useAuth from 'hooks/useAuth';
 
 interface BlogItem {

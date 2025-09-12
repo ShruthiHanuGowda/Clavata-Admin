@@ -17,7 +17,7 @@ import { store, persistor, RootState } from 'store';
 import Locales from 'components/Locales';
 import ScrollTop from 'components/ScrollTop';
 import Snackbar from 'components/@extended/Snackbar';
-import Notistack from 'components/third-party/Notistack';
+import Notistack from 'components/thirdParty/Notistack';
 
 import { AWSCognitoProvider as AuthProvider } from 'contexts/AWSCognitoContext';
 import { CHAINS } from 'chains';

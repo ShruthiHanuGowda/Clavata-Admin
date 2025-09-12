@@ -9,23 +9,23 @@ import { Gender } from 'config';
 
 export type ArrangementOrder = 'asc' | 'desc' | undefined;
 
-export type GetComparator = (o: ArrangementOrder, o1: string) => (a: KeyedObject, b: KeyedObject) => number;
+export type GetComparator = (order: ArrangementOrder, orderBy: string) => (a: KeyedObject, b: KeyedObject) => number;
 
 export interface EnhancedTableHeadProps extends TableCellProps {
-  onSelectAllClick: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSelectAllClick: (event: React.ChangeEvent<HTMLInputElement>) => void;
   order: ArrangementOrder;
   orderBy?: string;
   numSelected: number;
   rowCount: number;
-  onRequestSort: (e: React.SyntheticEvent, p: string) => void;
+  onRequestSort: (event: React.SyntheticEvent, property: string) => void;
 }
 
 export type HeadCell = {
   id: string;
   numeric: boolean;
   label: string;
-  disablePadding?: string | boolean | undefined;
-  align?: 'left' | 'right' | 'inherit' | 'center' | 'justify' | undefined;
+  disablePadding?: boolean | string;
+  align?: 'left' | 'right' | 'inherit' | 'center' | 'justify';
 };
 
 export type TableDataApiResponse = {
@@ -67,6 +67,7 @@ export interface AddressBookItem {
   beneficiaryAddress: string;
   chain: string;
 }
+
 export type KYCDetails = {
   info?: {
     firstName?: string;
@@ -153,12 +154,14 @@ export type ListAirdropClaimsResponse = {
     nextToken: string | null;
   };
 };
+
 export interface CompanyInfo {
   companyName?: string;
   registrationNumber?: string;
   countryOfIncorporation?: string;
-  [key: string]: unknown;
+  [key: string]: unknown; // keep open for other unknown company details
 }
+
 export interface CompanyTableRow {
   id: string | number;
   email: string;

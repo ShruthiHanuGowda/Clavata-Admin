@@ -24,7 +24,7 @@ import GroupOutlined from '@ant-design/icons/GroupOutlined';
 import RightOutlined from '@ant-design/icons/RightOutlined';
 import NavCollapse from './NavCollapse';
 import NavItem from './NavItem';
-import SimpleBar from 'components/third-party/SimpleBar';
+import SimpleBar from 'components/thirdParty/SimpleBar';
 import Transitions from 'components/@extended/Transitions';
 
 import { MenuOrientation } from 'config';
