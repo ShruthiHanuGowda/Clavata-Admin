@@ -5,7 +5,7 @@ import lodash from 'lodash';
 
 const chance = new Chance();
 
-export const range = (len: number) => {
+export const range = (len: number): number[] => {
   const arr = [];
   for (let i = 0; i < len; i += 1) {
     arr.push(i);
@@ -30,9 +30,68 @@ const skills: string[] = [
   'Codeigniter'
 ];
 
-const time = ['just now', '1 day ago', '2 min ago', '2 days ago', '1 week ago', '1 year ago', '5 months ago', '3 hours ago', '1 hour ago'];
+const time: string[] = [
+  'just now',
+  '1 day ago',
+  '2 min ago',
+  '2 days ago',
+  '1 week ago',
+  '1 year ago',
+  '5 months ago',
+  '3 hours ago',
+  '1 hour ago'
+];
 
-export default function mockData(index: number) {
+// Interfaces for data structure
+
+interface Address {
+  full: string;
+  country: string;
+}
+
+interface Name {
+  first: string;
+  last: string;
+  full: string;
+}
+
+interface Text {
+  title: string;
+  sentence: string;
+  description: string;
+}
+
+interface NumberStats {
+  percentage: number;
+  rating: number;
+  status: (min: number, max: number) => number;
+  age: number;
+  amount: number;
+}
+
+interface Image {
+  product: string;
+  avatar: string;
+}
+
+export interface MockData {
+  id: string;
+  email: string;
+  contact: string;
+  datetime: Date;
+  boolean: boolean;
+  role: string;
+  company: string;
+  address: Address;
+  name: Name;
+  text: Text;
+  number: NumberStats;
+  image: Image;
+  skill: string[];
+  time: string[];
+}
+
+export default function mockData(index: number): MockData {
   return {
     id: `${chance.bb_pin()}${index}`,
     email: chance.email({ domain: 'gmail.com' }),
@@ -57,7 +116,7 @@ export default function mockData(index: number) {
     text: {
       title: chance.sentence({ words: chance.integer({ min: 4, max: 12 }) }),
       sentence: chance.sentence(),
-      description: chance.paragraph
+      description: chance.paragraph() // called to get string output
     },
     number: {
       percentage: chance.integer({ min: 0, max: 100 }),
@@ -70,7 +129,7 @@ export default function mockData(index: number) {
       product: `product_${index}`,
       avatar: `avatar_${index}`
     },
-    skill: lodash.sampleSize(skills, chance.integer({ min: 2, max: 6 })),
-    time: lodash.sampleSize(time)
+    skill: lodash.sampleSize(skills, chance.integer({ min: 2, max: 6 })) as string[],
+    time: lodash.sampleSize(time) as string[]
   };
 }

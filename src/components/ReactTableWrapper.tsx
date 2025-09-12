@@ -7,7 +7,7 @@ import { LabelKeyObject } from 'react-csv/lib/core';
 import ScrollX from 'components/ScrollX';
 import MainCard from 'components/MainCard';
 import Search from 'layout/Dashboard/Header/HeaderContent/Search';
-import { CSVExport, TablePaginationToken } from 'components/third-party/reactTable';
+import { CSVExport, TablePaginationToken } from 'components/thirdParty/reactTable';
 import { Context } from 'App';
 
 // Constrain `T` to be an object type

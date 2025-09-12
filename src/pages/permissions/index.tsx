@@ -16,7 +16,7 @@ import IconButton from '@mui/material/IconButton';
 import CloseOutlined from '@ant-design/icons/CloseOutlined';
 import EditTwoTone from '@ant-design/icons/EditTwoTone';
 import ScrollX from '../../components/ScrollX';
-import { TablePagination } from '../../components/third-party/reactTable';
+import { TablePagination } from '../../components/thirdParty/reactTable';
 import MainCard from '../../components/MainCard';
 
 interface Permission {

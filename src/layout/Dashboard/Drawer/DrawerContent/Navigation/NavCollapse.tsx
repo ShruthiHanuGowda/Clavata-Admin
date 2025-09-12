@@ -24,7 +24,7 @@ import RightOutlined from '@ant-design/icons/RightOutlined';
 import NavItem from './NavItem';
 import Dot from 'components/@extended/Dot';
 import IconButton from 'components/@extended/IconButton';
-import SimpleBar from 'components/third-party/SimpleBar';
+import SimpleBar from 'components/thirdParty/SimpleBar';
 import Transitions from 'components/@extended/Transitions';
 import { MenuOrientation, ThemeMode } from 'config';
 
