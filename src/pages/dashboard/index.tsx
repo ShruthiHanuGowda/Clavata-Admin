@@ -16,47 +16,7 @@ import StatisticsCard from 'sections/dashboard';
 import { getStats, getCounters, getCharts, getNewAccounts } from 'utils/api/denergytestnet';
 import EnergyConsumption from 'sections/dashboard/energyConsumption';
 import ErrorBoundary from 'components/ErrorBoundary';
-
-interface Chart {
-  id: string;
-  title: string;
-  [key: string]: unknown;
-}
-
-interface CounterData {
-  isLoss: boolean;
-  id: string;
-  title: string;
-  info?: string;
-  count: number;
-}
-
-interface StatsData {
-  total_transactions?: string | number;
-  transactions_today?: string | number;
-  total_addresses?: string | number;
-  newAccountsIN24Hours?: string | number;
-  coin_price?: string | number;
-}
-
-interface ChartSection {
-  id: AnalyticsKey;
-  title: string;
-  charts: Chart[];
-}
-interface RawCounter {
-  id?: string;
-  title?: string;
-  description?: string;
-  value?: string | number;
-}
-interface RawChartSection {
-  id?: string;
-  title?: string;
-  [key: string]: unknown;
-}
-
-type AnalyticsKey = 'accounts' | 'transactions' | 'blocks' | 'tokens' | 'gas' | 'contracts' | 'wattCoin';
+import { ChartSection, CounterData, StatsData, RawCounter, RawChartSection, AnalyticsKey } from 'types/dashboard';
 
 const countersToAnalytics: Record<AnalyticsKey, string[]> = {
   accounts: ['totalAccounts', 'totalAddresses'],
@@ -75,81 +35,81 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const [statsData, countersData, chartsData, newAccountsData] = await Promise.all([
-          getStats(),
-          getCounters(),
-          getCharts(),
-          getNewAccounts()
-        ]);
+      const [statsData, countersData, chartsData, newAccountsData] = await Promise.all([
+        getStats(),
+        getCounters(),
+        getCharts(),
+        getNewAccounts()
+      ]);
 
-        // Normalize stats data
-        const normalizedStats: StatsData = {
-          total_transactions: statsData?.total_transactions || 0,
-          transactions_today: statsData?.transactions_today || 0,
-          total_addresses: statsData?.total_addresses || 0,
-          coin_price: statsData?.coin_price || 0
-        };
+      // Normalize stats data
+      const normalizedStats: StatsData = {
+        total_transactions: statsData?.total_transactions || 0,
+        transactions_today: statsData?.transactions_today || 0,
+        total_addresses: statsData?.total_addresses || 0,
+        coin_price: statsData?.coin_price || 0
+      };
 
-        // Normalize counters data
-        const normalizedCounters: CounterData[] =
-          countersData?.counters?.map((counter: RawCounter) => {
-            const rawValue = typeof counter.value === 'string' ? parseFloat(counter.value) : Number(counter.value);
-            const count = isNaN(rawValue) ? 0 : Number(rawValue.toFixed(3));
+      // Normalize counters data
+      const normalizedCounters: CounterData[] =
+        countersData?.counters?.map((counter: RawCounter) => {
+          const rawValue = typeof counter.value === 'string' ? parseFloat(counter.value) : Number(counter.value);
+          const count = isNaN(rawValue) ? 0 : Number(rawValue.toFixed(3));
 
-            return {
-              id: counter.id ?? '',
-              title: counter.title ?? 'Unknown',
-              info: counter.description ?? '',
-              count
-            };
-          }) ?? [];
+          return {
+            id: counter.id ?? '',
+            title: counter.title ?? 'Unknown',
+            info: counter.description ?? '',
+            count
+          };
+        }) ?? [];
 
-        // Normalize charts data
-        const normalizedCharts: ChartSection[] =
-          chartsData?.sections?.map((section: RawChartSection) => ({
-            id: section.id || '',
-            title: section.title || 'Unknown',
-            charts: Array.isArray(section.charts) ? section.charts : []
-          })) || [];
+      // Normalize charts data
+      const normalizedCharts: ChartSection[] =
+        chartsData?.sections?.map((section: RawChartSection) => ({
+          id: section.id || '',
+          title: section.title || 'Unknown',
+          charts: Array.isArray(section.charts) ? section.charts : []
+        })) || [];
 
-        setStats(normalizedStats);
-        setCounters(normalizedCounters);
-        setCharts(normalizedCharts);
+      setStats(normalizedStats);
+      setCounters(normalizedCounters);
+      setCharts(normalizedCharts);
 
-        // Handle new accounts data
-        if (newAccountsData?.chart && Array.isArray(newAccountsData.chart) && newAccountsData.chart.length > 0) {
-          const firstChartEntry = newAccountsData.chart[0];
-          if (firstChartEntry && 'value' in firstChartEntry) {
-            setStats((prev) => ({
-              ...prev,
-              newAccountsIN24Hours: isNaN(parseFloat(firstChartEntry.value)) ? 0 : parseFloat(firstChartEntry.value)
-            }));
-          }
+      // Handle new accounts data
+      if (newAccountsData?.chart && Array.isArray(newAccountsData.chart) && newAccountsData.chart.length > 0) {
+        const firstChartEntry = newAccountsData.chart[0];
+        if (firstChartEntry && 'value' in firstChartEntry) {
+          setStats((prev) => ({
+            ...prev,
+            newAccountsIN24Hours: isNaN(parseFloat(firstChartEntry.value)) ? 0 : parseFloat(firstChartEntry.value)
+          }));
         }
-      } catch (err) {
-        console.error('Error loading dashboard data:', err);
-        let errorMessage = 'Failed to load dashboard data';
-
-        if (err instanceof Error) {
-          if (err.message.includes('Network Error') || err.message.includes('CORS')) {
-            errorMessage = 'Unable to connect to the server. Please check your internet connection or contact support.';
-          } else {
-            errorMessage = err.message;
-          }
-        }
-
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      let errorMessage = 'Failed to load dashboard data';
 
+      if (err instanceof Error) {
+        if (err.message.includes('Network Error') || err.message.includes('CORS')) {
+          errorMessage = 'Unable to connect to the server. Please check your internet connection or contact support.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadDashboardData();
   }, []);
 
@@ -168,23 +128,38 @@ export default function Dashboard() {
     );
   }
 
-  if (error) {
-    return (
-      <Grid container>
-        <Grid item xs={12}>
-          <Alert severity="error" sx={{ mb: 2 }}>
-            Error loading dashboard: {error}
-          </Alert>
-        </Grid>
-      </Grid>
-    );
-  }
-
   return (
     <Grid container rowSpacing={4.5} columnSpacing={2.75}>
       <Grid item xs={12} sx={{ mb: -2.25 }}>
         <Typography variant="h5">Dashboard</Typography>
       </Grid>
+      {error && (
+        <Grid container>
+          <Grid item xs={12}>
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              action={
+                <button
+                  onClick={loadDashboardData}
+                  style={{
+                    background: 'none',
+                    border: '1px solid #f44336',
+                    color: '#f44336',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Retry
+                </button>
+              }
+            >
+              Error loading dashboard: {error}
+            </Alert>
+          </Grid>
+        </Grid>
+      )}
       <Grid item xs={12} lg={12}>
         <ErrorBoundary>
           <Blockchain
