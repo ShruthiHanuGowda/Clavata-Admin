@@ -32,7 +32,7 @@ interface DashboardApiResponse {
   };
 }
 
-type TimeSlot = 'week' | 'month';
+type TimeSlot = 'week' | 'month' | 'day' | 'year';
 
 export const useDashboardData = (type: ApiBaseUrlKey = 'D_WALLET_API_BASE_URL') => {
   const [analytics, setAnalytics] = useState<AnalyticsData>({});

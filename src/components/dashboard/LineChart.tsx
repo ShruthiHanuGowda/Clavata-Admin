@@ -5,7 +5,7 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { LineChart } from '@mui/x-charts';
 
 interface ChartProps {
-  slot: 'week' | 'month';
+  slot: 'week' | 'month' | 'day' | 'year';
   data: number[];
 }
 
@@ -47,6 +47,12 @@ export default function Chart({ slot, data = [] }: ChartProps) {
         currentLabels = weekLabels;
         break;
       case 'month':
+        currentLabels = monthLabels;
+        break;
+      case 'day':
+        currentLabels = weekLabels;
+        break;
+      case 'year':
         currentLabels = monthLabels;
         break;
       default:
