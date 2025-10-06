@@ -10,11 +10,13 @@ import MainCard from 'components/MainCard';
 import LineChartCard from 'components/dashboard/LineChartCard';
 import { getChartDataById } from 'utils/api/denergytestnet';
 import AnalyticCard from 'components/dashboard/AnalyticCard';
+import { TimeSlot } from 'hooks/useLineChart';
 
 interface Chart {
   id: string;
   title: string;
   description?: string;
+  resolutions?: ('week' | 'month' | 'day' | 'YEAR' | 'WEEK' | 'MONTH' | 'DAY')[];
   [key: string]: unknown;
 }
 
@@ -36,10 +38,17 @@ interface ChartCardProps {
   chart: Omit<Chart, 'id'>;
 }
 const ChartCard = ({ id, chart }: ChartCardProps) => {
-  const { slot, data, setData, handleSlotChange: handleUserSlotChange } = useLineChart();
+  const initialSlot =
+    Array.isArray(chart?.resolutions) && chart.resolutions.length > 0 ? (chart.resolutions[0].toLowerCase() as TimeSlot) : 'week';
+  const { slot, data, setData, handleSlotChange: handleUserSlotChange } = useLineChart(initialSlot);
 
   useEffect(() => {
-    if (id) getChartDataById(id, slot).then((data) => setData(data.chart.map(({ value }: { value: string }) => value)));
+    if (id) {
+      const resolution = slot;
+      getChartDataById(id, resolution).then((data) => {
+        setData(data.chart.map(({ value }: { value: string }) => value));
+      });
+    }
   }, [id, slot, setData]);
 
   return (
@@ -50,6 +59,7 @@ const ChartCard = ({ id, chart }: ChartCardProps) => {
         slot={slot}
         data={data}
         handleSlotChange={handleUserSlotChange}
+        resolutions={chart.resolutions as ('week' | 'month' | 'day' | 'year')[] | undefined}
       />
     </Grid>
   );

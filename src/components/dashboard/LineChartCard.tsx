@@ -16,8 +16,9 @@ import { TimeSlot } from 'hooks/useLineChart';
 interface LineChartCardProps {
   title: string;
   description?: string;
-  slot: 'week' | 'month';
+  slot: 'week' | 'month' | 'day' | 'year';
   data: number[];
+  resolutions?: TimeSlot[];
   handleSlotChange: (slot: TimeSlot) => void;
   loading?: boolean;
 }
@@ -28,6 +29,7 @@ export default function LineChartCard({
   slot = 'week',
   data,
   handleSlotChange,
+  resolutions,
   loading = false
 }: LineChartCardProps) {
   return (
@@ -54,12 +56,21 @@ export default function LineChartCard({
             >
               <Select
                 value={slot}
-                onChange={(e: SelectChangeEvent) => handleSlotChange(e.target.value as 'month' | 'week')}
+                onChange={(e: SelectChangeEvent) => handleSlotChange(e.target.value as 'month' | 'week' | 'day' | 'year')}
                 size="small"
                 disabled={loading}
               >
-                <MenuItem value="week">Week</MenuItem>
-                <MenuItem value="month">Month</MenuItem>
+                {resolutions && resolutions?.length > 0
+                  ? resolutions.map((res) => (
+                      <MenuItem key={res} value={res.toLocaleLowerCase()}>
+                        {res.charAt(0).toUpperCase() + res.slice(1).toLowerCase()}
+                      </MenuItem>
+                    ))
+                  : ['WEEK', 'MONTH'].map((res) => (
+                      <MenuItem key={res} value={res.toLocaleLowerCase()}>
+                        {res.charAt(0).toUpperCase() + res.slice(1).toLowerCase()}
+                      </MenuItem>
+                    ))}
               </Select>
             </Stack>
           </Grid>
