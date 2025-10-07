@@ -50,10 +50,27 @@ export default function Chart({ slot, data = [] }: ChartProps) {
         currentLabels = monthLabels;
         break;
       case 'day':
-        currentLabels = weekLabels;
+        const today = new Date();
+        const last7Days = Array.from({ length: 7 }, (_, i) => {
+          const date = new Date(today);
+          date.setDate(today.getDate() - 6 + i); // from 6 days ago to today
+          const label = date.toLocaleDateString('default', {
+            month: 'short',
+            day: '2-digit'
+          }); // e.g., "Oct 01"
+          return label;
+        });
+        currentLabels = last7Days;
         break;
       case 'year':
-        currentLabels = monthLabels;
+        const now = new Date();
+        const last12Months = Array.from({ length: 12 }, (_, i) => {
+          const date = new Date(now.getFullYear(), now.getMonth() - 11 + i);
+          const month = date.toLocaleString('default', { month: 'short' });
+          const year = `'${date.getFullYear().toString().slice(-2)}`;
+          return `${month} ${year}`; // e.g., "Oct '24"
+        });
+        currentLabels = last12Months;
         break;
       default:
         currentLabels = monthLabels;

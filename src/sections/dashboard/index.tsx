@@ -59,7 +59,7 @@ const ChartCard = ({ id, chart }: ChartCardProps) => {
         slot={slot}
         data={data}
         handleSlotChange={handleUserSlotChange}
-        resolutions={chart.resolutions as ('week' | 'month' | 'day' | 'year')[] | undefined}
+        resolutions={chart.resolutions as TimeSlot[] | undefined}
       />
     </Grid>
   );
