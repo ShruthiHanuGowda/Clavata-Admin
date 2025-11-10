@@ -2,7 +2,7 @@ export function getBlockExploreLink(
   data: string | number | undefined | null,
   type?: 'transaction' | 'token' | 'address' | 'block' | 'countdown'
 ): string {
-  const explorersUrl = 'https://explorernew.denergytestnet.com/';
+  const explorersUrl = 'https://explorer.denergytestnet.com/';
   switch (type) {
     case 'transaction': {
       return `${explorersUrl}/tx/${data}`;
