@@ -28,7 +28,7 @@ export default function EvidentItems() {
 
   const {
     data: queryData,
-    loading,
+    // loading,
     error,
     fetchMore
   } = useQuery<{ listEvidentItems: { items: EvidentItem[]; nextToken: string | null } }>(LIST_EVIDENT_ITEMS, {
@@ -228,9 +228,9 @@ export default function EvidentItems() {
         previousTokens={previousTokens}
         pageSize={pageSize}
         setPageSize={setPageSize}
-        isLoading={loading}
+        isLoading={false}
         topPagination={false}
-        showSearch={true}
+        showSearch={false}
         csvFilename="evident-items.csv"
       />
     </MainCard>
