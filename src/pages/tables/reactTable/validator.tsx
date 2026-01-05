@@ -49,11 +49,13 @@ export default function Validator() {
   const [delegators, setDelegators] = useState<Delegator[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
 
+  const GET_VALIDATORS_URL = import.meta.env.VITE_APP_STAKING_GET_VALIDATORS_API_URL || '';
+
   useEffect(() => {
     const fetchValidators = async () => {
       setLoading(true);
       try {
-        const res = await fetch('https://2f6h4d0go8.execute-api.me-central-1.amazonaws.com/default/staking_getValidators');
+        const res = await fetch(GET_VALIDATORS_URL);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const json = await res.json();
         setValidators(json.validators || []);
@@ -74,9 +76,7 @@ export default function Validator() {
   const fetchValidatorDetails = async (validatorId: string) => {
     if (!validatorId) return;
     try {
-      const response = await fetch(
-        `https://2f6h4d0go8.execute-api.me-central-1.amazonaws.com/default/staking_getValidators?validatorId=${validatorId}`
-      );
+      const response = await fetch(`${GET_VALIDATORS_URL}?validatorId=${validatorId}`);
       const json = await response.json();
       setSelectedValidator(json.validator);
       setDelegators(json.delegators);

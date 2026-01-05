@@ -23,7 +23,7 @@ export default function Registries() {
   const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
-    fetch('https://hd1l22xs32.execute-api.me-central-1.amazonaws.com/default/adminRegistriesList')
+    fetch(import.meta.env.VITE_APP_REGISTRIES_API_URL || '')
       .then((res) => res.json())
       .then((res) => {
         setData(res.data || []);

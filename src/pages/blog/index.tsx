@@ -102,6 +102,8 @@ export default function BlogManager() {
   // const blogs = data?.listBlogs?.items || [];
   const navigate = useNavigate();
 
+  const UPLOAD_IMAGE_API_URL = import.meta.env.VITE_APP_UPLOAD_IMAGE_API_URL || '';
+
   if (error) {
     if (error?.message?.includes('code 401')) {
       logout();
@@ -157,7 +159,7 @@ export default function BlogManager() {
     try {
       setUploading(true);
 
-      const res = await fetch('https://ku5yu8b4ob.execute-api.me-central-1.amazonaws.com/default/uploadImage', {
+      const res = await fetch(UPLOAD_IMAGE_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': file.type

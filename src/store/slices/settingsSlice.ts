@@ -47,7 +47,7 @@ const initialState: SettingsState = {
   error: null
 };
 
-const API_BASE_URL = import.meta.env.VITE_APP_SETTINGS_API_URL || 'https://11rysti5l2.execute-api.me-central-1.amazonaws.com/test';
+const API_BASE_URL = import.meta.env.VITE_APP_SETTINGS_API_URL || '';
 
 export const fetchUserSettings = createAsyncThunk('settings/fetchUserSettings', async (userId: string, { rejectWithValue }) => {
   try {
