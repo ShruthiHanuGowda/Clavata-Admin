@@ -1,6 +1,14 @@
 import { ReactElement } from 'react';
 import { PopupLoginOptions, RedirectLoginOptions } from '@auth0/auth0-react';
 import firebase from 'firebase/compat/app';
+import {
+  CognitoUser,
+  CognitoUserAttribute,
+  CognitoUserPool,
+  CognitoUserSession,
+  AuthenticationDetails
+} from 'amazon-cognito-identity-js';
+
 // ==============================|| AUTH TYPES ||============================== //
 
 export type GuardProps = {
@@ -32,7 +40,6 @@ type CanRemove = {
   newPassword?: (email: string, code: string, password: string) => Promise<void>;
   updatePassword?: (password: string) => Promise<void>;
   resetPassword?: (email: string) => Promise<void>;
-  awsResetPassword?: (verificationCode: string, newPassword: string) => Promise<unknown>;
 };
 
 export type FirebaseContextType = {
@@ -62,18 +69,24 @@ export interface InitialLoginContextProps {
   isLoggedIn: boolean;
   isInitialized?: boolean;
   user?: UserProfile | null | undefined;
+  cognitoUser?: CognitoUser | null;
+  userAttributes?: Record<string, any>;
 }
 export interface AuthProps {
   isLoggedIn: boolean;
   isInitialized?: boolean;
   user?: UserProfile | null;
   token?: string | null;
+  isNewPasswordRequired?: boolean;
+  cognitoUser?: CognitoUser | null;
+  userAttributes?: Record<string, any>;
 }
 
 export interface AuthActionProps {
   type: string;
-  payload?: AuthProps;
+  payload?: any;
 }
+
 
 export type JWTContextType = {
   isLoggedIn: boolean;
@@ -88,11 +101,18 @@ export type JWTContextType = {
 export type AWSCognitoContextType = CanRemove & {
   isLoggedIn: boolean;
   isInitialized?: boolean;
+  isNewPasswordRequired?: boolean;
   user?: UserProfile | null | undefined;
+  cognitoUser?: any;
+  userAttributes?: Record<string, any>;
   logout: () => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
-  awsResetPassword: (verificationCode: string, newPassword: string) => Promise<void>;
+  awsResetPassword: (
+    newPassword: string,
+    cognitoUser: CognitoUser,
+    userAttributes?: Record<string, any>
+  ) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   updateProfile: VoidFunction;
   codeVerification: (verificationCode: string) => Promise<void>;
