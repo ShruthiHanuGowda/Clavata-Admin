@@ -310,7 +310,7 @@ export default function AuthLogin({ isDemo = false }: { isDemo?: boolean }) {
                     error={errors.newPassword}
                     onBlur={handleBlur}
                     onChange={handleChange}
-                    placeholder="Enter new password"
+                    placeholder="Enter New Password"
                   />
                 ) : (
                   <Typography>Preparing account…</Typography>
