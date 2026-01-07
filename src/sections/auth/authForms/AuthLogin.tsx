@@ -228,7 +228,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom';
 
 import AnimateButton from 'components/@extended/AnimateButton';
-import PasswordInput from './passwordInput';
+import PasswordInput from './PasswordInput';
 import { useAuthLogin } from './useAuthLogin';
 
 export default function AuthLogin({ isDemo = false }: { isDemo?: boolean }) {
