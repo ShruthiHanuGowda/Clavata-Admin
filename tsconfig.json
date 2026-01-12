@@ -18,6 +18,6 @@
     "baseUrl": "src"
   },
   "exclude": ["node_modules"],
-  "include": ["src", "**/*.ts", "**/*.tsx", "src/**/*", "vite.config.mts"],
+  "include": ["src", "**/*.ts", "**/*.tsx", "src/**/*"], //removed vite.config.mts
   "references": [{ "path": "./tsconfig.node.json" }]
 }
