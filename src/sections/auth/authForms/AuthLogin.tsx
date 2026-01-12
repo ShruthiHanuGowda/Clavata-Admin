@@ -231,6 +231,7 @@ import AnimateButton from 'components/@extended/AnimateButton';
 import PasswordInput from './PasswordInput';
 import { useAuthLogin } from './useAuthLogin';
 
+//auth login form
 export default function AuthLogin({ isDemo = false }: { isDemo?: boolean }) {
   const {
     auth,
