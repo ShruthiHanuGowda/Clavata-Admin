@@ -76,6 +76,8 @@ const httpLink = createHttpLink({
 export default function App() {
   const { token } = useSelector((state: RootState) => state?.auth);
 
+  console.log('GRAPHQL TOKEN:', token);
+
   const [authenticationToken, setAuthenticationToken] = useState(token ?? '');
   const [searchTerm, setSearchTerm] = useState('');
 
