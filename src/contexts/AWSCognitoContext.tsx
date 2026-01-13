@@ -34,10 +34,12 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
   const [state, dispatch] = useReducer(authReducer, initialState);
   const dispatchRedux = useDispatch();
   const authState = useSelector((state: RootState) => state.auth);
+  console.log('Redux Auth State:', authState);
 
   useEffect(() => {
     const init = async () => {
       const currentUser = userPool.getCurrentUser();
+      console.log('Current Cognito User:', currentUser);
 
       if (!currentUser) {
         dispatch({ type: LOGOUT });
@@ -53,8 +55,9 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
         }
 
         const idToken = session.getIdToken().getJwtToken();
+        console.log('Cognito ID Token:', idToken);
         const payload = session.getIdToken().decodePayload() as CognitoIdTokenPayload;
-
+        console.log('Cognito ID Token Payload:', payload);
         const userProfile: UserProfile = { email: payload.email ?? '' };
 
         dispatch({
@@ -128,6 +131,7 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
     await new Promise<void>((resolve, reject) => {
       cognitoUser.authenticateUser(authData, {
         onSuccess: (session: CognitoUserSession) => {
+          const idToken = session.getIdToken().getJwtToken();
           const payload = session.getIdToken().decodePayload();
 
           dispatch({
@@ -138,7 +142,17 @@ export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => 
               user: { email: payload.email ?? '' }
             }
           });
-
+          // Update Redux state 
+          dispatchRedux(
+            authLogin({
+              user: {
+                id: payload.sub,
+                email: payload.email || '',
+                name: payload.name || ''
+              },
+              token: idToken
+            })
+          );
           resolve();
         },
 
