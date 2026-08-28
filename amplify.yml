@@ -1,21 +1,16 @@
 version: 1
-
 frontend:
   phases:
     preBuild:
       commands:
-        - yarn install --immutable
-
+        - npm install
     build:
       commands:
-        - yarn build
-
+        - npm run build
   artifacts:
     baseDirectory: dist
     files:
       - '**/*'
-
   cache:
     paths:
       - node_modules/**/*
-      - .yarn/cache/**/*
