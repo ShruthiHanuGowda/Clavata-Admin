@@ -3,81 +3,244 @@ name: Deploy to AWS Amplify
 on:
   push:
     branches:
-      - main  # Deploy when pushing to the main branch
-  workflow_dispatch:  # Allow manual deployment from GitHub Actions UI
+      - main
+
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # --------------------------------------------------
+      # 1. Checkout source code
+      # --------------------------------------------------
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
+      # --------------------------------------------------
+      # 2. Setup Node.js
+      # --------------------------------------------------
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'  # Adjust based on your project
-      
-      - name: Clean up previous build files
+          node-version: "20"
+
+      # --------------------------------------------------
+      # 3. Clean old build files
+      # --------------------------------------------------
+      - name: Clean previous build files
         run: |
-          # Remove package-lock.json if it exists
-          rm -f package-lock.json || true
+          rm -rf dist
+          rm -rf build
+          rm -f package-lock.json
 
-          # Remove dist/ folder if it exists
-          rm -rf dist || true
-
+      # --------------------------------------------------
+      # 4. Install dependencies
+      # --------------------------------------------------
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      # --------------------------------------------------
+      # 5. Build React application
+      # --------------------------------------------------
       - name: Build project
-        run: npm run build 
+        run: npm run build
 
+      # --------------------------------------------------
+      # 6. Verify build
+      # --------------------------------------------------
       - name: Verify build output
-        run: ls -la ./dist  # Ensure build files exist
+        run: |
+          echo "Checking dist folder..."
+          ls -la dist
 
+      # --------------------------------------------------
+      # 7. Deploy to AWS Amplify
+      # --------------------------------------------------
       - name: Deploy to AWS Amplify
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+          # Mumbai AWS region
+          AWS_REGION: ap-south-1
+
+          # Your Amplify App ID
           AMPLIFY_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
-          AMPLIFY_BRANCH: staging  # Change if deploying to a different branch
+
+          # Amplify branch to deploy
+          AMPLIFY_BRANCH: main
+
         run: |
-          # Install AWS CLI & Amplify CLI
-          npm install -g @aws-amplify/cli
-          aws configure set region $AWS_REGION
+          set -e
 
-          # Get the last job status
-          LAST_JOB_STATUS=$(aws amplify list-jobs --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH --query "jobSummaries[0].status" --output text)
-          LAST_JOB_ID=$(aws amplify list-jobs --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH --query "jobSummaries[0].jobId" --output text)
+          echo "========================================="
+          echo "AWS Amplify Deployment"
+          echo "========================================="
 
-          # If the last job is still running, stop it before proceeding
-          if [[ "$LAST_JOB_STATUS" == "PENDING" || "$LAST_JOB_STATUS" == "RUNNING" ]]; then
-            echo "Stopping previous unfinished job: $LAST_JOB_ID"
-            aws amplify stop-job --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH --job-id $LAST_JOB_ID
-            sleep 10  # Wait a bit for the job to stop
+          # ----------------------------------------------
+          # Verify required variables
+          # ----------------------------------------------
+
+          if [ -z "$AWS_ACCESS_KEY_ID" ]; then
+            echo "ERROR: AWS_ACCESS_KEY_ID is missing"
+            exit 1
           fi
 
-          # Create a new deployment
-          DEPLOYMENT=$(aws amplify create-deployment --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH)
-          
-          # Extract job ID and Upload URL
-          JOB_ID=$(echo $DEPLOYMENT | jq -r '.jobId')
-          UPLOAD_URL=$(echo $DEPLOYMENT | jq -r '.zipUploadUrl')
+          if [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "ERROR: AWS_SECRET_ACCESS_KEY is missing"
+            exit 1
+          fi
 
-          # Zip only the contents inside dist/ (not the dist folder itself)
-          cd dist && zip -r -FS ../dist.zip * && cd ..
+          if [ -z "$AMPLIFY_APP_ID" ]; then
+            echo "ERROR: AMPLIFY_APP_ID is missing"
+            exit 1
+          fi
 
-          # Verify ZIP structure
-          mkdir build && unzip dist.zip -d build
-          ls -la build
+          echo "AWS Region: $AWS_REGION"
+          echo "Amplify App ID is configured"
+          echo "Amplify Branch: $AMPLIFY_BRANCH"
 
-          # Upload ZIP file to AWS Amplify
-          curl -X PUT -T dist.zip "$UPLOAD_URL"
+          # ----------------------------------------------
+          # Configure AWS region
+          # ----------------------------------------------
 
-          # Start deployment
-          aws amplify start-deployment --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH --job-id $JOB_ID
+          aws configure set region "$AWS_REGION"
 
+          # ----------------------------------------------
+          # Verify AWS credentials
+          # ----------------------------------------------
+
+          echo "Checking AWS credentials..."
+
+          aws sts get-caller-identity
+
+          # ----------------------------------------------
+          # Check latest Amplify job
+          # ----------------------------------------------
+
+          echo "Checking previous Amplify jobs..."
+
+          LAST_JOB_STATUS=$(aws amplify list-jobs \
+            --app-id "$AMPLIFY_APP_ID" \
+            --branch-name "$AMPLIFY_BRANCH" \
+            --query "jobSummaries[0].status" \
+            --output text)
+
+          LAST_JOB_ID=$(aws amplify list-jobs \
+            --app-id "$AMPLIFY_APP_ID" \
+            --branch-name "$AMPLIFY_BRANCH" \
+            --query "jobSummaries[0].jobId" \
+            --output text)
+
+          echo "Last job status: $LAST_JOB_STATUS"
+          echo "Last job ID: $LAST_JOB_ID"
+
+          # ----------------------------------------------
+          # Stop previous unfinished job
+          # ----------------------------------------------
+
+          if [[ "$LAST_JOB_STATUS" == "PENDING" || "$LAST_JOB_STATUS" == "RUNNING" ]]; then
+
+            echo "Stopping previous unfinished job: $LAST_JOB_ID"
+
+            aws amplify stop-job \
+              --app-id "$AMPLIFY_APP_ID" \
+              --branch-name "$AMPLIFY_BRANCH" \
+              --job-id "$LAST_JOB_ID"
+
+            sleep 10
+
+          fi
+
+          # ----------------------------------------------
+          # Create new Amplify deployment
+          # ----------------------------------------------
+
+          echo "Creating new Amplify deployment..."
+
+          DEPLOYMENT=$(aws amplify create-deployment \
+            --app-id "$AMPLIFY_APP_ID" \
+            --branch-name "$AMPLIFY_BRANCH")
+
+          echo "Deployment created."
+
+          # ----------------------------------------------
+          # Extract deployment information
+          # ----------------------------------------------
+
+          JOB_ID=$(echo "$DEPLOYMENT" | jq -r '.jobId')
+          UPLOAD_URL=$(echo "$DEPLOYMENT" | jq -r '.zipUploadUrl')
+
+          if [ -z "$JOB_ID" ] || [ "$JOB_ID" == "null" ]; then
+            echo "ERROR: Could not get Amplify Job ID"
+            echo "$DEPLOYMENT"
+            exit 1
+          fi
+
+          if [ -z "$UPLOAD_URL" ] || [ "$UPLOAD_URL" == "null" ]; then
+            echo "ERROR: Could not get Amplify upload URL"
+            echo "$DEPLOYMENT"
+            exit 1
+          fi
+
+          echo "Job ID: $JOB_ID"
+
+          # ----------------------------------------------
+          # Create deployment ZIP
+          # ----------------------------------------------
+
+          echo "Creating deployment ZIP..."
+
+          cd dist
+
+          zip -r -FS ../dist.zip .
+
+          cd ..
+
+          # ----------------------------------------------
+          # Verify ZIP
+          # ----------------------------------------------
+
+          echo "Checking ZIP contents..."
+
+          unzip -l dist.zip
+
+          # ----------------------------------------------
+          # Upload ZIP to Amplify
+          # ----------------------------------------------
+
+          echo "Uploading build to AWS Amplify..."
+
+          curl --fail \
+            --request PUT \
+            --upload-file dist.zip \
+            "$UPLOAD_URL"
+
+          echo "Build uploaded successfully."
+
+          # ----------------------------------------------
+          # Start Amplify deployment
+          # ----------------------------------------------
+
+          echo "Starting Amplify deployment..."
+
+          aws amplify start-deployment \
+            --app-id "$AMPLIFY_APP_ID" \
+            --branch-name "$AMPLIFY_BRANCH" \
+            --job-id "$JOB_ID"
+
+          echo "========================================="
+          echo "Deployment started successfully!"
+          echo "========================================="
+
+          # ----------------------------------------------
           # Show deployment status
-          aws amplify list-jobs --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH --query "jobSummaries[*].{Status:status, JobId:jobId}"
+          # ----------------------------------------------
+
+          aws amplify list-jobs \
+            --app-id "$AMPLIFY_APP_ID" \
+            --branch-name "$AMPLIFY_BRANCH" \
+            --query "jobSummaries[*].{Status:status,JobId:jobId}" \
+            --output table
