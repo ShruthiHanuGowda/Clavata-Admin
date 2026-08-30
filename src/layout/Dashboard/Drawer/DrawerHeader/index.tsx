@@ -1,10 +1,10 @@
-// material-ui
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 
 // project import
 import DrawerHeaderStyled from './DrawerHeaderStyled';
-import Logo from 'components/logo';
 
 import useConfig from 'hooks/useConfig';
 import { MenuOrientation } from 'config';
@@ -12,8 +12,6 @@ import { MenuOrientation } from 'config';
 interface Props {
   open: boolean;
 }
-
-// ==============================|| DRAWER HEADER ||============================== //
 
 export default function DrawerHeader({ open }: Props) {
   const theme = useTheme();
@@ -31,10 +29,90 @@ export default function DrawerHeader({ open }: Props) {
         width: isHorizontal ? { xs: '100%', lg: '424px' } : 'initial',
         paddingTop: isHorizontal ? { xs: '10px', lg: '0' } : '8px',
         paddingBottom: isHorizontal ? { xs: '18px', lg: '0' } : '8px',
-        paddingLeft: isHorizontal ? { xs: '24px', lg: '0' } : open ? '24px' : 0
+        paddingLeft: isHorizontal ? { xs: '24px', lg: '0' } : open ? '24px' : 0,
+        display: 'flex',
+        alignItems: 'center'
       }}
     >
-      <Logo isIcon={!open} sx={{ width: open ? '90%' : 35, height: 35 }} />
+      {open ? (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Logo mark */}
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '10px',
+              background: theme.palette.primary.main,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}
+          >
+            <Typography
+              sx={{
+                color: '#fff',
+                fontSize: '20px',
+                fontWeight: 800,
+                lineHeight: 1
+              }}
+            >
+              C
+            </Typography>
+          </Box>
+
+          {/* Brand */}
+          <Box>
+            <Typography
+              sx={{
+                fontSize: '14px',
+                fontWeight: 800,
+                letterSpacing: '1.5px',
+                lineHeight: 1,
+                color: theme.palette.text.primary
+              }}
+            >
+              CLAVATA
+            </Typography>
+
+            <Typography
+              sx={{
+                fontSize: '8px',
+                fontWeight: 500,
+                letterSpacing: '1.8px',
+                color: theme.palette.text.secondary,
+                mt: '4px'
+              }}
+            >
+              ADMIN PORTAL
+            </Typography>
+          </Box>
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: '10px',
+            background: theme.palette.primary.main,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mx: 'auto'
+          }}
+        >
+          <Typography
+            sx={{
+              color: '#fff',
+              fontSize: '20px',
+              fontWeight: 800,
+              lineHeight: 1
+            }}
+          >
+            C
+          </Typography>
+        </Box>
+      )}
     </DrawerHeaderStyled>
   );
 }

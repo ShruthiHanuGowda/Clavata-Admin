@@ -1,444 +1,3 @@
-// import { ReactElement, createContext, useEffect, useReducer } from 'react';
-// import { CognitoUserAttribute, CognitoUser, CognitoUserPool, CognitoUserSession, AuthenticationDetails } from 'amazon-cognito-identity-js';
-// import { useDispatch, useSelector } from 'react-redux';
-// import { login as authLogin, logout as authLogout } from 'store/slices/authSlice';
-
-// import Loader from 'components/Loader';
-// import { LOGIN, LOGOUT, NEW_PASSWORD_REQUIRED } from 'contexts/authReducer/actions';
-// import authReducer from 'contexts/authReducer/auth';
-
-// import { AWSCognitoContextType, InitialLoginContextProps, UserProfile } from 'types/auth';
-// import { RootState } from 'store';
-
-// interface CognitoIdTokenPayload {
-//   sub: string;
-//   email?: string;
-//   name?: string;
-// }
-
-// const initialState: InitialLoginContextProps = {
-//   isLoggedIn: false,
-//   isInitialized: false,
-//   user: null,
-//   cognitoUser: null
-// };
-
-// export const userPool = new CognitoUserPool({
-//   UserPoolId: import.meta.env.VITE_APP_AWS_POOL_ID || '',
-//   ClientId: import.meta.env.VITE_APP_AWS_APP_CLIENT_ID || ''
-// });
-
-// const AWSCognitoContext = createContext<AWSCognitoContextType | null>(null);
-
-// export const AWSCognitoProvider = ({ children }: { children: ReactElement }) => {
-//   const [state, dispatch] = useReducer(authReducer, initialState);
-//   const dispatchRedux = useDispatch();
-//   const authState = useSelector((state: RootState) => state.auth);
-//   console.log('Redux Auth State:', authState);
-
-//   useEffect(() => {
-//     const init = async () => {
-//       const currentUser = userPool.getCurrentUser();
-//       console.log('Current Cognito User:', currentUser);
-
-//       if (!currentUser) {
-//         dispatch({ type: LOGOUT });
-//         dispatchRedux(authLogout());
-//         return;
-//       }
-
-//       currentUser.getSession((err: Error | null, session: CognitoUserSession | null) => {
-//         if (err || !session || !session.isValid()) {
-//           dispatch({ type: LOGOUT });
-//           dispatchRedux(authLogout());
-//           return;
-//         }
-
-//         const idToken = session.getIdToken().getJwtToken();
-//         console.log('Cognito ID Token:', idToken);
-//         const payload = session.getIdToken().decodePayload() as CognitoIdTokenPayload;
-//         console.log('Cognito ID Token Payload:', payload);
-//         const userProfile: UserProfile = { email: payload.email ?? '' };
-
-//         dispatch({
-//           type: LOGIN,
-//           payload: {
-//             isLoggedIn: true,
-//             user: userProfile
-//           }
-//         });
-
-//         dispatchRedux(
-//           authLogin({
-//             user: {
-//               id: payload.sub,
-//               email: payload.email || '',
-//               name: payload.name || ''
-//             },
-//             token: idToken
-//           })
-//         );
-//       });
-//     };
-
-//     init();
-//   }, [dispatchRedux]);
-
-//   // ------------------- AUTH FUNCTIONS -------------------
-//   // const login = async (email: string, password: string): Promise<void> => {
-//   //   const user = new CognitoUser({ Username: email, Pool: userPool });
-//   //   const authData = new AuthenticationDetails({ Username: email, Password: password });
-
-//   //   await new Promise<void>((resolve, reject) => {
-//   //     user.authenticateUser(authData, {
-//   //       onSuccess: (session: CognitoUserSession) => {
-//   //         const idToken = session.getIdToken().getJwtToken();
-//   //         const payload = session.getIdToken().decodePayload();
-
-//   //         const userProfile: UserProfile = { email: payload.email ?? '' };
-
-//   //         dispatch({
-//   //           type: LOGIN,
-//   //           payload: {
-//   //             isLoggedIn: true,
-//   //             user: userProfile
-//   //           }
-//   //         });
-
-//   //         dispatchRedux(
-//   //           authLogin({
-//   //             user: {
-//   //               id: payload.sub,
-//   //               email: payload.email || '',
-//   //               name: payload.name || ''
-//   //             },
-//   //             token: idToken
-//   //           })
-//   //         );
-
-//   //         resolve();
-//   //       },
-//   //       onFailure: (err) => reject(err),
-//   //       newPasswordRequired: () => {} // Handle if needed
-//   //     });
-//   //   });
-//   // };
-
-//   const login = async (email: string, password: string): Promise<void> => {
-//     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
-//     const authData = new AuthenticationDetails({ Username: email, Password: password });
-
-//     await new Promise<void>((resolve, reject) => {
-//       cognitoUser.authenticateUser(authData, {
-//         onSuccess: (session: CognitoUserSession) => {
-//           const idToken = session.getIdToken().getJwtToken();
-//           const payload = session.getIdToken().decodePayload();
-
-//           dispatch({
-//             type: LOGIN,
-//             payload: {
-//               isLoggedIn: true,
-//               isInitialized: true,
-//               user: { email: payload.email ?? '' }
-//             }
-//           });
-//           // Update Redux state 
-//           dispatchRedux(
-//             authLogin({
-//               user: {
-//                 id: payload.sub,
-//                 email: payload.email || '',
-//                 name: payload.name || ''
-//               },
-//               token: idToken
-//             })
-//           );
-//           resolve();
-//         },
-
-//         onFailure: reject,
-
-//         newPasswordRequired: (userAttributes) => {
-//           delete userAttributes.email_verified;
-
-//           dispatch({
-//             type: NEW_PASSWORD_REQUIRED,
-//             payload: {
-//               user: { email: userAttributes.email },
-//               cognitoUser,
-//               userAttributes // ✅ STORE THEM
-//             }
-//           });
-
-//           resolve();
-//         }
-
-//       });
-//     });
-//   };
-
-
-//   const register = async (email: string, password: string, firstName: string, lastName: string): Promise<void> => {
-//     await new Promise<void>((resolve, reject) => {
-//       userPool.signUp(
-//         email,
-//         password,
-//         [
-//           new CognitoUserAttribute({ Name: 'email', Value: email }),
-//           new CognitoUserAttribute({ Name: 'name', Value: `${firstName} ${lastName}` })
-//         ],
-//         [],
-//         (err) => (err ? reject(err) : resolve())
-//       );
-//     });
-//   };
-
-
-
-//   const logout = () => {
-//     const loggedInUser = userPool.getCurrentUser();
-//     if (loggedInUser) loggedInUser.signOut();
-
-//     dispatch({ type: LOGOUT, payload: { isLoggedIn: false, user: null } });
-//     dispatchRedux(authLogout());
-//     localStorage.clear();
-//     sessionStorage.clear();
-//   };
-
-//   const forgotPassword = async (email: string): Promise<void> => {
-//     const user = new CognitoUser({ Username: email, Pool: userPool });
-//     user.forgotPassword({
-//       onSuccess: () => { },
-//       onFailure: () => { }
-//     });
-//   };
-
-//   // const awsResetPassword = async (newPassword: string, cognitoUser: CognitoUser): Promise<void> => {
-//   //   await new Promise<void>((resolve, reject) => {
-//   //     cognitoUser.completeNewPasswordChallenge(
-//   //       newPassword,
-//   //       {}, // optional attributes
-//   //       {
-//   //         onSuccess: (session) => {
-//   //           // reset state so form switches back to login
-//   //           dispatch({
-//   //             type: 'RESET_PASSWORD_SUCCESS', // new action
-//   //           });
-//   //           resolve();
-//   //         },
-//   //         onFailure: (err) => reject(err),
-//   //       }
-//   //     );
-//   //   });
-//   // };
-
-//   // const awsResetPassword = async (newPassword: string, cognitoUser: CognitoUser) => {
-//   //   return new Promise<void>((resolve, reject) => {
-//   //     cognitoUser.completeNewPasswordChallenge(
-//   //       newPassword,
-//   //       {},
-//   //       {
-//   //         onSuccess: (session) => {
-//   //           dispatch({ type: 'RESET_PASSWORD_SUCCESS' });
-//   //           resolve();
-//   //         },
-//   //         onFailure: reject
-//   //       }
-//   //     );
-//   //   });
-//   // };
-
-//   const awsResetPassword = async (
-//     newPassword: string,
-//     cognitoUser: CognitoUser,
-//     userAttributes?: Record<string, any>
-//   ): Promise<void> => {
-//     return new Promise<void>((resolve, reject) => {
-//       // Remove immutable attributes
-//       const cleanedAttributes = { ...(userAttributes || {}) };
-//       delete cleanedAttributes.email;
-//       delete cleanedAttributes.email_verified;
-
-//       cognitoUser.completeNewPasswordChallenge(
-//         newPassword,
-//         cleanedAttributes, // ✅ safe
-//         {
-//           onSuccess: () => {
-//             // ⚠️ Do NOT dispatch LOGIN here
-
-//             // Sign out immediately to force manual login
-//             cognitoUser.signOut();
-
-//             // Optional: show success alert
-//             alert('Password reset successfully! Please login again.');
-
-//             // Redirect to login page (SPA-friendly)
-//             window.location.href = '/login';
-
-//             resolve();
-//           },
-//           onFailure: reject
-//         }
-//       );
-//     });
-//   };
-
-
-//   // const awsResetPassword = async (
-//   //   newPassword: string,
-//   //   cognitoUser: CognitoUser,
-//   //   userAttributes?: Record<string, any>
-//   // ): Promise<void> => {
-//   //   return new Promise<void>((resolve, reject) => {
-//   //     // ⛔ remove immutable attributes
-//   //     const cleanedAttributes = { ...(userAttributes || {}) };
-//   //     delete cleanedAttributes.email;
-//   //     delete cleanedAttributes.email_verified;
-
-//   //     cognitoUser.completeNewPasswordChallenge(
-//   //       newPassword,
-//   //       cleanedAttributes, // ✅ SAFE
-//   //       {
-//   //         onSuccess: (session: CognitoUserSession) => {
-//   //           const payload = session.getIdToken().decodePayload();
-
-//   //           dispatch({
-//   //             type: LOGIN,
-//   //             payload: {
-//   //               isLoggedIn: true,
-//   //               isInitialized: true,
-//   //               user: { email: payload.email ?? '' }
-//   //             }
-//   //           });
-
-//   //           dispatchRedux(
-//   //             authLogin({
-//   //               user: {
-//   //                 id: payload.sub,
-//   //                 email: payload.email || '',
-//   //                 name: payload.name || ''
-//   //               },
-//   //               token: session.getIdToken().getJwtToken()
-//   //             })
-//   //           );
-
-//   //           resolve();
-//   //         },
-//   //         onFailure: reject
-//   //       }
-//   //     );
-//   //   });
-//   // };
-
-
-//   // const awsResetPassword = async (
-//   //   newPassword: string,
-//   //   cognitoUser: CognitoUser,
-//   //   userAttributes: any
-//   // ): Promise<void> => {
-//   //   return new Promise<void>((resolve, reject) => {
-//   //     cognitoUser.completeNewPasswordChallenge(
-//   //       newPassword,
-//   //       userAttributes,
-
-//   //       {
-//   //         onSuccess: (session: CognitoUserSession) => {
-//   //           const payload = session.getIdToken().decodePayload();
-
-//   //           // 1️⃣ Update context state
-//   //           dispatch({
-//   //             type: LOGIN,
-//   //             payload: {
-//   //               isLoggedIn: true,
-//   //               isInitialized: true,
-//   //               user: { email: payload.email ?? '' }
-//   //             }
-//   //           });
-
-//   //           // 2️⃣ Update redux state (if you still use it)
-//   //           dispatchRedux(
-//   //             authLogin({
-//   //               user: {
-//   //                 id: payload.sub,
-//   //                 email: payload.email || '',
-//   //                 name: payload.name || ''
-//   //               },
-//   //               token: session.getIdToken().getJwtToken()
-//   //             })
-//   //           );
-
-//   //           resolve();
-//   //         },
-
-//   //         onFailure: reject
-//   //       }
-//   //     );
-//   //   });
-//   // };
-
-
-//   // const awsResetPassword = async (): Promise<void> => {
-//   //   const email = authState.user?.email;
-//   //   if (!email) throw new Error('Email is required for password reset');
-
-//   //   // await new Promise<void>((resolve, reject) => {
-//   //   //   user.confirmPassword(verificationCode, newPassword, {
-//   //   //     onSuccess: resolve,
-//   //   //     onFailure: (err) => reject(err)
-//   //   //   });
-//   //   // });
-//   // };
-
-//   const codeVerification = async (verificationCode: string): Promise<void> => {
-//     const email = authState.user?.email;
-//     if (!email) throw new Error('Email is required for code verification');
-
-//     const user = new CognitoUser({ Username: email, Pool: userPool });
-
-//     await new Promise<void>((resolve, reject) => {
-//       user.confirmRegistration(verificationCode, true, (error) => (error ? reject(error) : resolve()));
-//     });
-//   };
-
-//   const resendConfirmationCode = async (): Promise<void> => {
-//     const email = authState.user?.email;
-//     if (!email) throw new Error('Email is required to resend confirmation code');
-
-//     const user = new CognitoUser({ Username: email, Pool: userPool });
-
-//     await new Promise<void>((resolve, reject) => {
-//       user.resendConfirmationCode((error) => (error ? reject(error) : resolve()));
-//     });
-//   };
-
-//   const updateProfile = () => {
-//     // Placeholder
-//   };
-
-//   if (!state.isInitialized) return <Loader />;
-
-//   return (
-//     <AWSCognitoContext.Provider
-//       value={{
-//         ...state,
-//         login,
-//         logout,
-//         register,
-//         forgotPassword,
-//         awsResetPassword,
-//         updateProfile,
-//         codeVerification,
-//         resendConfirmationCode
-//       }}
-//     >
-//       {children}
-//     </AWSCognitoContext.Provider>
-//   );
-// };
-
-// export default AWSCognitoContext;
-
-
 import {
   ReactElement,
   createContext,
@@ -575,7 +134,13 @@ const decodeJwtPayload = (
   token: string
 ): CognitoIdTokenPayload => {
   try {
-    const base64Url = token.split('.')[1];
+    const parts = token.split('.');
+
+    if (parts.length !== 3) {
+      throw new Error('Invalid JWT format.');
+    }
+
+    const base64Url = parts[1];
 
     const base64 = base64Url
       .replace(/-/g, '+')
@@ -594,9 +159,35 @@ const decodeJwtPayload = (
 
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('Failed to decode Cognito JWT:', error);
+    console.error(
+      'Failed to decode Cognito JWT:',
+      error
+    );
 
     throw new Error('Invalid Cognito ID token.');
+  }
+};
+
+
+// ============================================================
+// CHECK TOKEN EXPIRATION
+// ============================================================
+
+const isTokenValid = (token: string): boolean => {
+  try {
+    const payload = decodeJwtPayload(token);
+
+    if (!payload.exp) {
+      return true;
+    }
+
+    const currentTime = Math.floor(
+      Date.now() / 1000
+    );
+
+    return payload.exp > currentTime;
+  } catch {
+    return false;
   }
 };
 
@@ -629,52 +220,166 @@ export const AWSCognitoProvider = ({
     (state: RootState) => state.auth
   );
 
-  console.log('Redux Auth State:', authState);
-
 
   // ==========================================================
   // INITIALIZE AUTH
   // ==========================================================
 
   useEffect(() => {
+    let mounted = true;
+
     const init = async () => {
       try {
-        const currentUser = userPool.getCurrentUser();
+        console.log(
+          '========== AUTH INITIALIZATION =========='
+        );
 
         console.log(
-          'Current Cognito User:',
-          currentUser
+          'Redux token exists:',
+          !!authState?.token
         );
 
         /*
-         * This checks the amazon-cognito-identity-js
-         * session if one exists.
+         * IMPORTANT:
+         *
+         * Login is performed using AWS SDK v3
+         * InitiateAuthCommand.
+         *
+         * That does NOT automatically create the
+         * amazon-cognito-identity-js current user.
+         *
+         * Therefore we must NOT depend only on:
+         *
+         * userPool.getCurrentUser()
+         *
+         * because it can return null even though the
+         * user is correctly authenticated.
          */
-        if (!currentUser) {
+
+
+        // ======================================================
+        // FIRST: RESTORE FROM REDUX/PERSISTED TOKEN
+        // ======================================================
+
+        if (authState?.token) {
+          const token = authState.token;
+
+          console.log(
+            'Found persisted Redux authentication token.'
+          );
+
+          if (isTokenValid(token)) {
+            const payload =
+              decodeJwtPayload(token);
+
+            console.log(
+              'Restoring authenticated user:',
+              payload.email
+            );
+
+            const userProfile: UserProfile = {
+              email: payload.email ?? ''
+            };
+
+            if (mounted) {
+              dispatch({
+                type: LOGIN,
+                payload: {
+                  isLoggedIn: true,
+                  isInitialized: true,
+                  user: userProfile
+                }
+              });
+            }
+
+            console.log(
+              'Authentication restored successfully.'
+            );
+
+            return;
+          }
+
+          /*
+           * Token exists but is expired.
+           *
+           * Only now do we clear authentication.
+           */
+          console.warn(
+            'Persisted authentication token is expired.'
+          );
+
           dispatch({
             type: LOGOUT
           });
 
-          dispatchRedux(authLogout());
+          dispatchRedux(
+            authLogout()
+          );
 
           return;
         }
+
+
+        // ======================================================
+        // SECOND: CHECK COGNITO IDENTITY-JS USER
+        // ======================================================
+
+        const currentUser =
+          userPool.getCurrentUser();
+
+        console.log(
+          'Cognito identity-js current user:',
+          currentUser
+        );
+
+        /*
+         * If there is no Redux token and no identity-js
+         * current user, the user is genuinely logged out.
+         */
+        if (!currentUser) {
+          console.log(
+            'No authenticated session found.'
+          );
+
+          if (mounted) {
+            dispatch({
+              type: LOGOUT
+            });
+          }
+
+          return;
+        }
+
+
+        // ======================================================
+        // GET COGNITO SESSION
+        // ======================================================
 
         currentUser.getSession(
           (
             err: Error | null,
             session: CognitoUserSession | null
           ) => {
+            if (!mounted) {
+              return;
+            }
+
             if (
               err ||
               !session ||
               !session.isValid()
             ) {
+              console.warn(
+                'Cognito identity-js session is invalid.'
+              );
+
               dispatch({
                 type: LOGOUT
               });
 
-              dispatchRedux(authLogout());
+              dispatchRedux(
+                authLogout()
+              );
 
               return;
             }
@@ -684,10 +389,17 @@ export const AWSCognitoProvider = ({
                 .getIdToken()
                 .getJwtToken();
 
-            console.log(
-              'Cognito ID Token:',
-              idToken
-            );
+            if (!idToken) {
+              dispatch({
+                type: LOGOUT
+              });
+
+              dispatchRedux(
+                authLogout()
+              );
+
+              return;
+            }
 
             const payload =
               session
@@ -695,8 +407,8 @@ export const AWSCognitoProvider = ({
                 .decodePayload() as CognitoIdTokenPayload;
 
             console.log(
-              'Cognito ID Token Payload:',
-              payload
+              'Restored Cognito session:',
+              payload.email
             );
 
             const userProfile: UserProfile = {
@@ -730,16 +442,25 @@ export const AWSCognitoProvider = ({
           error
         );
 
-        dispatch({
-          type: LOGOUT
-        });
+        if (mounted) {
+          dispatch({
+            type: LOGOUT
+          });
 
-        dispatchRedux(authLogout());
+          dispatchRedux(
+            authLogout()
+          );
+        }
       }
     };
 
     init();
-  }, [dispatchRedux]);
+
+    return () => {
+      mounted = false;
+    };
+
+  }, [dispatchRedux, authState?.token]);
 
 
   // ==========================================================
@@ -751,14 +472,19 @@ export const AWSCognitoProvider = ({
     password: string
   ): Promise<void> => {
 
-    const username = email.trim();
+    const username =
+      email.trim();
 
     if (!username) {
-      throw new Error('Email is required.');
+      throw new Error(
+        'Email is required.'
+      );
     }
 
     if (!password) {
-      throw new Error('Password is required.');
+      throw new Error(
+        'Password is required.'
+      );
     }
 
     console.log(
@@ -766,8 +492,14 @@ export const AWSCognitoProvider = ({
       username
     );
 
+
+    // ========================================================
+    // SECRET HASH
+    // ========================================================
+
     const secretHash =
       getSecretHash(username);
+
 
     try {
 
@@ -784,8 +516,10 @@ export const AWSCognitoProvider = ({
           }
         });
 
+
       const response =
         await cognitoClient.send(command);
+
 
       console.log(
         'Cognito login response:',
@@ -808,8 +542,10 @@ export const AWSCognitoProvider = ({
           );
         }
 
+
         const payload =
           decodeJwtPayload(idToken);
+
 
         console.log(
           'Cognito login payload:',
@@ -817,34 +553,61 @@ export const AWSCognitoProvider = ({
         );
 
 
-        // Update React auth state
+        // ====================================================
+        // UPDATE REACT AUTH STATE
+        // ====================================================
 
         dispatch({
           type: LOGIN,
 
           payload: {
             isLoggedIn: true,
+
             isInitialized: true,
 
             user: {
-              email: payload.email ?? ''
+              email:
+                payload.email ?? ''
             }
           }
         });
 
 
-        // Update Redux
+        // ====================================================
+        // UPDATE REDUX
+        // ====================================================
 
         dispatchRedux(
           authLogin({
             user: {
               id: payload.sub,
-              email: payload.email || '',
-              name: payload.name || ''
+
+              email:
+                payload.email || '',
+
+              name:
+                payload.name || ''
             },
 
             token: idToken
           })
+        );
+
+
+        /*
+         * IMPORTANT:
+         *
+         * Do NOT call userPool.getCurrentUser()
+         * here to determine whether login succeeded.
+         *
+         * Authentication is already successful because
+         * Cognito returned AuthenticationResult.
+         */
+
+
+        console.log(
+          'LOGIN SUCCESSFUL:',
+          payload.email
         );
 
         return;
@@ -855,49 +618,90 @@ export const AWSCognitoProvider = ({
       // NEW PASSWORD REQUIRED
       // ======================================================
 
-      if (response.ChallengeName === 'NEW_PASSWORD_REQUIRED') {
-        console.log('Cognito requires new password.');
+      if (
+        response.ChallengeName ===
+        'NEW_PASSWORD_REQUIRED'
+      ) {
 
-        const cognitoUser = new CognitoUser({
-          Username: username,
-          Pool: userPool
-        });
+        console.log(
+          'Cognito requires new password.'
+        );
 
-        // Store the Cognito challenge session
-        (cognitoUser as any).__challengeSession = response.Session;
 
-        let userAttributes: Record<string, any> = {
-          email: username
-        };
+        const cognitoUser =
+          new CognitoUser({
+            Username: username,
+            Pool: userPool
+          });
 
-        if (response.ChallengeParameters?.userAttributes) {
+
+        /*
+         * Store the challenge session.
+         *
+         * This is required later by
+         * RespondToAuthChallengeCommand.
+         */
+
+        (cognitoUser as any).__challengeSession =
+          response.Session;
+
+
+        let userAttributes:
+          Record<string, any> = {
+            email: username
+          };
+
+
+        if (
+          response
+            .ChallengeParameters
+            ?.userAttributes
+        ) {
+
           try {
-            userAttributes = JSON.parse(
-              response.ChallengeParameters.userAttributes
-            );
+
+            userAttributes =
+              JSON.parse(
+                response
+                  .ChallengeParameters
+                  .userAttributes
+              );
+
           } catch (error) {
+
             console.error(
               'Failed to parse Cognito user attributes:',
               error
             );
+
           }
         }
 
+
         delete userAttributes.email_verified;
+
 
         dispatch({
           type: NEW_PASSWORD_REQUIRED,
+
           payload: {
+
             user: {
-              email: userAttributes.email || username
+              email:
+                userAttributes.email ||
+                username
             },
+
             cognitoUser,
+
             userAttributes
           }
         });
 
+
         return;
       }
+
 
       // ======================================================
       // OTHER CHALLENGE
@@ -956,18 +760,21 @@ export const AWSCognitoProvider = ({
 
             new CognitoUserAttribute({
               Name: 'name',
-              Value: `${firstName} ${lastName}`
+              Value:
+                `${firstName} ${lastName}`
             })
           ],
 
           [],
 
           (err) => {
+
             if (err) {
               reject(err);
             } else {
               resolve();
             }
+
           }
         );
       }
@@ -981,12 +788,26 @@ export const AWSCognitoProvider = ({
 
   const logout = () => {
 
+    console.log(
+      'Logging out user...'
+    );
+
+
+    // ========================================================
+    // SIGN OUT FROM IDENTITY-JS
+    // ========================================================
+
     const loggedInUser =
       userPool.getCurrentUser();
 
     if (loggedInUser) {
       loggedInUser.signOut();
     }
+
+
+    // ========================================================
+    // REACT AUTH STATE
+    // ========================================================
 
     dispatch({
       type: LOGOUT,
@@ -997,10 +818,27 @@ export const AWSCognitoProvider = ({
       }
     });
 
-    dispatchRedux(authLogout());
 
-    localStorage.clear();
-    sessionStorage.clear();
+    // ========================================================
+    // REDUX AUTH STATE
+    // ========================================================
+
+    dispatchRedux(
+      authLogout()
+    );
+
+
+    /*
+     * IMPORTANT:
+     *
+     * Do not use localStorage.clear().
+     *
+     * That can delete unrelated application data and
+     * can cause unexpected behavior.
+     *
+     * Redux Persist will clear the auth state through
+     * authLogout().
+     */
   };
 
 
@@ -1014,9 +852,10 @@ export const AWSCognitoProvider = ({
 
     const user =
       new CognitoUser({
-        Username: email,
+        Username: email.trim(),
         Pool: userPool
       });
+
 
     await new Promise<void>(
       (resolve, reject) => {
@@ -1047,17 +886,25 @@ export const AWSCognitoProvider = ({
     cognitoUser: CognitoUser,
     userAttributes?: Record<string, any>
   ): Promise<void> => {
+
     try {
+
       const username =
         userAttributes?.email ||
         authState.user?.email;
 
+
       if (!username) {
-        throw new Error('Username/email is required.');
+        throw new Error(
+          'Username/email is required.'
+        );
       }
 
+
       const challengeSession =
-        (cognitoUser as any).__challengeSession;
+        (cognitoUser as any)
+          .__challengeSession;
+
 
       if (!challengeSession) {
         throw new Error(
@@ -1065,52 +912,83 @@ export const AWSCognitoProvider = ({
         );
       }
 
+
       const secretHash =
         getSecretHash(username);
 
-      console.log('Responding to NEW_PASSWORD_REQUIRED');
-      console.log('Username:', username);
-      console.log('Has SECRET_HASH:', !!secretHash);
-      console.log('Has Session:', !!challengeSession);
+
+      console.log(
+        'Responding to NEW_PASSWORD_REQUIRED'
+      );
+
+      console.log(
+        'Username:',
+        username
+      );
+
+      console.log(
+        'Has SECRET_HASH:',
+        !!secretHash
+      );
+
+      console.log(
+        'Has Session:',
+        !!challengeSession
+      );
+
 
       const command =
         new RespondToAuthChallengeCommand({
-          ClientId: AWS_CLIENT_ID,
 
-          ChallengeName: 'NEW_PASSWORD_REQUIRED',
+          ClientId:
+            AWS_CLIENT_ID,
 
-          Session: challengeSession,
+          ChallengeName:
+            'NEW_PASSWORD_REQUIRED',
+
+          Session:
+            challengeSession,
 
           ChallengeResponses: {
-            USERNAME: username,
-            NEW_PASSWORD: newPassword,
-            SECRET_HASH: secretHash
+
+            USERNAME:
+              username,
+
+            NEW_PASSWORD:
+              newPassword,
+
+            SECRET_HASH:
+              secretHash
           }
         });
 
+
       const response =
-        await cognitoClient.send(command);
+        await cognitoClient.send(
+          command
+        );
+
 
       console.log(
         'NEW_PASSWORD_REQUIRED response:',
         response
       );
 
+
       if (!response.AuthenticationResult) {
+
         throw new Error(
           'Password change did not return an authentication result.'
         );
       }
 
-      /*
-       * Password successfully changed.
-       *
-       * We intentionally don't keep the user logged in.
-       */
+
       const idToken =
         response.AuthenticationResult.IdToken;
 
+
       if (idToken) {
+
         const payload =
           decodeJwtPayload(idToken);
 
@@ -1120,7 +998,14 @@ export const AWSCognitoProvider = ({
         );
       }
 
-      // Clear Cognito user
+
+      /*
+       * Your existing functionality is preserved:
+       *
+       * after setting the temporary password,
+       * the user is signed out and asked to login again.
+       */
+
       const currentUser =
         userPool.getCurrentUser();
 
@@ -1128,21 +1013,27 @@ export const AWSCognitoProvider = ({
         currentUser.signOut();
       }
 
+
       dispatch({
         type: LOGOUT
       });
+
 
       dispatchRedux(
         authLogout()
       );
 
+
       alert(
         'Password reset successfully! Please login again.'
       );
 
-      window.location.href = '/login';
+
+      window.location.href =
+        '/login';
 
     } catch (error: any) {
+
       console.error(
         'Complete new password error:',
         error
@@ -1155,6 +1046,7 @@ export const AWSCognitoProvider = ({
     }
   };
 
+
   // ==========================================================
   // CODE VERIFICATION
   // ==========================================================
@@ -1166,17 +1058,20 @@ export const AWSCognitoProvider = ({
     const email =
       authState.user?.email;
 
+
     if (!email) {
       throw new Error(
         'Email is required for code verification'
       );
     }
 
+
     const user =
       new CognitoUser({
         Username: email,
         Pool: userPool
       });
+
 
     await new Promise<void>(
       (resolve, reject) => {
@@ -1186,13 +1081,16 @@ export const AWSCognitoProvider = ({
           true,
 
           (error) => {
+
             if (error) {
               reject(error);
             } else {
               resolve();
             }
+
           }
         );
+
       }
     );
   };
@@ -1208,17 +1106,20 @@ export const AWSCognitoProvider = ({
       const email =
         authState.user?.email;
 
+
       if (!email) {
         throw new Error(
           'Email is required to resend confirmation code'
         );
       }
 
+
       const user =
         new CognitoUser({
           Username: email,
           Pool: userPool
         });
+
 
       await new Promise<void>(
         (resolve, reject) => {
@@ -1231,9 +1132,9 @@ export const AWSCognitoProvider = ({
               } else {
                 resolve();
               }
-
             }
           );
+
         }
       );
     };

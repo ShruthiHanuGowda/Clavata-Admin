@@ -39,9 +39,9 @@ export default function HeaderContent() {
       {/* <Button variant="contained" color="primary" size="small">
         Connect Wallet
       </Button> */}
-      <Box>
+      {/* <Box>
         <appkit-button label="Connect Wallet" />
-      </Box>
+      </Box> */}
       <Notification />
       <Message />
       {!downLG && <FullScreen />}
