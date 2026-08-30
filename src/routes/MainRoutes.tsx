@@ -8,6 +8,7 @@ import PagesLayout from 'layout/Pages';
 import SimpleLayout from 'layout/Simple';
 import { SimpleLayoutType } from 'config';
 import MobileTransactionHistory from 'pages/transactionHistoryMobile';
+import PendingApprovals from 'pages/pending-approvals';
 
 const MaintenanceError = Loadable(lazy(() => import('pages/maintenance/404')));
 const MaintenanceError500 = Loadable(lazy(() => import('pages/maintenance/500')));
@@ -28,6 +29,8 @@ const Payments = Loadable(lazy(() => import('pages/payments')));
 const Transactions = Loadable(lazy(() => import('pages/transactions')));
 const Refunds = Loadable(lazy(() => import('pages/transactions')));
 const Revenue = Loadable(lazy(() => import('pages/revenue')));
+const SalonApplications = Loadable(lazy(() => import('pages/salon-applications')));
+const KycDocuments = Loadable(lazy(() => import('pages/kyc-documents')));
 
 const User = Loadable(lazy(() => import('pages/user/user')));
 const Companies = Loadable(lazy(() => import('pages/companies/companies')));
@@ -108,6 +111,18 @@ const MainRoutes = {
         {
           path: '/revenue',
           element: <Revenue />
+        },
+        {
+          path: '/salon-applications',
+          element: <SalonApplications />
+        },
+        {
+          path: '/kyc-documents',
+          element: <KycDocuments />
+        },
+        {
+          path: '/pending-approvals',
+          element: <PendingApprovals />
         },
         {
           path: '/companies/:id',
