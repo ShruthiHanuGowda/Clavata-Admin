@@ -9,6 +9,7 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -49,31 +50,139 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 
-// ==============================|| TYPES ||============================== //
+import { useQuery } from '@apollo/client';
+
+// ============================================================
+// IMPORTANT
+// ============================================================
+// CHANGE ONLY THIS IMPORT PATH.
+//
+// Use the file where you already have ADMIN_SALONS.
+//
+// Example:
+// import { ADMIN_SALONS } from 'graphql/queries';
+//
+// Do NOT create another ADMIN_SALONS query in this file.
+// ============================================================
+
+import { ADMIN_SALONS } from '../../graphql/queries';
+
+// ============================================================
+// TYPES
+// ============================================================
 
 type ApprovalType =
   | 'SALON_APPLICATION'
   | 'KYC'
   | 'DOCUMENT_RESUBMISSION';
 
-type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+type ApprovalStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED';
+
+type KycStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED';
+
+type SalonStatus =
+  | 'OPEN'
+  | 'CLOSED'
+  | 'TEMPORARILY_CLOSED';
+
+interface SalonAddress {
+  addressLine?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+}
+
+interface AdminSalon {
+  salonId: string;
+  ownerUserId: string;
+
+  salonName: string;
+  ownerName: string;
+  businessType: string;
+
+  ownerPhoneNumber: string;
+  alternatePhone?: string | null;
+  email: string;
+
+  address: SalonAddress;
+
+  latitude?: number | null;
+  longitude?: number | null;
+
+  gstNumber?: string | null;
+  panNumber?: string | null;
+  aadhaarNumber?: string | null;
+
+  bankAccount?: string | null;
+  ifsc?: string | null;
+  accountHolderName: string;
+
+  logoUrl?: string | null;
+  coverImageUrl?: string | null;
+  galleryImages?: string[];
+
+  kycStatus: KycStatus;
+  salonStatus: SalonStatus;
+
+  isActive: boolean;
+  isVisible: boolean;
+  isDeleted: boolean;
+
+  averageRating: number;
+  totalReviews: number;
+
+  totalAppointments: number;
+  totalCompletedAppointments: number;
+  totalCancelledAppointments: number;
+  totalRevenue: number;
+
+  approvedBy?: string | null;
+  approvedAt?: string | null;
+
+  rejectedBy?: string | null;
+  rejectedAt?: string | null;
+
+  rejectionReason?: string | null;
+
+  lastUpdatedBy: string;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AdminSalonListResponse {
+  success: boolean;
+  message: string;
+  salons: AdminSalon[];
+  totalCount: number;
+}
 
 interface PendingApproval {
   id: string;
   salonId: string;
+
   salonName: string;
   ownerName: string;
+
   phoneNumber: string;
   email: string;
+
   businessType: string;
 
   type: ApprovalType;
   status: ApprovalStatus;
 
   submittedAt: string;
+
   priority: 'HIGH' | 'NORMAL';
 
-  kycStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  kycStatus: KycStatus;
 
   documentsSubmitted: number;
   totalDocuments: number;
@@ -88,140 +197,242 @@ interface PendingApproval {
   reviewedAt?: string;
 }
 
-// ==============================|| DUMMY DATA ||============================== //
+// ============================================================
+// HELPERS
+// ============================================================
 
-const initialApprovals: PendingApproval[] = [
-  {
-    id: 'APR-1001',
-    salonId: 'SALON-1001',
-    salonName: 'Glow Beauty Studio',
-    ownerName: 'Priya Sharma',
-    phoneNumber: '+91 98765 43210',
-    email: 'priya@example.com',
-    businessType: 'Beauty Salon',
-
-    type: 'SALON_APPLICATION',
-    status: 'PENDING',
-
-    submittedAt: '30 Aug 2026, 09:42 AM',
-    priority: 'HIGH',
-
-    kycStatus: 'PENDING',
-
-    documentsSubmitted: 3,
-    totalDocuments: 4,
-
-    city: 'Bengaluru',
-    state: 'Karnataka',
-
-    notes: 'New salon partner registration.'
-  },
-  {
-    id: 'APR-1002',
-    salonId: 'SALON-1004',
-    salonName: 'The Hair Lounge',
-    ownerName: 'Ananya Rao',
-    phoneNumber: '+91 90123 45678',
-    email: 'ananya@example.com',
-    businessType: 'Hair Salon',
-
-    type: 'KYC',
-    status: 'PENDING',
-
-    submittedAt: '30 Aug 2026, 08:20 AM',
-    priority: 'NORMAL',
-
-    kycStatus: 'PENDING',
-
-    documentsSubmitted: 4,
-    totalDocuments: 4,
-
-    city: 'Bengaluru',
-    state: 'Karnataka',
-
-    notes: 'All KYC documents submitted and ready for verification.'
-  },
-  {
-    id: 'APR-1003',
-    salonId: 'SALON-1006',
-    salonName: 'Elegance Unisex Salon',
-    ownerName: 'Karthik Rao',
-    phoneNumber: '+91 93451 22334',
-    email: 'karthik@example.com',
-    businessType: 'Unisex Salon',
-
-    type: 'DOCUMENT_RESUBMISSION',
-    status: 'PENDING',
-
-    submittedAt: '29 Aug 2026, 06:10 PM',
-    priority: 'HIGH',
-
-    kycStatus: 'REJECTED',
-
-    documentsSubmitted: 4,
-    totalDocuments: 4,
-
-    city: 'Mysuru',
-    state: 'Karnataka',
-
-    notes: 'PAN document has been resubmitted after rejection.',
-    rejectionReason: 'Previous PAN document was unclear.'
-  },
-  {
-    id: 'APR-1004',
-    salonId: 'SALON-1007',
-    salonName: 'Aura Wellness Spa',
-    ownerName: 'Divya Menon',
-    phoneNumber: '+91 91234 99887',
-    email: 'divya@example.com',
-    businessType: 'Spa & Wellness',
-
-    type: 'SALON_APPLICATION',
-    status: 'PENDING',
-
-    submittedAt: '29 Aug 2026, 02:30 PM',
-    priority: 'NORMAL',
-
-    kycStatus: 'APPROVED',
-
-    documentsSubmitted: 4,
-    totalDocuments: 4,
-
-    city: 'Bengaluru',
-    state: 'Karnataka',
-
-    notes: 'KYC approved. Salon application awaiting final approval.'
-  },
-  {
-    id: 'APR-1005',
-    salonId: 'SALON-1008',
-    salonName: 'Style Studio',
-    ownerName: 'Rahul Shetty',
-    phoneNumber: '+91 99887 11223',
-    email: 'rahul@example.com',
-    businessType: 'Hair & Beauty',
-
-    type: 'KYC',
-    status: 'PENDING',
-
-    submittedAt: '28 Aug 2026, 11:45 AM',
-    priority: 'NORMAL',
-
-    kycStatus: 'PENDING',
-
-    documentsSubmitted: 4,
-    totalDocuments: 4,
-
-    city: 'Hubballi',
-    state: 'Karnataka',
-
-    notes: 'Waiting for internal KYC verification.'
+const formatDateTime = (
+  value?: string | null
+): string => {
+  if (!value) {
+    return '—';
   }
-];
 
-// ==============================|| HELPERS ||============================== //
+  const date = new Date(value);
 
-const getApprovalTypeLabel = (type: ApprovalType) => {
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+// ------------------------------------------------------------
+// Determine approval type from salon state
+// ------------------------------------------------------------
+
+const getApprovalType = (
+  salon: AdminSalon
+): ApprovalType => {
+  // Rejected KYC/document → resubmission
+  if (
+    salon.kycStatus === 'REJECTED' &&
+    !salon.isDeleted
+  ) {
+    return 'DOCUMENT_RESUBMISSION';
+  }
+
+  // KYC pending → KYC verification
+  if (salon.kycStatus === 'PENDING') {
+    return 'KYC';
+  }
+
+  // KYC approved but salon not active → salon application
+  if (
+    salon.kycStatus === 'APPROVED' &&
+    !salon.isActive
+  ) {
+    return 'SALON_APPLICATION';
+  }
+
+  // Default
+  return 'SALON_APPLICATION';
+};
+
+// ------------------------------------------------------------
+// Determine approval status
+// ------------------------------------------------------------
+
+const getApprovalStatus = (
+  salon: AdminSalon
+): ApprovalStatus => {
+  if (salon.rejectedAt) {
+    return 'REJECTED';
+  }
+
+  if (salon.approvedAt) {
+    return 'APPROVED';
+  }
+
+  return 'PENDING';
+};
+
+// ------------------------------------------------------------
+// Determine priority
+// ------------------------------------------------------------
+
+const getPriority = (
+  salon: AdminSalon
+): 'HIGH' | 'NORMAL' => {
+  // Rejected/resubmission requires attention
+  if (salon.kycStatus === 'REJECTED') {
+    return 'HIGH';
+  }
+
+  // Pending KYC is high priority
+  if (salon.kycStatus === 'PENDING') {
+    return 'HIGH';
+  }
+
+  return 'NORMAL';
+};
+
+// ------------------------------------------------------------
+// Convert AdminSalon → PendingApproval
+// ------------------------------------------------------------
+
+const mapSalonToApproval = (
+  salon: AdminSalon
+): PendingApproval => {
+  const approvalType =
+    getApprovalType(salon);
+
+  const status =
+    getApprovalStatus(salon);
+
+  const priority =
+    getPriority(salon);
+
+  // ----------------------------------------------------------
+  // Documents
+  //
+  // Your current AdminSalon schema does not expose individual
+  // document fields, so we calculate this from available KYC
+  // information.
+  //
+  // Expected documents:
+  // PAN
+  // Aadhaar
+  // GST
+  //
+  // This can be changed later when AdminSalon exposes documents.
+  // ----------------------------------------------------------
+
+  const documentValues = [
+    salon.panNumber,
+    salon.aadhaarNumber,
+    salon.gstNumber
+  ];
+
+  const documentsSubmitted =
+    documentValues.filter(
+      (value) =>
+        Boolean(value && value.trim())
+    ).length;
+
+  const totalDocuments = 3;
+
+  const city =
+    salon.address?.city || '—';
+
+  const state =
+    salon.address?.state || '—';
+
+  let notes = '';
+
+  if (approvalType === 'KYC') {
+    notes =
+      'KYC verification is pending.';
+  }
+
+  if (
+    approvalType ===
+    'DOCUMENT_RESUBMISSION'
+  ) {
+    notes =
+      'KYC documents require review or resubmission.';
+  }
+
+  if (
+    approvalType ===
+    'SALON_APPLICATION' &&
+    salon.kycStatus === 'APPROVED'
+  ) {
+    notes =
+      'KYC is approved. Salon application is awaiting final approval.';
+  }
+
+  return {
+    id: `APR-${salon.salonId}`,
+    salonId: salon.salonId,
+
+    salonName:
+      salon.salonName || 'Unnamed Salon',
+
+    ownerName:
+      salon.ownerName || '—',
+
+    phoneNumber:
+      salon.ownerPhoneNumber || '—',
+
+    email:
+      salon.email || '—',
+
+    businessType:
+      salon.businessType || '—',
+
+    type: approvalType,
+
+    status,
+
+    submittedAt:
+      formatDateTime(salon.createdAt),
+
+    priority,
+
+    kycStatus:
+      salon.kycStatus,
+
+    documentsSubmitted,
+
+    totalDocuments,
+
+    city,
+
+    state,
+
+    notes:
+      notes || undefined,
+
+    rejectionReason:
+      salon.rejectionReason ||
+      undefined,
+
+    reviewedBy:
+      salon.approvedBy ||
+      salon.rejectedBy ||
+      undefined,
+
+    reviewedAt:
+      salon.approvedAt ||
+      salon.rejectedAt ||
+      undefined
+  };
+};
+
+// ============================================================
+// APPROVAL TYPE LABEL
+// ============================================================
+
+const getApprovalTypeLabel = (
+  type: ApprovalType
+) => {
   switch (type) {
     case 'SALON_APPLICATION':
       return 'Salon Application';
@@ -236,6 +447,10 @@ const getApprovalTypeLabel = (type: ApprovalType) => {
       return type;
   }
 };
+
+// ============================================================
+// APPROVAL TYPE COLOR
+// ============================================================
 
 const getApprovalTypeColor = (
   type: ApprovalType
@@ -255,7 +470,9 @@ const getApprovalTypeColor = (
   }
 };
 
-// ==============================|| STATUS CHIP ||============================== //
+// ============================================================
+// STATUS CHIP
+// ============================================================
 
 function ApprovalStatusChip({
   status
@@ -265,7 +482,11 @@ function ApprovalStatusChip({
   const config: Record<
     ApprovalStatus,
     {
-      color: 'warning' | 'success' | 'error';
+      color:
+      | 'warning'
+      | 'success'
+      | 'error';
+
       label: string;
     }
   > = {
@@ -300,7 +521,9 @@ function ApprovalStatusChip({
   );
 }
 
-// ==============================|| PRIORITY CHIP ||============================== //
+// ============================================================
+// PRIORITY CHIP
+// ============================================================
 
 function PriorityChip({
   priority
@@ -314,7 +537,9 @@ function PriorityChip({
         color="error"
         variant="outlined"
         label="High"
-        sx={{ fontWeight: 600 }}
+        sx={{
+          fontWeight: 600
+        }}
       />
     );
   }
@@ -324,103 +549,207 @@ function PriorityChip({
       size="small"
       variant="outlined"
       label="Normal"
-      sx={{ fontWeight: 500 }}
+      sx={{
+        fontWeight: 500
+      }}
     />
   );
 }
 
-// ==============================|| PAGE ||============================== //
+// ============================================================
+// PAGE
+// ============================================================
 
 export default function PendingApprovals() {
-  const [approvals, setApprovals] =
-    useState<PendingApproval[]>(initialApprovals);
+  // ==========================================================
+  // GRAPHQL
+  // ==========================================================
 
-  const [search, setSearch] = useState('');
+  const {
+    data,
+    loading,
+    error,
+    refetch
+  } = useQuery<{
+    adminSalons: AdminSalonListResponse;
+  }>(ADMIN_SALONS, {
+    variables: {
+      search: null,
+      kycStatus: null,
+      salonStatus: null,
+      isActive: null
+    },
 
-  const [typeFilter, setTypeFilter] = useState<
-    'ALL' | ApprovalType
-  >('ALL');
+    fetchPolicy: 'network-only',
 
-  const [selectedApproval, setSelectedApproval] =
-    useState<PendingApproval | null>(null);
+    notifyOnNetworkStatusChange: true
+  });
 
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  // ==========================================================
+  // SERVER DATA
+  // ==========================================================
 
-  const [rejectOpen, setRejectOpen] = useState(false);
+  const serverSalons =
+    data?.adminSalons?.salons || [];
 
-  const [rejectionReason, setRejectionReason] = useState('');
+  const serverApprovals =
+    useMemo(() => {
+      return serverSalons.map(
+        mapSalonToApproval
+      );
+    }, [serverSalons]);
 
-  const [page, setPage] = useState(0);
+  // ==========================================================
+  // LOCAL UI STATE
+  // ==========================================================
 
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [search, setSearch] =
+    useState('');
 
-  // ==============================|| COUNTERS ||============================== //
+  const [typeFilter, setTypeFilter] =
+    useState<
+      'ALL' | ApprovalType
+    >('ALL');
 
-  const pendingCount = approvals.filter(
-    (item) => item.status === 'PENDING'
-  ).length;
+  const [
+    selectedApproval,
+    setSelectedApproval
+  ] =
+    useState<PendingApproval | null>(
+      null
+    );
 
-  const highPriorityCount = approvals.filter(
-    (item) =>
-      item.status === 'PENDING' &&
-      item.priority === 'HIGH'
-  ).length;
+  const [detailsOpen, setDetailsOpen] =
+    useState(false);
 
-  const salonApplicationsCount = approvals.filter(
-    (item) =>
-      item.status === 'PENDING' &&
-      item.type === 'SALON_APPLICATION'
-  ).length;
+  const [rejectOpen, setRejectOpen] =
+    useState(false);
 
-  const kycCount = approvals.filter(
-    (item) =>
-      item.status === 'PENDING' &&
-      (item.type === 'KYC' ||
-        item.type === 'DOCUMENT_RESUBMISSION')
-  ).length;
+  const [
+    rejectionReason,
+    setRejectionReason
+  ] = useState('');
 
-  // ==============================|| FILTER ||============================== //
+  const [page, setPage] =
+    useState(0);
 
-  const filteredApprovals = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const [
+    rowsPerPage,
+    setRowsPerPage
+  ] = useState(10);
 
-    return approvals.filter((item) => {
-      const matchesType =
-        typeFilter === 'ALL' ||
-        item.type === typeFilter;
+  // ==========================================================
+  // COUNTERS
+  // ==========================================================
 
-      const matchesSearch =
-        !query ||
-        item.id.toLowerCase().includes(query) ||
-        item.salonId.toLowerCase().includes(query) ||
-        item.salonName.toLowerCase().includes(query) ||
-        item.ownerName.toLowerCase().includes(query) ||
-        item.phoneNumber.toLowerCase().includes(query);
+  const pendingCount =
+    serverApprovals.filter(
+      (item) =>
+        item.status === 'PENDING'
+    ).length;
 
-      return matchesType && matchesSearch;
-    });
-  }, [approvals, search, typeFilter]);
+  const highPriorityCount =
+    serverApprovals.filter(
+      (item) =>
+        item.status === 'PENDING' &&
+        item.priority === 'HIGH'
+    ).length;
 
-  // ==============================|| PAGINATION ||============================== //
+  const salonApplicationsCount =
+    serverApprovals.filter(
+      (item) =>
+        item.status === 'PENDING' &&
+        item.type ===
+        'SALON_APPLICATION'
+    ).length;
 
-  const paginatedApprovals = filteredApprovals.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  const kycCount =
+    serverApprovals.filter(
+      (item) =>
+        item.status === 'PENDING' &&
+        (item.type === 'KYC' ||
+          item.type ===
+          'DOCUMENT_RESUBMISSION')
+    ).length;
 
-  // ==============================|| HANDLERS ||============================== //
+  // ==========================================================
+  // FILTER
+  // ==========================================================
+
+  const filteredApprovals =
+    useMemo(() => {
+      const query =
+        search.trim().toLowerCase();
+
+      return serverApprovals.filter(
+        (item) => {
+          const matchesType =
+            typeFilter === 'ALL' ||
+            item.type === typeFilter;
+
+          const matchesSearch =
+            !query ||
+            item.id
+              .toLowerCase()
+              .includes(query) ||
+            item.salonId
+              .toLowerCase()
+              .includes(query) ||
+            item.salonName
+              .toLowerCase()
+              .includes(query) ||
+            item.ownerName
+              .toLowerCase()
+              .includes(query) ||
+            item.phoneNumber
+              .toLowerCase()
+              .includes(query) ||
+            item.email
+              .toLowerCase()
+              .includes(query);
+
+          return (
+            matchesType &&
+            matchesSearch
+          );
+        }
+      );
+    }, [
+      serverApprovals,
+      search,
+      typeFilter
+    ]);
+
+  // ==========================================================
+  // PAGINATION
+  // ==========================================================
+
+  const paginatedApprovals =
+    filteredApprovals.slice(
+      page * rowsPerPage,
+      page * rowsPerPage +
+      rowsPerPage
+    );
+
+  // ==========================================================
+  // HANDLERS
+  // ==========================================================
 
   const handleTypeFilter = (
     event: SelectChangeEvent
   ) => {
     setTypeFilter(
-      event.target.value as 'ALL' | ApprovalType
+      event.target.value as
+      | 'ALL'
+      | ApprovalType
     );
 
     setPage(0);
   };
 
-  const handleSearch = (value: string) => {
+  const handleSearch = (
+    value: string
+  ) => {
     setSearch(value);
     setPage(0);
   };
@@ -431,85 +760,218 @@ export default function PendingApprovals() {
     setPage(0);
   };
 
+  // ==========================================================
+  // REFRESH
+  // ==========================================================
+
+  const handleRefresh = async () => {
+    try {
+      await refetch();
+    } catch (refreshError) {
+      console.error(
+        'Failed to refresh approvals:',
+        refreshError
+      );
+    }
+  };
+
+  // ==========================================================
+  // VIEW
+  // ==========================================================
+
   const handleView = (
     approval: PendingApproval
   ) => {
-    setSelectedApproval(approval);
+    setSelectedApproval(
+      approval
+    );
+
     setDetailsOpen(true);
   };
 
-  const handleApprove = (
+  // ==========================================================
+  // APPROVE
+  //
+  // IMPORTANT:
+  //
+  // Your current GraphQL schema only exposes adminSalons
+  // for reading salon data.
+  //
+  // There is currently no approveSalon / rejectSalon
+  // mutation in the schema you provided.
+  //
+  // Therefore we DO NOT fake a successful backend approval.
+  //
+  // Once the mutation exists, connect it here.
+  // ==========================================================
+
+  const handleApprove = async (
     approval: PendingApproval
   ) => {
-    setApprovals((previous) =>
-      previous.map((item) =>
-        item.id === approval.id
-          ? {
-              ...item,
-              status: 'APPROVED',
-              reviewedBy: 'Admin',
-              reviewedAt:
-                '30 Aug 2026, 11:15 AM'
-            }
-          : item
-      )
+    console.warn(
+      'Approve clicked for salon:',
+      approval.salonId
     );
 
-    setSelectedApproval((previous) =>
-      previous
-        ? {
-            ...previous,
-            status: 'APPROVED',
-            reviewedBy: 'Admin',
-            reviewedAt:
-              '30 Aug 2026, 11:15 AM'
-          }
-        : null
+    /*
+     * TODO:
+     *
+     * Connect your backend mutation here.
+     *
+     * Example later:
+     *
+     * await approveSalon({
+     *   variables: {
+     *     salonId: approval.salonId
+     *   }
+     * });
+     *
+     * await refetch();
+     */
+
+    alert(
+      'Approve mutation is not connected yet. The current GraphQL schema only provides adminSalons for reading salon data.'
     );
   };
+
+  // ==========================================================
+  // OPEN REJECT
+  // ==========================================================
 
   const openRejectDialog = (
     approval: PendingApproval
   ) => {
-    setSelectedApproval(approval);
+    setSelectedApproval(
+      approval
+    );
+
     setRejectionReason('');
+
     setRejectOpen(true);
   };
 
-  const handleReject = () => {
+  // ==========================================================
+  // REJECT
+  // ==========================================================
+
+  const handleReject = async () => {
     if (!selectedApproval) {
       return;
     }
 
     const reason =
-      rejectionReason.trim() ||
-      'Approval request was rejected by the administrator.';
+      rejectionReason.trim();
 
-    setApprovals((previous) =>
-      previous.map((item) =>
-        item.id === selectedApproval.id
-          ? {
-              ...item,
-              status: 'REJECTED',
-              rejectionReason: reason,
-              reviewedBy: 'Admin',
-              reviewedAt:
-                '30 Aug 2026, 11:15 AM'
-            }
-          : item
-      )
+    if (!reason) {
+      alert(
+        'Please provide a rejection reason.'
+      );
+
+      return;
+    }
+
+    console.warn(
+      'Reject clicked:',
+      selectedApproval.salonId,
+      reason
+    );
+
+    /*
+     * TODO:
+     *
+     * Connect your backend rejection mutation here.
+     *
+     * Example later:
+     *
+     * await rejectSalon({
+     *   variables: {
+     *     salonId:
+     *       selectedApproval.salonId,
+     *     reason
+     *   }
+     * });
+     *
+     * await refetch();
+     */
+
+    alert(
+      'Reject mutation is not connected yet. The current GraphQL schema only provides adminSalons for reading salon data.'
     );
 
     setRejectOpen(false);
-    setDetailsOpen(false);
+
     setRejectionReason('');
   };
 
-  // ==============================|| RENDER ||============================== //
+  // ==========================================================
+  // LOADING
+  // ==========================================================
+
+  if (loading && !data) {
+    return (
+      <Box
+        sx={{
+          minHeight: 400,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 2
+        }}
+      >
+        <CircularProgress />
+
+        <Typography
+          color="text.secondary"
+        >
+          Loading approval requests...
+        </Typography>
+      </Box>
+    );
+  }
+
+  // ==========================================================
+  // ERROR
+  // ==========================================================
+
+  if (error && !data) {
+    return (
+      <Box>
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+        >
+          <strong>
+            Unable to load approvals.
+          </strong>
+
+          <Box sx={{ mt: 0.5 }}>
+            {error.message}
+          </Box>
+        </Alert>
+
+        <Button
+          variant="contained"
+          startIcon={
+            <ReloadOutlined />
+          }
+          onClick={handleRefresh}
+        >
+          Try Again
+        </Button>
+      </Box>
+    );
+  }
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
     <Box>
-      {/* ================= HEADER ================= */}
+      {/* ======================================================
+          HEADER
+      ====================================================== */}
 
       <Stack
         direction={{
@@ -525,9 +987,11 @@ export default function PendingApprovals() {
         sx={{ mb: 3 }}
       >
         <Box>
-          <Typography
+          {/* <Typography
             variant="h4"
-            sx={{ fontWeight: 700 }}
+            sx={{
+              fontWeight: 700
+            }}
           >
             Pending Approvals
           </Typography>
@@ -535,50 +999,89 @@ export default function PendingApprovals() {
           <Typography
             variant="body2"
             color="text.secondary"
-            sx={{ mt: 0.5 }}
+            sx={{
+              mt: 0.5
+            }}
           >
-            Review and approve salon onboarding,
-            KYC and document verification requests.
-          </Typography>
+            Review salon onboarding, KYC
+            and document verification
+            requests.
+          </Typography> */}
         </Box>
 
         <Button
           variant="outlined"
-          startIcon={<ReloadOutlined />}
-          onClick={() =>
-            setApprovals(initialApprovals)
+          startIcon={
+            <ReloadOutlined />
           }
+          onClick={handleRefresh}
+          disabled={loading}
         >
-          Refresh
+          {loading
+            ? 'Refreshing...'
+            : 'Refresh'}
         </Button>
       </Stack>
 
-      {/* ================= ALERT ================= */}
+      {/* ======================================================
+          BACKEND MESSAGE
+      ====================================================== */}
+
+      {data?.adminSalons &&
+        !data.adminSalons.success && (
+          <Alert
+            severity="warning"
+            sx={{ mb: 3 }}
+          >
+            {data.adminSalons.message ||
+              'Unable to load salons.'}
+          </Alert>
+        )}
+
+      {/* ======================================================
+          HIGH PRIORITY ALERT
+      ====================================================== */}
 
       {highPriorityCount > 0 && (
         <Alert
           severity="warning"
-          icon={<ClockCircleOutlined />}
+          icon={
+            <ClockCircleOutlined />
+          }
           sx={{ mb: 3 }}
         >
-          <strong>{highPriorityCount}</strong>{' '}
+          <strong>
+            {highPriorityCount}
+          </strong>{' '}
           high-priority approval
-          {highPriorityCount > 1 ? 's' : ''}{' '}
-          require{highPriorityCount === 1 ? 's' : ''}{' '}
+          {highPriorityCount > 1
+            ? 's'
+            : ''}{' '}
+          require
+          {highPriorityCount === 1
+            ? 's'
+            : ''}{' '}
           your attention.
         </Alert>
       )}
 
-      {/* ================= SUMMARY CARDS ================= */}
+      {/* ======================================================
+          SUMMARY CARDS
+      ====================================================== */}
 
       <Grid
         container
         spacing={2.5}
         sx={{ mb: 3 }}
       >
-        {/* Pending */}
+        {/* PENDING */}
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <Card
             sx={{
               height: '100%',
@@ -617,15 +1120,20 @@ export default function PendingApprovals() {
                     height: 44,
                     borderRadius: 2,
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    alignItems:
+                      'center',
+                    justifyContent:
+                      'center',
                     bgcolor:
                       'warning.lighter',
-                    color: 'warning.main'
+                    color:
+                      'warning.main'
                   }}
                 >
                   <ClockCircleOutlined
-                    style={{ fontSize: 22 }}
+                    style={{
+                      fontSize: 22
+                    }}
                   />
                 </Box>
               </Stack>
@@ -633,9 +1141,14 @@ export default function PendingApprovals() {
           </Card>
         </Grid>
 
-        {/* High Priority */}
+        {/* HIGH PRIORITY */}
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <Card
             sx={{
               height: '100%',
@@ -664,7 +1177,9 @@ export default function PendingApprovals() {
                       fontWeight: 700
                     }}
                   >
-                    {highPriorityCount}
+                    {
+                      highPriorityCount
+                    }
                   </Typography>
                 </Box>
 
@@ -674,15 +1189,20 @@ export default function PendingApprovals() {
                     height: 44,
                     borderRadius: 2,
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    alignItems:
+                      'center',
+                    justifyContent:
+                      'center',
                     bgcolor:
                       'error.lighter',
-                    color: 'error.main'
+                    color:
+                      'error.main'
                   }}
                 >
                   <SafetyCertificateOutlined
-                    style={{ fontSize: 22 }}
+                    style={{
+                      fontSize: 22
+                    }}
                   />
                 </Box>
               </Stack>
@@ -690,9 +1210,14 @@ export default function PendingApprovals() {
           </Card>
         </Grid>
 
-        {/* Salon Applications */}
+        {/* SALON APPLICATIONS */}
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <Card
             sx={{
               height: '100%',
@@ -721,7 +1246,9 @@ export default function PendingApprovals() {
                       fontWeight: 700
                     }}
                   >
-                    {salonApplicationsCount}
+                    {
+                      salonApplicationsCount
+                    }
                   </Typography>
                 </Box>
 
@@ -731,15 +1258,20 @@ export default function PendingApprovals() {
                     height: 44,
                     borderRadius: 2,
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    alignItems:
+                      'center',
+                    justifyContent:
+                      'center',
                     bgcolor:
                       'primary.lighter',
-                    color: 'primary.main'
+                    color:
+                      'primary.main'
                   }}
                 >
                   <ShopOutlined
-                    style={{ fontSize: 22 }}
+                    style={{
+                      fontSize: 22
+                    }}
                   />
                 </Box>
               </Stack>
@@ -749,7 +1281,12 @@ export default function PendingApprovals() {
 
         {/* KYC */}
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <Card
             sx={{
               height: '100%',
@@ -788,15 +1325,20 @@ export default function PendingApprovals() {
                     height: 44,
                     borderRadius: 2,
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    alignItems:
+                      'center',
+                    justifyContent:
+                      'center',
                     bgcolor:
                       'success.lighter',
-                    color: 'success.main'
+                    color:
+                      'success.main'
                   }}
                 >
                   <FileTextOutlined
-                    style={{ fontSize: 22 }}
+                    style={{
+                      fontSize: 22
+                    }}
                   />
                 </Box>
               </Stack>
@@ -805,7 +1347,9 @@ export default function PendingApprovals() {
         </Grid>
       </Grid>
 
-      {/* ================= TABLE ================= */}
+      {/* ======================================================
+          TABLE
+      ====================================================== */}
 
       <Card
         sx={{
@@ -829,7 +1373,9 @@ export default function PendingApprovals() {
             <TextField
               value={search}
               onChange={(event) =>
-                handleSearch(event.target.value)
+                handleSearch(
+                  event.target.value
+                )
               }
               placeholder="Search salon, owner, approval ID..."
               size="small"
@@ -852,8 +1398,12 @@ export default function PendingApprovals() {
             <Select
               size="small"
               value={typeFilter}
-              onChange={handleTypeFilter}
-              sx={{ minWidth: 210 }}
+              onChange={
+                handleTypeFilter
+              }
+              sx={{
+                minWidth: 210
+              }}
             >
               <MenuItem value="ALL">
                 All Approval Types
@@ -873,14 +1423,15 @@ export default function PendingApprovals() {
             </Select>
 
             {(search ||
-              typeFilter !== 'ALL') && (
-              <Button
-                variant="text"
-                onClick={handleReset}
-              >
-                Clear
-              </Button>
-            )}
+              typeFilter !==
+              'ALL') && (
+                <Button
+                  variant="text"
+                  onClick={handleReset}
+                >
+                  Clear
+                </Button>
+              )}
           </Box>
 
           <Divider />
@@ -908,7 +1459,7 @@ export default function PendingApprovals() {
                   </TableCell>
 
                   <TableCell>
-                    Documents
+                    KYC
                   </TableCell>
 
                   <TableCell>
@@ -927,13 +1478,16 @@ export default function PendingApprovals() {
 
               <TableBody>
                 {paginatedApprovals.length ===
-                0 ? (
+                  0 ? (
                   <TableRow>
-                    <TableCell colSpan={8}>
+                    <TableCell
+                      colSpan={8}
+                    >
                       <Box
                         sx={{
                           py: 8,
-                          textAlign: 'center'
+                          textAlign:
+                            'center'
                         }}
                       >
                         <CheckCircleOutlined
@@ -945,7 +1499,9 @@ export default function PendingApprovals() {
 
                         <Typography
                           variant="h6"
-                          sx={{ mt: 2 }}
+                          sx={{
+                            mt: 2
+                          }}
                         >
                           No pending approvals
                         </Typography>
@@ -954,8 +1510,11 @@ export default function PendingApprovals() {
                           variant="body2"
                           color="text.secondary"
                         >
-                          There are no approval
-                          requests matching your
+                          There are no
+                          approval
+                          requests
+                          matching
+                          your
                           filters.
                         </Typography>
                       </Box>
@@ -966,24 +1525,32 @@ export default function PendingApprovals() {
                     (approval) => (
                       <TableRow
                         hover
-                        key={approval.id}
+                        key={
+                          approval.id
+                        }
                       >
                         {/* APPROVAL */}
 
                         <TableCell>
                           <Typography
                             variant="body2"
-                            fontWeight={600}
+                            fontWeight={
+                              600
+                            }
                             color="primary.main"
                           >
-                            {approval.id}
+                            {
+                              approval.id
+                            }
                           </Typography>
 
                           <Typography
                             variant="caption"
                             color="text.secondary"
                           >
-                            {approval.salonId}
+                            {
+                              approval.salonId
+                            }
                           </Typography>
                         </TableCell>
 
@@ -1004,7 +1571,8 @@ export default function PendingApprovals() {
                                   'primary.lighter',
                                 color:
                                   'primary.main',
-                                display: 'flex',
+                                display:
+                                  'flex',
                                 alignItems:
                                   'center',
                                 justifyContent:
@@ -1021,7 +1589,9 @@ export default function PendingApprovals() {
                             <Box>
                               <Typography
                                 variant="body2"
-                                fontWeight={600}
+                                fontWeight={
+                                  600
+                                }
                               >
                                 {
                                   approval.salonName
@@ -1032,8 +1602,13 @@ export default function PendingApprovals() {
                                 variant="caption"
                                 color="text.secondary"
                               >
-                                {approval.city},{' '}
-                                {approval.state}
+                                {
+                                  approval.city
+                                }
+                                ,{' '}
+                                {
+                                  approval.state
+                                }
                               </Typography>
                             </Box>
                           </Stack>
@@ -1080,17 +1655,42 @@ export default function PendingApprovals() {
                               approval.type
                             )}
                             sx={{
-                              fontWeight: 600
+                              fontWeight:
+                                600
                             }}
                           />
                         </TableCell>
 
-                        {/* DOCUMENTS */}
+                        {/* KYC */}
 
                         <TableCell>
+                          <Chip
+                            size="small"
+                            color={
+                              approval.kycStatus ===
+                                'APPROVED'
+                                ? 'success'
+                                : approval.kycStatus ===
+                                  'REJECTED'
+                                  ? 'error'
+                                  : 'warning'
+                            }
+                            label={
+                              approval.kycStatus
+                            }
+                            sx={{
+                              fontWeight:
+                                600
+                            }}
+                          />
+
                           <Typography
-                            variant="body2"
-                            fontWeight={600}
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                            sx={{
+                              mt: 0.5
+                            }}
                           >
                             {
                               approval.documentsSubmitted
@@ -1098,13 +1698,7 @@ export default function PendingApprovals() {
                             /
                             {
                               approval.totalDocuments
-                            }
-                          </Typography>
-
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
+                            }{' '}
                             documents
                           </Typography>
                         </TableCell>
@@ -1153,36 +1747,36 @@ export default function PendingApprovals() {
 
                             {approval.status ===
                               'PENDING' && (
-                              <>
-                                <Tooltip title="Approve">
-                                  <IconButton
-                                    size="small"
-                                    color="success"
-                                    onClick={() =>
-                                      handleApprove(
-                                        approval
-                                      )
-                                    }
-                                  >
-                                    <CheckCircleOutlined />
-                                  </IconButton>
-                                </Tooltip>
+                                <>
+                                  <Tooltip title="Approve">
+                                    <IconButton
+                                      size="small"
+                                      color="success"
+                                      onClick={() =>
+                                        handleApprove(
+                                          approval
+                                        )
+                                      }
+                                    >
+                                      <CheckCircleOutlined />
+                                    </IconButton>
+                                  </Tooltip>
 
-                                <Tooltip title="Reject">
-                                  <IconButton
-                                    size="small"
-                                    color="error"
-                                    onClick={() =>
-                                      openRejectDialog(
-                                        approval
-                                      )
-                                    }
-                                  >
-                                    <CloseCircleOutlined />
-                                  </IconButton>
-                                </Tooltip>
-                              </>
-                            )}
+                                  <Tooltip title="Reject">
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={() =>
+                                        openRejectDialog(
+                                          approval
+                                        )
+                                      }
+                                    >
+                                      <CloseCircleOutlined />
+                                    </IconButton>
+                                  </Tooltip>
+                                </>
+                              )}
                           </Stack>
                         </TableCell>
                       </TableRow>
@@ -1197,13 +1791,22 @@ export default function PendingApprovals() {
 
           <TablePagination
             component="div"
-            count={filteredApprovals.length}
+            count={
+              filteredApprovals.length
+            }
             page={page}
-            onPageChange={(_, newPage) =>
+            onPageChange={(
+              _,
+              newPage
+            ) =>
               setPage(newPage)
             }
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(event) => {
+            rowsPerPage={
+              rowsPerPage
+            }
+            onRowsPerPageChange={(
+              event
+            ) => {
               setRowsPerPage(
                 parseInt(
                   event.target.value,
@@ -1223,7 +1826,9 @@ export default function PendingApprovals() {
         </CardContent>
       </Card>
 
-      {/* ================= REVIEW DIALOG ================= */}
+      {/* ======================================================
+          REVIEW DIALOG
+      ====================================================== */}
 
       <Dialog
         open={detailsOpen}
@@ -1253,7 +1858,10 @@ export default function PendingApprovals() {
                     variant="body2"
                     color="text.secondary"
                   >
-                    {selectedApproval.id} ·{' '}
+                    {
+                      selectedApproval.id
+                    }{' '}
+                    ·{' '}
                     {
                       selectedApproval.salonName
                     }
@@ -1269,13 +1877,15 @@ export default function PendingApprovals() {
             </DialogTitle>
 
             <DialogContent dividers>
-              {/* REQUEST TYPE */}
+              {/* REQUEST */}
 
               <Box sx={{ mb: 3 }}>
                 <Typography
                   variant="subtitle1"
                   fontWeight={700}
-                  sx={{ mb: 1.5 }}
+                  sx={{
+                    mb: 1.5
+                  }}
                 >
                   Approval Request
                 </Typography>
@@ -1284,6 +1894,7 @@ export default function PendingApprovals() {
                   direction="row"
                   spacing={1}
                   alignItems="center"
+                  flexWrap="wrap"
                 >
                   <Chip
                     color={getApprovalTypeColor(
@@ -1302,14 +1913,18 @@ export default function PendingApprovals() {
                 </Stack>
               </Box>
 
-              <Divider sx={{ mb: 3 }} />
+              <Divider
+                sx={{ mb: 3 }}
+              />
 
-              {/* SALON DETAILS */}
+              {/* SALON */}
 
               <Typography
                 variant="subtitle1"
                 fontWeight={700}
-                sx={{ mb: 2 }}
+                sx={{
+                  mb: 2
+                }}
               >
                 Salon Information
               </Typography>
@@ -1410,14 +2025,18 @@ export default function PendingApprovals() {
                 </Grid>
               </Grid>
 
-              <Divider sx={{ mb: 3 }} />
+              <Divider
+                sx={{ mb: 3 }}
+              />
 
-              {/* KYC STATUS */}
+              {/* KYC */}
 
               <Typography
                 variant="subtitle1"
                 fontWeight={700}
-                sx={{ mb: 2 }}
+                sx={{
+                  mb: 2
+                }}
               >
                 Verification Status
               </Typography>
@@ -1428,7 +2047,9 @@ export default function PendingApprovals() {
                   sm: 'row'
                 }}
                 spacing={2}
-                sx={{ mb: 3 }}
+                sx={{
+                  mb: 3
+                }}
               >
                 <Paper
                   variant="outlined"
@@ -1450,10 +2071,10 @@ export default function PendingApprovals() {
                       size="small"
                       color={
                         selectedApproval.kycStatus ===
-                        'APPROVED'
+                          'APPROVED'
                           ? 'success'
                           : selectedApproval.kycStatus ===
-                              'REJECTED'
+                            'REJECTED'
                             ? 'error'
                             : 'warning'
                       }
@@ -1481,7 +2102,9 @@ export default function PendingApprovals() {
 
                   <Typography
                     variant="h6"
-                    sx={{ mt: 0.5 }}
+                    sx={{
+                      mt: 0.5
+                    }}
                   >
                     {
                       selectedApproval.documentsSubmitted
@@ -1500,7 +2123,8 @@ export default function PendingApprovals() {
                 <Box
                   sx={{
                     p: 2,
-                    bgcolor: 'grey.50',
+                    bgcolor:
+                      'grey.50',
                     borderRadius: 1.5,
                     mb: 3
                   }}
@@ -1515,9 +2139,13 @@ export default function PendingApprovals() {
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ mt: 0.5 }}
+                    sx={{
+                      mt: 0.5
+                    }}
                   >
-                    {selectedApproval.notes}
+                    {
+                      selectedApproval.notes
+                    }
                   </Typography>
                 </Box>
               )}
@@ -1528,7 +2156,8 @@ export default function PendingApprovals() {
                 <Box
                   sx={{
                     p: 2,
-                    bgcolor: 'error.lighter',
+                    bgcolor:
+                      'error.lighter',
                     borderRadius: 1.5
                   }}
                 >
@@ -1542,7 +2171,9 @@ export default function PendingApprovals() {
 
                   <Typography
                     variant="body2"
-                    sx={{ mt: 0.5 }}
+                    sx={{
+                      mt: 0.5
+                    }}
                   >
                     {
                       selectedApproval.rejectionReason
@@ -1555,7 +2186,9 @@ export default function PendingApprovals() {
 
               {selectedApproval.reviewedAt && (
                 <>
-                  <Divider sx={{ my: 3 }} />
+                  <Divider
+                    sx={{ my: 3 }}
+                  />
 
                   <Stack
                     direction="row"
@@ -1571,7 +2204,8 @@ export default function PendingApprovals() {
                       Reviewed by{' '}
                       <strong>
                         {
-                          selectedApproval.reviewedBy
+                          selectedApproval.reviewedBy ||
+                          'Admin'
                         }
                       </strong>{' '}
                       on{' '}
@@ -1584,10 +2218,14 @@ export default function PendingApprovals() {
               )}
             </DialogContent>
 
-            <DialogActions sx={{ p: 2 }}>
+            <DialogActions
+              sx={{ p: 2 }}
+            >
               <Button
                 onClick={() =>
-                  setDetailsOpen(false)
+                  setDetailsOpen(
+                    false
+                  )
                 }
               >
                 Close
@@ -1595,44 +2233,46 @@ export default function PendingApprovals() {
 
               {selectedApproval.status ===
                 'PENDING' && (
-                <>
-                  <Button
-                    color="error"
-                    variant="outlined"
-                    startIcon={
-                      <CloseCircleOutlined />
-                    }
-                    onClick={() =>
-                      openRejectDialog(
-                        selectedApproval
-                      )
-                    }
-                  >
-                    Reject
-                  </Button>
+                  <>
+                    <Button
+                      color="error"
+                      variant="outlined"
+                      startIcon={
+                        <CloseCircleOutlined />
+                      }
+                      onClick={() =>
+                        openRejectDialog(
+                          selectedApproval
+                        )
+                      }
+                    >
+                      Reject
+                    </Button>
 
-                  <Button
-                    color="success"
-                    variant="contained"
-                    startIcon={
-                      <CheckCircleOutlined />
-                    }
-                    onClick={() =>
-                      handleApprove(
-                        selectedApproval
-                      )
-                    }
-                  >
-                    Approve
-                  </Button>
-                </>
-              )}
+                    <Button
+                      color="success"
+                      variant="contained"
+                      startIcon={
+                        <CheckCircleOutlined />
+                      }
+                      onClick={() =>
+                        handleApprove(
+                          selectedApproval
+                        )
+                      }
+                    >
+                      Approve
+                    </Button>
+                  </>
+                )}
             </DialogActions>
           </>
         )}
       </Dialog>
 
-      {/* ================= REJECT DIALOG ================= */}
+      {/* ======================================================
+          REJECT DIALOG
+      ====================================================== */}
 
       <Dialog
         open={rejectOpen}
@@ -1650,11 +2290,14 @@ export default function PendingApprovals() {
           <Typography
             variant="body2"
             color="text.secondary"
-            sx={{ mb: 2 }}
+            sx={{
+              mb: 2
+            }}
           >
-            Provide a reason for rejecting this
-            approval request. This reason can
-            later be shown to the salon owner.
+            Provide a reason for rejecting
+            this approval request. This
+            reason can later be shown to
+            the salon owner.
           </Typography>
 
           <TextField
@@ -1668,10 +2311,17 @@ export default function PendingApprovals() {
               )
             }
             placeholder="Enter rejection reason..."
+            error={
+              rejectOpen &&
+              rejectionReason.trim() ===
+              ''
+            }
           />
         </DialogContent>
 
-        <DialogActions sx={{ p: 2 }}>
+        <DialogActions
+          sx={{ p: 2 }}
+        >
           <Button
             onClick={() =>
               setRejectOpen(false)
@@ -1696,21 +2346,24 @@ export default function PendingApprovals() {
   );
 }
 
-// ==============================|| DETAIL FIELD ||============================== //
+// ============================================================
+// DETAIL FIELD
+// ============================================================
 
 function DetailField({
   label,
   value
 }: {
   label: string;
-  value: string;
+  value?: string | null;
 }) {
   return (
     <Box
       sx={{
         p: 1.5,
         border: '1px solid',
-        borderColor: 'divider',
+        borderColor:
+          'divider',
         borderRadius: 1.5
       }}
     >
@@ -1718,7 +2371,9 @@ function DetailField({
         variant="caption"
         color="text.secondary"
         display="block"
-        sx={{ mb: 0.5 }}
+        sx={{
+          mb: 0.5
+        }}
       >
         {label}
       </Typography>

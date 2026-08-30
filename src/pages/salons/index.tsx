@@ -483,7 +483,7 @@ export default function Salons() {
         sx={{ mb: 3 }}
       >
         <Box>
-          <Typography
+          {/* <Typography
             variant="h4"
             sx={{ fontWeight: 600 }}
           >
@@ -497,7 +497,7 @@ export default function Salons() {
           >
             Manage registered salons, owners,
             KYC status and salon activity.
-          </Typography>
+          </Typography> */}
         </Box>
 
         <Stack
