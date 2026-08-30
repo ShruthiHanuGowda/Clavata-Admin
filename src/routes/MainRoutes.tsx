@@ -1,232 +1,498 @@
+
 import { lazy } from 'react';
+
 // project import
 import Loadable from 'components/Loadable';
 import DashboardLayout from 'layout/Dashboard';
 import PagesLayout from 'layout/Pages';
 import SimpleLayout from 'layout/Simple';
 import { SimpleLayoutType } from 'config';
-const MaintenanceError = Loadable(lazy(() => import('pages/maintenance/404')));
-const MaintenanceError500 = Loadable(lazy(() => import('pages/maintenance/500')));
-const MaintenanceUnderConstruction = Loadable(lazy(() => import('pages/maintenance/underConstruction')));
-const MaintenanceComingSoon = Loadable(lazy(() => import('pages/maintenance/comingSoon')));
-const AppContactUS = Loadable(lazy(() => import('pages/contactUs')));
-// render - sample page
-const Dashboard = Loadable(lazy(() => import('pages/dashboard')));
-const Analytics = Loadable(lazy(() => import('pages/analytics')));
-const Customers = Loadable(lazy(() => import('pages/customers')));
-const Salons = Loadable(lazy(() => import('pages/salons')));
-const Staff = Loadable(lazy(() => import('pages/staff')));
-const Services = Loadable(lazy(() => import('pages/services')));
-const Bookings = Loadable(lazy(() => import('pages/bookings')));
-const Reviews = Loadable(lazy(() => import('pages/reviews')));
-const Payments = Loadable(lazy(() => import('pages/payments')));
-const Transactions = Loadable(lazy(() => import('pages/transactions')));
-const Refunds = Loadable(lazy(() => import('pages/transactions')));
-const Revenue = Loadable(lazy(() => import('pages/revenue')));
-const SalonApplications = Loadable(lazy(() => import('pages/salon-applications')));
-const KycDocuments = Loadable(lazy(() => import('pages/kyc-documents')));
-const Locations = Loadable(lazy(() => import('pages/locations')));
-const PendingApprovals = Loadable(lazy(() => import('pages/pending-approvals')));
-const Notifications = Loadable(lazy(() => import('pages/notifications')));
-const Categories = Loadable(lazy(() => import('pages/categories')));
-const Support = Loadable(lazy(() => import('pages/support')));
-const AdminUsers = Loadable(lazy(() => import('pages/admin-users')));
-const RolePermission = Loadable(lazy(() => import('pages/roles-permissions')));
-const AuditLogs = Loadable(lazy(() => import('pages/audit-logs')));
-const Settings = Loadable(lazy(() => import('pages/settings')));
-const Profile = Loadable(lazy(() => import('pages/profile')));
-const MyAccount = Loadable(lazy(() => import('pages/my-account')));
 
-const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
-const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRole')));
-const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/TabSettings')));
-const PlatformSettings = Loadable(lazy(() => import('pages/profiles/account/PlatformSettings')));
-const Blog = Loadable(lazy(() => import('pages/blog')));
-const BlogDetails = Loadable(lazy(() => import('pages/blogDetails')));
+// ==============================|| MAINTENANCE ||============================== //
+
+const MaintenanceError = Loadable(
+  lazy(() => import('pages/maintenance/404'))
+);
+
+const MaintenanceError500 = Loadable(
+  lazy(() => import('pages/maintenance/500'))
+);
+
+const MaintenanceUnderConstruction = Loadable(
+  lazy(() => import('pages/maintenance/underConstruction'))
+);
+
+const MaintenanceComingSoon = Loadable(
+  lazy(() => import('pages/maintenance/comingSoon'))
+);
+
+// ==============================|| PUBLIC ||============================== //
+
+const AppContactUS = Loadable(
+  lazy(() => import('pages/contactUs'))
+);
+
+// ==============================|| DASHBOARD ||============================== //
+
+const Dashboard = Loadable(
+  lazy(() => import('pages/dashboard'))
+);
+
+const Analytics = Loadable(
+  lazy(() => import('pages/analytics'))
+);
+
+const Customers = Loadable(
+  lazy(() => import('pages/customers'))
+);
+
+const Salons = Loadable(
+  lazy(() => import('pages/salons'))
+);
+
+const Staff = Loadable(
+  lazy(() => import('pages/staff'))
+);
+
+const Services = Loadable(
+  lazy(() => import('pages/services'))
+);
+
+const Bookings = Loadable(
+  lazy(() => import('pages/bookings'))
+);
+
+const Reviews = Loadable(
+  lazy(() => import('pages/reviews'))
+);
+
+const Payments = Loadable(
+  lazy(() => import('pages/payments'))
+);
+
+const Transactions = Loadable(
+  lazy(() => import('pages/transactions'))
+);
+
+// NOTE:
+// You currently have Refunds importing the transactions page.
+// Keep this only if that is intentional.
+const Refunds = Loadable(
+  lazy(() => import('pages/transactions'))
+);
+
+const Revenue = Loadable(
+  lazy(() => import('pages/revenue'))
+);
+
+const SalonApplications = Loadable(
+  lazy(() => import('pages/salon-applications'))
+);
+
+const KycDocuments = Loadable(
+  lazy(() => import('pages/kyc-documents'))
+);
+
+const Locations = Loadable(
+  lazy(() => import('pages/locations'))
+);
+
+const PendingApprovals = Loadable(
+  lazy(() => import('pages/pending-approvals'))
+);
+
+const Notifications = Loadable(
+  lazy(() => import('pages/notifications'))
+);
+
+const Categories = Loadable(
+  lazy(() => import('pages/categories'))
+);
+
+// ==============================|| ADMIN ||============================== //
+
+const Support = Loadable(
+  lazy(() => import('pages/support'))
+);
+
+const AdminUsers = Loadable(
+  lazy(() => import('pages/admin-users'))
+);
+
+const RolePermission = Loadable(
+  lazy(() => import('pages/roles-permissions'))
+);
+
+const AuditLogs = Loadable(
+  lazy(() => import('pages/audit-logs'))
+);
+
+// ==============================|| SETTINGS ||============================== //
+
+const Settings = Loadable(
+  lazy(() => import('pages/settings'))
+);
+
+const Profile = Loadable(
+  lazy(() => import('pages/profile'))
+);
+
+const MyAccount = Loadable(
+  lazy(() => import('pages/my-account'))
+);
+
+const Feedback = Loadable(
+  lazy(() => import('pages/feedback'))
+);
+
+// IMPORTANT:
+// This is your Privacy Center.
+// Your file should be:
+//
+// src/pages/settings/privacy/index.tsx
+//
+const Privacy = Loadable(
+  lazy(() => import('pages/settings/privacy'))
+);
+
+// ==============================|| PROFILE ACCOUNT ||============================== //
+
+const AccountProfile = Loadable(
+  lazy(() => import('pages/profiles/account'))
+);
+
+const AccountTabRole = Loadable(
+  lazy(() => import('pages/profiles/account/TabRole'))
+);
+
+const AccountTabSettings = Loadable(
+  lazy(() => import('pages/settings/account'))
+);
+
+const PlatformSettings = Loadable(
+  lazy(() => import('pages/settings/platform'))
+);
+
+// ==============================|| BLOG ||============================== //
+
+const Blog = Loadable(
+  lazy(() => import('pages/blog'))
+);
+
+const BlogDetails = Loadable(
+  lazy(() => import('pages/blogDetails'))
+);
 
 // ==============================|| MAIN ROUTING ||============================== //
 
 const MainRoutes = {
   path: '/',
   children: [
+
+    // ============================================================
+    // DASHBOARD APPLICATION
+    // ============================================================
+
     {
       path: '/',
       element: <DashboardLayout />,
+
       children: [
+
+        // ============================== //
+        // DASHBOARD
+        // ============================== //
+
         {
           path: 'dashboard',
           element: <Dashboard />
         },
+
+        // ============================== //
+        // BUSINESS
+        // ============================== //
+
         {
-          path: '/analytics',
+          path: 'analytics',
           element: <Analytics />
         },
+
         {
-          path: '/customers',
+          path: 'customers',
           element: <Customers />
         },
+
         {
-          path: '/salons',
+          path: 'salons',
           element: <Salons />
         },
+
         {
-          path: '/staff',
+          path: 'staff',
           element: <Staff />
         },
+
         {
-          path: '/services',
+          path: 'services',
           element: <Services />
         },
+
         {
-          path: '/bookings',
+          path: 'bookings',
           element: <Bookings />
         },
+
         {
-          path: '/reviews',
+          path: 'reviews',
           element: <Reviews />
         },
+
+        // ============================== //
+        // PAYMENTS
+        // ============================== //
+
         {
-          path: '/payments',
+          path: 'payments',
           element: <Payments />
         },
+
         {
-          path: '/transactions',
+          path: 'transactions',
           element: <Transactions />
         },
+
         {
-          path: '/refunds',
+          path: 'refunds',
           element: <Refunds />
         },
+
         {
-          path: '/revenue',
+          path: 'revenue',
           element: <Revenue />
         },
+
+        // ============================== //
+        // SALON MANAGEMENT
+        // ============================== //
+
         {
-          path: '/salon-applications',
+          path: 'salon-applications',
           element: <SalonApplications />
         },
+
         {
-          path: '/kyc-documents',
+          path: 'kyc-documents',
           element: <KycDocuments />
         },
+
         {
-          path: '/pending-approvals',
+          path: 'pending-approvals',
           element: <PendingApprovals />
         },
+
         {
-          path: '/locations',
+          path: 'locations',
           element: <Locations />
         },
+
         {
-          path: '/categories',
+          path: 'categories',
           element: <Categories />
         },
+
+        // ============================== //
+        // NOTIFICATIONS
+        // ============================== //
+
         {
-          path: '/notifications',
+          path: 'notifications',
           element: <Notifications />
         },
+
+        // ============================== //
+        // SUPPORT
+        // ============================== //
+
         {
-          path: '/support',
+          path: 'support',
           element: <Support />
         },
+
+        // ============================== //
+        // ADMINISTRATION
+        // ============================== //
+
         {
-          path: '/admin-users',
+          path: 'admin-users',
           element: <AdminUsers />
         },
+
         {
-          path: '/roles-permissions',
+          path: 'roles-permissions',
           element: <RolePermission />
         },
+
         {
-          path: '/audit-logs',
+          path: 'audit-logs',
           element: <AuditLogs />
         },
+
+        // ============================== //
+        // SETTINGS
+        // ============================== //
+
         {
-          path: '/settings',
+          path: 'settings',
           element: <Settings />
         },
+
         {
-          path: '/profile',
-          element: <Profile />
-        },
-        {
-          path: '/my-account',
+          path: 'settings/account',
           element: <MyAccount />
         },
-        // {
-        //   path: '/companies/:id',
-        //   element: <CompanyKybDetail />
-        // },
-        // {
-        //   path: '/user/:id',
-        //   element: <UserKYCDetail />
-        // },
+
         {
-          path: '/blog',
+          path: 'settings/platform',
+          element: <PlatformSettings />
+        },
+
+        {
+          path: 'settings/privacy',
+          element: <Privacy />
+        },
+
+        // ============================== //
+        // PROFILE
+        // ============================== //
+
+        {
+          path: 'profile',
+          element: <Profile />
+        },
+
+        {
+          path: 'my-account',
+          element: <MyAccount />
+        },
+
+        // ============================== //
+        // FEEDBACK
+        // ============================== //
+
+        {
+          path: 'feedback',
+          element: <Feedback />
+        },
+
+        // ============================== //
+        // BLOG
+        // ============================== //
+
+        {
+          path: 'blog',
           element: <Blog />
         },
+
         {
-          path: '/blog/:id',
+          path: 'blog/:id',
           element: <BlogDetails />
         },
+
+        // ============================================================
+        // OLD PROFILE ACCOUNT SECTION
+        // ============================================================
+
         {
           path: 'profiles',
           children: [
+
             {
               path: 'account',
               element: <AccountProfile />,
+
               children: [
+
                 {
-                  path: '/profiles/account/user-permissions',
+                  path: 'user-permissions',
                   element: <AccountTabRole />
                 },
+
                 {
-                  path: '/profiles/account/settings',
+                  path: 'settings',
                   element: <AccountTabSettings />
                 },
+
                 {
-                  path: '/profiles/account/platform-settings',
+                  path: 'platform-settings',
                   element: <PlatformSettings />
                 }
+
               ]
             }
+
           ]
-        },
+        }
+
       ]
     },
+
+    // ============================================================
+    // SIMPLE LAYOUT
+    // ============================================================
+
     {
       path: '/',
-      element: <SimpleLayout layout={SimpleLayoutType.SIMPLE} />,
+      element: (
+        <SimpleLayout
+          layout={SimpleLayoutType.SIMPLE}
+        />
+      ),
+
       children: [
+
         {
           path: 'contact-us',
           element: <AppContactUS />
         }
+
       ]
     },
+
+    // ============================================================
+    // MAINTENANCE
+    // ============================================================
+
     {
-      path: '/maintenance',
+      path: 'maintenance',
       element: <PagesLayout />,
+
       children: [
+
         {
           path: '404',
           element: <MaintenanceError />
         },
+
         {
           path: '500',
           element: <MaintenanceError500 />
         },
+
         {
           path: 'under-construction',
           element: <MaintenanceUnderConstruction />
         },
+
         {
           path: 'coming-soon',
           element: <MaintenanceComingSoon />
         }
+
       ]
     }
+
   ]
 };
 
 export default MainRoutes;
+
