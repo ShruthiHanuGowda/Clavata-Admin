@@ -20,6 +20,8 @@ const Dashboard = Loadable(lazy(() => import('pages/dashboard')));
 const Analytics = Loadable(lazy(() => import('pages/analytics')));
 const Customers = Loadable(lazy(() => import('pages/customers')));
 const Salons = Loadable(lazy(() => import('pages/salons')));
+const Staff = Loadable(lazy(() => import('pages/staff')));
+const Services = Loadable(lazy(() => import('pages/services')));
 
 const User = Loadable(lazy(() => import('pages/user/user')));
 const Companies = Loadable(lazy(() => import('pages/companies/companies')));
@@ -68,6 +70,14 @@ const MainRoutes = {
         {
           path: '/salons',
           element: <Salons />
+        },
+        {
+          path: '/staff',
+          element: <Staff />
+        },
+        {
+          path: '/services',
+          element: <Services />
         },
         {
           path: '/companies/:id',
