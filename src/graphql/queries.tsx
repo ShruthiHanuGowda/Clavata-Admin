@@ -36,6 +36,83 @@ export const ADMIN_CUSTOMERS = gql`
         }
     }
 `;
+
+export const ADMIN_SALONS = gql`
+  query AdminSalons(
+    $search: String
+    $kycStatus: KycStatus
+    $salonStatus: SalonStatus
+    $isActive: Boolean
+  ) {
+    adminSalons(
+      search: $search
+      kycStatus: $kycStatus
+      salonStatus: $salonStatus
+      isActive: $isActive
+    ) {
+      success
+      message
+      totalCount
+
+      salons {
+        salonId
+        ownerUserId
+        salonName
+        ownerName
+        businessType
+        ownerPhoneNumber
+        alternatePhone
+        email
+
+        address {
+          addressLine
+          city
+          state
+          pincode
+        }
+
+        latitude
+        longitude
+
+        gstNumber
+        panNumber
+        aadhaarNumber
+
+        bankAccount
+        ifsc
+        accountHolderName
+
+        logoUrl
+        coverImageUrl
+        galleryImages
+
+        kycStatus
+        salonStatus
+
+        isActive
+        isVisible
+        isDeleted
+
+        averageRating
+        totalReviews
+        totalAppointments
+        totalCompletedAppointments
+        totalCancelledAppointments
+        totalRevenue
+
+        approvedBy
+        approvedAt
+        rejectedBy
+        rejectedAt
+        rejectionReason
+
+        lastUpdatedBy
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
 // export const LIST_COMPANY_WALLETS = gql`
 //   query ListUserWallets($limit: Int, $nextToken: String, $filter: TableUserWalletsFilterInput) {
 //     listUserWallets(limit: $limit, nextToken: $nextToken, filter: $filter) {
