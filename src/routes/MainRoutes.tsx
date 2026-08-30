@@ -34,6 +34,9 @@ const PendingApprovals = Loadable(lazy(() => import('pages/pending-approvals')))
 const Notifications = Loadable(lazy(() => import('pages/notifications')));
 const Categories = Loadable(lazy(() => import('pages/categories')));
 const Support = Loadable(lazy(() => import('pages/support')));
+const AdminUsers = Loadable(lazy(() => import('pages/admin-users')));
+const RolePermission = Loadable(lazy(() => import('pages/roles-permissions')));
+const AuditLogs = Loadable(lazy(() => import('pages/audit-logs')));
 
 const TransactionHistory = Loadable(lazy(() => import('pages/transactionHistory/transactionHistory')));
 // const DTerminalTransactionHistory = Loadable(lazy(() => import('pages/dTerminal/DterminalTransactionHistory')));
@@ -133,6 +136,18 @@ const MainRoutes = {
         {
           path: '/support',
           element: <Support />
+        },
+            {
+          path: '/admin-users',
+          element: <AdminUsers />
+        },
+            {
+          path: '/roles-permissions',
+          element: <RolePermission />
+        },
+            {
+          path: '/audit-logs',
+          element: <AuditLogs />
         },
         // {
         //   path: '/companies/:id',
