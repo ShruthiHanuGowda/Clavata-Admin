@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { gql, useQuery } from '@apollo/client';
+import { gql, useMutation, useQuery } from '@apollo/client';
 
 // material-ui
 import {
@@ -46,21 +46,23 @@ import {
 } from '@ant-design/icons';
 
 // ============================================================
-// IMPORTANT
-// Change this import path if your ADMIN_SALONS query is stored
-// somewhere else.
-//
-// Example:
-// import { ADMIN_SALONS } from 'graphql/queries/salons';
+// GRAPHQL
 // ============================================================
 
-import { ADMIN_SALONS } from '../../graphql/queries';
+import {
+  ADMIN_SALONS,
+  APPROVE_SALON,
+  REJECT_SALON
+} from '../../graphql/queries';
 
 // ============================================================
 // TYPES
 // ============================================================
 
-type KycStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+type KycStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED';
 
 type SalonStatus =
   | 'OPEN'
@@ -145,16 +147,37 @@ interface AdminSalonsVariables {
 }
 
 // ============================================================
-// FALLBACK QUERY
+// MUTATION RESPONSE TYPES
 // ============================================================
-//
-// If you already export ADMIN_SALONS from another file,
-// the import above will be used.
-//
-// This is included here only so the page itself is complete.
-// If your imported ADMIN_SALONS exists, this constant can be
-// removed and the imported query used directly.
-//
+
+interface SalonMutationResponse {
+  success: boolean;
+  message: string;
+}
+
+interface ApproveSalonResponse {
+  approveSalon: SalonMutationResponse;
+}
+
+interface RejectSalonResponse {
+  rejectSalon: SalonMutationResponse;
+}
+
+interface ApproveSalonVariables {
+  input: {
+    salonId: string;
+  };
+}
+
+interface RejectSalonVariables {
+  input: {
+    salonId: string;
+    rejectionReason: string;
+  };
+}
+
+// ============================================================
+// FALLBACK QUERY
 // ============================================================
 
 const ADMIN_SALONS_LOCAL = gql`
@@ -311,7 +334,9 @@ const maskBankAccount = (value?: string | null) => {
     return value;
   }
 
-  return `${'*'.repeat(Math.max(0, value.length - 4))}${value.slice(-4)}`;
+  return `${'*'.repeat(
+    Math.max(0, value.length - 4)
+  )}${value.slice(-4)}`;
 };
 
 // ============================================================
@@ -428,8 +453,8 @@ function DetailField({
         }}
       >
         {value !== undefined &&
-        value !== null &&
-        String(value).trim() !== ''
+          value !== null &&
+          String(value).trim() !== ''
           ? value
           : 'Not provided'}
       </Typography>
@@ -453,7 +478,8 @@ export default function SalonApplications() {
 
   const [page, setPage] = useState(0);
 
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] =
+    useState(10);
 
   const [selectedSalon, setSelectedSalon] =
     useState<Salon | null>(null);
@@ -468,7 +494,7 @@ export default function SalonApplications() {
     useState('');
 
   // ==========================================================
-  // GRAPHQL
+  // GRAPHQL QUERY
   // ==========================================================
 
   const {
@@ -480,16 +506,9 @@ export default function SalonApplications() {
     AdminSalonsResponse,
     AdminSalonsVariables
   >(
-    // Use your exported ADMIN_SALONS query.
-    //
-    // If your import path is different, only change the
-    // import at the top of this file.
     ADMIN_SALONS || ADMIN_SALONS_LOCAL,
     {
       variables: {
-        // We intentionally don't send the search here because
-        // this page performs the search across the already
-        // retrieved salon records.
         search: undefined,
         kycStatus: undefined,
         salonStatus: undefined,
@@ -500,10 +519,39 @@ export default function SalonApplications() {
   );
 
   // ==========================================================
+  // APPROVE MUTATION
+  // ==========================================================
+
+  const [
+    approveSalon,
+    {
+      loading: approving
+    }
+  ] = useMutation<
+    ApproveSalonResponse,
+    ApproveSalonVariables
+  >(APPROVE_SALON);
+
+  // ==========================================================
+  // REJECT MUTATION
+  // ==========================================================
+
+  const [
+    rejectSalon,
+    {
+      loading: rejecting
+    }
+  ] = useMutation<
+    RejectSalonResponse,
+    RejectSalonVariables
+  >(REJECT_SALON);
+
+  // ==========================================================
   // REAL DATABASE DATA
   // ==========================================================
 
-  const salons = data?.adminSalons?.salons || [];
+  const salons =
+    data?.adminSalons?.salons || [];
 
   // ==========================================================
   // COUNTS
@@ -514,15 +562,18 @@ export default function SalonApplications() {
       all: salons.length,
 
       pending: salons.filter(
-        (item) => item.kycStatus === 'PENDING'
+        (item) =>
+          item.kycStatus === 'PENDING'
       ).length,
 
       approved: salons.filter(
-        (item) => item.kycStatus === 'APPROVED'
+        (item) =>
+          item.kycStatus === 'APPROVED'
       ).length,
 
       rejected: salons.filter(
-        (item) => item.kycStatus === 'REJECTED'
+        (item) =>
+          item.kycStatus === 'REJECTED'
       ).length
     };
   }, [salons]);
@@ -531,46 +582,47 @@ export default function SalonApplications() {
   // FILTER
   // ==========================================================
 
-  const filteredApplications = useMemo(() => {
-    const query = search
-      .toLowerCase()
-      .trim();
+  const filteredApplications =
+    useMemo(() => {
+      const query = search
+        .toLowerCase()
+        .trim();
 
-    return salons.filter((salon) => {
-      const matchesTab =
-        tab === 'ALL' ||
-        salon.kycStatus === tab;
+      return salons.filter((salon) => {
+        const matchesTab =
+          tab === 'ALL' ||
+          salon.kycStatus === tab;
 
-      const matchesSearch =
-        !query ||
-        (salon.salonName || '')
-          .toLowerCase()
-          .includes(query) ||
-        (salon.ownerName || '')
-          .toLowerCase()
-          .includes(query) ||
-        (salon.ownerPhoneNumber || '')
-          .toLowerCase()
-          .includes(query) ||
-        (salon.email || '')
-          .toLowerCase()
-          .includes(query) ||
-        (salon.address?.city || '')
-          .toLowerCase()
-          .includes(query) ||
-        (salon.address?.state || '')
-          .toLowerCase()
-          .includes(query) ||
-        salon.salonId
-          .toLowerCase()
-          .includes(query);
+        const matchesSearch =
+          !query ||
+          (salon.salonName || '')
+            .toLowerCase()
+            .includes(query) ||
+          (salon.ownerName || '')
+            .toLowerCase()
+            .includes(query) ||
+          (salon.ownerPhoneNumber || '')
+            .toLowerCase()
+            .includes(query) ||
+          (salon.email || '')
+            .toLowerCase()
+            .includes(query) ||
+          (salon.address?.city || '')
+            .toLowerCase()
+            .includes(query) ||
+          (salon.address?.state || '')
+            .toLowerCase()
+            .includes(query) ||
+          salon.salonId
+            .toLowerCase()
+            .includes(query);
 
-      return (
-        matchesTab &&
-        matchesSearch
-      );
-    });
-  }, [salons, search, tab]);
+        return (
+          matchesTab &&
+          matchesSearch
+        );
+      });
+    }, [salons, search, tab]);
 
   // ==========================================================
   // PAGINATION
@@ -579,7 +631,8 @@ export default function SalonApplications() {
   const paginatedApplications =
     filteredApplications.slice(
       page * rowsPerPage,
-      page * rowsPerPage + rowsPerPage
+      page * rowsPerPage +
+      rowsPerPage
     );
 
   // ==========================================================
@@ -594,47 +647,72 @@ export default function SalonApplications() {
   // ==========================================================
   // APPROVE
   // ==========================================================
-  //
-  // IMPORTANT:
-  // This currently does NOT modify DynamoDB.
-  //
-  // We should connect this to your actual AppSync approve
-  // mutation next.
-  //
-  // ==========================================================
 
-  const handleApprove = async (salon: Salon) => {
-    console.log(
-      'Approve salon:',
-      salon.salonId
+  const handleApprove = async (
+    salon: Salon
+  ) => {
+    if (approving || rejecting) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to approve "${salon.salonName || 'this salon'}"?`
     );
 
-    /*
-      TODO:
+    if (!confirmed) {
+      return;
+    }
 
-      Connect your actual AppSync mutation here.
+    try {
+      const result =
+        await approveSalon({
+          variables: {
+            input: {
+              salonId: salon.salonId
+            }
+          }
+        });
 
-      Example later:
+      const response =
+        result.data?.approveSalon;
 
-      await approveSalon({
-        variables: {
-          salonId: salon.salonId
-        }
-      });
+      if (!response?.success) {
+        throw new Error(
+          response?.message ||
+          'Failed to approve salon application.'
+        );
+      }
+
+      window.alert(
+        response.message ||
+        'Salon application approved successfully.'
+      );
+
+      setDetailsOpen(false);
+      setSelectedSalon(null);
 
       await refetch();
-    */
+    } catch (mutationError) {
+      console.error(
+        'Approve salon error:',
+        mutationError
+      );
 
-    alert(
-      `Approve mutation is not connected yet for ${salon.salonName}.`
-    );
+      window.alert(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Failed to approve salon application.'
+      );
+    }
   };
 
   // ==========================================================
   // OPEN REJECT
   // ==========================================================
 
-  const handleOpenReject = (salon: Salon) => {
+  const handleOpenReject = (
+    salon: Salon
+  ) => {
     setSelectedSalon(salon);
     setRejectionReason('');
     setRejectOpen(true);
@@ -649,39 +727,61 @@ export default function SalonApplications() {
       return;
     }
 
-    if (!rejectionReason.trim()) {
+    const reason =
+      rejectionReason.trim();
+
+    if (!reason) {
       return;
     }
 
-    console.log(
-      'Reject salon:',
-      selectedSalon.salonId,
-      rejectionReason
-    );
+    if (rejecting || approving) {
+      return;
+    }
 
-    /*
-      TODO:
+    try {
+      const result =
+        await rejectSalon({
+          variables: {
+            input: {
+              salonId: selectedSalon.salonId,
+              rejectionReason: reason
+            }
+          }
+        });
 
-      Connect your actual AppSync reject mutation here.
+      const response =
+        result.data?.rejectSalon;
 
-      Example later:
+      if (!response?.success) {
+        throw new Error(
+          response?.message ||
+          'Failed to reject salon application.'
+        );
+      }
 
-      await rejectSalon({
-        variables: {
-          salonId: selectedSalon.salonId,
-          rejectionReason: rejectionReason.trim()
-        }
-      });
+      window.alert(
+        response.message ||
+        'Salon application rejected successfully.'
+      );
+
+      setRejectOpen(false);
+      setDetailsOpen(false);
+      setRejectionReason('');
+      setSelectedSalon(null);
 
       await refetch();
-    */
+    } catch (mutationError) {
+      console.error(
+        'Reject salon error:',
+        mutationError
+      );
 
-    alert(
-      `Reject mutation is not connected yet for ${selectedSalon.salonName}.`
-    );
-
-    setRejectOpen(false);
-    setRejectionReason('');
+      window.alert(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Failed to reject salon application.'
+      );
+    }
   };
 
   // ==========================================================
@@ -733,33 +833,7 @@ export default function SalonApplications() {
             spacing={1.5}
             alignItems="center"
           >
-            {/* <Avatar
-              sx={{
-                bgcolor: 'primary.lighter',
-                color: 'primary.main',
-                width: 48,
-                height: 48
-              }}
-            >
-              <ShopOutlined
-                style={{ fontSize: 24 }}
-              />
-            </Avatar> */}
-
-            <Box>
-              {/* <Typography variant="h4">
-                Salon Applications
-              </Typography>
-
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 0.5 }}
-              >
-                Review and verify salon partner
-                applications
-              </Typography> */}
-            </Box>
+            <Box />
           </Stack>
         </Grid>
 
@@ -768,7 +842,11 @@ export default function SalonApplications() {
             variant="outlined"
             startIcon={<ReloadOutlined />}
             onClick={handleRefresh}
-            disabled={loading}
+            disabled={
+              loading ||
+              approving ||
+              rejecting
+            }
           >
             Refresh
           </Button>
@@ -826,7 +904,12 @@ export default function SalonApplications() {
       >
         {/* TOTAL */}
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <Paper
             sx={{
               p: 2.5,
@@ -873,7 +956,12 @@ export default function SalonApplications() {
 
         {/* PENDING */}
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <Paper
             sx={{
               p: 2.5,
@@ -921,7 +1009,12 @@ export default function SalonApplications() {
 
         {/* APPROVED */}
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <Paper
             sx={{
               p: 2.5,
@@ -969,7 +1062,12 @@ export default function SalonApplications() {
 
         {/* REJECTED */}
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <Paper
             sx={{
               p: 2.5,
@@ -1288,17 +1386,17 @@ export default function SalonApplications() {
 
                         {salon.kycStatus ===
                           'PENDING' && (
-                          <Typography
-                            variant="caption"
-                            color="warning.main"
-                            sx={{
-                              display: 'block',
-                              mt: 0.5
-                            }}
-                          >
-                            Awaiting verification
-                          </Typography>
-                        )}
+                            <Typography
+                              variant="caption"
+                              color="warning.main"
+                              sx={{
+                                display: 'block',
+                                mt: 0.5
+                              }}
+                            >
+                              Awaiting verification
+                            </Typography>
+                          )}
                       </TableCell>
 
                       {/* ACTIONS */}
@@ -1319,6 +1417,10 @@ export default function SalonApplications() {
                                   salon
                                 )
                               }
+                              disabled={
+                                approving ||
+                                rejecting
+                              }
                             >
                               <EyeOutlined />
                             </IconButton>
@@ -1328,37 +1430,45 @@ export default function SalonApplications() {
 
                           {salon.kycStatus ===
                             'PENDING' && (
-                            <Tooltip title="Approve">
-                              <IconButton
-                                color="success"
-                                onClick={() =>
-                                  handleApprove(
-                                    salon
-                                  )
-                                }
-                              >
-                                <CheckCircleOutlined />
-                              </IconButton>
-                            </Tooltip>
-                          )}
+                              <Tooltip title="Approve">
+                                <IconButton
+                                  color="success"
+                                  onClick={() =>
+                                    handleApprove(
+                                      salon
+                                    )
+                                  }
+                                  disabled={
+                                    approving ||
+                                    rejecting
+                                  }
+                                >
+                                  <CheckCircleOutlined />
+                                </IconButton>
+                              </Tooltip>
+                            )}
 
                           {/* REJECT */}
 
                           {salon.kycStatus ===
                             'PENDING' && (
-                            <Tooltip title="Reject">
-                              <IconButton
-                                color="error"
-                                onClick={() =>
-                                  handleOpenReject(
-                                    salon
-                                  )
-                                }
-                              >
-                                <CloseCircleOutlined />
-                              </IconButton>
-                            </Tooltip>
-                          )}
+                              <Tooltip title="Reject">
+                                <IconButton
+                                  color="error"
+                                  onClick={() =>
+                                    handleOpenReject(
+                                      salon
+                                    )
+                                  }
+                                  disabled={
+                                    approving ||
+                                    rejecting
+                                  }
+                                >
+                                  <CloseCircleOutlined />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                         </Stack>
                       </TableCell>
                     </TableRow>
@@ -1369,7 +1479,7 @@ export default function SalonApplications() {
 
               {!loading &&
                 filteredApplications.length ===
-                  0 && (
+                0 && (
                   <TableRow>
                     <TableCell
                       colSpan={7}
@@ -1447,8 +1557,6 @@ export default function SalonApplications() {
       >
         {selectedSalon && (
           <>
-            {/* HEADER */}
-
             <DialogTitle>
               <Stack
                 direction="row"
@@ -1517,11 +1625,7 @@ export default function SalonApplications() {
                 container
                 spacing={2}
               >
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Salon Name"
                     value={
@@ -1530,11 +1634,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Business Type"
                     value={
@@ -1543,11 +1643,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Salon Status"
                     value={
@@ -1556,11 +1652,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Application Submitted"
                     value={formatDateTime(
@@ -1585,11 +1677,7 @@ export default function SalonApplications() {
                 container
                 spacing={2}
               >
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Owner Name"
                     value={
@@ -1598,11 +1686,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Phone"
                     value={
@@ -1611,11 +1695,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Alternate Phone"
                     value={
@@ -1624,11 +1704,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Email"
                     value={
@@ -1637,11 +1713,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Owner User ID"
                     value={
@@ -1666,10 +1738,7 @@ export default function SalonApplications() {
                 container
                 spacing={2}
               >
-                <Grid
-                  item
-                  xs={12}
-                >
+                <Grid item xs={12}>
                   <DetailField
                     label="Address"
                     value={
@@ -1679,11 +1748,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="City"
                     value={
@@ -1693,11 +1758,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="State"
                     value={
@@ -1707,11 +1768,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Pincode"
                     value={
@@ -1721,11 +1778,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Latitude"
                     value={
@@ -1734,11 +1787,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Longitude"
                     value={
@@ -1763,11 +1812,7 @@ export default function SalonApplications() {
                 container
                 spacing={2}
               >
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="GST Number"
                     value={
@@ -1776,11 +1821,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="PAN Number"
                     value={
@@ -1789,11 +1830,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Aadhaar"
                     value={maskAadhaar(
@@ -1802,11 +1839,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="KYC Status"
                     value={
@@ -1831,11 +1864,7 @@ export default function SalonApplications() {
                 container
                 spacing={2}
               >
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Account Holder"
                     value={
@@ -1844,11 +1873,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Bank Account"
                     value={maskBankAccount(
@@ -1857,11 +1882,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="IFSC"
                     value={
@@ -1886,11 +1907,7 @@ export default function SalonApplications() {
                 container
                 spacing={2}
               >
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Active"
                     value={
@@ -1901,11 +1918,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Visible"
                     value={
@@ -1916,11 +1929,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Deleted"
                     value={
@@ -1931,28 +1940,20 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Rating"
                     value={
                       selectedSalon.averageRating
                         ? `⭐ ${selectedSalon.averageRating.toFixed(
-                            1
-                          )}`
+                          1
+                        )}`
                         : 'No ratings'
                     }
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Reviews"
                     value={
@@ -1961,11 +1962,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Appointments"
                     value={selectedSalon.totalAppointments?.toLocaleString(
@@ -1990,11 +1987,7 @@ export default function SalonApplications() {
                 container
                 spacing={2}
               >
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Total Appointments"
                     value={selectedSalon.totalAppointments?.toLocaleString(
@@ -2003,11 +1996,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Completed"
                     value={selectedSalon.totalCompletedAppointments?.toLocaleString(
@@ -2016,11 +2005,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
+                <Grid item xs={12} sm={4}>
                   <DetailField
                     label="Cancelled"
                     value={selectedSalon.totalCancelledAppointments?.toLocaleString(
@@ -2029,11 +2014,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Total Revenue"
                     value={formatCurrency(
@@ -2042,11 +2023,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
+                <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Total Reviews"
                     value={
@@ -2060,9 +2037,7 @@ export default function SalonApplications() {
 
               {selectedSalon.rejectionReason && (
                 <>
-                  <Divider
-                    sx={{ my: 3 }}
-                  />
+                  <Divider sx={{ my: 3 }} />
 
                   <Typography
                     variant="h6"
@@ -2107,9 +2082,7 @@ export default function SalonApplications() {
 
               {selectedSalon.approvedAt && (
                 <>
-                  <Divider
-                    sx={{ my: 3 }}
-                  />
+                  <Divider sx={{ my: 3 }} />
 
                   <Typography
                     variant="h6"
@@ -2158,84 +2131,82 @@ export default function SalonApplications() {
                 (selectedSalon.galleryImages &&
                   selectedSalon.galleryImages
                     .length > 0)) && (
-                <>
-                  <Divider
-                    sx={{ my: 3 }}
-                  />
+                  <>
+                    <Divider sx={{ my: 3 }} />
 
-                  <Typography
-                    variant="h6"
-                    sx={{ mb: 2 }}
-                  >
-                    Salon Images
-                  </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{ mb: 2 }}
+                    >
+                      Salon Images
+                    </Typography>
 
-                  <Grid
-                    container
-                    spacing={2}
-                  >
-                    {selectedSalon.logoUrl && (
-                      <Grid
-                        item
-                        xs={12}
-                        sm={4}
-                      >
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
+                    <Grid
+                      container
+                      spacing={2}
+                    >
+                      {selectedSalon.logoUrl && (
+                        <Grid
+                          item
+                          xs={12}
+                          sm={4}
                         >
-                          Logo
-                        </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            Logo
+                          </Typography>
 
-                        <Box
-                          component="img"
-                          src={
-                            selectedSalon.logoUrl
-                          }
-                          alt="Salon logo"
-                          sx={{
-                            width: '100%',
-                            height: 150,
-                            objectFit: 'cover',
-                            borderRadius: 2,
-                            mt: 1
-                          }}
-                        />
-                      </Grid>
-                    )}
+                          <Box
+                            component="img"
+                            src={
+                              selectedSalon.logoUrl
+                            }
+                            alt="Salon logo"
+                            sx={{
+                              width: '100%',
+                              height: 150,
+                              objectFit: 'cover',
+                              borderRadius: 2,
+                              mt: 1
+                            }}
+                          />
+                        </Grid>
+                      )}
 
-                    {selectedSalon.coverImageUrl && (
-                      <Grid
-                        item
-                        xs={12}
-                        sm={8}
-                      >
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
+                      {selectedSalon.coverImageUrl && (
+                        <Grid
+                          item
+                          xs={12}
+                          sm={8}
                         >
-                          Cover Image
-                        </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            Cover Image
+                          </Typography>
 
-                        <Box
-                          component="img"
-                          src={
-                            selectedSalon.coverImageUrl
-                          }
-                          alt="Salon cover"
-                          sx={{
-                            width: '100%',
-                            height: 150,
-                            objectFit: 'cover',
-                            borderRadius: 2,
-                            mt: 1
-                          }}
-                        />
-                      </Grid>
-                    )}
-                  </Grid>
-                </>
-              )}
+                          <Box
+                            component="img"
+                            src={
+                              selectedSalon.coverImageUrl
+                            }
+                            alt="Salon cover"
+                            sx={{
+                              width: '100%',
+                              height: 150,
+                              objectFit: 'cover',
+                              borderRadius: 2,
+                              mt: 1
+                            }}
+                          />
+                        </Grid>
+                      )}
+                    </Grid>
+                  </>
+                )}
             </DialogContent>
 
             {/* ACTIONS */}
@@ -2249,44 +2220,64 @@ export default function SalonApplications() {
                 onClick={() =>
                   setDetailsOpen(false)
                 }
+                disabled={
+                  approving ||
+                  rejecting
+                }
               >
                 Close
               </Button>
 
               {selectedSalon.kycStatus ===
                 'PENDING' && (
-                <>
-                  <Button
-                    color="error"
-                    variant="outlined"
-                    startIcon={
-                      <CloseCircleOutlined />
-                    }
-                    onClick={() =>
-                      handleOpenReject(
-                        selectedSalon
-                      )
-                    }
-                  >
-                    Reject
-                  </Button>
+                  <>
+                    <Button
+                      color="error"
+                      variant="outlined"
+                      startIcon={
+                        rejecting ? undefined : (
+                          <CloseCircleOutlined />
+                        )
+                      }
+                      onClick={() =>
+                        handleOpenReject(
+                          selectedSalon
+                        )
+                      }
+                      disabled={
+                        approving ||
+                        rejecting
+                      }
+                    >
+                      {rejecting
+                        ? 'Rejecting...'
+                        : 'Reject'}
+                    </Button>
 
-                  <Button
-                    color="success"
-                    variant="contained"
-                    startIcon={
-                      <CheckCircleOutlined />
-                    }
-                    onClick={() =>
-                      handleApprove(
-                        selectedSalon
-                      )
-                    }
-                  >
-                    Approve Application
-                  </Button>
-                </>
-              )}
+                    <Button
+                      color="success"
+                      variant="contained"
+                      startIcon={
+                        approving ? undefined : (
+                          <CheckCircleOutlined />
+                        )
+                      }
+                      onClick={() =>
+                        handleApprove(
+                          selectedSalon
+                        )
+                      }
+                      disabled={
+                        approving ||
+                        rejecting
+                      }
+                    >
+                      {approving
+                        ? 'Approving...'
+                        : 'Approve Application'}
+                    </Button>
+                  </>
+                )}
             </DialogActions>
           </>
         )}
@@ -2298,9 +2289,11 @@ export default function SalonApplications() {
 
       <Dialog
         open={rejectOpen}
-        onClose={() =>
-          setRejectOpen(false)
-        }
+        onClose={() => {
+          if (!rejecting) {
+            setRejectOpen(false);
+          }
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -2348,6 +2341,11 @@ export default function SalonApplications() {
                 event.target.value
               )
             }
+            disabled={rejecting}
+            error={
+              rejectionReason.length > 0 &&
+              !rejectionReason.trim()
+            }
           />
         </DialogContent>
 
@@ -2356,6 +2354,7 @@ export default function SalonApplications() {
             onClick={() =>
               setRejectOpen(false)
             }
+            disabled={rejecting}
           >
             Cancel
           </Button>
@@ -2364,11 +2363,15 @@ export default function SalonApplications() {
             color="error"
             variant="contained"
             disabled={
-              !rejectionReason.trim()
+              !rejectionReason.trim() ||
+              rejecting ||
+              approving
             }
             onClick={handleReject}
           >
-            Reject Application
+            {rejecting
+              ? 'Rejecting...'
+              : 'Reject Application'}
           </Button>
         </DialogActions>
       </Dialog>

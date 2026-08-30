@@ -113,6 +113,118 @@ export const ADMIN_SALONS = gql`
     }
   }
 `;
+
+export const APPROVE_SALON = gql`
+  mutation AdminApproveSalon($input: AdminApproveSalonInput!) {
+    adminApproveSalon(input: $input) {
+      success
+      message
+      salon {
+        salonId
+        ownerUserId
+        salonName
+        ownerName
+        businessType
+        ownerPhoneNumber
+        alternatePhone
+        email
+        address {
+          addressLine
+          city
+          state
+          pincode
+        }
+        latitude
+        longitude
+        gstNumber
+        panNumber
+        aadhaarNumber
+        bankAccount
+        ifsc
+        accountHolderName
+        logoUrl
+        coverImageUrl
+        galleryImages
+        kycStatus
+        adminApprovalStatus
+        salonStatus
+        isActive
+        isVisible
+        isDeleted
+        averageRating
+        totalReviews
+        totalAppointments
+        totalCompletedAppointments
+        totalCancelledAppointments
+        totalRevenue
+        approvedBy
+        approvedAt
+        rejectedBy
+        rejectedAt
+        rejectionReason
+        lastUpdatedBy
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const REJECT_SALON = gql`
+  mutation AdminRejectSalon($input: AdminRejectSalonInput!) {
+    adminRejectSalon(input: $input) {
+      success
+      message
+      salon {
+        salonId
+        ownerUserId
+        salonName
+        ownerName
+        businessType
+        ownerPhoneNumber
+        alternatePhone
+        email
+        address {
+          addressLine
+          city
+          state
+          pincode
+        }
+        latitude
+        longitude
+        gstNumber
+        panNumber
+        aadhaarNumber
+        bankAccount
+        ifsc
+        accountHolderName
+        logoUrl
+        coverImageUrl
+        galleryImages
+        kycStatus
+        adminApprovalStatus
+        salonStatus
+        isActive
+        isVisible
+        isDeleted
+        averageRating
+        totalReviews
+        totalAppointments
+        totalCompletedAppointments
+        totalCancelledAppointments
+        totalRevenue
+        approvedBy
+        approvedAt
+        rejectedBy
+        rejectedAt
+        rejectionReason
+        lastUpdatedBy
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
 // export const LIST_COMPANY_WALLETS = gql`
 //   query ListUserWallets($limit: Int, $nextToken: String, $filter: TableUserWalletsFilterInput) {
 //     listUserWallets(limit: $limit, nextToken: $nextToken, filter: $filter) {
