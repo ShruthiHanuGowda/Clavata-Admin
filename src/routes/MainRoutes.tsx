@@ -24,6 +24,10 @@ const Staff = Loadable(lazy(() => import('pages/staff')));
 const Services = Loadable(lazy(() => import('pages/services')));
 const Bookings = Loadable(lazy(() => import('pages/bookings')));
 const Reviews = Loadable(lazy(() => import('pages/reviews')));
+const Payments = Loadable(lazy(() => import('pages/payments')));
+const Transactions = Loadable(lazy(() => import('pages/transactions')));
+const Refunds = Loadable(lazy(() => import('pages/transactions')));
+const Revenue = Loadable(lazy(() => import('pages/revenue')));
 
 const User = Loadable(lazy(() => import('pages/user/user')));
 const Companies = Loadable(lazy(() => import('pages/companies/companies')));
@@ -88,6 +92,22 @@ const MainRoutes = {
         {
           path: '/reviews',
           element: <Reviews />
+        },
+        {
+          path: '/payments',
+          element: <Payments />
+        },
+        {
+          path: '/transactions',
+          element: <Transactions />
+        },
+        {
+          path: '/refunds',
+          element: <Refunds />
+        },
+        {
+          path: '/revenue',
+          element: <Revenue />
         },
         {
           path: '/companies/:id',
