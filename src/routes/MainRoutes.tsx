@@ -34,6 +34,9 @@ const AdminUsers = Loadable(lazy(() => import('pages/admin-users')));
 const RolePermission = Loadable(lazy(() => import('pages/roles-permissions')));
 const AuditLogs = Loadable(lazy(() => import('pages/audit-logs')));
 const Settings = Loadable(lazy(() => import('pages/settings')));
+const Profile = Loadable(lazy(() => import('pages/profile')));
+const MyAccount = Loadable(lazy(() => import('pages/my-account')));
+
 const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
 const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRole')));
 const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/TabSettings')));
@@ -142,6 +145,14 @@ const MainRoutes = {
           path: '/settings',
           element: <Settings />
         },
+        {
+          path: '/profile',
+          element: <Profile />
+        },
+        {
+          path: '/my-account',
+          element: <MyAccount />
+        },
         // {
         //   path: '/companies/:id',
         //   element: <CompanyKybDetail />
@@ -150,55 +161,6 @@ const MainRoutes = {
         //   path: '/user/:id',
         //   element: <UserKYCDetail />
         // },
-        // {
-        //   path: '/companies',
-        //   element: <Companies />
-        // },
-        // {
-        //   path: '/registries',
-        //   element: <Registries />
-        // },
-        // {
-        //   path: '/nft',
-        //   element: <NFT />
-        // },
-        // {
-        //   path: '/nft-collection',
-        //   element: <NftCollections />
-        // },
-        // {
-        //   path: '/non-minted-nft',
-        //   element: <NonMintedNFT />
-        // },
-        // {
-        //   path: '/pending-minted-nft',
-        //   element: <PendingMintedNfts />
-        // },
-        // {
-        //   path: '/transaction',
-        //   element: <TransactionHistory />
-        // },
-        // {
-        //   path: '/dterminal',
-        //   element: <DTerminalHistory />
-        // },
-        // {
-        //   path: '/transaction-history-mobile',
-        //   element: <MobileTransactionHistory />
-        // },
-        // {
-        //   path: '/airdrop-claims',
-        //   element: <Airdrop />
-        // },
-        // {
-        //   path: '/address-book',
-        //   element: <Beneficiary />
-        // },
-        // {
-        //   path: '/validator',
-        //   element: <Validator />
-        // },
-
         {
           path: '/blog',
           element: <Blog />
@@ -230,10 +192,6 @@ const MainRoutes = {
             }
           ]
         },
-        // {
-        //   path: '/evident-items',
-        //   element: <EvidentItems />
-        // }
       ]
     },
     {
