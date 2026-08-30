@@ -237,7 +237,6 @@ export default function App() {
                 <AuthProvider>
                   <Notistack>
                     <RouterProvider router={router} />
-
                     <Snackbar />
                   </Notistack>
                 </AuthProvider>
