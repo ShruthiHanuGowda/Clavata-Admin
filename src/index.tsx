@@ -6,7 +6,7 @@ import App from './App';
 import { store, persistor } from './store';
 import reportWebVitals from './reportWebVitals';
 import { ConfigProvider } from 'contexts/ConfigContext';
-import './assets/styles/globalImports.ts';
+// import './assets/styles/globalImports.ts';
 
 //blog
 import 'react-quill/dist/quill.snow.css';
