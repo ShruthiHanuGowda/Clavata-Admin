@@ -22,6 +22,8 @@ const Customers = Loadable(lazy(() => import('pages/customers')));
 const Salons = Loadable(lazy(() => import('pages/salons')));
 const Staff = Loadable(lazy(() => import('pages/staff')));
 const Services = Loadable(lazy(() => import('pages/services')));
+const Bookings = Loadable(lazy(() => import('pages/bookings')));
+const Reviews = Loadable(lazy(() => import('pages/reviews')));
 
 const User = Loadable(lazy(() => import('pages/user/user')));
 const Companies = Loadable(lazy(() => import('pages/companies/companies')));
@@ -78,6 +80,14 @@ const MainRoutes = {
         {
           path: '/services',
           element: <Services />
+        },
+        {
+          path: '/bookings',
+          element: <Bookings />
+        },
+        {
+          path: '/reviews',
+          element: <Reviews />
         },
         {
           path: '/companies/:id',
