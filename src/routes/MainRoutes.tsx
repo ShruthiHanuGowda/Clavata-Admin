@@ -17,6 +17,7 @@ const AppContactUS = Loadable(lazy(() => import('pages/contactUs')));
 // render - sample page
 const Dashboard = Loadable(lazy(() => import('pages/dashboard')));
 const Analytics = Loadable(lazy(() => import('pages/analytics')));
+const Customers = Loadable(lazy(() => import('pages/customers')));
 const User = Loadable(lazy(() => import('pages/user/user')));
 const Companies = Loadable(lazy(() => import('pages/companies/companies')));
 const Registries = Loadable(lazy(() => import('pages/registries/registries')));
@@ -56,6 +57,10 @@ const MainRoutes = {
         {
           path: '/analytics',
           element: <Analytics />
+        },
+        {
+          path: '/customers',
+          element: <Customers />
         },
         {
           path: '/companies/:id',
