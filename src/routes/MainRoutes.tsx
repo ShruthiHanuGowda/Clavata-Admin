@@ -1,19 +1,15 @@
 import { lazy } from 'react';
-
 // project import
 import Loadable from 'components/Loadable';
 import DashboardLayout from 'layout/Dashboard';
 import PagesLayout from 'layout/Pages';
 import SimpleLayout from 'layout/Simple';
 import { SimpleLayoutType } from 'config';
-import MobileTransactionHistory from 'pages/transactionHistoryMobile';
-
 const MaintenanceError = Loadable(lazy(() => import('pages/maintenance/404')));
 const MaintenanceError500 = Loadable(lazy(() => import('pages/maintenance/500')));
 const MaintenanceUnderConstruction = Loadable(lazy(() => import('pages/maintenance/underConstruction')));
 const MaintenanceComingSoon = Loadable(lazy(() => import('pages/maintenance/comingSoon')));
 const AppContactUS = Loadable(lazy(() => import('pages/contactUs')));
-
 // render - sample page
 const Dashboard = Loadable(lazy(() => import('pages/dashboard')));
 const Analytics = Loadable(lazy(() => import('pages/analytics')));
@@ -37,20 +33,13 @@ const Support = Loadable(lazy(() => import('pages/support')));
 const AdminUsers = Loadable(lazy(() => import('pages/admin-users')));
 const RolePermission = Loadable(lazy(() => import('pages/roles-permissions')));
 const AuditLogs = Loadable(lazy(() => import('pages/audit-logs')));
-
-const TransactionHistory = Loadable(lazy(() => import('pages/transactionHistory/transactionHistory')));
-// const DTerminalTransactionHistory = Loadable(lazy(() => import('pages/dTerminal/DterminalTransactionHistory')));
-const Setting = Loadable(lazy(() => import('pages/setting')));
+const Settings = Loadable(lazy(() => import('pages/settings')));
 const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
 const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRole')));
 const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/TabSettings')));
 const PlatformSettings = Loadable(lazy(() => import('pages/profiles/account/PlatformSettings')));
-const Beneficiary = Loadable(lazy(() => import('pages/addressBook')));
-const Validator = Loadable(lazy(() => import('pages/validator')));
 const Blog = Loadable(lazy(() => import('pages/blog')));
 const BlogDetails = Loadable(lazy(() => import('pages/blogDetails')));
-const UserKYCDetail = Loadable(lazy(() => import('components/UserKYCDetail')));
-const CompanyKybDetail = Loadable(lazy(() => import('components/CompanyKybDetail')));
 
 // ==============================|| MAIN ROUTING ||============================== //
 
@@ -137,17 +126,21 @@ const MainRoutes = {
           path: '/support',
           element: <Support />
         },
-            {
+        {
           path: '/admin-users',
           element: <AdminUsers />
         },
-            {
+        {
           path: '/roles-permissions',
           element: <RolePermission />
         },
-            {
+        {
           path: '/audit-logs',
           element: <AuditLogs />
+        },
+        {
+          path: '/settings',
+          element: <Settings />
         },
         // {
         //   path: '/companies/:id',
@@ -205,10 +198,7 @@ const MainRoutes = {
         //   path: '/validator',
         //   element: <Validator />
         // },
-        {
-          path: '/setting',
-          element: <Setting />
-        },
+
         {
           path: '/blog',
           element: <Blog />
