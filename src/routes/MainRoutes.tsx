@@ -1,14 +1,12 @@
 import { lazy } from 'react';
 
 // project import
-import NftCollections from '../pages/nftCollections';
 import Loadable from 'components/Loadable';
 import DashboardLayout from 'layout/Dashboard';
 import PagesLayout from 'layout/Pages';
 import SimpleLayout from 'layout/Simple';
 import { SimpleLayoutType } from 'config';
 import MobileTransactionHistory from 'pages/transactionHistoryMobile';
-import PendingApprovals from 'pages/pending-approvals';
 
 const MaintenanceError = Loadable(lazy(() => import('pages/maintenance/404')));
 const MaintenanceError500 = Loadable(lazy(() => import('pages/maintenance/500')));
@@ -31,23 +29,19 @@ const Refunds = Loadable(lazy(() => import('pages/transactions')));
 const Revenue = Loadable(lazy(() => import('pages/revenue')));
 const SalonApplications = Loadable(lazy(() => import('pages/salon-applications')));
 const KycDocuments = Loadable(lazy(() => import('pages/kyc-documents')));
+const Locations = Loadable(lazy(() => import('pages/locations')));
+const PendingApprovals = Loadable(lazy(() => import('pages/pending-approvals')));
+const Notifications = Loadable(lazy(() => import('pages/notifications')));
+const Categories = Loadable(lazy(() => import('pages/categories')));
+const Support = Loadable(lazy(() => import('pages/support')));
 
-const User = Loadable(lazy(() => import('pages/user/user')));
-const Companies = Loadable(lazy(() => import('pages/companies/companies')));
-const Registries = Loadable(lazy(() => import('pages/registries/registries')));
-const NFT = Loadable(lazy(() => import('pages/nft/nft')));
 const TransactionHistory = Loadable(lazy(() => import('pages/transactionHistory/transactionHistory')));
-const DTerminalHistory = Loadable(lazy(() => import('pages/dterminal/DterminalTransactionHistory')));
 // const DTerminalTransactionHistory = Loadable(lazy(() => import('pages/dTerminal/DterminalTransactionHistory')));
-const Airdrop = Loadable(lazy(() => import('pages/airdrop/Airdrop')));
 const Setting = Loadable(lazy(() => import('pages/setting')));
-const NonMintedNFT = Loadable(lazy(() => import('pages/nonMintedNfts/index')));
-const PendingMintedNfts = Loadable(lazy(() => import('pages/pendingMintedNfts/index')));
 const AccountProfile = Loadable(lazy(() => import('pages/profiles/account')));
 const AccountTabRole = Loadable(lazy(() => import('pages/profiles/account/TabRole')));
 const AccountTabSettings = Loadable(lazy(() => import('pages/profiles/account/TabSettings')));
 const PlatformSettings = Loadable(lazy(() => import('pages/profiles/account/PlatformSettings')));
-const EvidentItems = Loadable(lazy(() => import('pages/evidentItems')));
 const Beneficiary = Loadable(lazy(() => import('pages/addressBook')));
 const Validator = Loadable(lazy(() => import('pages/validator')));
 const Blog = Loadable(lazy(() => import('pages/blog')));
@@ -125,61 +119,77 @@ const MainRoutes = {
           element: <PendingApprovals />
         },
         {
-          path: '/companies/:id',
-          element: <CompanyKybDetail />
+          path: '/locations',
+          element: <Locations />
         },
         {
-          path: '/user/:id',
-          element: <UserKYCDetail />
+          path: '/categories',
+          element: <Categories />
         },
         {
-          path: '/companies',
-          element: <Companies />
+          path: '/notifications',
+          element: <Notifications />
         },
         {
-          path: '/registries',
-          element: <Registries />
+          path: '/support',
+          element: <Support />
         },
-        {
-          path: '/nft',
-          element: <NFT />
-        },
-        {
-          path: '/nft-collection',
-          element: <NftCollections />
-        },
-        {
-          path: '/non-minted-nft',
-          element: <NonMintedNFT />
-        },
-        {
-          path: '/pending-minted-nft',
-          element: <PendingMintedNfts />
-        },
-        {
-          path: '/transaction',
-          element: <TransactionHistory />
-        },
-        {
-          path: '/dterminal',
-          element: <DTerminalHistory />
-        },
-        {
-          path: '/transaction-history-mobile',
-          element: <MobileTransactionHistory />
-        },
-        {
-          path: '/airdrop-claims',
-          element: <Airdrop />
-        },
-        {
-          path: '/address-book',
-          element: <Beneficiary />
-        },
-        {
-          path: '/validator',
-          element: <Validator />
-        },
+        // {
+        //   path: '/companies/:id',
+        //   element: <CompanyKybDetail />
+        // },
+        // {
+        //   path: '/user/:id',
+        //   element: <UserKYCDetail />
+        // },
+        // {
+        //   path: '/companies',
+        //   element: <Companies />
+        // },
+        // {
+        //   path: '/registries',
+        //   element: <Registries />
+        // },
+        // {
+        //   path: '/nft',
+        //   element: <NFT />
+        // },
+        // {
+        //   path: '/nft-collection',
+        //   element: <NftCollections />
+        // },
+        // {
+        //   path: '/non-minted-nft',
+        //   element: <NonMintedNFT />
+        // },
+        // {
+        //   path: '/pending-minted-nft',
+        //   element: <PendingMintedNfts />
+        // },
+        // {
+        //   path: '/transaction',
+        //   element: <TransactionHistory />
+        // },
+        // {
+        //   path: '/dterminal',
+        //   element: <DTerminalHistory />
+        // },
+        // {
+        //   path: '/transaction-history-mobile',
+        //   element: <MobileTransactionHistory />
+        // },
+        // {
+        //   path: '/airdrop-claims',
+        //   element: <Airdrop />
+        // },
+        // {
+        //   path: '/address-book',
+        //   element: <Beneficiary />
+        // },
+        // {
+        //   path: '/validator',
+        //   element: <Validator />
+        // },
         {
           path: '/setting',
           element: <Setting />
@@ -215,10 +225,10 @@ const MainRoutes = {
             }
           ]
         },
-        {
-          path: '/evident-items',
-          element: <EvidentItems />
-        }
+        // {
+        //   path: '/evident-items',
+        //   element: <EvidentItems />
+        // }
       ]
     },
     {
