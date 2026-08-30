@@ -1,82 +1,129 @@
-export type ApiBaseUrlKey = 'D_WALLET_API_BASE_URL' | 'D_TERMINAL_API_BASE_URL' | 'ENERGY_CONSUMPTION_API_BASE_URL';
 
-const API_BASE_URL: Record<ApiBaseUrlKey, string> = {
-  D_WALLET_API_BASE_URL: import.meta.env.VITE_APP_D_WALLET_API_URL,
-  D_TERMINAL_API_BASE_URL: import.meta.env.VITE_APP_D_TERMINAL_API_URL,
-  ENERGY_CONSUMPTION_API_BASE_URL: import.meta.env.VITE_APP_ENERGY_CONSUMPTION_API_URL
-};
+// ==============================|| DASHBOARD API ||============================== //
 
-// // Fetch analytics data
-// export const fetchAnalytics = async (type = 'D_WALLET_API_BASE_URL') => {
-//   try {
-//     const response = await fetch(`${API_BASE_URL[type]}?endpoint=analytics`, {
-//       method: 'GET',
-//       headers: {
-//         'Content-Type': 'application/json'
-//       }
-//     });
-//
-//     if (!response.ok) {
-//       throw new Error(`HTTP error! status: ${response.status}`);
-//     }
-//
-//     const data = await response.json();
-//     return data;
-//   } catch (error) {
-//     console.error('Error fetching analytics:', error);
-//     throw error;
-//   }
-// };
-//
-// // Fetch chart data
-// export const fetchChartData = async (type = 'D_WALLET_API_BASE_URL', timeSlot = 'week') => {
-//   try {
-//     const response = await fetch(`${API_BASE_URL[type]}?endpoint=chart&timeSlot=${timeSlot}`, {
-//       method: 'GET',
-//       headers: {
-//         'Content-Type': 'application/json'
-//       }
-//     });
-//
-//     if (!response.ok) {
-//       throw new Error(`HTTP error! status: ${response.status}`);
-//     }
-//
-//     const data = await response.json();
-//     return data;
-//   } catch (error) {
-//     console.error('Error fetching chart data:', error);
-//     throw error;
-//   }
-// };
+/**
+ * Dashboard API
+ *
+ * Currently this file returns dummy dashboard data.
+ *
+ * Later this can be replaced with:
+ *
+ * - AWS AppSync GraphQL
+ * - Lambda aggregation APIs
+ * - DynamoDB analytics
+ *
+ * without changing the dashboard UI.
+ */
 
-// Fetch all dashboard data in one call
-export const fetchDashboardData = async (type: ApiBaseUrlKey = 'D_WALLET_API_BASE_URL', timeSlot: string = 'week') => {
-  try {
-    const response = await fetch(`${API_BASE_URL[type]}?timeSlot=${timeSlot}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      mode: 'cors'
-    });
+// ==============================|| TYPES ||============================== //
 
-    if (!response.ok) {
-      if (response.status === 0 || response.status === 503) {
-        throw new Error('Server is temporarily unavailable. Please try again later.');
-      }
-      throw new Error(`Server error: ${response.status} ${response.statusText}`);
+export interface DashboardStats {
+  totalCustomers: number;
+  totalSalons: number;
+  totalBookings: number;
+  totalRevenue: number;
+
+  pendingApplications: number;
+  pendingPayments: number;
+
+  averageRating: number;
+  todayBookings: number;
+}
+
+export interface RevenueData {
+  month: string;
+  value: number;
+}
+
+export interface BookingSummary {
+  confirmed: number;
+  completed: number;
+  pending: number;
+  cancelled: number;
+}
+
+export interface DashboardData {
+  stats: DashboardStats;
+  revenue: RevenueData[];
+  bookingSummary: BookingSummary;
+}
+
+// ==============================|| DUMMY DASHBOARD DATA ||============================== //
+
+const dashboardData: DashboardData = {
+  stats: {
+    totalCustomers: 12840,
+    totalSalons: 486,
+    totalBookings: 3842,
+    totalRevenue: 184000,
+
+    pendingApplications: 27,
+    pendingPayments: 42650,
+
+    averageRating: 4.7,
+    todayBookings: 184
+  },
+
+  revenue: [
+    {
+      month: 'Mar',
+      value: 82000
+    },
+    {
+      month: 'Apr',
+      value: 105000
+    },
+    {
+      month: 'May',
+      value: 97000
+    },
+    {
+      month: 'Jun',
+      value: 132000
+    },
+    {
+      month: 'Jul',
+      value: 158000
+    },
+    {
+      month: 'Aug',
+      value: 184000
     }
+  ],
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching dashboard data:', error);
-
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      throw new Error('Network Error: Unable to connect to server. Please check your connection.');
-    }
-
-    throw error;
+  bookingSummary: {
+    confirmed: 68,
+    completed: 52,
+    pending: 18,
+    cancelled: 7
   }
 };
+
+// ==============================|| FETCH DASHBOARD ||============================== //
+
+export const fetchDashboardData = async (): Promise<DashboardData> => {
+  /**
+   * Simulate API delay.
+   *
+   * Remove this later when GraphQL is connected.
+   */
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  return dashboardData;
+};
+
+// ==============================|| FUTURE API ||============================== //
+
+/**
+ * Example future GraphQL implementation:
+ *
+ * export const fetchDashboardData = async () => {
+ *
+ *   const result = await apolloClient.query({
+ *     query: GET_ADMIN_DASHBOARD
+ *   });
+ *
+ *   return result.data.adminDashboard;
+ *
+ * };
+ */
