@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from 'react';
 
 // material-ui
@@ -49,17 +50,65 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 
-import { useQuery } from '@apollo/client';
+import { gql, useMutation, useQuery } from '@apollo/client';
 
 // ============================================================
 // IMPORTANT
 // ============================================================
-// Use your existing ADMIN_SALONS query.
-//
-// DO NOT create another ADMIN_SALONS query in this file.
+// Keep using your existing ADMIN_SALONS query.
+// Do not create another ADMIN_SALONS query here.
 // ============================================================
 
 import { ADMIN_SALONS } from '../../graphql/queries';
+
+// ============================================================
+// APPROVE SALON MUTATION
+// ============================================================
+//
+// IMPORTANT:
+// The backend expects:
+// AdminApproveSalonInput!
+//
+// Therefore variables MUST be:
+//
+// {
+//   input: {
+//     salonId: "..."
+//   }
+// }
+//
+// NOT:
+//
+// {
+//   salonId: "..."
+// }
+//
+// ============================================================
+
+const ADMIN_APPROVE_SALON = gql`
+  mutation AdminApproveSalon($input: AdminApproveSalonInput!) {
+    adminApproveSalon(input: $input) {
+      success
+      message
+    }
+  }
+`;
+
+// ============================================================
+// REJECT SALON MUTATION
+// ============================================================
+//
+// The rejection reason is sent inside the input object.
+// ============================================================
+
+const ADMIN_REJECT_SALON = gql`
+  mutation AdminRejectSalon($input: AdminRejectSalonInput!) {
+    adminRejectSalon(input: $input) {
+      success
+      message
+    }
+  }
+`;
 
 // ============================================================
 // TYPES
@@ -155,6 +204,11 @@ interface AdminSalonListResponse {
   message: string;
   salons: AdminSalon[];
   totalCount: number;
+}
+
+interface MutationResponse {
+  success: boolean;
+  message: string;
 }
 
 interface PendingApproval {
@@ -571,7 +625,7 @@ function PriorityChip({
 
 export default function PendingApprovals() {
   // ==========================================================
-  // GRAPHQL
+  // GRAPHQL - ADMIN SALONS
   // ==========================================================
 
   const {
@@ -599,6 +653,42 @@ export default function PendingApprovals() {
         true
     }
   );
+
+  // ==========================================================
+  // GRAPHQL - APPROVE
+  // ==========================================================
+
+  const [
+    approveSalon,
+    {
+      loading:
+        approving
+    }
+  ] =
+    useMutation<{
+      adminApproveSalon:
+        MutationResponse;
+    }>(
+      ADMIN_APPROVE_SALON
+    );
+
+  // ==========================================================
+  // GRAPHQL - REJECT
+  // ==========================================================
+
+  const [
+    rejectSalon,
+    {
+      loading:
+        rejecting
+    }
+  ] =
+    useMutation<{
+      adminRejectSalon:
+        MutationResponse;
+    }>(
+      ADMIN_REJECT_SALON
+    );
 
   // ==========================================================
   // SERVER DATA
@@ -840,28 +930,58 @@ export default function PendingApprovals() {
   const handleApprove = async (
     approval: PendingApproval
   ) => {
-    console.warn(
-      'Approve clicked for salon:',
-      approval.salonId
-    );
+    try {
+      // Close the details dialog immediately
+      // so the user gets a clean workflow.
+      setDetailsOpen(false);
 
-    /*
-     * BACKEND MUTATION NOT CONNECTED.
-     *
-     * Once you add the AppSync mutation:
-     *
-     * await approveSalon({
-     *   variables: {
-     *     salonId: approval.salonId
-     *   }
-     * });
-     *
-     * await refetch();
-     */
+      const result =
+        await approveSalon({
+          variables: {
+            input: {
+              salonId:
+                approval.salonId
+            }
+          }
+        });
 
-    alert(
-      'Approve mutation is not connected yet. No backend data was changed.'
-    );
+      const response =
+        result.data
+          ?.adminApproveSalon;
+
+      if (
+        !response?.success
+      ) {
+        alert(
+          response?.message ||
+            'Failed to approve salon application.'
+        );
+
+        return;
+      }
+
+      alert(
+        response.message ||
+          'Salon application approved successfully.'
+      );
+
+      setSelectedApproval(
+        null
+      );
+
+      await refetch();
+    } catch (approveError) {
+      console.error(
+        'Failed to approve salon:',
+        approveError
+      );
+
+      alert(
+        approveError instanceof Error
+          ? approveError.message
+          : 'Failed to approve salon application.'
+      );
+    }
   };
 
   // ==========================================================
@@ -896,34 +1016,56 @@ export default function PendingApprovals() {
       return;
     }
 
-    console.warn(
-      'Reject clicked:',
-      selectedApproval.salonId,
-      reason
-    );
+    try {
+      const result =
+        await rejectSalon({
+          variables: {
+            input: {
+              salonId:
+                selectedApproval.salonId,
+              reason
+            }
+          }
+        });
 
-    /*
-     * BACKEND MUTATION NOT CONNECTED.
-     *
-     * Once mutation exists:
-     *
-     * await rejectSalon({
-     *   variables: {
-     *     salonId:
-     *       selectedApproval.salonId,
-     *     reason
-     *   }
-     * });
-     *
-     * await refetch();
-     */
+      const response =
+        result.data
+          ?.adminRejectSalon;
 
-    alert(
-      'Reject mutation is not connected yet. No backend data was changed.'
-    );
+      if (
+        !response?.success
+      ) {
+        alert(
+          response?.message ||
+            'Failed to reject salon application.'
+        );
 
-    setRejectOpen(false);
-    setRejectionReason('');
+        return;
+      }
+
+      alert(
+        response.message ||
+          'Salon application rejected successfully.'
+      );
+
+      setRejectOpen(false);
+      setDetailsOpen(false);
+      setRejectionReason('');
+      setSelectedApproval(null);
+
+      await refetch();
+    } catch (rejectError) {
+      console.error(
+        'Failed to reject salon:',
+        rejectError
+      );
+
+      alert(
+        rejectError instanceof Error
+          ? rejectError.message
+          : 'Failed to reject salon application.'
+      );
+    }
   };
 
   // ==========================================================
@@ -1011,9 +1153,7 @@ export default function PendingApprovals() {
 
   return (
     <Box>
-      {/* ======================================================
-          HEADER
-      ====================================================== */}
+      {/* HEADER */}
 
       <Stack
         direction={{
@@ -1061,7 +1201,11 @@ export default function PendingApprovals() {
           onClick={
             handleRefresh
           }
-          disabled={loading}
+          disabled={
+            loading ||
+            approving ||
+            rejecting
+          }
         >
           {loading
             ? 'Refreshing...'
@@ -1069,9 +1213,7 @@ export default function PendingApprovals() {
         </Button>
       </Stack>
 
-      {/* ======================================================
-          BACKEND MESSAGE
-      ====================================================== */}
+      {/* BACKEND MESSAGE */}
 
       {data?.adminSalons &&
         !data.adminSalons
@@ -1086,9 +1228,7 @@ export default function PendingApprovals() {
           </Alert>
         )}
 
-      {/* ======================================================
-          HIGH PRIORITY ALERT
-      ====================================================== */}
+      {/* HIGH PRIORITY ALERT */}
 
       {highPriorityCount >
         0 && (
@@ -1116,17 +1256,13 @@ export default function PendingApprovals() {
         </Alert>
       )}
 
-      {/* ======================================================
-          SUMMARY CARDS
-      ====================================================== */}
+      {/* SUMMARY CARDS */}
 
       <Grid
         container
         spacing={2.5}
         sx={{ mb: 3 }}
       >
-        {/* PENDING */}
-
         <Grid
           item
           xs={12}
@@ -1147,8 +1283,6 @@ export default function PendingApprovals() {
             iconColor="warning.main"
           />
         </Grid>
-
-        {/* HIGH PRIORITY */}
 
         <Grid
           item
@@ -1173,8 +1307,6 @@ export default function PendingApprovals() {
           />
         </Grid>
 
-        {/* SALON APPLICATIONS */}
-
         <Grid
           item
           xs={12}
@@ -1198,8 +1330,6 @@ export default function PendingApprovals() {
           />
         </Grid>
 
-        {/* KYC */}
-
         <Grid
           item
           xs={12}
@@ -1222,9 +1352,7 @@ export default function PendingApprovals() {
         </Grid>
       </Grid>
 
-      {/* ======================================================
-          TABLE CARD
-      ====================================================== */}
+      {/* TABLE CARD */}
 
       <Card
         sx={{
@@ -1236,9 +1364,7 @@ export default function PendingApprovals() {
         <CardContent
           sx={{ p: 0 }}
         >
-          {/* ==================================================
-              FILTER BAR
-          ================================================== */}
+          {/* FILTER BAR */}
 
           <Box
             sx={{
@@ -1320,9 +1446,7 @@ export default function PendingApprovals() {
 
           <Divider />
 
-          {/* ==================================================
-              TABLE
-          ================================================== */}
+          {/* TABLE */}
 
           <TableContainer>
             <Table>
@@ -1646,31 +1770,51 @@ export default function PendingApprovals() {
                               'PENDING' && (
                               <>
                                 <Tooltip title="Approve">
-                                  <IconButton
-                                    size="small"
-                                    color="success"
-                                    onClick={() =>
-                                      handleApprove(
-                                        approval
-                                      )
-                                    }
-                                  >
-                                    <CheckCircleOutlined />
-                                  </IconButton>
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      color="success"
+                                      disabled={
+                                        approving ||
+                                        rejecting
+                                      }
+                                      onClick={() =>
+                                        handleApprove(
+                                          approval
+                                        )
+                                      }
+                                    >
+                                      {approving ? (
+                                        <CircularProgress
+                                          size={
+                                            18
+                                          }
+                                        />
+                                      ) : (
+                                        <CheckCircleOutlined />
+                                      )}
+                                    </IconButton>
+                                  </span>
                                 </Tooltip>
 
                                 <Tooltip title="Reject">
-                                  <IconButton
-                                    size="small"
-                                    color="error"
-                                    onClick={() =>
-                                      openRejectDialog(
-                                        approval
-                                      )
-                                    }
-                                  >
-                                    <CloseCircleOutlined />
-                                  </IconButton>
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      disabled={
+                                        approving ||
+                                        rejecting
+                                      }
+                                      onClick={() =>
+                                        openRejectDialog(
+                                          approval
+                                        )
+                                      }
+                                    >
+                                      <CloseCircleOutlined />
+                                    </IconButton>
+                                  </span>
                                 </Tooltip>
                               </>
                             )}
@@ -1684,9 +1828,7 @@ export default function PendingApprovals() {
             </Table>
           </TableContainer>
 
-          {/* ==================================================
-              PAGINATION
-          ================================================== */}
+          {/* PAGINATION */}
 
           <TablePagination
             component="div"
@@ -1785,9 +1927,7 @@ export default function PendingApprovals() {
             <DialogContent
               dividers
             >
-              {/* ==================================================
-                  REQUEST
-              ================================================== */}
+              {/* REQUEST */}
 
               <Box sx={{ mb: 3 }}>
                 <Typography
@@ -1830,9 +1970,7 @@ export default function PendingApprovals() {
                 }}
               />
 
-              {/* ==================================================
-                  SALON INFORMATION
-              ================================================== */}
+              {/* SALON INFORMATION */}
 
               <Typography
                 variant="subtitle1"
@@ -1948,9 +2086,7 @@ export default function PendingApprovals() {
                 }}
               />
 
-              {/* ==================================================
-                  VERIFICATION
-              ================================================== */}
+              {/* VERIFICATION */}
 
               <Typography
                 variant="subtitle1"
@@ -2039,9 +2175,7 @@ export default function PendingApprovals() {
                 </Paper>
               </Stack>
 
-              {/* ==================================================
-                  NOTES
-              ================================================== */}
+              {/* NOTES */}
 
               {selectedApproval.notes && (
                 <Box
@@ -2074,9 +2208,7 @@ export default function PendingApprovals() {
                 </Box>
               )}
 
-              {/* ==================================================
-                  PREVIOUS REJECTION
-              ================================================== */}
+              {/* PREVIOUS REJECTION */}
 
               {selectedApproval.rejectionReason && (
                 <Box
@@ -2108,9 +2240,7 @@ export default function PendingApprovals() {
                 </Box>
               )}
 
-              {/* ==================================================
-                  REVIEW HISTORY
-              ================================================== */}
+              {/* REVIEW HISTORY */}
 
               {selectedApproval.reviewedAt && (
                 <>
@@ -2150,9 +2280,7 @@ export default function PendingApprovals() {
               )}
             </DialogContent>
 
-            {/* ==================================================
-                REVIEW ACTIONS
-            ================================================== */}
+            {/* REVIEW ACTIONS */}
 
             <DialogActions
               sx={{
@@ -2162,6 +2290,10 @@ export default function PendingApprovals() {
               <Button
                 onClick={
                   closeDetails
+                }
+                disabled={
+                  approving ||
+                  rejecting
                 }
               >
                 Close
@@ -2174,12 +2306,22 @@ export default function PendingApprovals() {
                     color="error"
                     variant="outlined"
                     startIcon={
-                      <CloseCircleOutlined />
+                      rejecting ? (
+                        <CircularProgress
+                          size={16}
+                        />
+                      ) : (
+                        <CloseCircleOutlined />
+                      )
                     }
                     onClick={() =>
                       openRejectDialog(
                         selectedApproval
                       )
+                    }
+                    disabled={
+                      approving ||
+                      rejecting
                     }
                   >
                     Reject
@@ -2189,15 +2331,27 @@ export default function PendingApprovals() {
                     color="success"
                     variant="contained"
                     startIcon={
-                      <CheckCircleOutlined />
+                      approving ? (
+                        <CircularProgress
+                          size={16}
+                        />
+                      ) : (
+                        <CheckCircleOutlined />
+                      )
                     }
                     onClick={() =>
                       handleApprove(
                         selectedApproval
                       )
                     }
+                    disabled={
+                      approving ||
+                      rejecting
+                    }
                   >
-                    Approve
+                    {approving
+                      ? 'Approving...'
+                      : 'Approve'}
                   </Button>
                 </>
               )}
@@ -2212,9 +2366,11 @@ export default function PendingApprovals() {
 
       <Dialog
         open={rejectOpen}
-        onClose={() =>
-          setRejectOpen(false)
-        }
+        onClose={() => {
+          if (!rejecting) {
+            setRejectOpen(false);
+          }
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -2249,6 +2405,7 @@ export default function PendingApprovals() {
               )
             }
             placeholder="Enter rejection reason..."
+            disabled={rejecting}
             error={
               rejectOpen &&
               rejectionReason.trim() ===
@@ -2278,6 +2435,7 @@ export default function PendingApprovals() {
                 ''
               );
             }}
+            disabled={rejecting}
           >
             Cancel
           </Button>
@@ -2286,16 +2444,25 @@ export default function PendingApprovals() {
             color="error"
             variant="contained"
             startIcon={
-              <CloseCircleOutlined />
+              rejecting ? (
+                <CircularProgress
+                  size={16}
+                />
+              ) : (
+                <CloseCircleOutlined />
+              )
             }
             onClick={
               handleReject
             }
             disabled={
+              rejecting ||
               !rejectionReason.trim()
             }
           >
-            Reject Approval
+            {rejecting
+              ? 'Rejecting...'
+              : 'Reject Approval'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -2422,3 +2589,4 @@ function DetailField({
     </Box>
   );
 }
+

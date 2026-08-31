@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from 'react';
 import { gql, useMutation, useQuery } from '@apollo/client';
 
@@ -64,6 +65,17 @@ type KycStatus =
   | 'APPROVED'
   | 'REJECTED';
 
+type AdminApprovalStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED';
+
+type ProviderStatus =
+  | 'NOT_REGISTERED'
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED';
+
 type SalonStatus =
   | 'OPEN'
   | 'CLOSED'
@@ -104,6 +116,15 @@ interface Salon {
   galleryImages?: string[] | null;
 
   kycStatus: KycStatus;
+
+  /*
+   * This is the ADMIN approval status.
+   *
+   * Third party controls kycStatus.
+   * Admin controls adminApprovalStatus.
+   */
+  adminApprovalStatus?: AdminApprovalStatus | null;
+
   salonStatus: SalonStatus;
 
   isActive: boolean;
@@ -156,7 +177,7 @@ interface SalonMutationResponse {
 }
 
 interface ApproveSalonResponse {
-  approveSalon: SalonMutationResponse;
+  adminApproveSalon: SalonMutationResponse;
 }
 
 interface RejectSalonResponse {
@@ -230,6 +251,7 @@ const ADMIN_SALONS_LOCAL = gql`
         galleryImages
 
         kycStatus
+        adminApprovalStatus
         salonStatus
 
         isActive
@@ -340,7 +362,7 @@ const maskBankAccount = (value?: string | null) => {
 };
 
 // ============================================================
-// STATUS CHIP
+// KYC STATUS CHIP
 // ============================================================
 
 function StatusChip({
@@ -352,7 +374,7 @@ function StatusChip({
     return (
       <Chip
         icon={<CheckCircleOutlined />}
-        label="Approved"
+        label="KYC Approved"
         size="small"
         color="success"
         variant="outlined"
@@ -364,7 +386,7 @@ function StatusChip({
     return (
       <Chip
         icon={<CloseCircleOutlined />}
-        label="Rejected"
+        label="KYC Rejected"
         size="small"
         color="error"
         variant="outlined"
@@ -375,10 +397,52 @@ function StatusChip({
   return (
     <Chip
       icon={<ClockCircleOutlined />}
-      label="Pending"
+      label="KYC Pending"
       size="small"
       color="warning"
       variant="outlined"
+    />
+  );
+}
+
+// ============================================================
+// ADMIN APPROVAL STATUS CHIP
+// ============================================================
+
+function AdminApprovalStatusChip({
+  status
+}: {
+  status?: AdminApprovalStatus | null;
+}) {
+  if (status === 'APPROVED') {
+    return (
+      <Chip
+        icon={<CheckCircleOutlined />}
+        label="Admin Approved"
+        size="small"
+        color="success"
+      />
+    );
+  }
+
+  if (status === 'REJECTED') {
+    return (
+      <Chip
+        icon={<CloseCircleOutlined />}
+        label="Admin Rejected"
+        size="small"
+        color="error"
+      />
+    );
+  }
+
+  return (
+    <Chip
+      icon={<ClockCircleOutlined />}
+      label="Awaiting Admin Approval"
+      size="small"
+      color="warning"
+        variant="outlined"
     />
   );
 }
@@ -655,6 +719,34 @@ export default function SalonApplications() {
       return;
     }
 
+    /*
+     * IMPORTANT:
+     * Admin approval is allowed only after
+     * third-party KYC has been approved.
+     */
+    if (salon.kycStatus !== 'APPROVED') {
+      window.alert(
+        'This salon cannot be approved by admin until third-party KYC is approved.'
+      );
+
+      return;
+    }
+
+    /*
+     * Prevent approving a salon that is
+     * already admin approved.
+     */
+    if (
+      salon.adminApprovalStatus ===
+      'APPROVED'
+    ) {
+      window.alert(
+        'This salon has already been approved by admin.'
+      );
+
+      return;
+    }
+
     const confirmed = window.confirm(
       `Are you sure you want to approve "${salon.salonName || 'this salon'}"?`
     );
@@ -673,8 +765,14 @@ export default function SalonApplications() {
           }
         });
 
+      /*
+       * IMPORTANT:
+       * GraphQL mutation field is:
+       *
+       * adminApproveSalon
+       */
       const response =
-        result.data?.approveSalon;
+        result.data?.adminApproveSalon;
 
       if (!response?.success) {
         throw new Error(
@@ -691,6 +789,17 @@ export default function SalonApplications() {
       setDetailsOpen(false);
       setSelectedSalon(null);
 
+      /*
+       * Reload the real database data.
+       *
+       * Backend should now have:
+       *
+       * Salons:
+       * adminApprovalStatus = APPROVED
+       *
+       * Users:
+       * providerStatus = APPROVED
+       */
       await refetch();
     } catch (mutationError) {
       console.error(
@@ -954,7 +1063,7 @@ export default function SalonApplications() {
           </Paper>
         </Grid>
 
-        {/* PENDING */}
+        {/* PENDING KYC */}
 
         <Grid
           item
@@ -979,7 +1088,7 @@ export default function SalonApplications() {
                   variant="body2"
                   color="text.secondary"
                 >
-                  Pending Review
+                  Pending KYC
                 </Typography>
 
                 <Typography
@@ -1007,7 +1116,7 @@ export default function SalonApplications() {
           </Paper>
         </Grid>
 
-        {/* APPROVED */}
+        {/* KYC APPROVED */}
 
         <Grid
           item
@@ -1032,7 +1141,7 @@ export default function SalonApplications() {
                   variant="body2"
                   color="text.secondary"
                 >
-                  Approved
+                  KYC Approved
                 </Typography>
 
                 <Typography
@@ -1060,7 +1169,7 @@ export default function SalonApplications() {
           </Paper>
         </Grid>
 
-        {/* REJECTED */}
+        {/* KYC REJECTED */}
 
         <Grid
           item
@@ -1085,7 +1194,7 @@ export default function SalonApplications() {
                   variant="body2"
                   color="text.secondary"
                 >
-                  Rejected
+                  KYC Rejected
                 </Typography>
 
                 <Typography
@@ -1144,17 +1253,17 @@ export default function SalonApplications() {
 
           <Tab
             value="PENDING"
-            label={`Pending (${counts.pending})`}
+            label={`Pending KYC (${counts.pending})`}
           />
 
           <Tab
             value="APPROVED"
-            label={`Approved (${counts.approved})`}
+            label={`KYC Approved (${counts.approved})`}
           />
 
           <Tab
             value="REJECTED"
-            label={`Rejected (${counts.rejected})`}
+            label={`KYC Rejected (${counts.rejected})`}
           />
         </Tabs>
 
@@ -1211,7 +1320,11 @@ export default function SalonApplications() {
                 </TableCell>
 
                 <TableCell>
-                  Status
+                  KYC Status
+                </TableCell>
+
+                <TableCell>
+                  Admin Status
                 </TableCell>
 
                 <TableCell align="right">
@@ -1228,7 +1341,7 @@ export default function SalonApplications() {
                   length: 4
                 }).map((_, index) => (
                   <TableRow key={index}>
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={8}>
                       <Typography
                         variant="body2"
                         color="text.secondary"
@@ -1375,7 +1488,7 @@ export default function SalonApplications() {
                         </Typography>
                       </TableCell>
 
-                      {/* STATUS */}
+                      {/* KYC STATUS */}
 
                       <TableCell>
                         <StatusChip
@@ -1386,6 +1499,47 @@ export default function SalonApplications() {
 
                         {salon.kycStatus ===
                           'PENDING' && (
+                          <Typography
+                            variant="caption"
+                            color="warning.main"
+                            sx={{
+                              display: 'block',
+                              mt: 0.5
+                            }}
+                          >
+                            Awaiting third-party
+                            verification
+                          </Typography>
+                        )}
+
+                        {salon.kycStatus ===
+                          'REJECTED' && (
+                          <Typography
+                            variant="caption"
+                            color="error.main"
+                            sx={{
+                              display: 'block',
+                              mt: 0.5
+                            }}
+                          >
+                            KYC was rejected
+                          </Typography>
+                        )}
+                      </TableCell>
+
+                      {/* ADMIN STATUS */}
+
+                      <TableCell>
+                        <AdminApprovalStatusChip
+                          status={
+                            salon.adminApprovalStatus
+                          }
+                        />
+
+                        {salon.kycStatus ===
+                          'APPROVED' &&
+                          salon.adminApprovalStatus !==
+                            'APPROVED' && (
                             <Typography
                               variant="caption"
                               color="warning.main"
@@ -1394,7 +1548,8 @@ export default function SalonApplications() {
                                 mt: 0.5
                               }}
                             >
-                              Awaiting verification
+                              Ready for admin
+                              approval
                             </Typography>
                           )}
                       </TableCell>
@@ -1429,8 +1584,10 @@ export default function SalonApplications() {
                           {/* APPROVE */}
 
                           {salon.kycStatus ===
-                            'PENDING' && (
-                              <Tooltip title="Approve">
+                            'APPROVED' &&
+                            salon.adminApprovalStatus !==
+                              'APPROVED' && (
+                              <Tooltip title="Approve salon">
                                 <IconButton
                                   color="success"
                                   onClick={() =>
@@ -1451,8 +1608,10 @@ export default function SalonApplications() {
                           {/* REJECT */}
 
                           {salon.kycStatus ===
-                            'PENDING' && (
-                              <Tooltip title="Reject">
+                            'APPROVED' &&
+                            salon.adminApprovalStatus !==
+                              'APPROVED' && (
+                              <Tooltip title="Reject salon">
                                 <IconButton
                                   color="error"
                                   onClick={() =>
@@ -1479,10 +1638,10 @@ export default function SalonApplications() {
 
               {!loading &&
                 filteredApplications.length ===
-                0 && (
+                  0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       align="center"
                       sx={{ py: 8 }}
                     >
@@ -1603,11 +1762,24 @@ export default function SalonApplications() {
                   </Box>
                 </Stack>
 
-                <StatusChip
-                  status={
-                    selectedSalon.kycStatus
-                  }
-                />
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  flexWrap="wrap"
+                  justifyContent="flex-end"
+                >
+                  <StatusChip
+                    status={
+                      selectedSalon.kycStatus
+                    }
+                  />
+
+                  <AdminApprovalStatusChip
+                    status={
+                      selectedSalon.adminApprovalStatus
+                    }
+                  />
+                </Stack>
               </Stack>
             </DialogTitle>
 
@@ -1659,6 +1831,85 @@ export default function SalonApplications() {
                       selectedSalon.createdAt
                     )}
                   />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* APPROVAL STATUS */}
+
+              <Typography
+                variant="h6"
+                sx={{ mb: 2 }}
+              >
+                Verification & Approval
+              </Typography>
+
+              <Grid
+                container
+                spacing={2}
+              >
+                <Grid item xs={12} sm={6}>
+                  <Paper
+                    variant="outlined"
+                    sx={{ p: 2 }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Third-Party KYC
+                    </Typography>
+
+                    <Box sx={{ mt: 1 }}>
+                      <StatusChip
+                        status={
+                          selectedSalon.kycStatus
+                        }
+                      />
+                    </Box>
+
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
+                      KYC is controlled by the
+                      third-party verification
+                      provider.
+                    </Typography>
+                  </Paper>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Paper
+                    variant="outlined"
+                    sx={{ p: 2 }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Admin Approval
+                    </Typography>
+
+                    <Box sx={{ mt: 1 }}>
+                      <AdminApprovalStatusChip
+                        status={
+                          selectedSalon.adminApprovalStatus
+                        }
+                      />
+                    </Box>
+
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
+                      Admin approval activates the
+                      provider approval flow.
+                    </Typography>
+                  </Paper>
                 </Grid>
               </Grid>
 
@@ -1847,6 +2098,15 @@ export default function SalonApplications() {
                     }
                   />
                 </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="Admin Approval Status"
+                    value={
+                      selectedSalon.adminApprovalStatus
+                    }
+                  />
+                </Grid>
               </Grid>
 
               <Divider sx={{ my: 3 }} />
@@ -1946,8 +2206,8 @@ export default function SalonApplications() {
                     value={
                       selectedSalon.averageRating
                         ? `⭐ ${selectedSalon.averageRating.toFixed(
-                          1
-                        )}`
+                            1
+                          )}`
                         : 'No ratings'
                     }
                   />
@@ -2120,6 +2380,19 @@ export default function SalonApplications() {
                         }
                       />
                     </Grid>
+
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                    >
+                      <DetailField
+                        label="Admin Approval Status"
+                        value={
+                          selectedSalon.adminApprovalStatus
+                        }
+                      />
+                    </Grid>
                   </Grid>
                 </>
               )}
@@ -2131,82 +2404,82 @@ export default function SalonApplications() {
                 (selectedSalon.galleryImages &&
                   selectedSalon.galleryImages
                     .length > 0)) && (
-                  <>
-                    <Divider sx={{ my: 3 }} />
+                <>
+                  <Divider sx={{ my: 3 }} />
 
-                    <Typography
-                      variant="h6"
-                      sx={{ mb: 2 }}
-                    >
-                      Salon Images
-                    </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{ mb: 2 }}
+                  >
+                    Salon Images
+                  </Typography>
 
-                    <Grid
-                      container
-                      spacing={2}
-                    >
-                      {selectedSalon.logoUrl && (
-                        <Grid
-                          item
-                          xs={12}
-                          sm={4}
+                  <Grid
+                    container
+                    spacing={2}
+                  >
+                    {selectedSalon.logoUrl && (
+                      <Grid
+                        item
+                        xs={12}
+                        sm={4}
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
                         >
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            Logo
-                          </Typography>
+                          Logo
+                        </Typography>
 
-                          <Box
-                            component="img"
-                            src={
-                              selectedSalon.logoUrl
-                            }
-                            alt="Salon logo"
-                            sx={{
-                              width: '100%',
-                              height: 150,
-                              objectFit: 'cover',
-                              borderRadius: 2,
-                              mt: 1
-                            }}
-                          />
-                        </Grid>
-                      )}
+                        <Box
+                          component="img"
+                          src={
+                            selectedSalon.logoUrl
+                          }
+                          alt="Salon logo"
+                          sx={{
+                            width: '100%',
+                            height: 150,
+                            objectFit: 'cover',
+                            borderRadius: 2,
+                            mt: 1
+                          }}
+                        />
+                      </Grid>
+                    )}
 
-                      {selectedSalon.coverImageUrl && (
-                        <Grid
-                          item
-                          xs={12}
-                          sm={8}
+                    {selectedSalon.coverImageUrl && (
+                      <Grid
+                        item
+                        xs={12}
+                        sm={8}
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
                         >
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            Cover Image
-                          </Typography>
+                          Cover Image
+                        </Typography>
 
-                          <Box
-                            component="img"
-                            src={
-                              selectedSalon.coverImageUrl
-                            }
-                            alt="Salon cover"
-                            sx={{
-                              width: '100%',
-                              height: 150,
-                              objectFit: 'cover',
-                              borderRadius: 2,
-                              mt: 1
-                            }}
-                          />
-                        </Grid>
-                      )}
-                    </Grid>
-                  </>
-                )}
+                        <Box
+                          component="img"
+                          src={
+                            selectedSalon.coverImageUrl
+                          }
+                          alt="Salon cover"
+                          sx={{
+                            width: '100%',
+                            height: 150,
+                            objectFit: 'cover',
+                            borderRadius: 2,
+                            mt: 1
+                          }}
+                        />
+                      </Grid>
+                    )}
+                  </Grid>
+                </>
+              )}
             </DialogContent>
 
             {/* ACTIONS */}
@@ -2228,8 +2501,15 @@ export default function SalonApplications() {
                 Close
               </Button>
 
+              {/*
+               * ADMIN APPROVE/REJECT IS AVAILABLE
+               * ONLY AFTER THIRD-PARTY KYC APPROVAL.
+               */}
+
               {selectedSalon.kycStatus ===
-                'PENDING' && (
+                'APPROVED' &&
+                selectedSalon.adminApprovalStatus !==
+                  'APPROVED' && (
                   <>
                     <Button
                       color="error"
@@ -2278,6 +2558,48 @@ export default function SalonApplications() {
                     </Button>
                   </>
                 )}
+
+              {selectedSalon.kycStatus ===
+                'PENDING' && (
+                <Typography
+                  variant="body2"
+                  color="warning.main"
+                  sx={{
+                    mr: 1
+                  }}
+                >
+                  Waiting for third-party KYC
+                  approval.
+                </Typography>
+              )}
+
+              {selectedSalon.kycStatus ===
+                'REJECTED' && (
+                <Typography
+                  variant="body2"
+                  color="error.main"
+                  sx={{
+                    mr: 1
+                  }}
+                >
+                  This application cannot be
+                  approved because KYC was
+                  rejected.
+                </Typography>
+              )}
+
+              {selectedSalon.adminApprovalStatus ===
+                'APPROVED' && (
+                <Typography
+                  variant="body2"
+                  color="success.main"
+                  sx={{
+                    mr: 1
+                  }}
+                >
+                  Admin approval completed.
+                </Typography>
+              )}
             </DialogActions>
           </>
         )}
@@ -2378,3 +2700,4 @@ export default function SalonApplications() {
     </Box>
   );
 }
+
