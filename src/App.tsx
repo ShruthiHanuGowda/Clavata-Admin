@@ -12,13 +12,11 @@ import ScrollTop from 'components/ScrollTop';
 import Snackbar from 'components/@extended/Snackbar';
 import Notistack from 'components/thirdParty/Notistack';
 import { AWSCognitoProvider as AuthProvider } from 'contexts/AWSCognitoContext';
-import { CHAINS } from 'chains';
 import { ApolloProvider } from '@apollo/client';
 import apolloClient from 'utils/createApolloClient';
 // ============================================================
 // APP CONTEXT
 // ============================================================
-
 export interface ContextType {
   authenticationToken: string;
   setAuthenticationToken: (newValue: string) => void;
@@ -27,52 +25,6 @@ export interface ContextType {
 }
 
 export const Context = createContext<ContextType | undefined>(undefined);
-
-// ============================================================
-// REOWN / WALLET CONFIG
-// ============================================================
-
-// const networks = CHAINS;
-
-// const metadata = {
-//   name: 'Denergy',
-//   description: 'Denergy',
-//   url: 'https://www.admin-panel-fe-new.denergychain.com',
-//   icons: ['https://avatars.githubusercontent.com/u/37784886']
-// };
-
-// const projectId = import.meta.env.VITE_APP_PROJECT_ID;
-
-// export const reownModal = createAppKit({
-//   adapters: [new EthersAdapter()],
-//   networks,
-//   metadata,
-//   projectId,
-//   allowUnsupportedChain: false,
-//   enableAuthLogger: false,
-
-//   chainImages: {
-//     4442: '/images/watt.png'
-//   },
-
-//   themeVariables: {
-//     '--w3m-border-radius-master': '1.5px'
-//   },
-
-//   features: {
-//     swaps: false,
-//     onramp: false,
-//     send: false,
-//     socials: false,
-//     email: false,
-//     analytics: false,
-//     history: false
-//   }
-// });
-
-// ============================================================
-// APP
-// ============================================================
 
 export default function App() {
   const [authenticationToken, setAuthenticationToken] = useState('');

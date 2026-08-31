@@ -173,15 +173,7 @@ const PlatformSettings = Loadable(
   lazy(() => import('pages/settings/platform'))
 );
 
-// ==============================|| BLOG ||============================== //
 
-const Blog = Loadable(
-  lazy(() => import('pages/blog'))
-);
-
-const BlogDetails = Loadable(
-  lazy(() => import('pages/blogDetails'))
-);
 
 // ==============================|| MAIN ROUTING ||============================== //
 
@@ -382,20 +374,6 @@ const MainRoutes = {
         {
           path: 'feedback',
           element: <Feedback />
-        },
-
-        // ============================== //
-        // BLOG
-        // ============================== //
-
-        {
-          path: 'blog',
-          element: <Blog />
-        },
-
-        {
-          path: 'blog/:id',
-          element: <BlogDetails />
         },
 
         // ============================================================
