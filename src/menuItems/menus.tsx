@@ -1,7 +1,6 @@
 
 // third-party
 import { FormattedMessage } from 'react-intl';
-
 // ant design icons
 import {
   DashboardOutlined,
@@ -28,7 +27,6 @@ import {
   SafetyOutlined,
   AuditOutlined
 } from '@ant-design/icons';
-
 // type
 import { NavItemType } from 'types/menu';
 
