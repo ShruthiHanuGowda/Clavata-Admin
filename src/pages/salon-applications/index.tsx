@@ -50,157 +50,6 @@ import {
 // GRAPHQL
 // ============================================================
 
-import {
-  ADMIN_SALONS,
-  APPROVE_SALON,
-  REJECT_SALON
-} from '../../graphql/queries';
-
-// ============================================================
-// TYPES
-// ============================================================
-
-type KycStatus =
-  | 'PENDING'
-  | 'APPROVED'
-  | 'REJECTED';
-
-type AdminApprovalStatus =
-  | 'PENDING'
-  | 'APPROVED'
-  | 'REJECTED';
-
-type ProviderStatus =
-  | 'NOT_REGISTERED'
-  | 'PENDING'
-  | 'APPROVED'
-  | 'REJECTED';
-
-type SalonStatus =
-  | 'OPEN'
-  | 'CLOSED'
-  | 'TEMPORARILY_CLOSED';
-
-interface SalonAddress {
-  addressLine?: string | null;
-  city?: string | null;
-  state?: string | null;
-  pincode?: string | null;
-}
-
-interface Salon {
-  salonId: string;
-  salonName?: string | null;
-  ownerUserId?: string | null;
-  ownerName?: string | null;
-  ownerPhoneNumber?: string | null;
-  alternatePhone?: string | null;
-  email?: string | null;
-  businessType?: string | null;
-
-  address?: SalonAddress | null;
-
-  latitude?: number | null;
-  longitude?: number | null;
-
-  gstNumber?: string | null;
-  panNumber?: string | null;
-  aadhaarNumber?: string | null;
-
-  bankAccount?: string | null;
-  ifsc?: string | null;
-  accountHolderName?: string | null;
-
-  logoUrl?: string | null;
-  coverImageUrl?: string | null;
-  galleryImages?: string[] | null;
-
-  kycStatus: KycStatus;
-
-  /*
-   * This is the ADMIN approval status.
-   *
-   * Third party controls kycStatus.
-   * Admin controls adminApprovalStatus.
-   */
-  adminApprovalStatus?: AdminApprovalStatus | null;
-
-  salonStatus: SalonStatus;
-
-  isActive: boolean;
-  isVisible: boolean;
-  isDeleted: boolean;
-
-  averageRating: number;
-  totalReviews: number;
-  totalAppointments: number;
-  totalCompletedAppointments: number;
-  totalCancelledAppointments: number;
-  totalRevenue: number;
-
-  approvedBy?: string | null;
-  approvedAt?: string | null;
-
-  rejectedBy?: string | null;
-  rejectedAt?: string | null;
-  rejectionReason?: string | null;
-
-  lastUpdatedBy?: string | null;
-
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface AdminSalonsResponse {
-  adminSalons: {
-    success: boolean;
-    message: string;
-    totalCount: number;
-    salons: Salon[];
-  };
-}
-
-interface AdminSalonsVariables {
-  search?: string;
-  kycStatus?: KycStatus;
-  salonStatus?: SalonStatus;
-  isActive?: boolean;
-}
-
-// ============================================================
-// MUTATION RESPONSE TYPES
-// ============================================================
-
-interface SalonMutationResponse {
-  success: boolean;
-  message: string;
-}
-
-interface ApproveSalonResponse {
-  adminApproveSalon: SalonMutationResponse;
-}
-
-interface RejectSalonResponse {
-  rejectSalon: SalonMutationResponse;
-}
-
-interface ApproveSalonVariables {
-  input: {
-    salonId: string;
-  };
-}
-
-interface RejectSalonVariables {
-  input: {
-    salonId: string;
-    rejectionReason: string;
-  };
-}
-
-// ============================================================
-// FALLBACK QUERY
-// ============================================================
-
 const ADMIN_SALONS_LOCAL = gql`
   query AdminSalons(
     $search: String
@@ -278,6 +127,165 @@ const ADMIN_SALONS_LOCAL = gql`
     }
   }
 `;
+
+// ============================================================
+// APPROVE SALON
+// ============================================================
+
+const APPROVE_SALON_LOCAL = gql`
+  mutation AdminApproveSalon(
+    $input: AdminApproveSalonInput!
+  ) {
+    adminApproveSalon(input: $input) {
+      success
+      message
+    }
+  }
+`;
+
+// ============================================================
+// REJECT SALON
+// ============================================================
+
+const REJECT_SALON_LOCAL = gql`
+  mutation RejectSalon(
+    $input: RejectSalonInput!
+  ) {
+    rejectSalon(input: $input) {
+      success
+      message
+    }
+  }
+`;
+
+// ============================================================
+// TYPES
+// ============================================================
+
+type KycStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED';
+
+type AdminApprovalStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED';
+
+type SalonStatus =
+  | 'OPEN'
+  | 'CLOSED'
+  | 'TEMPORARILY_CLOSED';
+
+interface SalonAddress {
+  addressLine?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+}
+
+interface Salon {
+  salonId: string;
+  salonName?: string | null;
+  ownerUserId?: string | null;
+  ownerName?: string | null;
+  ownerPhoneNumber?: string | null;
+  alternatePhone?: string | null;
+  email?: string | null;
+  businessType?: string | null;
+
+  address?: SalonAddress | null;
+
+  latitude?: number | null;
+  longitude?: number | null;
+
+  gstNumber?: string | null;
+  panNumber?: string | null;
+  aadhaarNumber?: string | null;
+
+  bankAccount?: string | null;
+  ifsc?: string | null;
+  accountHolderName?: string | null;
+
+  logoUrl?: string | null;
+  coverImageUrl?: string | null;
+  galleryImages?: string[] | null;
+
+  kycStatus: KycStatus;
+
+  adminApprovalStatus?: AdminApprovalStatus | null;
+
+  salonStatus: SalonStatus;
+
+  isActive: boolean;
+  isVisible: boolean;
+  isDeleted: boolean;
+
+  averageRating: number;
+  totalReviews: number;
+  totalAppointments: number;
+  totalCompletedAppointments: number;
+  totalCancelledAppointments: number;
+  totalRevenue: number;
+
+  approvedBy?: string | null;
+  approvedAt?: string | null;
+
+  rejectedBy?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
+
+  lastUpdatedBy?: string | null;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AdminSalonsResponse {
+  adminSalons: {
+    success: boolean;
+    message: string;
+    totalCount: number;
+    salons: Salon[];
+  };
+}
+
+interface AdminSalonsVariables {
+  search?: string;
+  kycStatus?: KycStatus;
+  salonStatus?: SalonStatus;
+  isActive?: boolean;
+}
+
+// ============================================================
+// MUTATION RESPONSE TYPES
+// ============================================================
+
+interface SalonMutationResponse {
+  success: boolean;
+  message: string;
+}
+
+interface ApproveSalonResponse {
+  adminApproveSalon: SalonMutationResponse;
+}
+
+interface RejectSalonResponse {
+  rejectSalon: SalonMutationResponse;
+}
+
+interface ApproveSalonVariables {
+  input: {
+    salonId: string;
+  };
+}
+
+interface RejectSalonVariables {
+  input: {
+    salonId: string;
+    rejectionReason: string;
+  };
+}
 
 // ============================================================
 // HELPERS
@@ -442,7 +450,7 @@ function AdminApprovalStatusChip({
       label="Awaiting Admin Approval"
       size="small"
       color="warning"
-        variant="outlined"
+      variant="outlined"
     />
   );
 }
@@ -517,8 +525,8 @@ function DetailField({
         }}
       >
         {value !== undefined &&
-          value !== null &&
-          String(value).trim() !== ''
+        value !== null &&
+        String(value).trim() !== ''
           ? value
           : 'Not provided'}
       </Typography>
@@ -570,7 +578,7 @@ export default function SalonApplications() {
     AdminSalonsResponse,
     AdminSalonsVariables
   >(
-    ADMIN_SALONS || ADMIN_SALONS_LOCAL,
+    ADMIN_SALONS_LOCAL,
     {
       variables: {
         search: undefined,
@@ -594,7 +602,7 @@ export default function SalonApplications() {
   ] = useMutation<
     ApproveSalonResponse,
     ApproveSalonVariables
-  >(APPROVE_SALON);
+  >(APPROVE_SALON_LOCAL);
 
   // ==========================================================
   // REJECT MUTATION
@@ -608,7 +616,7 @@ export default function SalonApplications() {
   ] = useMutation<
     RejectSalonResponse,
     RejectSalonVariables
-  >(REJECT_SALON);
+  >(REJECT_SALON_LOCAL);
 
   // ==========================================================
   // REAL DATABASE DATA
@@ -696,7 +704,7 @@ export default function SalonApplications() {
     filteredApplications.slice(
       page * rowsPerPage,
       page * rowsPerPage +
-      rowsPerPage
+        rowsPerPage
     );
 
   // ==========================================================
@@ -719,11 +727,6 @@ export default function SalonApplications() {
       return;
     }
 
-    /*
-     * IMPORTANT:
-     * Admin approval is allowed only after
-     * third-party KYC has been approved.
-     */
     if (salon.kycStatus !== 'APPROVED') {
       window.alert(
         'This salon cannot be approved by admin until third-party KYC is approved.'
@@ -732,10 +735,6 @@ export default function SalonApplications() {
       return;
     }
 
-    /*
-     * Prevent approving a salon that is
-     * already admin approved.
-     */
     if (
       salon.adminApprovalStatus ===
       'APPROVED'
@@ -756,6 +755,24 @@ export default function SalonApplications() {
     }
 
     try {
+      /*
+       * IMPORTANT:
+       *
+       * The GraphQL schema expects:
+       *
+       * adminApproveSalon(
+       *   input: AdminApproveSalonInput!
+       * )
+       *
+       * Therefore Apollo MUST send:
+       *
+       * variables: {
+       *   input: {
+       *     salonId: ...
+       *   }
+       * }
+       */
+
       const result =
         await approveSalon({
           variables: {
@@ -765,41 +782,24 @@ export default function SalonApplications() {
           }
         });
 
-      /*
-       * IMPORTANT:
-       * GraphQL mutation field is:
-       *
-       * adminApproveSalon
-       */
       const response =
         result.data?.adminApproveSalon;
 
       if (!response?.success) {
         throw new Error(
           response?.message ||
-          'Failed to approve salon application.'
+            'Failed to approve salon application.'
         );
       }
 
       window.alert(
         response.message ||
-        'Salon application approved successfully.'
+          'Salon application approved successfully.'
       );
 
       setDetailsOpen(false);
       setSelectedSalon(null);
 
-      /*
-       * Reload the real database data.
-       *
-       * Backend should now have:
-       *
-       * Salons:
-       * adminApprovalStatus = APPROVED
-       *
-       * Users:
-       * providerStatus = APPROVED
-       */
       await refetch();
     } catch (mutationError) {
       console.error(
@@ -807,11 +807,22 @@ export default function SalonApplications() {
         mutationError
       );
 
-      window.alert(
-        mutationError instanceof Error
-          ? mutationError.message
-          : 'Failed to approve salon application.'
-      );
+      let message =
+        'Failed to approve salon application.';
+
+      if (
+        mutationError &&
+        typeof mutationError === 'object' &&
+        'message' in mutationError
+      ) {
+        message = String(
+          (mutationError as {
+            message: string;
+          }).message
+        );
+      }
+
+      window.alert(message);
     }
   };
 
@@ -852,7 +863,8 @@ export default function SalonApplications() {
         await rejectSalon({
           variables: {
             input: {
-              salonId: selectedSalon.salonId,
+              salonId:
+                selectedSalon.salonId,
               rejectionReason: reason
             }
           }
@@ -864,13 +876,13 @@ export default function SalonApplications() {
       if (!response?.success) {
         throw new Error(
           response?.message ||
-          'Failed to reject salon application.'
+            'Failed to reject salon application.'
         );
       }
 
       window.alert(
         response.message ||
-        'Salon application rejected successfully.'
+          'Salon application rejected successfully.'
       );
 
       setRejectOpen(false);
@@ -885,11 +897,22 @@ export default function SalonApplications() {
         mutationError
       );
 
-      window.alert(
-        mutationError instanceof Error
-          ? mutationError.message
-          : 'Failed to reject salon application.'
-      );
+      let message =
+        'Failed to reject salon application.';
+
+      if (
+        mutationError &&
+        typeof mutationError === 'object' &&
+        'message' in mutationError
+      ) {
+        message = String(
+          (mutationError as {
+            message: string;
+          }).message
+        );
+      }
+
+      window.alert(message);
     }
   };
 
@@ -1562,8 +1585,6 @@ export default function SalonApplications() {
                           spacing={0.5}
                           justifyContent="flex-end"
                         >
-                          {/* VIEW */}
-
                           <Tooltip title="View application">
                             <IconButton
                               color="primary"
@@ -1580,8 +1601,6 @@ export default function SalonApplications() {
                               <EyeOutlined />
                             </IconButton>
                           </Tooltip>
-
-                          {/* APPROVE */}
 
                           {salon.kycStatus ===
                             'APPROVED' &&
@@ -1604,8 +1623,6 @@ export default function SalonApplications() {
                                 </IconButton>
                               </Tooltip>
                             )}
-
-                          {/* REJECT */}
 
                           {salon.kycStatus ===
                             'APPROVED' &&
@@ -2500,11 +2517,6 @@ export default function SalonApplications() {
               >
                 Close
               </Button>
-
-              {/*
-               * ADMIN APPROVE/REJECT IS AVAILABLE
-               * ONLY AFTER THIRD-PARTY KYC APPROVAL.
-               */}
 
               {selectedSalon.kycStatus ===
                 'APPROVED' &&

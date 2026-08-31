@@ -53,36 +53,18 @@ import {
 import { gql, useMutation, useQuery } from '@apollo/client';
 
 // ============================================================
-// IMPORTANT
+// ADMIN SALONS QUERY
 // ============================================================
-// Keep using your existing ADMIN_SALONS query.
-// Do not create another ADMIN_SALONS query here.
+//
+// IMPORTANT:
+// This query already contains the required `documents` field.
+// Do not replace it with another salon query.
 // ============================================================
 
 import { ADMIN_SALONS } from '../../graphql/queries';
 
 // ============================================================
 // APPROVE SALON MUTATION
-// ============================================================
-//
-// IMPORTANT:
-// The backend expects:
-// AdminApproveSalonInput!
-//
-// Therefore variables MUST be:
-//
-// {
-//   input: {
-//     salonId: "..."
-//   }
-// }
-//
-// NOT:
-//
-// {
-//   salonId: "..."
-// }
-//
 // ============================================================
 
 const ADMIN_APPROVE_SALON = gql`
@@ -96,9 +78,6 @@ const ADMIN_APPROVE_SALON = gql`
 
 // ============================================================
 // REJECT SALON MUTATION
-// ============================================================
-//
-// The rejection reason is sent inside the input object.
 // ============================================================
 
 const ADMIN_REJECT_SALON = gql`
@@ -135,11 +114,26 @@ type SalonStatus =
   | 'TEMPORARILY_CLOSED';
 
 interface SalonAddress {
-  addressLine?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
+  addressLine?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
 }
+
+// ============================================================
+// KYC DOCUMENTS
+// ============================================================
+
+interface SalonDocuments {
+  aadhaarFront?: string | null;
+  aadhaarBack?: string | null;
+  panCard?: string | null;
+  gstCertificate?: string | null;
+}
+
+// ============================================================
+// ADMIN SALON
+// ============================================================
 
 interface AdminSalon {
   salonId: string;
@@ -162,6 +156,9 @@ interface AdminSalon {
   panNumber?: string | null;
   aadhaarNumber?: string | null;
 
+  // KYC DOCUMENTS
+  documents?: SalonDocuments | null;
+
   bankAccount?: string | null;
   ifsc?: string | null;
   accountHolderName: string;
@@ -171,6 +168,10 @@ interface AdminSalon {
   galleryImages?: string[];
 
   kycStatus: KycStatus;
+
+  // Returned by GraphQL
+  adminApprovalStatus?: ApprovalStatus | null;
+
   salonStatus: SalonStatus;
 
   isActive: boolean;
@@ -199,6 +200,10 @@ interface AdminSalon {
   updatedAt: string;
 }
 
+// ============================================================
+// GRAPHQL RESPONSE
+// ============================================================
+
 interface AdminSalonListResponse {
   success: boolean;
   message: string;
@@ -210,6 +215,10 @@ interface MutationResponse {
   success: boolean;
   message: string;
 }
+
+// ============================================================
+// PENDING APPROVAL
+// ============================================================
 
 interface PendingApproval {
   id: string;
@@ -306,6 +315,14 @@ const getApprovalType = (
 const getApprovalStatus = (
   salon: AdminSalon
 ): ApprovalStatus => {
+  // Prefer backend adminApprovalStatus
+  // because that is the actual approval state.
+
+  if (salon.adminApprovalStatus) {
+    return salon.adminApprovalStatus;
+  }
+
+  // Backward-compatible fallback
   if (salon.rejectedAt) {
     return 'REJECTED';
   }
@@ -336,6 +353,48 @@ const getPriority = (
 };
 
 // ============================================================
+// DOCUMENT COUNT
+// ============================================================
+//
+// IMPORTANT:
+// Count the actual documents object returned by GraphQL.
+//
+// GraphQL:
+//
+// documents {
+//   aadhaarFront
+//   aadhaarBack
+//   panCard
+//   gstCertificate
+// }
+//
+// Total = 4
+// ============================================================
+
+const getDocumentCount = (
+  documents?: SalonDocuments | null
+): number => {
+  if (!documents) {
+    return 0;
+  }
+
+  const documentValues = [
+    documents.aadhaarFront,
+    documents.aadhaarBack,
+    documents.panCard,
+    documents.gstCertificate
+  ];
+
+  return documentValues.filter(
+    (value) =>
+      Boolean(
+        value &&
+        value.trim()
+      )
+  ).length;
+};
+
+// ============================================================
 // MAP SALON → APPROVAL
 // ============================================================
 
@@ -351,22 +410,14 @@ const mapSalonToApproval = (
   const priority =
     getPriority(salon);
 
-  const documentValues = [
-    salon.panNumber,
-    salon.aadhaarNumber,
-    salon.gstNumber
-  ];
-
+  // Use actual KYC documents
   const documentsSubmitted =
-    documentValues.filter(
-      (value) =>
-        Boolean(
-          value &&
-          value.trim()
-        )
-    ).length;
+    getDocumentCount(
+      salon.documents
+    );
 
-  const totalDocuments = 3;
+  // Four actual document fields
+  const totalDocuments = 4;
 
   const city =
     salon.address?.city || '—';
@@ -931,8 +982,6 @@ export default function PendingApprovals() {
     approval: PendingApproval
   ) => {
     try {
-      // Close the details dialog immediately
-      // so the user gets a clean workflow.
       setDetailsOpen(false);
 
       const result =
@@ -2170,7 +2219,8 @@ export default function PendingApprovals() {
                     variant="caption"
                     color="text.secondary"
                   >
-                    PAN · Aadhaar · GST
+                    Aadhaar Front · Aadhaar Back ·
+                    PAN · GST
                   </Typography>
                 </Paper>
               </Stack>

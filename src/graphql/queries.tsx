@@ -37,6 +37,7 @@ export const ADMIN_CUSTOMERS = gql`
     }
 `;
 
+
 export const ADMIN_SALONS = gql`
   query AdminSalons(
     $search: String
@@ -78,6 +79,14 @@ export const ADMIN_SALONS = gql`
         panNumber
         aadhaarNumber
 
+        # KYC DOCUMENTS
+        documents {
+          aadhaarFront
+          aadhaarBack
+          panCard
+          gstCertificate
+        }
+
         bankAccount
         ifsc
         accountHolderName
@@ -87,6 +96,7 @@ export const ADMIN_SALONS = gql`
         galleryImages
 
         kycStatus
+        adminApprovalStatus
         salonStatus
 
         isActive
@@ -99,7 +109,7 @@ export const ADMIN_SALONS = gql`
         totalCompletedAppointments
         totalCancelledAppointments
         totalRevenue
-        adminApprovalStatus
+
         approvedBy
         approvedAt
         rejectedBy
@@ -113,6 +123,7 @@ export const ADMIN_SALONS = gql`
     }
   }
 `;
+
 
 export const APPROVE_SALON = gql`
   mutation AdminApproveSalon($input: AdminApproveSalonInput!) {

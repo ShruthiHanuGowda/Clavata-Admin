@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { gql, useQuery } from '@apollo/client';
 
 // material-ui
 import {
@@ -45,163 +46,164 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 
+// ==============================|| GRAPHQL ||============================== //
+
+export const ADMIN_SALONS = gql`
+  query AdminSalons(
+    $search: String
+    $kycStatus: KycStatus
+    $salonStatus: SalonStatus
+    $isActive: Boolean
+  ) {
+    adminSalons(
+      search: $search
+      kycStatus: $kycStatus
+      salonStatus: $salonStatus
+      isActive: $isActive
+    ) {
+      success
+      message
+      totalCount
+
+      salons {
+        salonId
+        ownerUserId
+        salonName
+        ownerName
+        businessType
+        ownerPhoneNumber
+        alternatePhone
+        email
+
+        address {
+          addressLine
+          city
+          state
+          pincode
+        }
+
+        latitude
+        longitude
+
+        gstNumber
+        panNumber
+        aadhaarNumber
+
+        bankAccount
+        ifsc
+        accountHolderName
+
+        logoUrl
+        coverImageUrl
+        galleryImages
+
+        kycStatus
+        salonStatus
+
+        isActive
+        isVisible
+        isDeleted
+
+        averageRating
+        totalReviews
+        totalAppointments
+        totalCompletedAppointments
+        totalCancelledAppointments
+        totalRevenue
+        adminApprovalStatus
+        approvedBy
+        approvedAt
+        rejectedBy
+        rejectedAt
+        rejectionReason
+
+        lastUpdatedBy
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
 // ==============================|| TYPES ||============================== //
 
 type KycStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
-interface KycDocument {
-  id: string;
-  salonId: string;
-  salonName: string;
-  ownerName: string;
-  phoneNumber: string;
-  email: string;
-  businessType: string;
-
-  aadhaarNumber: string;
-  panNumber: string;
-  gstNumber: string;
-  shopEstablishmentNumber: string;
-  udyamNumber: string;
-
-  aadhaarFront: string;
-  aadhaarBack: string;
-  panCard: string;
-  gstCertificate: string;
-
-  status: KycStatus;
-  submittedAt: string;
-  reviewedAt?: string;
-  reviewedBy?: string;
-  rejectionReason?: string;
+interface SalonAddress {
+  addressLine?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
 }
 
-// ==============================|| DUMMY DATA ||============================== //
+interface AdminSalon {
+  salonId: string;
+  ownerUserId?: string | null;
+  salonName?: string | null;
+  ownerName?: string | null;
+  businessType?: string | null;
+  ownerPhoneNumber?: string | null;
+  alternatePhone?: string | null;
+  email?: string | null;
 
-const initialKycDocuments: KycDocument[] = [
-  {
-    id: 'KYC-1001',
-    salonId: 'SALON-1001',
-    salonName: 'Glow Beauty Studio',
-    ownerName: 'Priya Sharma',
-    phoneNumber: '+91 98765 43210',
-    email: 'priya@example.com',
-    businessType: 'Beauty Salon',
+  address?: SalonAddress | null;
 
-    aadhaarNumber: 'XXXX XXXX 4521',
-    panNumber: 'ABCDE1234F',
-    gstNumber: '29ABCDE1234F1Z5',
-    shopEstablishmentNumber: 'KA-SE-100245',
-    udyamNumber: 'UDYAM-KA-12-0012345',
+  latitude?: number | null;
+  longitude?: number | null;
 
-    aadhaarFront: 'aadhaar-front.pdf',
-    aadhaarBack: 'aadhaar-back.pdf',
-    panCard: 'pan-card.pdf',
-    gstCertificate: 'gst-certificate.pdf',
+  gstNumber?: string | null;
+  panNumber?: string | null;
+  aadhaarNumber?: string | null;
 
-    status: 'PENDING',
-    submittedAt: '30 Aug 2026, 09:42 AM'
-  },
-  {
-    id: 'KYC-1002',
-    salonId: 'SALON-1002',
-    salonName: 'Urban Cuts & Spa',
-    ownerName: 'Rahul Kumar',
-    phoneNumber: '+91 99887 77665',
-    email: 'rahul@example.com',
-    businessType: 'Salon & Spa',
+  bankAccount?: string | null;
+  ifsc?: string | null;
+  accountHolderName?: string | null;
 
-    aadhaarNumber: 'XXXX XXXX 7832',
-    panNumber: 'FGHIJ5678K',
-    gstNumber: '29FGHIJ5678K1Z2',
-    shopEstablishmentNumber: 'KA-SE-100876',
-    udyamNumber: 'UDYAM-KA-12-0056789',
+  logoUrl?: string | null;
+  coverImageUrl?: string | null;
+  galleryImages?: string[] | null;
 
-    aadhaarFront: 'aadhaar-front.pdf',
-    aadhaarBack: 'aadhaar-back.pdf',
-    panCard: 'pan-card.pdf',
-    gstCertificate: 'gst-certificate.pdf',
+  kycStatus?: KycStatus | null;
+  salonStatus?: string | null;
 
-    status: 'APPROVED',
-    submittedAt: '28 Aug 2026, 03:15 PM',
-    reviewedAt: '29 Aug 2026, 10:20 AM',
-    reviewedBy: 'Admin'
-  },
-  {
-    id: 'KYC-1003',
-    salonId: 'SALON-1003',
-    salonName: 'Blush & Bloom',
-    ownerName: 'Sneha Reddy',
-    phoneNumber: '+91 91234 56789',
-    email: 'sneha@example.com',
-    businessType: 'Beauty Studio',
+  isActive?: boolean | null;
+  isVisible?: boolean | null;
+  isDeleted?: boolean | null;
 
-    aadhaarNumber: 'XXXX XXXX 9123',
-    panNumber: 'LMNOP9012Q',
-    gstNumber: '29LMNOP9012Q1Z8',
-    shopEstablishmentNumber: 'KA-SE-100991',
-    udyamNumber: 'UDYAM-KA-12-0087654',
+  averageRating?: number | null;
+  totalReviews?: number | null;
+  totalAppointments?: number | null;
+  totalCompletedAppointments?: number | null;
+  totalCancelledAppointments?: number | null;
+  totalRevenue?: number | null;
 
-    aadhaarFront: 'aadhaar-front.pdf',
-    aadhaarBack: 'aadhaar-back.pdf',
-    panCard: 'pan-card.pdf',
-    gstCertificate: 'gst-certificate.pdf',
+  adminApprovalStatus?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
+  rejectedBy?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
 
-    status: 'REJECTED',
-    submittedAt: '25 Aug 2026, 11:30 AM',
-    reviewedAt: '26 Aug 2026, 02:10 PM',
-    reviewedBy: 'Admin',
-    rejectionReason: 'PAN document is not clearly readable.'
-  },
-  {
-    id: 'KYC-1004',
-    salonId: 'SALON-1004',
-    salonName: 'The Hair Lounge',
-    ownerName: 'Ananya Rao',
-    phoneNumber: '+91 90123 45678',
-    email: 'ananya@example.com',
-    businessType: 'Hair Salon',
+  lastUpdatedBy?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
 
-    aadhaarNumber: 'XXXX XXXX 3456',
-    panNumber: 'RSTUV3456W',
-    gstNumber: '29RSTUV3456W1Z4',
-    shopEstablishmentNumber: 'KA-SE-101234',
-    udyamNumber: 'UDYAM-KA-12-0098765',
+interface AdminSalonsResponse {
+  adminSalons: {
+    success: boolean;
+    message?: string | null;
+    totalCount: number;
+    salons: AdminSalon[];
+  };
+}
 
-    aadhaarFront: 'aadhaar-front.pdf',
-    aadhaarBack: 'aadhaar-back.pdf',
-    panCard: 'pan-card.pdf',
-    gstCertificate: 'gst-certificate.pdf',
-
-    status: 'PENDING',
-    submittedAt: '30 Aug 2026, 08:20 AM'
-  },
-  {
-    id: 'KYC-1005',
-    salonId: 'SALON-1005',
-    salonName: 'Serenity Wellness',
-    ownerName: 'Meera Nair',
-    phoneNumber: '+91 93456 78901',
-    email: 'meera@example.com',
-    businessType: 'Wellness & Spa',
-
-    aadhaarNumber: 'XXXX XXXX 5678',
-    panNumber: 'XYZAB7890C',
-    gstNumber: '29XYZAB7890C1Z1',
-    shopEstablishmentNumber: 'KA-SE-101456',
-    udyamNumber: 'UDYAM-KA-12-0011223',
-
-    aadhaarFront: 'aadhaar-front.pdf',
-    aadhaarBack: 'aadhaar-back.pdf',
-    panCard: 'pan-card.pdf',
-    gstCertificate: 'gst-certificate.pdf',
-
-    status: 'APPROVED',
-    submittedAt: '22 Aug 2026, 04:45 PM',
-    reviewedAt: '23 Aug 2026, 09:30 AM',
-    reviewedBy: 'Admin'
-  }
-];
+interface AdminSalonsVariables {
+  search?: string;
+  kycStatus?: KycStatus;
+  salonStatus?: string;
+  isActive?: boolean;
+}
 
 // ==============================|| STATUS CHIP ||============================== //
 
@@ -242,58 +244,127 @@ function StatusChip({ status }: { status: KycStatus }) {
   );
 }
 
+// ==============================|| HELPERS ||============================== //
+
+function normalizeKycStatus(status?: string | null): KycStatus {
+  if (status === 'APPROVED') return 'APPROVED';
+  if (status === 'REJECTED') return 'REJECTED';
+
+  return 'PENDING';
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return '—';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function maskAadhaar(value?: string | null) {
+  if (!value) return '—';
+
+  const digits = value.replace(/\D/g, '');
+
+  if (digits.length === 12) {
+    return `XXXX XXXX ${digits.slice(-4)}`;
+  }
+
+  return value;
+}
+
 // ==============================|| PAGE ||============================== //
 
 export default function KycDocuments() {
-  const [documents, setDocuments] = useState<KycDocument[]>(initialKycDocuments);
-
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | KycStatus>('ALL');
 
-  const [selectedDocument, setSelectedDocument] = useState<KycDocument | null>(null);
+  const [selectedSalon, setSelectedSalon] = useState<AdminSalon | null>(null);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
-
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  // ==============================|| QUERY ||============================== //
+
+  const {
+    data,
+    loading,
+    error,
+    refetch
+  } = useQuery<AdminSalonsResponse, AdminSalonsVariables>(ADMIN_SALONS, {
+    variables: {
+      search: search.trim() || undefined,
+      kycStatus: statusFilter === 'ALL' ? undefined : statusFilter
+    },
+    fetchPolicy: 'network-only'
+  });
+
+  const salons = data?.adminSalons?.salons ?? [];
+
   // ==============================|| COUNTERS ||============================== //
 
-  const totalCount = documents.length;
+  const totalCount = data?.adminSalons?.totalCount ?? salons.length;
 
-  const pendingCount = documents.filter((item) => item.status === 'PENDING').length;
+  const pendingCount = salons.filter(
+    (item) => normalizeKycStatus(item.kycStatus) === 'PENDING'
+  ).length;
 
-  const approvedCount = documents.filter((item) => item.status === 'APPROVED').length;
+  const approvedCount = salons.filter(
+    (item) => normalizeKycStatus(item.kycStatus) === 'APPROVED'
+  ).length;
 
-  const rejectedCount = documents.filter((item) => item.status === 'REJECTED').length;
+  const rejectedCount = salons.filter(
+    (item) => normalizeKycStatus(item.kycStatus) === 'REJECTED'
+  ).length;
 
-  // ==============================|| FILTER ||============================== //
+  // ==============================|| CLIENT-SIDE FILTER ||============================== //
 
-  const filteredDocuments = useMemo(() => {
+  const filteredSalons = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return documents.filter((item) => {
-      const matchesStatus = statusFilter === 'ALL' || item.status === statusFilter;
+    return salons.filter((salon) => {
+      const status = normalizeKycStatus(salon.kycStatus);
+
+      const matchesStatus =
+        statusFilter === 'ALL' || status === statusFilter;
 
       const matchesSearch =
         !query ||
-        item.salonName.toLowerCase().includes(query) ||
-        item.ownerName.toLowerCase().includes(query) ||
-        item.id.toLowerCase().includes(query) ||
-        item.salonId.toLowerCase().includes(query) ||
-        item.phoneNumber.toLowerCase().includes(query);
+        salon.salonName?.toLowerCase().includes(query) ||
+        salon.ownerName?.toLowerCase().includes(query) ||
+        salon.salonId?.toLowerCase().includes(query) ||
+        salon.ownerPhoneNumber?.toLowerCase().includes(query) ||
+        salon.email?.toLowerCase().includes(query);
 
       return matchesStatus && matchesSearch;
     });
-  }, [documents, search, statusFilter]);
+  }, [salons, search, statusFilter]);
+
+  // ==============================|| PAGINATION ||============================== //
+
+  const paginatedSalons = filteredSalons.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   // ==============================|| HANDLERS ||============================== //
 
   const handleStatusFilter = (event: SelectChangeEvent) => {
-    setStatusFilter(event.target.value as 'ALL' | KycStatus);
+    const value = event.target.value as 'ALL' | KycStatus;
+
+    setStatusFilter(value);
     setPage(0);
   };
 
@@ -302,80 +373,9 @@ export default function KycDocuments() {
     setPage(0);
   };
 
-  const handleView = (document: KycDocument) => {
-    setSelectedDocument(document);
+  const handleView = (salon: AdminSalon) => {
+    setSelectedSalon(salon);
     setDetailsOpen(true);
-  };
-
-  const handleApprove = (document: KycDocument) => {
-    setDocuments((prev) =>
-      prev.map((item) =>
-        item.id === document.id
-          ? {
-              ...item,
-              status: 'APPROVED',
-              reviewedAt: '30 Aug 2026, 11:00 AM',
-              reviewedBy: 'Admin',
-              rejectionReason: undefined
-            }
-          : item
-      )
-    );
-
-    setSelectedDocument((prev) =>
-      prev && prev.id === document.id
-        ? {
-            ...prev,
-            status: 'APPROVED',
-            reviewedAt: '30 Aug 2026, 11:00 AM',
-            reviewedBy: 'Admin',
-            rejectionReason: undefined
-          }
-        : prev
-    );
-  };
-
-  const openRejectDialog = (document: KycDocument) => {
-    setSelectedDocument(document);
-    setRejectionReason('');
-    setRejectOpen(true);
-  };
-
-  const handleReject = () => {
-    if (!selectedDocument) return;
-
-    const reason =
-      rejectionReason.trim() || 'Documents could not be verified. Please resubmit valid documents.';
-
-    setDocuments((prev) =>
-      prev.map((item) =>
-        item.id === selectedDocument.id
-          ? {
-              ...item,
-              status: 'REJECTED',
-              reviewedAt: '30 Aug 2026, 11:00 AM',
-              reviewedBy: 'Admin',
-              rejectionReason: reason
-            }
-          : item
-      )
-    );
-
-    setSelectedDocument((prev) =>
-      prev
-        ? {
-            ...prev,
-            status: 'REJECTED',
-            reviewedAt: '30 Aug 2026, 11:00 AM',
-            reviewedBy: 'Admin',
-            rejectionReason: reason
-          }
-        : null
-    );
-
-    setRejectOpen(false);
-    setDetailsOpen(false);
-    setRejectionReason('');
   };
 
   const handleReset = () => {
@@ -384,12 +384,12 @@ export default function KycDocuments() {
     setPage(0);
   };
 
-  // ==============================|| DOCUMENT ROW ||============================== //
-
-  const paginatedDocuments = filteredDocuments.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  const handleRefresh = async () => {
+    await refetch({
+      search: search.trim() || undefined,
+      kycStatus: statusFilter === 'ALL' ? undefined : statusFilter
+    });
+  };
 
   // ==============================|| RENDER ||============================== //
 
@@ -417,169 +417,112 @@ export default function KycDocuments() {
         <Button
           variant="outlined"
           startIcon={<ReloadOutlined />}
-          onClick={() => setDocuments(initialKycDocuments)}
+          onClick={handleRefresh}
+          disabled={loading}
         >
-          Refresh
+          {loading ? 'Refreshing...' : 'Refresh'}
         </Button>
       </Stack>
+
+      {/* ================= ERROR ================= */}
+
+      {error && (
+        <Card
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'error.light'
+          }}
+        >
+          <CardContent>
+            <Typography color="error" fontWeight={600}>
+              Failed to load KYC applications.
+            </Typography>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {error.message}
+            </Typography>
+
+            <Button
+              size="small"
+              sx={{ mt: 1 }}
+              onClick={handleRefresh}
+            >
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ================= API MESSAGE ================= */}
+
+      {!loading && data?.adminSalons?.success === false && (
+        <Card
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'warning.light'
+          }}
+        >
+          <CardContent>
+            <Typography color="warning.main" fontWeight={600}>
+              {data.adminSalons.message || 'Unable to load KYC applications.'}
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ================= SUMMARY CARDS ================= */}
 
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        {/* TOTAL */}
+
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              height: '100%',
-              borderRadius: 2,
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
-            }}
-          >
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between">
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Applications
-                  </Typography>
-
-                  <Typography variant="h4" sx={{ mt: 1, fontWeight: 700 }}>
-                    {totalCount}
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor: 'primary.lighter',
-                    color: 'primary.main'
-                  }}
-                >
-                  <FileTextOutlined style={{ fontSize: 22 }} />
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
+          <SummaryCard
+            title="Total Applications"
+            value={totalCount}
+            icon={<FileTextOutlined style={{ fontSize: 22 }} />}
+            bgcolor="primary.lighter"
+            color="primary.main"
+          />
         </Grid>
 
+        {/* PENDING */}
+
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              height: '100%',
-              borderRadius: 2,
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
-            }}
-          >
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between">
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Pending Review
-                  </Typography>
-
-                  <Typography variant="h4" sx={{ mt: 1, fontWeight: 700 }}>
-                    {pendingCount}
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor: 'warning.lighter',
-                    color: 'warning.main'
-                  }}
-                >
-                  <SafetyCertificateOutlined style={{ fontSize: 22 }} />
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
+          <SummaryCard
+            title="Pending Review"
+            value={pendingCount}
+            icon={<SafetyCertificateOutlined style={{ fontSize: 22 }} />}
+            bgcolor="warning.lighter"
+            color="warning.main"
+          />
         </Grid>
 
+        {/* APPROVED */}
+
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              height: '100%',
-              borderRadius: 2,
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
-            }}
-          >
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between">
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Approved
-                  </Typography>
-
-                  <Typography variant="h4" sx={{ mt: 1, fontWeight: 700 }}>
-                    {approvedCount}
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor: 'success.lighter',
-                    color: 'success.main'
-                  }}
-                >
-                  <CheckCircleOutlined style={{ fontSize: 22 }} />
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
+          <SummaryCard
+            title="Approved"
+            value={approvedCount}
+            icon={<CheckCircleOutlined style={{ fontSize: 22 }} />}
+            bgcolor="success.lighter"
+            color="success.main"
+          />
         </Grid>
 
+        {/* REJECTED */}
+
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              height: '100%',
-              borderRadius: 2,
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
-            }}
-          >
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between">
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Rejected
-                  </Typography>
-
-                  <Typography variant="h4" sx={{ mt: 1, fontWeight: 700 }}>
-                    {rejectedCount}
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor: 'error.lighter',
-                    color: 'error.main'
-                  }}
-                >
-                  <CloseCircleOutlined style={{ fontSize: 22 }} />
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
+          <SummaryCard
+            title="Rejected"
+            value={rejectedCount}
+            icon={<CloseCircleOutlined style={{ fontSize: 22 }} />}
+            bgcolor="error.lighter"
+            color="error.main"
+          />
         </Grid>
       </Grid>
 
@@ -606,7 +549,7 @@ export default function KycDocuments() {
             <TextField
               value={search}
               onChange={(event) => handleSearch(event.target.value)}
-              placeholder="Search salon, owner, KYC ID..."
+              placeholder="Search salon, owner, salon ID..."
               size="small"
               sx={{
                 minWidth: { xs: '100%', md: 320 },
@@ -642,245 +585,300 @@ export default function KycDocuments() {
 
           <Divider />
 
-          {/* TABLE */}
+          {/* ================= LOADING ================= */}
 
-          <TableContainer component={Paper} elevation={0}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>KYC ID</TableCell>
+          {loading ? (
+            <Box
+              sx={{
+                py: 10,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+            >
+              <Typography color="text.secondary">
+                Loading KYC applications...
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              {/* ================= TABLE ================= */}
 
-                  <TableCell>Salon</TableCell>
+              <TableContainer component={Paper} elevation={0}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Salon ID</TableCell>
 
-                  <TableCell>Owner</TableCell>
+                      <TableCell>Salon</TableCell>
 
-                  <TableCell>Documents</TableCell>
+                      <TableCell>Owner</TableCell>
 
-                  <TableCell>Status</TableCell>
+                      <TableCell>Documents</TableCell>
 
-                  <TableCell>Submitted</TableCell>
+                      <TableCell>Status</TableCell>
 
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
+                      <TableCell>Submitted</TableCell>
 
-              <TableBody>
-                {paginatedDocuments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7}>
-                      <Box
-                        sx={{
-                          py: 8,
-                          textAlign: 'center'
-                        }}
-                      >
-                        <FileTextOutlined
-                          style={{
-                            fontSize: 42,
-                            opacity: 0.35
-                          }}
-                        />
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
 
-                        <Typography variant="h6" sx={{ mt: 2 }}>
-                          No KYC records found
-                        </Typography>
-
-                        <Typography variant="body2" color="text.secondary">
-                          Try changing your search or filters.
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedDocuments.map((document) => (
-                    <TableRow
-                      hover
-                      key={document.id}
-                      sx={{
-                        '&:last-child td': {
-                          borderBottom: 0
-                        }
-                      }}
-                    >
-                      {/* KYC ID */}
-
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: 600,
-                            color: 'primary.main'
-                          }}
-                        >
-                          {document.id}
-                        </Typography>
-
-                        <Typography variant="caption" color="text.secondary">
-                          {document.salonId}
-                        </Typography>
-                      </TableCell>
-
-                      {/* SALON */}
-
-                      <TableCell>
-                        <Stack direction="row" spacing={1.5} alignItems="center">
+                  <TableBody>
+                    {paginatedSalons.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7}>
                           <Box
                             sx={{
-                              width: 40,
-                              height: 40,
-                              borderRadius: 1.5,
-                              bgcolor: 'primary.lighter',
-                              color: 'primary.main',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
+                              py: 8,
+                              textAlign: 'center'
                             }}
                           >
-                            <ShopOutlined style={{ fontSize: 19 }} />
-                          </Box>
-
-                          <Box>
-                            <Typography variant="body2" fontWeight={600}>
-                              {document.salonName}
-                            </Typography>
-
-                            <Typography variant="caption" color="text.secondary">
-                              {document.businessType}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </TableCell>
-
-                      {/* OWNER */}
-
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <UserOutlined />
-
-                          <Box>
-                            <Typography variant="body2">
-                              {document.ownerName}
-                            </Typography>
-
-                            <Typography variant="caption" color="text.secondary">
-                              {document.phoneNumber}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </TableCell>
-
-                      {/* DOCUMENTS */}
-
-                      <TableCell>
-                        <Stack direction="row" spacing={0.75}>
-                          <Tooltip title="Aadhaar">
-                            <Chip
-                              size="small"
-                              label="Aadhaar"
-                              variant="outlined"
+                            <FileTextOutlined
+                              style={{
+                                fontSize: 42,
+                                opacity: 0.35
+                              }}
                             />
-                          </Tooltip>
 
-                          <Tooltip title="PAN">
-                            <Chip
-                              size="small"
-                              label="PAN"
-                              variant="outlined"
-                            />
-                          </Tooltip>
+                            <Typography variant="h6" sx={{ mt: 2 }}>
+                              No KYC records found
+                            </Typography>
 
-                          <Tooltip title="GST">
-                            <Chip
-                              size="small"
-                              label="GST"
-                              variant="outlined"
-                            />
-                          </Tooltip>
-                        </Stack>
-                      </TableCell>
-
-                      {/* STATUS */}
-
-                      <TableCell>
-                        <StatusChip status={document.status} />
-                      </TableCell>
-
-                      {/* DATE */}
-
-                      <TableCell>
-                        <Typography variant="body2">
-                          {document.submittedAt}
-                        </Typography>
-                      </TableCell>
-
-                      {/* ACTIONS */}
-
-                      <TableCell align="right">
-                        <Stack
-                          direction="row"
-                          spacing={0.5}
-                          justifyContent="flex-end"
-                        >
-                          <Tooltip title="View Documents">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => handleView(document)}
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
                             >
-                              <EyeOutlined />
-                            </IconButton>
-                          </Tooltip>
+                              Try changing your search or filters.
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      paginatedSalons.map((salon) => {
+                        const status = normalizeKycStatus(salon.kycStatus);
 
-                          {document.status === 'PENDING' && (
-                            <>
-                              <Tooltip title="Approve">
-                                <IconButton
-                                  size="small"
-                                  color="success"
-                                  onClick={() => handleApprove(document)}
+                        return (
+                          <TableRow
+                            hover
+                            key={salon.salonId}
+                            sx={{
+                              '&:last-child td': {
+                                borderBottom: 0
+                              }
+                            }}
+                          >
+                            {/* SALON ID */}
+
+                            <TableCell>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: 'primary.main'
+                                }}
+                              >
+                                {salon.salonId}
+                              </Typography>
+
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {salon.ownerUserId || '—'}
+                              </Typography>
+                            </TableCell>
+
+                            {/* SALON */}
+
+                            <TableCell>
+                              <Stack
+                                direction="row"
+                                spacing={1.5}
+                                alignItems="center"
+                              >
+                                <Box
+                                  sx={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 1.5,
+                                    bgcolor: 'primary.lighter',
+                                    color: 'primary.main',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    overflow: 'hidden'
+                                  }}
                                 >
-                                  <CheckCircleOutlined />
-                                </IconButton>
-                              </Tooltip>
+                                  {salon.logoUrl ? (
+                                    <img
+                                      src={salon.logoUrl}
+                                      alt={salon.salonName || 'Salon'}
+                                      style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover'
+                                      }}
+                                    />
+                                  ) : (
+                                    <ShopOutlined
+                                      style={{ fontSize: 19 }}
+                                    />
+                                  )}
+                                </Box>
 
-                              <Tooltip title="Reject">
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => openRejectDialog(document)}
-                                >
-                                  <CloseCircleOutlined />
-                                </IconButton>
-                              </Tooltip>
-                            </>
-                          )}
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                                <Box>
+                                  <Typography variant="body2" fontWeight={600}>
+                                    {salon.salonName || 'Unnamed Salon'}
+                                  </Typography>
 
-          {/* PAGINATION */}
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {salon.businessType || '—'}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                            </TableCell>
 
-          <TablePagination
-            component="div"
-            count={filteredDocuments.length}
-            page={page}
-            onPageChange={(_, newPage) => setPage(newPage)}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(event) => {
-              setRowsPerPage(parseInt(event.target.value, 10));
-              setPage(0);
-            }}
-            rowsPerPageOptions={[5, 10, 25, 50]}
-          />
+                            {/* OWNER */}
+
+                            <TableCell>
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                              >
+                                <UserOutlined />
+
+                                <Box>
+                                  <Typography variant="body2">
+                                    {salon.ownerName || '—'}
+                                  </Typography>
+
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {salon.ownerPhoneNumber || '—'}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                            </TableCell>
+
+                            {/* DOCUMENTS */}
+
+                            <TableCell>
+                              <Stack
+                                direction="row"
+                                spacing={0.75}
+                                flexWrap="wrap"
+                              >
+                                {salon.aadhaarNumber && (
+                                  <Tooltip title="Aadhaar">
+                                    <Chip
+                                      size="small"
+                                      label="Aadhaar"
+                                      variant="outlined"
+                                    />
+                                  </Tooltip>
+                                )}
+
+                                {salon.panNumber && (
+                                  <Tooltip title="PAN">
+                                    <Chip
+                                      size="small"
+                                      label="PAN"
+                                      variant="outlined"
+                                    />
+                                  </Tooltip>
+                                )}
+
+                                {salon.gstNumber && (
+                                  <Tooltip title="GST">
+                                    <Chip
+                                      size="small"
+                                      label="GST"
+                                      variant="outlined"
+                                    />
+                                  </Tooltip>
+                                )}
+
+                                {!salon.aadhaarNumber &&
+                                  !salon.panNumber &&
+                                  !salon.gstNumber && (
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      No documents
+                                    </Typography>
+                                  )}
+                              </Stack>
+                            </TableCell>
+
+                            {/* STATUS */}
+
+                            <TableCell>
+                              <StatusChip status={status} />
+                            </TableCell>
+
+                            {/* DATE */}
+
+                            <TableCell>
+                              <Typography variant="body2">
+                                {formatDate(salon.createdAt)}
+                              </Typography>
+                            </TableCell>
+
+                            {/* ACTIONS */}
+
+                            <TableCell align="right">
+                              <Stack
+                                direction="row"
+                                spacing={0.5}
+                                justifyContent="flex-end"
+                              >
+                                <Tooltip title="View KYC Details">
+                                  <IconButton
+                                    size="small"
+                                    color="primary"
+                                    onClick={() => handleView(salon)}
+                                  >
+                                    <EyeOutlined />
+                                  </IconButton>
+                                </Tooltip>
+                              </Stack>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {/* ================= PAGINATION ================= */}
+
+              <TablePagination
+                component="div"
+                count={filteredSalons.length}
+                page={page}
+                onPageChange={(_, newPage) => setPage(newPage)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(event) => {
+                  setRowsPerPage(parseInt(event.target.value, 10));
+                  setPage(0);
+                }}
+                rowsPerPageOptions={[5, 10, 25, 50]}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {/* ================= DOCUMENT DETAILS ================= */}
+      {/* ================= KYC DETAILS ================= */}
 
       <Dialog
         open={detailsOpen}
@@ -888,7 +886,7 @@ export default function KycDocuments() {
         maxWidth="md"
         fullWidth
       >
-        {selectedDocument && (
+        {selectedSalon && (
           <>
             <DialogTitle>
               <Stack
@@ -902,18 +900,25 @@ export default function KycDocuments() {
                   </Typography>
 
                   <Typography variant="body2" color="text.secondary">
-                    {selectedDocument.id} · {selectedDocument.salonName}
+                    {selectedSalon.salonId} ·{' '}
+                    {selectedSalon.salonName || 'Unnamed Salon'}
                   </Typography>
                 </Box>
 
-                <StatusChip status={selectedDocument.status} />
+                <StatusChip
+                  status={normalizeKycStatus(selectedSalon.kycStatus)}
+                />
               </Stack>
             </DialogTitle>
 
             <DialogContent dividers>
-              {/* SALON / OWNER */}
+              {/* ================= SALON / OWNER ================= */}
 
-              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight={700}
+                sx={{ mb: 2 }}
+              >
                 Salon & Owner Information
               </Typography>
 
@@ -921,44 +926,69 @@ export default function KycDocuments() {
                 <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Salon Name"
-                    value={selectedDocument.salonName}
+                    value={selectedSalon.salonName}
                   />
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Business Type"
-                    value={selectedDocument.businessType}
+                    value={selectedSalon.businessType}
                   />
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Owner Name"
-                    value={selectedDocument.ownerName}
+                    value={selectedSalon.ownerName}
                   />
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Phone Number"
-                    value={selectedDocument.phoneNumber}
+                    value={selectedSalon.ownerPhoneNumber}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="Alternate Phone"
+                    value={selectedSalon.alternatePhone}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="Email"
+                    value={selectedSalon.email}
                   />
                 </Grid>
 
                 <Grid item xs={12}>
                   <DetailField
-                    label="Email"
-                    value={selectedDocument.email}
+                    label="Address"
+                    value={[
+                      selectedSalon.address?.addressLine,
+                      selectedSalon.address?.city,
+                      selectedSalon.address?.state,
+                      selectedSalon.address?.pincode
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
                   />
                 </Grid>
               </Grid>
 
               <Divider sx={{ mb: 3 }} />
 
-              {/* IDENTIFICATION */}
+              {/* ================= IDENTIFICATION ================= */}
 
-              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight={700}
+                sx={{ mb: 2 }}
+              >
                 Identification Details
               </Typography>
 
@@ -966,73 +996,93 @@ export default function KycDocuments() {
                 <Grid item xs={12} sm={6}>
                   <DetailField
                     label="Aadhaar Number"
-                    value={selectedDocument.aadhaarNumber}
+                    value={maskAadhaar(selectedSalon.aadhaarNumber)}
                   />
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <DetailField
                     label="PAN Number"
-                    value={selectedDocument.panNumber}
+                    value={selectedSalon.panNumber}
                   />
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <DetailField
                     label="GST Number"
-                    value={selectedDocument.gstNumber}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <DetailField
-                    label="Shop Establishment Number"
-                    value={selectedDocument.shopEstablishmentNumber}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <DetailField
-                    label="Udyam Number"
-                    value={selectedDocument.udyamNumber}
+                    value={selectedSalon.gstNumber}
                   />
                 </Grid>
               </Grid>
 
               <Divider sx={{ mb: 3 }} />
 
-              {/* DOCUMENT LIST */}
+              {/* ================= BANK ================= */}
 
-              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight={700}
+                sx={{ mb: 2 }}
+              >
+                Bank Details
+              </Typography>
+
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="Account Holder"
+                    value={selectedSalon.accountHolderName}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="Bank Account"
+                    value={selectedSalon.bankAccount}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="IFSC"
+                    value={selectedSalon.ifsc}
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ mb: 3 }} />
+
+              {/* ================= DOCUMENTS ================= */}
+
+              <Typography
+                variant="subtitle1"
+                fontWeight={700}
+                sx={{ mb: 2 }}
+              >
                 Submitted Documents
               </Typography>
 
               <Stack spacing={1.5}>
                 <DocumentRow
-                  title="Aadhaar Card - Front"
-                  file={selectedDocument.aadhaarFront}
-                />
-
-                <DocumentRow
-                  title="Aadhaar Card - Back"
-                  file={selectedDocument.aadhaarBack}
+                  title="Aadhaar Card"
+                  value={selectedSalon.aadhaarNumber}
                 />
 
                 <DocumentRow
                   title="PAN Card"
-                  file={selectedDocument.panCard}
+                  value={selectedSalon.panNumber}
                 />
 
                 <DocumentRow
                   title="GST Certificate"
-                  file={selectedDocument.gstCertificate}
+                  value={selectedSalon.gstNumber}
                 />
               </Stack>
 
-              {/* REJECTION REASON */}
+              {/* ================= REJECTION ================= */}
 
-              {selectedDocument.status === 'REJECTED' &&
-                selectedDocument.rejectionReason && (
+              {normalizeKycStatus(selectedSalon.kycStatus) === 'REJECTED' &&
+                selectedSalon.rejectionReason && (
                   <Box
                     sx={{
                       mt: 3,
@@ -1050,14 +1100,17 @@ export default function KycDocuments() {
                     </Typography>
 
                     <Typography variant="body2" sx={{ mt: 0.5 }}>
-                      {selectedDocument.rejectionReason}
+                      {selectedSalon.rejectionReason}
                     </Typography>
                   </Box>
                 )}
 
-              {/* REVIEW INFO */}
+              {/* ================= REVIEW INFO ================= */}
 
-              {selectedDocument.reviewedAt && (
+              {(selectedSalon.approvedAt ||
+                selectedSalon.rejectedAt ||
+                selectedSalon.approvedBy ||
+                selectedSalon.rejectedBy) && (
                 <>
                   <Divider sx={{ my: 3 }} />
 
@@ -1065,92 +1118,149 @@ export default function KycDocuments() {
                     Review Information
                   </Typography>
 
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 1 }}
-                  >
-                    Reviewed by {selectedDocument.reviewedBy || 'Admin'} on{' '}
-                    {selectedDocument.reviewedAt}
-                  </Typography>
+                  {selectedSalon.approvedAt && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
+                      Approved by{' '}
+                      {selectedSalon.approvedBy || 'Admin'} on{' '}
+                      {formatDate(selectedSalon.approvedAt)}
+                    </Typography>
+                  )}
+
+                  {selectedSalon.rejectedAt && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
+                      Rejected by{' '}
+                      {selectedSalon.rejectedBy || 'Admin'} on{' '}
+                      {formatDate(selectedSalon.rejectedAt)}
+                    </Typography>
+                  )}
                 </>
               )}
+
+              {/* ================= STATUS INFO ================= */}
+
+              <Divider sx={{ my: 3 }} />
+
+              <Typography variant="subtitle1" fontWeight={700}>
+                Application Information
+              </Typography>
+
+              <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="KYC Status"
+                    value={normalizeKycStatus(selectedSalon.kycStatus)}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="Salon Status"
+                    value={selectedSalon.salonStatus}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="Admin Approval Status"
+                    value={selectedSalon.adminApprovalStatus}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="Created At"
+                    value={formatDate(selectedSalon.createdAt)}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="Last Updated"
+                    value={formatDate(selectedSalon.updatedAt)}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DetailField
+                    label="Last Updated By"
+                    value={selectedSalon.lastUpdatedBy}
+                  />
+                </Grid>
+              </Grid>
             </DialogContent>
 
             <DialogActions sx={{ p: 2 }}>
               <Button onClick={() => setDetailsOpen(false)}>
                 Close
               </Button>
-
-              {selectedDocument.status === 'PENDING' && (
-                <>
-                  <Button
-                    color="error"
-                    variant="outlined"
-                    startIcon={<CloseCircleOutlined />}
-                    onClick={() => openRejectDialog(selectedDocument)}
-                  >
-                    Reject
-                  </Button>
-
-                  <Button
-                    color="success"
-                    variant="contained"
-                    startIcon={<CheckCircleOutlined />}
-                    onClick={() => handleApprove(selectedDocument)}
-                  >
-                    Approve KYC
-                  </Button>
-                </>
-              )}
             </DialogActions>
           </>
         )}
       </Dialog>
-
-      {/* ================= REJECT DIALOG ================= */}
-
-      <Dialog
-        open={rejectOpen}
-        onClose={() => setRejectOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          Reject KYC Verification
-        </DialogTitle>
-
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Please provide a reason for rejecting this verification.
-          </Typography>
-
-          <TextField
-            fullWidth
-            multiline
-            minRows={4}
-            value={rejectionReason}
-            onChange={(event) => setRejectionReason(event.target.value)}
-            placeholder="Enter rejection reason..."
-          />
-        </DialogContent>
-
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setRejectOpen(false)}>
-            Cancel
-          </Button>
-
-          <Button
-            color="error"
-            variant="contained"
-            onClick={handleReject}
-            startIcon={<CloseCircleOutlined />}
-          >
-            Reject KYC
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
+  );
+}
+
+// ==============================|| SUMMARY CARD ||============================== //
+
+function SummaryCard({
+  title,
+  value,
+  icon,
+  bgcolor,
+  color
+}: {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  bgcolor: string;
+  color: string;
+}) {
+  return (
+    <Card
+      sx={{
+        height: '100%',
+        borderRadius: 2,
+        boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+      }}
+    >
+      <CardContent>
+        <Stack direction="row" justifyContent="space-between">
+          <Box>
+            <Typography variant="body2" color="text.secondary">
+              {title}
+            </Typography>
+
+            <Typography variant="h4" sx={{ mt: 1, fontWeight: 700 }}>
+              {value}
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor,
+              color
+            }}
+          >
+            {icon}
+          </Box>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1161,7 +1271,7 @@ function DetailField({
   value
 }: {
   label: string;
-  value: string;
+  value?: string | number | null;
 }) {
   return (
     <Box
@@ -1192,10 +1302,10 @@ function DetailField({
 
 function DocumentRow({
   title,
-  file
+  value
 }: {
   title: string;
-  file: string;
+  value?: string | null;
 }) {
   return (
     <Paper
@@ -1232,22 +1342,19 @@ function DocumentRow({
             </Typography>
 
             <Typography variant="caption" color="text.secondary">
-              {file}
+              {value || 'Not provided'}
             </Typography>
           </Box>
         </Stack>
 
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<EyeOutlined />}
-          onClick={() => {
-            // Later this will open the actual S3 document URL.
-            alert(`Opening ${file}`);
-          }}
-        >
-          View
-        </Button>
+        {value && (
+          <Chip
+            size="small"
+            label="Submitted"
+            color="success"
+            variant="outlined"
+          />
+        )}
       </Stack>
     </Paper>
   );
