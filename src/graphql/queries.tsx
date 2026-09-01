@@ -236,3 +236,141 @@ export const REJECT_SALON = gql`
     }
   }
 `;
+const ADMIN_BOOKINGS = gql`
+  query AdminBookings(
+    $search: String
+    $bookingStatus: BookingStatus
+    $paymentStatus: PaymentStatus
+    $salonId: ID
+  ) {
+    adminBookings(
+      search: $search
+      bookingStatus: $bookingStatus
+      paymentStatus: $paymentStatus
+      salonId: $salonId
+    ) {
+      success
+      message
+      totalCount
+
+      bookings {
+        bookingId
+        salonId
+        customerUserId
+
+        salonName
+        customerName
+        customerPhone
+
+        bookingDate
+        startTime
+        endTime
+
+        staffId
+        staffName
+
+        services {
+          serviceId
+          name
+          category
+          duration
+          price
+        }
+
+        totalDuration
+        subtotal
+        discount
+        totalAmount
+
+        paymentMethod
+        paymentStatus
+
+        bookingStatus
+
+        notes
+        salonNote
+
+        bookingFee
+        bookingFeeStatus
+        bookingFeePaidAt
+
+        remainingAmount
+
+        razorpayOrderId
+        razorpayPaymentId
+        paymentGateway
+
+        reviewSubmitted
+        rating
+        review
+        reviewedAt
+
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+const UPDATE_BOOKING_STATUS = gql`
+  mutation UpdateBookingStatus($input: UpdateBookingStatusInput!) {
+    updateBookingStatus(input: $input) {
+      success
+      message
+
+      booking {
+        bookingId
+        salonId
+        customerUserId
+
+        salonName
+        customerName
+        customerPhone
+
+        bookingDate
+        startTime
+        endTime
+
+        staffId
+        staffName
+
+        services {
+          serviceId
+          name
+          category
+          duration
+          price
+        }
+
+        totalDuration
+        subtotal
+        discount
+        totalAmount
+
+        paymentMethod
+        paymentStatus
+        bookingStatus
+
+        notes
+        salonNote
+
+        bookingFee
+        bookingFeeStatus
+        bookingFeePaidAt
+        remainingAmount
+
+        razorpayOrderId
+        razorpayPaymentId
+        paymentGateway
+
+        reviewSubmitted
+        rating
+        review
+        reviewedAt
+
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;

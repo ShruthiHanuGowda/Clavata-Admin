@@ -1,5 +1,6 @@
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { gql, useApolloClient, useMutation, useQuery } from '@apollo/client';
 
 // material-ui
 import {
@@ -7,6 +8,10 @@ import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   Grid,
   IconButton,
@@ -39,6 +44,121 @@ import {
   StarFilled
 } from '@ant-design/icons';
 
+// ==============================|| GRAPHQL ||============================== //
+
+const ADMIN_SALONS = gql`
+  query AdminSalons {
+    adminSalons {
+      success
+      message
+      totalCount
+      salons {
+        salonId
+        salonName
+        ownerName
+        isActive
+        isVisible
+        isDeleted
+        kycStatus
+        adminApprovalStatus
+        salonStatus
+      }
+    }
+  }
+`;
+
+const LIST_SERVICES = gql`
+  query ListServices($salonId: ID!) {
+    listServices(salonId: $salonId) {
+      serviceId
+      salonId
+      name
+      category
+      description
+      duration
+      price
+      gender
+      popular
+      active
+      createdAt
+      updatedAt
+      updatedBy
+    }
+  }
+`;
+
+const CREATE_SERVICE = gql`
+  mutation CreateService($input: CreateServiceInput!) {
+    createService(input: $input) {
+      success
+      message
+      service {
+        serviceId
+        salonId
+        name
+        category
+        description
+        duration
+        price
+        gender
+        popular
+        active
+        createdAt
+        updatedAt
+        updatedBy
+      }
+    }
+  }
+`;
+
+const UPDATE_SERVICE = gql`
+  mutation UpdateService($input: UpdateServiceInput!) {
+    updateService(input: $input) {
+      success
+      message
+      service {
+        serviceId
+        salonId
+        name
+        category
+        description
+        duration
+        price
+        gender
+        popular
+        active
+        createdAt
+        updatedAt
+        updatedBy
+      }
+    }
+  }
+`;
+
+const DELETE_SERVICE = gql`
+  mutation DeleteService($input: DeleteServiceInput!) {
+    deleteService(input: $input) {
+      success
+      message
+      service {
+        serviceId
+        salonId
+        name
+        category
+        description
+        duration
+        price
+        gender
+        popular
+        active
+        createdAt
+        updatedAt
+        updatedBy
+      }
+    }
+  }
+`;
+
 // ==============================|| TYPES ||============================== //
 
 type ServiceGender = 'MEN' | 'WOMEN' | 'UNISEX';
@@ -57,132 +177,32 @@ interface Service {
   active: boolean;
   createdAt: string;
   updatedAt: string;
+  updatedBy?: string;
 }
 
-// ==============================|| STATIC DATA ||============================== //
+interface AdminSalon {
+  salonId: string;
+  salonName: string;
+  ownerName: string;
+  isActive: boolean;
+  isVisible: boolean;
+  isDeleted: boolean;
+  kycStatus: string;
+  adminApprovalStatus: string;
+  salonStatus: string;
+}
 
-const initialServices: Service[] = [
-  {
-    serviceId: 'SRV001',
-    salonId: 'SAL001',
-    salonName: 'Clavata Luxury Salon',
-    name: 'Haircut',
-    category: 'Hair',
-    description: 'Professional haircut and styling',
-    duration: 45,
-    price: 500,
-    gender: 'UNISEX',
-    popular: true,
-    active: true,
-    createdAt: '2026-08-01',
-    updatedAt: '2026-08-20'
-  },
-  {
-    serviceId: 'SRV002',
-    salonId: 'SAL001',
-    salonName: 'Clavata Luxury Salon',
-    name: 'Hair Spa',
-    category: 'Hair',
-    description: 'Deep conditioning and relaxing hair spa',
-    duration: 60,
-    price: 1200,
-    gender: 'WOMEN',
-    popular: true,
-    active: true,
-    createdAt: '2026-08-02',
-    updatedAt: '2026-08-20'
-  },
-  {
-    serviceId: 'SRV003',
-    salonId: 'SAL002',
-    salonName: 'Glow Beauty Studio',
-    name: 'Facial',
-    category: 'Skin',
-    description: 'Deep cleansing facial treatment',
-    duration: 60,
-    price: 900,
-    gender: 'WOMEN',
-    popular: true,
-    active: true,
-    createdAt: '2026-08-03',
-    updatedAt: '2026-08-18'
-  },
-  {
-    serviceId: 'SRV004',
-    salonId: 'SAL002',
-    salonName: 'Glow Beauty Studio',
-    name: 'Beard Styling',
-    category: 'Grooming',
-    description: 'Professional beard trimming and styling',
-    duration: 30,
-    price: 350,
-    gender: 'MEN',
-    popular: false,
-    active: true,
-    createdAt: '2026-08-04',
-    updatedAt: '2026-08-18'
-  },
-  {
-    serviceId: 'SRV005',
-    salonId: 'SAL003',
-    salonName: 'Urban Cuts',
-    name: 'Hair Coloring',
-    category: 'Hair',
-    description: 'Premium professional hair coloring',
-    duration: 120,
-    price: 2500,
-    gender: 'UNISEX',
-    popular: true,
-    active: true,
-    createdAt: '2026-08-05',
-    updatedAt: '2026-08-15'
-  },
-  {
-    serviceId: 'SRV006',
-    salonId: 'SAL003',
-    salonName: 'Urban Cuts',
-    name: 'Manicure',
-    category: 'Nails',
-    description: 'Complete manicure treatment',
-    duration: 45,
-    price: 600,
-    gender: 'WOMEN',
-    popular: false,
-    active: true,
-    createdAt: '2026-08-06',
-    updatedAt: '2026-08-15'
-  },
-  {
-    serviceId: 'SRV007',
-    salonId: 'SAL004',
-    salonName: 'The Groom Room',
-    name: 'Classic Shave',
-    category: 'Grooming',
-    description: 'Traditional professional shave',
-    duration: 30,
-    price: 300,
-    gender: 'MEN',
-    popular: false,
-    active: false,
-    createdAt: '2026-08-07',
-    updatedAt: '2026-08-12'
-  },
-  {
-    serviceId: 'SRV008',
-    salonId: 'SAL004',
-    salonName: 'The Groom Room',
-    name: 'Head Massage',
-    category: 'Wellness',
-    description: 'Relaxing head and scalp massage',
-    duration: 30,
-    price: 450,
-    gender: 'UNISEX',
-    popular: true,
-    active: true,
-    createdAt: '2026-08-08',
-    updatedAt: '2026-08-12'
-  }
-];
+interface ServiceForm {
+  salonId: string;
+  name: string;
+  category: string;
+  description: string;
+  duration: string;
+  price: string;
+  gender: ServiceGender;
+  popular: boolean;
+  active: boolean;
+}
 
 // ==============================|| HELPERS ||============================== //
 
@@ -193,21 +213,42 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0
   }).format(value);
 
-const getGenderColor = (gender: ServiceGender) => {
+const getGenderColor = (
+  gender: ServiceGender
+): 'info' | 'secondary' | 'default' => {
   switch (gender) {
     case 'MEN':
       return 'info';
+
     case 'WOMEN':
       return 'secondary';
+
     default:
       return 'default';
   }
 };
 
+const emptyForm: ServiceForm = {
+  salonId: '',
+  name: '',
+  category: '',
+  description: '',
+  duration: '',
+  price: '',
+  gender: 'UNISEX',
+  popular: false,
+  active: true
+};
+
 // ==============================|| SERVICE PAGE ||============================== //
 
 export default function Services() {
-  const [services, setServices] = useState<Service[]>(initialServices);
+  const client = useApolloClient();
+
+  // ==============================|| STATE ||============================== //
+
+  const [services, setServices] = useState<Service[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
 
   const [search, setSearch] = useState('');
   const [salonFilter, setSalonFilter] = useState('ALL');
@@ -218,19 +259,110 @@ export default function Services() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  const [selectedService, setSelectedService] =
+    useState<Service | null>(null);
+
+  const [viewOpen, setViewOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+
+  const [editingService, setEditingService] =
+    useState<Service | null>(null);
+
+  const [form, setForm] = useState<ServiceForm>(emptyForm);
+
+  // ==============================|| GRAPHQL ||============================== //
+
+  const {
+    data: salonData,
+    loading: loadingSalons,
+    error: salonError,
+    refetch: refetchSalons
+  } = useQuery(ADMIN_SALONS, {
+    fetchPolicy: 'network-only'
+  });
+
+  const [createService, { loading: creating }] =
+    useMutation(CREATE_SERVICE);
+
+  const [updateService, { loading: updating }] =
+    useMutation(UPDATE_SERVICE);
+
+  const [deleteService, { loading: deleting }] =
+    useMutation(DELETE_SERVICE);
+
+  // ==============================|| SALONS ||============================== //
+
+  const salons: AdminSalon[] = useMemo(() => {
+    return salonData?.adminSalons?.salons || [];
+  }, [salonData]);
+
+  // ==============================|| LOAD ALL SERVICES ||============================== //
+
+  const loadServices = async () => {
+    if (!salons.length) {
+      setServices([]);
+      return;
+    }
+
+    setLoadingServices(true);
+
+    try {
+      const results = await Promise.all(
+        salons.map(async (salon) => {
+          try {
+            const result = await client.query({
+              query: LIST_SERVICES,
+              variables: {
+                salonId: salon.salonId
+              },
+              fetchPolicy: 'network-only'
+            });
+
+            return (result.data?.listServices || []).map(
+              (service: Omit<Service, 'salonName'>) => ({
+                ...service,
+                salonName: salon.salonName
+              })
+            );
+          } catch (error) {
+            console.error(
+              `Failed to load services for salon ${salon.salonId}`,
+              error
+            );
+
+            return [];
+          }
+        })
+      );
+
+      const allServices = results.flat();
+
+      setServices(allServices);
+    } catch (error) {
+      console.error('Failed to load services:', error);
+      setServices([]);
+    } finally {
+      setLoadingServices(false);
+    }
+  };
+
+  useEffect(() => {
+    loadServices();
+  }, [salons]);
+
   // ==============================|| FILTER OPTIONS ||============================== //
 
-  const salons = useMemo(
-    () => Array.from(new Set(services.map((service) => service.salonName))),
-    [services]
-  );
+  const categories = useMemo(() => {
+    return Array.from(
+      new Set(
+        services
+          .map((service) => service.category)
+          .filter(Boolean)
+      )
+    ).sort();
+  }, [services]);
 
-  const categories = useMemo(
-    () => Array.from(new Set(services.map((service) => service.category))),
-    [services]
-  );
-
-  // ==============================|| FILTER DATA ||============================== //
+  // ==============================|| FILTER SERVICES ||============================== //
 
   const filteredServices = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -238,19 +370,23 @@ export default function Services() {
     return services.filter((service) => {
       const matchesSearch =
         !query ||
-        service.name.toLowerCase().includes(query) ||
-        service.category.toLowerCase().includes(query) ||
-        service.salonName.toLowerCase().includes(query) ||
-        service.serviceId.toLowerCase().includes(query);
+        service.name?.toLowerCase().includes(query) ||
+        service.category?.toLowerCase().includes(query) ||
+        service.salonName?.toLowerCase().includes(query) ||
+        service.serviceId?.toLowerCase().includes(query) ||
+        service.description?.toLowerCase().includes(query);
 
       const matchesSalon =
-        salonFilter === 'ALL' || service.salonName === salonFilter;
+        salonFilter === 'ALL' ||
+        service.salonId === salonFilter;
 
       const matchesCategory =
-        categoryFilter === 'ALL' || service.category === categoryFilter;
+        categoryFilter === 'ALL' ||
+        service.category === categoryFilter;
 
       const matchesGender =
-        genderFilter === 'ALL' || service.gender === genderFilter;
+        genderFilter === 'ALL' ||
+        service.gender === genderFilter;
 
       const matchesStatus =
         statusFilter === 'ALL' ||
@@ -278,13 +414,19 @@ export default function Services() {
 
   const totalServices = services.length;
 
-  const activeServices = services.filter((service) => service.active).length;
+  const activeServices = services.filter(
+    (service) => service.active
+  ).length;
 
-  const inactiveServices = services.filter((service) => !service.active).length;
+  const inactiveServices = services.filter(
+    (service) => !service.active
+  ).length;
 
-  const popularServices = services.filter((service) => service.popular).length;
+  const popularServices = services.filter(
+    (service) => service.popular
+  ).length;
 
-  // ==============================|| ACTIONS ||============================== //
+  // ==============================|| RESET ||============================== //
 
   const handleReset = () => {
     setSearch('');
@@ -295,34 +437,217 @@ export default function Services() {
     setPage(0);
   };
 
-  const handleToggleStatus = (serviceId: string) => {
-    setServices((previous) =>
-      previous.map((service) =>
-        service.serviceId === serviceId
-          ? {
-              ...service,
-              active: !service.active,
-              updatedAt: new Date().toISOString().split('T')[0]
-            }
-          : service
-      )
-    );
+  // ==============================|| VIEW ||============================== //
+
+  const handleView = (service: Service) => {
+    setSelectedService(service);
+    setViewOpen(true);
   };
 
-  const handleDelete = (serviceId: string) => {
-    const service = services.find((item) => item.serviceId === serviceId);
+  // ==============================|| ADD ||============================== //
 
-    if (!service) return;
+  const handleOpenAdd = () => {
+    setEditingService(null);
+    setForm(emptyForm);
+    setFormOpen(true);
+  };
 
+  // ==============================|| EDIT ||============================== //
+
+  const handleOpenEdit = (service: Service) => {
+    setEditingService(service);
+
+    setForm({
+      salonId: service.salonId,
+      name: service.name || '',
+      category: service.category || '',
+      description: service.description || '',
+      duration: String(service.duration ?? ''),
+      price: String(service.price ?? ''),
+      gender: service.gender,
+      popular: Boolean(service.popular),
+      active: Boolean(service.active)
+    });
+
+    setFormOpen(true);
+  };
+
+  // ==============================|| SAVE ||============================== //
+
+  const handleSave = async () => {
+    if (
+      !form.salonId ||
+      !form.name.trim() ||
+      !form.category.trim() ||
+      !form.duration ||
+      !form.price
+    ) {
+      return;
+    }
+
+    const duration = Number(form.duration);
+    const price = Number(form.price);
+
+    if (
+      Number.isNaN(duration) ||
+      Number.isNaN(price) ||
+      duration <= 0 ||
+      price < 0
+    ) {
+      return;
+    }
+
+    try {
+      if (editingService) {
+        const result = await updateService({
+          variables: {
+            input: {
+              salonId: editingService.salonId,
+              serviceId: editingService.serviceId,
+              name: form.name.trim(),
+              category: form.category.trim(),
+              description: form.description.trim(),
+              duration,
+              price,
+              gender: form.gender,
+              popular: form.popular,
+              active: form.active
+            }
+          }
+        });
+
+        if (!result.data?.updateService?.success) {
+          alert(
+            result.data?.updateService?.message ||
+              'Failed to update service.'
+          );
+          return;
+        }
+      } else {
+        const result = await createService({
+          variables: {
+            input: {
+              salonId: form.salonId,
+              name: form.name.trim(),
+              category: form.category.trim(),
+              description: form.description.trim(),
+              duration,
+              price,
+              gender: form.gender,
+              popular: form.popular,
+              active: form.active
+            }
+          }
+        });
+
+        if (!result.data?.createService?.success) {
+          alert(
+            result.data?.createService?.message ||
+              'Failed to create service.'
+          );
+          return;
+        }
+      }
+
+      setFormOpen(false);
+      setEditingService(null);
+      setForm(emptyForm);
+
+      await loadServices();
+    } catch (error) {
+      console.error('Save service error:', error);
+      alert('Something went wrong while saving the service.');
+    }
+  };
+
+  // ==============================|| TOGGLE STATUS ||============================== //
+
+  const handleToggleStatus = async (service: Service) => {
+    try {
+      const result = await updateService({
+        variables: {
+          input: {
+            salonId: service.salonId,
+            serviceId: service.serviceId,
+            active: !service.active
+          }
+        }
+      });
+
+      if (!result.data?.updateService?.success) {
+        alert(
+          result.data?.updateService?.message ||
+            'Failed to update service status.'
+        );
+        return;
+      }
+
+      setServices((previous) =>
+        previous.map((item) =>
+          item.serviceId === service.serviceId
+            ? {
+                ...item,
+                active: !item.active,
+                updatedAt:
+                  result.data.updateService.service?.updatedAt ||
+                  item.updatedAt
+              }
+            : item
+        )
+      );
+    } catch (error) {
+      console.error('Toggle service error:', error);
+      alert('Failed to update service status.');
+    }
+  };
+
+  // ==============================|| DELETE ||============================== //
+
+  const handleDelete = async (service: Service) => {
     const confirmed = window.confirm(
       `Are you sure you want to delete "${service.name}"?`
     );
 
     if (!confirmed) return;
 
-    setServices((previous) =>
-      previous.filter((item) => item.serviceId !== serviceId)
-    );
+    try {
+      const result = await deleteService({
+        variables: {
+          input: {
+            salonId: service.salonId,
+            serviceId: service.serviceId
+          }
+        }
+      });
+
+      if (!result.data?.deleteService?.success) {
+        alert(
+          result.data?.deleteService?.message ||
+            'Failed to delete service.'
+        );
+        return;
+      }
+
+      setServices((previous) =>
+        previous.filter(
+          (item) => item.serviceId !== service.serviceId
+        )
+      );
+    } catch (error) {
+      console.error('Delete service error:', error);
+      alert('Failed to delete service.');
+    }
+  };
+
+  // ==============================|| REFRESH ||============================== //
+
+  const handleRefresh = async () => {
+    try {
+      await refetchSalons();
+      await loadServices();
+    } catch (error) {
+      console.error('Refresh error:', error);
+    }
   };
 
   // ==============================|| STAT CARD ||============================== //
@@ -361,7 +686,10 @@ export default function Services() {
       <Typography
         variant="caption"
         color="text.secondary"
-        sx={{ display: 'block', mt: 0.5 }}
+        sx={{
+          display: 'block',
+          mt: 0.5
+        }}
       >
         {description}
       </Typography>
@@ -372,12 +700,15 @@ export default function Services() {
 
   return (
     <Box>
-      {/* PAGE HEADER */}
+      {/* HEADER */}
 
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        alignItems={{
+          xs: 'flex-start',
+          sm: 'center'
+        }}
         spacing={2}
         sx={{ mb: 3 }}
       >
@@ -395,21 +726,53 @@ export default function Services() {
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
-          startIcon={<PlusOutlined />}
+        <Stack direction="row" spacing={1}>
+          <Tooltip title="Refresh services">
+            <IconButton
+              onClick={handleRefresh}
+              disabled={loadingSalons || loadingServices}
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1.5
+              }}
+            >
+              <ReloadOutlined />
+            </IconButton>
+          </Tooltip>
+
+          <Button
+            variant="contained"
+            startIcon={<PlusOutlined />}
+            sx={{
+              borderRadius: 1.5,
+              px: 2.5,
+              textTransform: 'none'
+            }}
+            onClick={handleOpenAdd}
+          >
+            Add Service
+          </Button>
+        </Stack>
+      </Stack>
+
+      {/* ERROR */}
+
+      {salonError && (
+        <Paper
           sx={{
-            borderRadius: 1.5,
-            px: 2.5,
-            textTransform: 'none'
-          }}
-          onClick={() => {
-            alert('Create Service form will be connected later.');
+            p: 2,
+            mb: 2,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'error.main'
           }}
         >
-          Add Service
-        </Button>
-      </Stack>
+          <Typography color="error">
+            Failed to load salons: {salonError.message}
+          </Typography>
+        </Paper>
+      )}
 
       {/* STATISTICS */}
 
@@ -466,7 +829,7 @@ export default function Services() {
             <TextField
               fullWidth
               size="small"
-              placeholder="Search services..."
+              placeholder="Search service, salon, category..."
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value);
@@ -496,13 +859,23 @@ export default function Services() {
                   setPage(0);
                 }}
               >
-                <MenuItem value="ALL">All Salons</MenuItem>
+                <MenuItem value="ALL">
+                  All Salons
+                </MenuItem>
 
-                {salons.map((salon) => (
-                  <MenuItem key={salon} value={salon}>
-                    {salon}
-                  </MenuItem>
-                ))}
+                {salons
+                  .filter((salon) => !salon.isDeleted)
+                  .sort((a, b) =>
+                    a.salonName.localeCompare(b.salonName)
+                  )
+                  .map((salon) => (
+                    <MenuItem
+                      key={salon.salonId}
+                      value={salon.salonId}
+                    >
+                      {salon.salonName}
+                    </MenuItem>
+                  ))}
               </Select>
             </FormControl>
           </Grid>
@@ -521,10 +894,15 @@ export default function Services() {
                   setPage(0);
                 }}
               >
-                <MenuItem value="ALL">All Categories</MenuItem>
+                <MenuItem value="ALL">
+                  All Categories
+                </MenuItem>
 
                 {categories.map((category) => (
-                  <MenuItem key={category} value={category}>
+                  <MenuItem
+                    key={category}
+                    value={category}
+                  >
                     {category}
                   </MenuItem>
                 ))}
@@ -617,222 +995,14 @@ export default function Services() {
                 <TableCell>Price</TableCell>
                 <TableCell>Popular</TableCell>
                 <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell align="right">
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
-              {filteredServices
-                .slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-                )
-                .map((service) => (
-                  <TableRow
-                    key={service.serviceId}
-                    hover
-                    sx={{
-                      '&:last-child td, &:last-child th': {
-                        border: 0
-                      }
-                    }}
-                  >
-                    {/* SERVICE */}
-
-                    <TableCell>
-                      <Stack
-                        direction="row"
-                        spacing={1.5}
-                        alignItems="center"
-                      >
-                        <Avatar
-                          sx={{
-                            width: 40,
-                            height: 40,
-                            bgcolor: 'primary.lighter',
-                            color: 'primary.main',
-                            fontWeight: 700
-                          }}
-                        >
-                          {service.name.charAt(0).toUpperCase()}
-                        </Avatar>
-
-                        <Box>
-                          <Stack
-                            direction="row"
-                            spacing={0.75}
-                            alignItems="center"
-                          >
-                            <Typography
-                              variant="subtitle2"
-                              fontWeight={600}
-                            >
-                              {service.name}
-                            </Typography>
-
-                            {service.popular && (
-                              <StarFilled
-                                style={{
-                                  color: '#faad14',
-                                  fontSize: 13
-                                }}
-                              />
-                            )}
-                          </Stack>
-
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            {service.serviceId}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </TableCell>
-
-                    {/* SALON */}
-
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={500}>
-                        {service.salonName}
-                      </Typography>
-
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                      >
-                        {service.salonId}
-                      </Typography>
-                    </TableCell>
-
-                    {/* CATEGORY */}
-
-                    <TableCell>
-                      <Chip
-                        label={service.category}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-
-                    {/* GENDER */}
-
-                    <TableCell>
-                      <Chip
-                        label={service.gender}
-                        size="small"
-                        color={getGenderColor(service.gender)}
-                        variant="outlined"
-                      />
-                    </TableCell>
-
-                    {/* DURATION */}
-
-                    <TableCell>
-                      {service.duration} min
-                    </TableCell>
-
-                    {/* PRICE */}
-
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        fontWeight={600}
-                      >
-                        {formatCurrency(service.price)}
-                      </Typography>
-                    </TableCell>
-
-                    {/* POPULAR */}
-
-                    <TableCell>
-                      {service.popular ? (
-                        <Chip
-                          label="Popular"
-                          size="small"
-                          color="warning"
-                          variant="outlined"
-                        />
-                      ) : (
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          —
-                        </Typography>
-                      )}
-                    </TableCell>
-
-                    {/* STATUS */}
-
-                    <TableCell>
-                      <Chip
-                        label={service.active ? 'Active' : 'Inactive'}
-                        size="small"
-                        color={service.active ? 'success' : 'default'}
-                        onClick={() =>
-                          handleToggleStatus(service.serviceId)
-                        }
-                        sx={{
-                          cursor: 'pointer',
-                          fontWeight: 500
-                        }}
-                      />
-                    </TableCell>
-
-                    {/* ACTIONS */}
-
-                    <TableCell align="right">
-                      <Stack
-                        direction="row"
-                        justifyContent="flex-end"
-                        spacing={0.5}
-                      >
-                        <Tooltip title="View">
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              alert(
-                                `View service: ${service.name}`
-                              )
-                            }
-                          >
-                            <EyeOutlined />
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Edit">
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              alert(
-                                `Edit service: ${service.name}`
-                              )
-                            }
-                          >
-                            <EditOutlined />
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Delete">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() =>
-                              handleDelete(service.serviceId)
-                            }
-                          >
-                            <DeleteOutlined />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-
-              {/* EMPTY STATE */}
-
-              {filteredServices.length === 0 && (
+              {(loadingSalons || loadingServices) && (
                 <TableRow>
                   <TableCell
                     colSpan={9}
@@ -840,27 +1010,271 @@ export default function Services() {
                     sx={{ py: 8 }}
                   >
                     <Typography
-                      variant="h6"
+                      variant="body1"
                       color="text.secondary"
                     >
-                      No services found
-                    </Typography>
-
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 0.5 }}
-                    >
-                      Try changing your search or filters.
+                      Loading services...
                     </Typography>
                   </TableCell>
                 </TableRow>
               )}
+
+              {!loadingSalons &&
+                !loadingServices &&
+                filteredServices
+                  .slice(
+                    page * rowsPerPage,
+                    page * rowsPerPage + rowsPerPage
+                  )
+                  .map((service) => (
+                    <TableRow
+                      key={service.serviceId}
+                      hover
+                      sx={{
+                        '&:last-child td, &:last-child th': {
+                          border: 0
+                        }
+                      }}
+                    >
+                      {/* SERVICE */}
+
+                      <TableCell>
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
+                        >
+                          <Avatar
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              bgcolor: 'primary.lighter',
+                              color: 'primary.main',
+                              fontWeight: 700
+                            }}
+                          >
+                            {service.name
+                              ?.charAt(0)
+                              .toUpperCase()}
+                          </Avatar>
+
+                          <Box>
+                            <Stack
+                              direction="row"
+                              spacing={0.75}
+                              alignItems="center"
+                            >
+                              <Typography
+                                variant="subtitle2"
+                                fontWeight={600}
+                              >
+                                {service.name}
+                              </Typography>
+
+                              {service.popular && (
+                                <StarFilled
+                                  style={{
+                                    color: '#faad14',
+                                    fontSize: 13
+                                  }}
+                                />
+                              )}
+                            </Stack>
+
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {service.serviceId}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
+
+                      {/* SALON */}
+
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                          fontWeight={500}
+                        >
+                          {service.salonName}
+                        </Typography>
+
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          {service.salonId}
+                        </Typography>
+                      </TableCell>
+
+                      {/* CATEGORY */}
+
+                      <TableCell>
+                        <Chip
+                          label={service.category}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+
+                      {/* GENDER */}
+
+                      <TableCell>
+                        <Chip
+                          label={service.gender}
+                          size="small"
+                          color={getGenderColor(
+                            service.gender
+                          )}
+                          variant="outlined"
+                        />
+                      </TableCell>
+
+                      {/* DURATION */}
+
+                      <TableCell>
+                        {service.duration} min
+                      </TableCell>
+
+                      {/* PRICE */}
+
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                        >
+                          {formatCurrency(service.price)}
+                        </Typography>
+                      </TableCell>
+
+                      {/* POPULAR */}
+
+                      <TableCell>
+                        {service.popular ? (
+                          <Chip
+                            label="Popular"
+                            size="small"
+                            color="warning"
+                            variant="outlined"
+                          />
+                        ) : (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            —
+                          </Typography>
+                        )}
+                      </TableCell>
+
+                      {/* STATUS */}
+
+                      <TableCell>
+                        <Chip
+                          label={
+                            service.active
+                              ? 'Active'
+                              : 'Inactive'
+                          }
+                          size="small"
+                          color={
+                            service.active
+                              ? 'success'
+                              : 'default'
+                          }
+                          variant={
+                            service.active
+                              ? 'filled'
+                              : 'outlined'
+                          }
+                          onClick={() =>
+                            handleToggleStatus(service)
+                          }
+                          sx={{
+                            cursor: 'pointer',
+                            fontWeight: 500
+                          }}
+                        />
+                      </TableCell>
+
+                      {/* ACTIONS */}
+
+                      <TableCell align="right">
+                        <Stack
+                          direction="row"
+                          justifyContent="flex-end"
+                          spacing={0.5}
+                        >
+                          <Tooltip title="View">
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                handleView(service)
+                              }
+                            >
+                              <EyeOutlined />
+                            </IconButton>
+                          </Tooltip>
+
+                          <Tooltip title="Edit">
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                handleOpenEdit(service)
+                              }
+                            >
+                              <EditOutlined />
+                            </IconButton>
+                          </Tooltip>
+
+                          <Tooltip title="Delete">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              disabled={deleting}
+                              onClick={() =>
+                                handleDelete(service)
+                              }
+                            >
+                              <DeleteOutlined />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+              {!loadingSalons &&
+                !loadingServices &&
+                filteredServices.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={9}
+                      align="center"
+                      sx={{ py: 8 }}
+                    >
+                      <Typography
+                        variant="h6"
+                        color="text.secondary"
+                      >
+                        No services found
+                      </Typography>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 0.5 }}
+                      >
+                        Try changing your search or filters.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
             </TableBody>
           </Table>
         </TableContainer>
-
-        {/* PAGINATION */}
 
         <TablePagination
           component="div"
@@ -868,13 +1282,537 @@ export default function Services() {
           page={page}
           rowsPerPage={rowsPerPage}
           rowsPerPageOptions={[5, 10, 25, 50]}
-          onPageChange={(_, newPage) => setPage(newPage)}
+          onPageChange={(_, newPage) =>
+            setPage(newPage)
+          }
           onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
+            setRowsPerPage(
+              parseInt(event.target.value, 10)
+            );
             setPage(0);
           }}
         />
       </Paper>
+
+      {/* ============================== */}
+      {/* VIEW SERVICE DIALOG */}
+      {/* ============================== */}
+
+      <Dialog
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        {selectedService && (
+          <>
+            <DialogTitle>
+              Service Details
+            </DialogTitle>
+
+            <DialogContent dividers>
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+                sx={{ mb: 3 }}
+              >
+                <Avatar
+                  sx={{
+                    width: 64,
+                    height: 64,
+                    bgcolor: 'primary.lighter',
+                    color: 'primary.main',
+                    fontSize: 24,
+                    fontWeight: 700
+                  }}
+                >
+                  {selectedService.name
+                    ?.charAt(0)
+                    .toUpperCase()}
+                </Avatar>
+
+                <Box>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                  >
+                    <Typography
+                      variant="h5"
+                      fontWeight={600}
+                    >
+                      {selectedService.name}
+                    </Typography>
+
+                    {selectedService.popular && (
+                      <StarFilled
+                        style={{
+                          color: '#faad14'
+                        }}
+                      />
+                    )}
+                  </Stack>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    {selectedService.serviceId}
+                  </Typography>
+
+                  <Chip
+                    label={
+                      selectedService.active
+                        ? 'Active'
+                        : 'Inactive'
+                    }
+                    size="small"
+                    color={
+                      selectedService.active
+                        ? 'success'
+                        : 'default'
+                    }
+                    sx={{ mt: 1 }}
+                  />
+                </Box>
+              </Stack>
+
+              <Grid container spacing={2.5}>
+                <Grid item xs={12} sm={6}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    Salon
+                  </Typography>
+
+                  <Typography variant="body1">
+                    {selectedService.salonName}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    Category
+                  </Typography>
+
+                  <Typography variant="body1">
+                    {selectedService.category}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    Gender
+                  </Typography>
+
+                  <Typography variant="body1">
+                    {selectedService.gender}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    Duration
+                  </Typography>
+
+                  <Typography variant="body1">
+                    {selectedService.duration} minutes
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    Price
+                  </Typography>
+
+                  <Typography
+                    variant="h6"
+                    fontWeight={700}
+                  >
+                    {formatCurrency(
+                      selectedService.price
+                    )}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    Popular
+                  </Typography>
+
+                  <Typography variant="body1">
+                    {selectedService.popular
+                      ? 'Yes'
+                      : 'No'}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    Description
+                  </Typography>
+
+                  <Typography
+                    variant="body1"
+                    sx={{ mt: 0.5 }}
+                  >
+                    {selectedService.description ||
+                      'No description available.'}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    Created
+                  </Typography>
+
+                  <Typography variant="body2">
+                    {selectedService.createdAt}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    Last Updated
+                  </Typography>
+
+                  <Typography variant="body2">
+                    {selectedService.updatedAt}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </DialogContent>
+
+            <DialogActions>
+              <Button
+                onClick={() => {
+                  setViewOpen(false);
+                  handleOpenEdit(selectedService);
+                }}
+              >
+                Edit
+              </Button>
+
+              <Button
+                variant="contained"
+                onClick={() =>
+                  setViewOpen(false)
+                }
+              >
+                Close
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+
+      {/* ============================== */}
+      {/* ADD / EDIT SERVICE DIALOG */}
+      {/* ============================== */}
+
+      <Dialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          {editingService
+            ? 'Edit Service'
+            : 'Add Service'}
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Grid container spacing={2.5}>
+            {/* SALON */}
+
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Salon</InputLabel>
+
+                <Select
+                  value={form.salonId}
+                  label="Salon"
+                  disabled={Boolean(editingService)}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      salonId: event.target.value
+                    }))
+                  }
+                >
+                  {salons
+                    .filter(
+                      (salon) => !salon.isDeleted
+                    )
+                    .sort((a, b) =>
+                      a.salonName.localeCompare(
+                        b.salonName
+                      )
+                    )
+                    .map((salon) => (
+                      <MenuItem
+                        key={salon.salonId}
+                        value={salon.salonId}
+                      >
+                        {salon.salonName}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* NAME */}
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Service Name"
+                value={form.name}
+                onChange={(event) =>
+                  setForm((previous) => ({
+                    ...previous,
+                    name: event.target.value
+                  }))
+                }
+              />
+            </Grid>
+
+            {/* CATEGORY */}
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Category"
+                placeholder="Hair, Skin, Grooming..."
+                value={form.category}
+                onChange={(event) =>
+                  setForm((previous) => ({
+                    ...previous,
+                    category: event.target.value
+                  }))
+                }
+              />
+            </Grid>
+
+            {/* GENDER */}
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Gender</InputLabel>
+
+                <Select
+                  value={form.gender}
+                  label="Gender"
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      gender:
+                        event.target.value as ServiceGender
+                    }))
+                  }
+                >
+                  <MenuItem value="MEN">
+                    Men
+                  </MenuItem>
+
+                  <MenuItem value="WOMEN">
+                    Women
+                  </MenuItem>
+
+                  <MenuItem value="UNISEX">
+                    Unisex
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* DURATION */}
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Duration"
+                value={form.duration}
+                inputProps={{
+                  min: 1
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      min
+                    </InputAdornment>
+                  )
+                }}
+                onChange={(event) =>
+                  setForm((previous) => ({
+                    ...previous,
+                    duration: event.target.value
+                  }))
+                }
+              />
+            </Grid>
+
+            {/* PRICE */}
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Price"
+                value={form.price}
+                inputProps={{
+                  min: 0
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      ₹
+                    </InputAdornment>
+                  )
+                }}
+                onChange={(event) =>
+                  setForm((previous) => ({
+                    ...previous,
+                    price: event.target.value
+                  }))
+                }
+              />
+            </Grid>
+
+            {/* DESCRIPTION */}
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                minRows={3}
+                label="Description"
+                value={form.description}
+                onChange={(event) =>
+                  setForm((previous) => ({
+                    ...previous,
+                    description:
+                      event.target.value
+                  }))
+                }
+              />
+            </Grid>
+
+            {/* POPULAR */}
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Popular</InputLabel>
+
+                <Select
+                  value={form.popular ? 'YES' : 'NO'}
+                  label="Popular"
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      popular:
+                        event.target.value === 'YES'
+                    }))
+                  }
+                >
+                  <MenuItem value="YES">
+                    Yes
+                  </MenuItem>
+
+                  <MenuItem value="NO">
+                    No
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* ACTIVE */}
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+
+                <Select
+                  value={form.active ? 'ACTIVE' : 'INACTIVE'}
+                  label="Status"
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      active:
+                        event.target.value ===
+                        'ACTIVE'
+                    }))
+                  }
+                >
+                  <MenuItem value="ACTIVE">
+                    Active
+                  </MenuItem>
+
+                  <MenuItem value="INACTIVE">
+                    Inactive
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+
+        <DialogActions>
+          <Button
+            onClick={() => setFormOpen(false)}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            variant="contained"
+            onClick={handleSave}
+            disabled={
+              creating ||
+              updating ||
+              !form.salonId ||
+              !form.name.trim() ||
+              !form.category.trim() ||
+              !form.duration ||
+              !form.price
+            }
+          >
+            {creating || updating
+              ? 'Saving...'
+              : editingService
+                ? 'Update Service'
+                : 'Add Service'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

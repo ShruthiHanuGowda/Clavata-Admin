@@ -1,5 +1,6 @@
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { gql, useLazyQuery, useMutation } from '@apollo/client';
 
 // material-ui
 import {
@@ -7,6 +8,7 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -45,7 +47,227 @@ import {
   TeamOutlined
 } from '@ant-design/icons';
 
+// ==============================|| GRAPHQL ||============================== //
+
+const ADMIN_SALONS = gql`
+  query AdminSalons {
+    adminSalons {
+      success
+      message
+      totalCount
+      salons {
+        salonId
+        salonName
+      }
+    }
+  }
+`;
+
+const LIST_STAFF = gql`
+  query ListStaff($salonId: ID!) {
+    listStaff(salonId: $salonId) {
+      staffId
+      salonId
+      name
+      phoneNumber
+      email
+      gender
+      profileImageUrl
+      specializations
+      workingHours {
+        MONDAY {
+          open
+          close
+          isWorking
+        }
+        TUESDAY {
+          open
+          close
+          isWorking
+        }
+        WEDNESDAY {
+          open
+          close
+          isWorking
+        }
+        THURSDAY {
+          open
+          close
+          isWorking
+        }
+        FRIDAY {
+          open
+          close
+          isWorking
+        }
+        SATURDAY {
+          open
+          close
+          isWorking
+        }
+        SUNDAY {
+          open
+          close
+          isWorking
+        }
+      }
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const CREATE_STAFF = gql`
+  mutation CreateStaff($input: CreateStaffInput!) {
+    createStaff(input: $input) {
+      success
+      message
+      staff {
+        staffId
+        salonId
+        name
+        phoneNumber
+        email
+        gender
+        profileImageUrl
+        specializations
+        workingHours {
+          MONDAY {
+            open
+            close
+            isWorking
+          }
+          TUESDAY {
+            open
+            close
+            isWorking
+          }
+          WEDNESDAY {
+            open
+            close
+            isWorking
+          }
+          THURSDAY {
+            open
+            close
+            isWorking
+          }
+          FRIDAY {
+            open
+            close
+            isWorking
+          }
+          SATURDAY {
+            open
+            close
+            isWorking
+          }
+          SUNDAY {
+            open
+            close
+            isWorking
+          }
+        }
+        isActive
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+const UPDATE_STAFF = gql`
+  mutation UpdateStaff($input: UpdateStaffInput!) {
+    updateStaff(input: $input) {
+      success
+      message
+      staff {
+        staffId
+        salonId
+        name
+        phoneNumber
+        email
+        gender
+        profileImageUrl
+        specializations
+        workingHours {
+          MONDAY {
+            open
+            close
+            isWorking
+          }
+          TUESDAY {
+            open
+            close
+            isWorking
+          }
+          WEDNESDAY {
+            open
+            close
+            isWorking
+          }
+          THURSDAY {
+            open
+            close
+            isWorking
+          }
+          FRIDAY {
+            open
+            close
+            isWorking
+          }
+          SATURDAY {
+            open
+            close
+            isWorking
+          }
+          SUNDAY {
+            open
+            close
+            isWorking
+          }
+        }
+        isActive
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+const DELETE_STAFF = gql`
+  mutation DeleteStaff($input: DeleteStaffInput!) {
+    deleteStaff(input: $input) {
+      success
+      message
+      staff {
+        staffId
+        salonId
+      }
+    }
+  }
+`;
+
 // ==============================|| TYPES ||============================== //
+
+type Gender = 'MALE' | 'FEMALE' | 'OTHER';
+
+interface BusinessDay {
+  open: string;
+  close: string;
+  isWorking: boolean;
+}
+
+interface WorkingHours {
+  MONDAY: BusinessDay;
+  TUESDAY: BusinessDay;
+  WEDNESDAY: BusinessDay;
+  THURSDAY: BusinessDay;
+  FRIDAY: BusinessDay;
+  SATURDAY: BusinessDay;
+  SUNDAY: BusinessDay;
+}
 
 interface StaffMember {
   staffId: string;
@@ -54,106 +276,65 @@ interface StaffMember {
   name: string;
   phoneNumber: string;
   email: string;
-  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  gender?: Gender;
   profileImageUrl?: string;
   specializations: string[];
+  workingHours: WorkingHours;
   isActive: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
-// ==============================|| STATIC DATA ||============================== //
+interface Salon {
+  salonId: string;
+  salonName: string;
+}
 
-const initialStaff: StaffMember[] = [
-  {
-    staffId: 'STF-1001',
-    salonId: 'SAL-1001',
-    salonName: 'Glow Beauty Studio',
-    name: 'Ananya Sharma',
-    phoneNumber: '+91 98765 43210',
-    email: 'ananya@glowbeauty.com',
-    gender: 'FEMALE',
-    specializations: ['Hair Styling', 'Hair Coloring'],
-    isActive: true,
-    createdAt: '2026-01-15'
+// ==============================|| DEFAULT WORKING HOURS ||============================== //
+
+const DEFAULT_WORKING_HOURS: WorkingHours = {
+  MONDAY: {
+    open: '09:00',
+    close: '18:00',
+    isWorking: true
   },
-  {
-    staffId: 'STF-1002',
-    salonId: 'SAL-1001',
-    salonName: 'Glow Beauty Studio',
-    name: 'Rahul Kumar',
-    phoneNumber: '+91 98765 12345',
-    email: 'rahul@glowbeauty.com',
-    gender: 'MALE',
-    specializations: ['Haircut', 'Beard Styling'],
-    isActive: true,
-    createdAt: '2026-02-02'
+  TUESDAY: {
+    open: '09:00',
+    close: '18:00',
+    isWorking: true
   },
-  {
-    staffId: 'STF-1003',
-    salonId: 'SAL-1002',
-    salonName: 'Style Lounge',
-    name: 'Priya Reddy',
-    phoneNumber: '+91 99887 66554',
-    email: 'priya@stylelounge.com',
-    gender: 'FEMALE',
-    specializations: ['Facial', 'Skin Care'],
-    isActive: true,
-    createdAt: '2026-02-10'
+  WEDNESDAY: {
+    open: '09:00',
+    close: '18:00',
+    isWorking: true
   },
-  {
-    staffId: 'STF-1004',
-    salonId: 'SAL-1002',
-    salonName: 'Style Lounge',
-    name: 'Arjun Rao',
-    phoneNumber: '+91 91234 56789',
-    email: 'arjun@stylelounge.com',
-    gender: 'MALE',
-    specializations: ['Massage', 'Spa'],
-    isActive: false,
-    createdAt: '2026-02-18'
+  THURSDAY: {
+    open: '09:00',
+    close: '18:00',
+    isWorking: true
   },
-  {
-    staffId: 'STF-1005',
-    salonId: 'SAL-1003',
-    salonName: 'Urban Cuts',
-    name: 'Sneha Patel',
-    phoneNumber: '+91 90000 11122',
-    email: 'sneha@urbancuts.com',
-    gender: 'FEMALE',
-    specializations: ['Makeup', 'Bridal Makeup'],
-    isActive: true,
-    createdAt: '2026-03-01'
+  FRIDAY: {
+    open: '09:00',
+    close: '18:00',
+    isWorking: true
   },
-  {
-    staffId: 'STF-1006',
-    salonId: 'SAL-1003',
-    salonName: 'Urban Cuts',
-    name: 'Vikram Singh',
-    phoneNumber: '+91 90123 45678',
-    email: 'vikram@urbancuts.com',
-    gender: 'MALE',
-    specializations: ['Haircut', 'Hair Styling'],
-    isActive: true,
-    createdAt: '2026-03-08'
+  SATURDAY: {
+    open: '09:00',
+    close: '18:00',
+    isWorking: true
   },
-  {
-    staffId: 'STF-1007',
-    salonId: 'SAL-1004',
-    salonName: 'Blush & Bloom',
-    name: 'Meera Nair',
-    phoneNumber: '+91 90909 80808',
-    email: 'meera@blushbloom.com',
-    gender: 'FEMALE',
-    specializations: ['Nail Care', 'Manicure', 'Pedicure'],
-    isActive: true,
-    createdAt: '2026-03-12'
+  SUNDAY: {
+    open: '09:00',
+    close: '18:00',
+    isWorking: false
   }
-];
+};
 
 // ==============================|| STAFF PAGE ||============================== //
 
 export default function Staff() {
-  const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [salons, setSalons] = useState<Salon[]>([]);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -163,25 +344,123 @@ export default function Staff() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedStaff, setSelectedStaff] =
+    useState<StaffMember | null>(null);
 
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const [loadingStaff, setLoadingStaff] = useState(false);
 
   const [newStaff, setNewStaff] = useState({
+    salonId: '',
     name: '',
-    salonName: '',
     phoneNumber: '',
     email: '',
-    gender: 'FEMALE' as StaffMember['gender'],
+    gender: 'FEMALE' as Gender,
     specializations: ''
   });
 
-  // ==============================|| FILTER OPTIONS ||============================== //
+  const [editStaff, setEditStaff] = useState({
+    name: '',
+    phoneNumber: '',
+    email: '',
+    gender: 'FEMALE' as Gender,
+    specializations: ''
+  });
 
-  const salons = useMemo(() => {
-    return Array.from(new Set(staff.map((item) => item.salonName)));
-  }, [staff]);
+  // ==============================|| QUERIES ||============================== //
+
+  const [fetchSalons, { loading: loadingSalons }] =
+    useLazyQuery(ADMIN_SALONS, {
+      fetchPolicy: 'network-only'
+    });
+
+  const [fetchStaff] = useLazyQuery(LIST_STAFF, {
+    fetchPolicy: 'network-only'
+  });
+
+  // ==============================|| MUTATIONS ||============================== //
+
+  const [createStaff, { loading: creatingStaff }] =
+    useMutation(CREATE_STAFF);
+
+  const [updateStaff, { loading: updatingStaff }] =
+    useMutation(UPDATE_STAFF);
+
+  const [deleteStaff] = useMutation(DELETE_STAFF);
+
+  // ==============================|| LOAD DATA ||============================== //
+
+  const loadStaff = async (salonList: Salon[]) => {
+    if (!salonList.length) {
+      setStaff([]);
+      return;
+    }
+
+    setLoadingStaff(true);
+
+    try {
+      const results = await Promise.all(
+        salonList.map((salon) =>
+          fetchStaff({
+            variables: {
+              salonId: salon.salonId
+            }
+          })
+        )
+      );
+
+      const allStaff: StaffMember[] = [];
+
+      results.forEach((result, index) => {
+        const salon = salonList[index];
+
+        const salonStaff = result.data?.listStaff || [];
+
+        salonStaff.forEach((member: any) => {
+          allStaff.push({
+            ...member,
+            salonName: salon.salonName
+          });
+        });
+      });
+
+      setStaff(allStaff);
+    } catch (error) {
+      console.error('Failed to load staff:', error);
+    } finally {
+      setLoadingStaff(false);
+    }
+  };
+
+  const loadData = async () => {
+    try {
+      const result = await fetchSalons();
+
+      if (!result.data?.adminSalons?.success) {
+        console.error(
+          'Failed to load salons:',
+          result.data?.adminSalons?.message
+        );
+        return;
+      }
+
+      const salonList: Salon[] =
+        result.data.adminSalons.salons || [];
+
+      setSalons(salonList);
+
+      await loadStaff(salonList);
+    } catch (error) {
+      console.error('Failed to load staff data:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   // ==============================|| FILTER STAFF ||============================== //
 
@@ -191,11 +470,11 @@ export default function Staff() {
 
       const matchesSearch =
         !searchValue ||
-        item.name.toLowerCase().includes(searchValue) ||
-        item.phoneNumber.toLowerCase().includes(searchValue) ||
-        item.email.toLowerCase().includes(searchValue) ||
-        item.salonName.toLowerCase().includes(searchValue) ||
-        item.staffId.toLowerCase().includes(searchValue);
+        item.name?.toLowerCase().includes(searchValue) ||
+        item.phoneNumber?.toLowerCase().includes(searchValue) ||
+        item.email?.toLowerCase().includes(searchValue) ||
+        item.salonName?.toLowerCase().includes(searchValue) ||
+        item.staffId?.toLowerCase().includes(searchValue);
 
       const matchesStatus =
         statusFilter === 'ALL' ||
@@ -208,7 +487,7 @@ export default function Staff() {
 
       const matchesSalon =
         salonFilter === 'ALL' ||
-        item.salonName === salonFilter;
+        item.salonId === salonFilter;
 
       return (
         matchesSearch &&
@@ -217,13 +496,25 @@ export default function Staff() {
         matchesSalon
       );
     });
-  }, [staff, search, statusFilter, genderFilter, salonFilter]);
+  }, [
+    staff,
+    search,
+    statusFilter,
+    genderFilter,
+    salonFilter
+  ]);
 
   // ==============================|| COUNTERS ||============================== //
 
   const totalStaff = staff.length;
-  const activeStaff = staff.filter((item) => item.isActive).length;
-  const inactiveStaff = staff.filter((item) => !item.isActive).length;
+
+  const activeStaff = staff.filter(
+    (item) => item.isActive
+  ).length;
+
+  const inactiveStaff = staff.filter(
+    (item) => !item.isActive
+  ).length;
 
   // ==============================|| HANDLERS ||============================== //
 
@@ -232,68 +523,260 @@ export default function Staff() {
     setDetailsOpen(true);
   };
 
-  const handleToggleStatus = (staffId: string) => {
-    setStaff((previous) =>
-      previous.map((item) =>
-        item.staffId === staffId
-          ? { ...item, isActive: !item.isActive }
-          : item
-      )
-    );
+  const handleEditOpen = (member: StaffMember) => {
+    setSelectedStaff(member);
+
+    setEditStaff({
+      name: member.name || '',
+      phoneNumber: member.phoneNumber || '',
+      email: member.email || '',
+      gender: member.gender || 'FEMALE',
+      specializations:
+        member.specializations?.join(', ') || ''
+    });
+
+    setEditOpen(true);
   };
 
-  const handleDelete = (staffId: string) => {
+  // ==============================|| TOGGLE STATUS ||============================== //
+
+  const handleToggleStatus = async (member: StaffMember) => {
+    try {
+      const result = await updateStaff({
+        variables: {
+          input: {
+            salonId: member.salonId,
+            staffId: member.staffId,
+            isActive: !member.isActive
+          }
+        }
+      });
+
+      if (!result.data?.updateStaff?.success) {
+        window.alert(
+          result.data?.updateStaff?.message ||
+            'Failed to update staff status.'
+        );
+        return;
+      }
+
+      const updated = result.data.updateStaff.staff;
+
+      setStaff((previous) =>
+        previous.map((item) =>
+          item.staffId === member.staffId
+            ? {
+                ...item,
+                ...updated,
+                salonName: member.salonName
+              }
+            : item
+        )
+      );
+
+      setSelectedStaff((previous) =>
+        previous && previous.staffId === member.staffId
+          ? {
+              ...previous,
+              isActive: !previous.isActive
+            }
+          : previous
+      );
+    } catch (error) {
+      console.error('Failed to toggle staff status:', error);
+      window.alert('Failed to update staff status.');
+    }
+  };
+
+  // ==============================|| DELETE ||============================== //
+
+  const handleDelete = async (member: StaffMember) => {
     const confirmed = window.confirm(
-      'Are you sure you want to remove this staff member?'
+      `Are you sure you want to remove ${member.name}?`
     );
 
     if (!confirmed) return;
 
-    setStaff((previous) =>
-      previous.filter((item) => item.staffId !== staffId)
-    );
+    try {
+      const result = await deleteStaff({
+        variables: {
+          input: {
+            salonId: member.salonId,
+            staffId: member.staffId
+          }
+        }
+      });
+
+      if (!result.data?.deleteStaff?.success) {
+        window.alert(
+          result.data?.deleteStaff?.message ||
+            'Failed to delete staff.'
+        );
+        return;
+      }
+
+      setStaff((previous) =>
+        previous.filter(
+          (item) => item.staffId !== member.staffId
+        )
+      );
+
+      if (
+        selectedStaff &&
+        selectedStaff.staffId === member.staffId
+      ) {
+        setSelectedStaff(null);
+        setDetailsOpen(false);
+        setEditOpen(false);
+      }
+    } catch (error) {
+      console.error('Failed to delete staff:', error);
+      window.alert('Failed to delete staff.');
+    }
   };
 
-  const handleAddStaff = () => {
-    if (!newStaff.name.trim() || !newStaff.salonName.trim()) {
+  // ==============================|| ADD STAFF ||============================== //
+
+  const handleAddStaff = async () => {
+    if (
+      !newStaff.salonId ||
+      !newStaff.name.trim() ||
+      !newStaff.phoneNumber.trim()
+    ) {
       return;
     }
 
-    const createdStaff: StaffMember = {
-      staffId: `STF-${1000 + staff.length + 1}`,
-      salonId: `SAL-${1000 + staff.length + 1}`,
-      salonName: newStaff.salonName,
-      name: newStaff.name,
-      phoneNumber: newStaff.phoneNumber,
-      email: newStaff.email,
-      gender: newStaff.gender,
-      specializations: newStaff.specializations
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean),
-      isActive: true,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
+    try {
+      const result = await createStaff({
+        variables: {
+          input: {
+            salonId: newStaff.salonId,
+            name: newStaff.name.trim(),
+            phoneNumber: newStaff.phoneNumber.trim(),
+            email: newStaff.email.trim() || null,
+            gender: newStaff.gender,
+            profileImageUrl: null,
+            specializations: newStaff.specializations
+              .split(',')
+              .map((item) => item.trim())
+              .filter(Boolean),
+            workingHours: DEFAULT_WORKING_HOURS
+          }
+        }
+      });
 
-    setStaff((previous) => [createdStaff, ...previous]);
+      if (!result.data?.createStaff?.success) {
+        window.alert(
+          result.data?.createStaff?.message ||
+            'Failed to create staff.'
+        );
+        return;
+      }
 
-    setNewStaff({
-      name: '',
-      salonName: '',
-      phoneNumber: '',
-      email: '',
-      gender: 'FEMALE',
-      specializations: ''
-    });
+      const created = result.data.createStaff.staff;
 
-    setAddOpen(false);
+      const selectedSalon = salons.find(
+        (salon) => salon.salonId === newStaff.salonId
+      );
+
+      if (created) {
+        setStaff((previous) => [
+          {
+            ...created,
+            salonName:
+              selectedSalon?.salonName || 'Unknown Salon'
+          },
+          ...previous
+        ]);
+      }
+
+      setNewStaff({
+        salonId: '',
+        name: '',
+        phoneNumber: '',
+        email: '',
+        gender: 'FEMALE',
+        specializations: ''
+      });
+
+      setAddOpen(false);
+    } catch (error) {
+      console.error('Failed to create staff:', error);
+      window.alert('Failed to create staff.');
+    }
+  };
+
+  // ==============================|| EDIT STAFF ||============================== //
+
+  const handleUpdateStaff = async () => {
+    if (!selectedStaff || !editStaff.name.trim()) {
+      return;
+    }
+
+    try {
+      const result = await updateStaff({
+        variables: {
+          input: {
+            salonId: selectedStaff.salonId,
+            staffId: selectedStaff.staffId,
+            name: editStaff.name.trim(),
+            phoneNumber: editStaff.phoneNumber.trim(),
+            email: editStaff.email.trim() || null,
+            gender: editStaff.gender,
+            specializations: editStaff.specializations
+              .split(',')
+              .map((item) => item.trim())
+              .filter(Boolean)
+          }
+        }
+      });
+
+      if (!result.data?.updateStaff?.success) {
+        window.alert(
+          result.data?.updateStaff?.message ||
+            'Failed to update staff.'
+        );
+        return;
+      }
+
+      const updated = result.data.updateStaff.staff;
+
+      if (updated) {
+        setStaff((previous) =>
+          previous.map((item) =>
+            item.staffId === selectedStaff.staffId
+              ? {
+                  ...item,
+                  ...updated,
+                  salonName: selectedStaff.salonName
+                }
+              : item
+          )
+        );
+
+        setSelectedStaff({
+          ...selectedStaff,
+          ...updated,
+          salonName: selectedStaff.salonName
+        });
+      }
+
+      setEditOpen(false);
+    } catch (error) {
+      console.error('Failed to update staff:', error);
+      window.alert('Failed to update staff.');
+    }
   };
 
   // ==============================|| RENDER ||============================== //
 
+  const isLoading =
+    loadingSalons || loadingStaff;
+
   return (
     <Box>
       {/* PAGE HEADER */}
+
       <Box
         sx={{
           display: 'flex',
@@ -309,7 +792,10 @@ export default function Staff() {
             Staff
           </Typography>
 
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
             Manage staff members across all Clavata salons.
           </Typography>
         </Box>
@@ -318,12 +804,14 @@ export default function Staff() {
           variant="contained"
           startIcon={<PlusOutlined />}
           onClick={() => setAddOpen(true)}
+          disabled={!salons.length}
         >
           Add Staff
         </Button>
       </Box>
 
       {/* SUMMARY CARDS */}
+
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={4}>
           <Paper
@@ -334,7 +822,11 @@ export default function Staff() {
               borderColor: 'divider'
             }}
           >
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+            >
               <Avatar
                 sx={{
                   width: 48,
@@ -347,12 +839,15 @@ export default function Staff() {
               </Avatar>
 
               <Box>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   Total Staff
                 </Typography>
 
                 <Typography variant="h4">
-                  {totalStaff}
+                  {isLoading ? '—' : totalStaff}
                 </Typography>
               </Box>
             </Stack>
@@ -368,7 +863,11 @@ export default function Staff() {
               borderColor: 'divider'
             }}
           >
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+            >
               <Avatar
                 sx={{
                   width: 48,
@@ -381,12 +880,15 @@ export default function Staff() {
               </Avatar>
 
               <Box>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   Active Staff
                 </Typography>
 
                 <Typography variant="h4">
-                  {activeStaff}
+                  {isLoading ? '—' : activeStaff}
                 </Typography>
               </Box>
             </Stack>
@@ -402,7 +904,11 @@ export default function Staff() {
               borderColor: 'divider'
             }}
           >
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+            >
               <Avatar
                 sx={{
                   width: 48,
@@ -415,12 +921,15 @@ export default function Staff() {
               </Avatar>
 
               <Box>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   Inactive Staff
                 </Typography>
 
                 <Typography variant="h4">
-                  {inactiveStaff}
+                  {isLoading ? '—' : inactiveStaff}
                 </Typography>
               </Box>
             </Stack>
@@ -429,6 +938,7 @@ export default function Staff() {
       </Grid>
 
       {/* FILTERS */}
+
       <Paper
         sx={{
           p: 2,
@@ -471,9 +981,17 @@ export default function Staff() {
                   setPage(0);
                 }}
               >
-                <MenuItem value="ALL">All Status</MenuItem>
-                <MenuItem value="ACTIVE">Active</MenuItem>
-                <MenuItem value="INACTIVE">Inactive</MenuItem>
+                <MenuItem value="ALL">
+                  All Status
+                </MenuItem>
+
+                <MenuItem value="ACTIVE">
+                  Active
+                </MenuItem>
+
+                <MenuItem value="INACTIVE">
+                  Inactive
+                </MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -490,10 +1008,21 @@ export default function Staff() {
                   setPage(0);
                 }}
               >
-                <MenuItem value="ALL">All Gender</MenuItem>
-                <MenuItem value="MALE">Male</MenuItem>
-                <MenuItem value="FEMALE">Female</MenuItem>
-                <MenuItem value="OTHER">Other</MenuItem>
+                <MenuItem value="ALL">
+                  All Gender
+                </MenuItem>
+
+                <MenuItem value="MALE">
+                  Male
+                </MenuItem>
+
+                <MenuItem value="FEMALE">
+                  Female
+                </MenuItem>
+
+                <MenuItem value="OTHER">
+                  Other
+                </MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -510,11 +1039,16 @@ export default function Staff() {
                   setPage(0);
                 }}
               >
-                <MenuItem value="ALL">All Salons</MenuItem>
+                <MenuItem value="ALL">
+                  All Salons
+                </MenuItem>
 
                 {salons.map((salon) => (
-                  <MenuItem key={salon} value={salon}>
-                    {salon}
+                  <MenuItem
+                    key={salon.salonId}
+                    value={salon.salonId}
+                  >
+                    {salon.salonName}
                   </MenuItem>
                 ))}
               </Select>
@@ -524,6 +1058,7 @@ export default function Staff() {
       </Paper>
 
       {/* TABLE */}
+
       <Paper
         sx={{
           borderRadius: 2,
@@ -541,247 +1076,282 @@ export default function Staff() {
                 <TableCell>Contact</TableCell>
                 <TableCell>Specializations</TableCell>
                 <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell align="right">
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
-              {filteredStaff
-                .slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-                )
-                .map((member) => (
-                  <TableRow
-                    key={member.staffId}
-                    hover
-                    sx={{
-                      '&:last-child td': {
-                        borderBottom: 0
-                      }
-                    }}
-                  >
-                    {/* STAFF */}
-                    <TableCell>
-                      <Stack
-                        direction="row"
-                        spacing={1.5}
-                        alignItems="center"
-                      >
-                        <Avatar>
-                          {member.name.charAt(0)}
-                        </Avatar>
-
-                        <Box>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: 600 }}
-                          >
-                            {member.name}
-                          </Typography>
-
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            {member.staffId}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </TableCell>
-
-                    {/* SALON */}
-                    <TableCell>
-                      <Typography variant="body2">
-                        {member.salonName}
-                      </Typography>
-
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                      >
-                        {member.salonId}
-                      </Typography>
-                    </TableCell>
-
-                    {/* CONTACT */}
-                    <TableCell>
-                      <Stack spacing={0.5}>
-                        <Stack
-                          direction="row"
-                          spacing={0.75}
-                          alignItems="center"
-                        >
-                          <PhoneOutlined
-                            style={{
-                              fontSize: 13
-                            }}
-                          />
-
-                          <Typography variant="body2">
-                            {member.phoneNumber}
-                          </Typography>
-                        </Stack>
-
-                        <Stack
-                          direction="row"
-                          spacing={0.75}
-                          alignItems="center"
-                        >
-                          <MailOutlined
-                            style={{
-                              fontSize: 13
-                            }}
-                          />
-
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            {member.email}
-                          </Typography>
-                        </Stack>
-                      </Stack>
-                    </TableCell>
-
-                    {/* SPECIALIZATIONS */}
-                    <TableCell>
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        flexWrap="wrap"
-                        useFlexGap
-                      >
-                        {member.specializations
-                          .slice(0, 2)
-                          .map((specialization) => (
-                            <Chip
-                              key={specialization}
-                              label={specialization}
-                              size="small"
-                              variant="outlined"
-                            />
-                          ))}
-
-                        {member.specializations.length > 2 && (
-                          <Chip
-                            label={`+${member.specializations.length - 2}`}
-                            size="small"
-                          />
-                        )}
-                      </Stack>
-                    </TableCell>
-
-                    {/* STATUS */}
-                    <TableCell>
-                      <Chip
-                        label={
-                          member.isActive
-                            ? 'Active'
-                            : 'Inactive'
-                        }
-                        size="small"
-                        color={
-                          member.isActive
-                            ? 'success'
-                            : 'default'
-                        }
-                        variant={
-                          member.isActive
-                            ? 'filled'
-                            : 'outlined'
-                        }
-                      />
-                    </TableCell>
-
-                    {/* ACTIONS */}
-                    <TableCell align="right">
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        justifyContent="flex-end"
-                      >
-                        <Tooltip title="View">
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              handleView(member)
-                            }
-                          >
-                            <EyeOutlined />
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Edit">
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              handleView(member)
-                            }
-                          >
-                            <EditOutlined />
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip
-                          title={
-                            member.isActive
-                              ? 'Deactivate'
-                              : 'Activate'
-                          }
-                        >
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              handleToggleStatus(
-                                member.staffId
-                              )
-                            }
-                          >
-                            <TeamOutlined />
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Delete">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() =>
-                              handleDelete(member.staffId)
-                            }
-                          >
-                            <DeleteOutlined />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-
-              {filteredStaff.length === 0 && (
+              {isLoading ? (
                 <TableRow>
                   <TableCell
                     colSpan={6}
                     align="center"
                     sx={{ py: 8 }}
                   >
-                    <Typography
-                      variant="h6"
-                      color="text.secondary"
-                    >
-                      No staff found
-                    </Typography>
+                    <CircularProgress size={32} />
 
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ mt: 0.5 }}
+                      sx={{ mt: 2 }}
                     >
-                      Try changing your search or filters.
+                      Loading staff...
                     </Typography>
                   </TableCell>
                 </TableRow>
+              ) : (
+                filteredStaff
+                  .slice(
+                    page * rowsPerPage,
+                    page * rowsPerPage + rowsPerPage
+                  )
+                  .map((member) => (
+                    <TableRow
+                      key={member.staffId}
+                      hover
+                      sx={{
+                        '&:last-child td': {
+                          borderBottom: 0
+                        }
+                      }}
+                    >
+                      {/* STAFF */}
+
+                      <TableCell>
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
+                        >
+                          <Avatar
+                            src={
+                              member.profileImageUrl ||
+                              undefined
+                            }
+                          >
+                            {!member.profileImageUrl &&
+                              member.name?.charAt(0)}
+                          </Avatar>
+
+                          <Box>
+                            <Typography
+                              variant="subtitle2"
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {member.name}
+                            </Typography>
+
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {member.staffId}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
+
+                      {/* SALON */}
+
+                      <TableCell>
+                        <Typography variant="body2">
+                          {member.salonName}
+                        </Typography>
+
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          {member.salonId}
+                        </Typography>
+                      </TableCell>
+
+                      {/* CONTACT */}
+
+                      <TableCell>
+                        <Stack spacing={0.5}>
+                          <Stack
+                            direction="row"
+                            spacing={0.75}
+                            alignItems="center"
+                          >
+                            <PhoneOutlined
+                              style={{ fontSize: 13 }}
+                            />
+
+                            <Typography variant="body2">
+                              {member.phoneNumber}
+                            </Typography>
+                          </Stack>
+
+                          {member.email && (
+                            <Stack
+                              direction="row"
+                              spacing={0.75}
+                              alignItems="center"
+                            >
+                              <MailOutlined
+                                style={{ fontSize: 13 }}
+                              />
+
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {member.email}
+                              </Typography>
+                            </Stack>
+                          )}
+                        </Stack>
+                      </TableCell>
+
+                      {/* SPECIALIZATIONS */}
+
+                      <TableCell>
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          {member.specializations
+                            ?.slice(0, 2)
+                            .map((specialization) => (
+                              <Chip
+                                key={specialization}
+                                label={specialization}
+                                size="small"
+                                variant="outlined"
+                              />
+                            ))}
+
+                          {member.specializations?.length >
+                            2 && (
+                            <Chip
+                              label={`+${
+                                member.specializations
+                                  .length - 2
+                              }`}
+                              size="small"
+                            />
+                          )}
+                        </Stack>
+                      </TableCell>
+
+                      {/* STATUS */}
+
+                      <TableCell>
+                        <Chip
+                          label={
+                            member.isActive
+                              ? 'Active'
+                              : 'Inactive'
+                          }
+                          size="small"
+                          color={
+                            member.isActive
+                              ? 'success'
+                              : 'default'
+                          }
+                          variant={
+                            member.isActive
+                              ? 'filled'
+                              : 'outlined'
+                          }
+                        />
+                      </TableCell>
+
+                      {/* ACTIONS */}
+
+                      <TableCell align="right">
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          justifyContent="flex-end"
+                        >
+                          <Tooltip title="View">
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                handleView(member)
+                              }
+                            >
+                              <EyeOutlined />
+                            </IconButton>
+                          </Tooltip>
+
+                          <Tooltip title="Edit">
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                handleEditOpen(member)
+                              }
+                            >
+                              <EditOutlined />
+                            </IconButton>
+                          </Tooltip>
+
+                          <Tooltip
+                            title={
+                              member.isActive
+                                ? 'Deactivate'
+                                : 'Activate'
+                            }
+                          >
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                handleToggleStatus(member)
+                              }
+                            >
+                              <TeamOutlined />
+                            </IconButton>
+                          </Tooltip>
+
+                          <Tooltip title="Delete">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() =>
+                                handleDelete(member)
+                              }
+                            >
+                              <DeleteOutlined />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
               )}
+
+              {!isLoading &&
+                filteredStaff.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      align="center"
+                      sx={{ py: 8 }}
+                    >
+                      <Typography
+                        variant="h6"
+                        color="text.secondary"
+                      >
+                        No staff found
+                      </Typography>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 0.5 }}
+                      >
+                        Try changing your search or filters.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -807,7 +1377,7 @@ export default function Staff() {
       </Paper>
 
       {/* ============================== */}
-      {/* STAFF DETAILS DIALOG */}
+      {/* STAFF DETAILS */}
       {/* ============================== */}
 
       <Dialog
@@ -830,13 +1400,18 @@ export default function Staff() {
                 sx={{ mb: 3 }}
               >
                 <Avatar
+                  src={
+                    selectedStaff.profileImageUrl ||
+                    undefined
+                  }
                   sx={{
                     width: 64,
                     height: 64,
                     fontSize: 24
                   }}
                 >
-                  {selectedStaff.name.charAt(0)}
+                  {!selectedStaff.profileImageUrl &&
+                    selectedStaff.name?.charAt(0)}
                 </Avatar>
 
                 <Box>
@@ -894,7 +1469,7 @@ export default function Staff() {
                   </Typography>
 
                   <Typography variant="body1">
-                    {selectedStaff.gender}
+                    {selectedStaff.gender || '—'}
                   </Typography>
                 </Grid>
 
@@ -920,7 +1495,7 @@ export default function Staff() {
                   </Typography>
 
                   <Typography variant="body1">
-                    {selectedStaff.email}
+                    {selectedStaff.email || '—'}
                   </Typography>
                 </Grid>
 
@@ -939,7 +1514,7 @@ export default function Staff() {
                     useFlexGap
                     sx={{ mt: 1 }}
                   >
-                    {selectedStaff.specializations.map(
+                    {selectedStaff.specializations?.map(
                       (specialization) => (
                         <Chip
                           key={specialization}
@@ -959,7 +1534,11 @@ export default function Staff() {
                   </Typography>
 
                   <Typography variant="body1">
-                    {selectedStaff.createdAt}
+                    {selectedStaff.createdAt
+                      ? new Date(
+                          selectedStaff.createdAt
+                        ).toLocaleDateString()
+                      : '—'}
                   </Typography>
                 </Grid>
               </Grid>
@@ -968,9 +1547,7 @@ export default function Staff() {
             <DialogActions>
               <Button
                 onClick={() =>
-                  handleToggleStatus(
-                    selectedStaff.staffId
-                  )
+                  handleToggleStatus(selectedStaff)
                 }
               >
                 {selectedStaff.isActive
@@ -992,7 +1569,7 @@ export default function Staff() {
       </Dialog>
 
       {/* ============================== */}
-      {/* ADD STAFF DIALOG */}
+      {/* ADD STAFF */}
       {/* ============================== */}
 
       <Dialog
@@ -1008,6 +1585,36 @@ export default function Staff() {
         <DialogContent dividers>
           <Grid container spacing={2.5}>
             <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Salon</InputLabel>
+
+                <Select
+                  value={newStaff.salonId}
+                  label="Salon"
+                  onChange={(event) =>
+                    setNewStaff({
+                      ...newStaff,
+                      salonId: event.target.value
+                    })
+                  }
+                >
+                  <MenuItem value="">
+                    Select Salon
+                  </MenuItem>
+
+                  {salons.map((salon) => (
+                    <MenuItem
+                      key={salon.salonId}
+                      value={salon.salonId}
+                    >
+                      {salon.salonName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Full Name"
@@ -1016,20 +1623,6 @@ export default function Staff() {
                   setNewStaff({
                     ...newStaff,
                     name: event.target.value
-                  })
-                }
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Salon"
-                value={newStaff.salonName}
-                onChange={(event) =>
-                  setNewStaff({
-                    ...newStaff,
-                    salonName: event.target.value
                   })
                 }
               />
@@ -1074,7 +1667,7 @@ export default function Staff() {
                     setNewStaff({
                       ...newStaff,
                       gender:
-                        event.target.value as StaffMember['gender']
+                        event.target.value as Gender
                     })
                   }
                 >
@@ -1123,11 +1716,145 @@ export default function Staff() {
             variant="contained"
             onClick={handleAddStaff}
             disabled={
+              creatingStaff ||
+              !newStaff.salonId ||
               !newStaff.name.trim() ||
-              !newStaff.salonName.trim()
+              !newStaff.phoneNumber.trim()
             }
           >
-            Add Staff
+            {creatingStaff
+              ? 'Adding...'
+              : 'Add Staff'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ============================== */}
+      {/* EDIT STAFF */}
+      {/* ============================== */}
+
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          Edit Staff
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Grid container spacing={2.5}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Full Name"
+                value={editStaff.name}
+                onChange={(event) =>
+                  setEditStaff({
+                    ...editStaff,
+                    name: event.target.value
+                  })
+                }
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Phone Number"
+                value={editStaff.phoneNumber}
+                onChange={(event) =>
+                  setEditStaff({
+                    ...editStaff,
+                    phoneNumber:
+                      event.target.value
+                  })
+                }
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Email"
+                value={editStaff.email}
+                onChange={(event) =>
+                  setEditStaff({
+                    ...editStaff,
+                    email: event.target.value
+                  })
+                }
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Gender</InputLabel>
+
+                <Select
+                  value={editStaff.gender}
+                  label="Gender"
+                  onChange={(event) =>
+                    setEditStaff({
+                      ...editStaff,
+                      gender:
+                        event.target.value as Gender
+                    })
+                  }
+                >
+                  <MenuItem value="MALE">
+                    Male
+                  </MenuItem>
+
+                  <MenuItem value="FEMALE">
+                    Female
+                  </MenuItem>
+
+                  <MenuItem value="OTHER">
+                    Other
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Specializations"
+                placeholder="Hair Styling, Hair Coloring"
+                helperText="Separate multiple specializations with commas."
+                value={editStaff.specializations}
+                onChange={(event) =>
+                  setEditStaff({
+                    ...editStaff,
+                    specializations:
+                      event.target.value
+                  })
+                }
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+
+        <DialogActions>
+          <Button
+            onClick={() => setEditOpen(false)}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            variant="contained"
+            onClick={handleUpdateStaff}
+            disabled={
+              updatingStaff ||
+              !editStaff.name.trim()
+            }
+          >
+            {updatingStaff
+              ? 'Saving...'
+              : 'Save Changes'}
           </Button>
         </DialogActions>
       </Dialog>
