@@ -1,6 +1,4 @@
-
 import { useMemo, useState } from 'react';
-
 // material-ui
 import {
   Box,
@@ -35,123 +33,89 @@ import {
 // project imports
 import MainCard from 'components/MainCard';
 
+// dashboard hook
+import useDashboardData from '../dashboard/useDashboardData';
+
+// dashboard types
+import {
+  Booking,
+  BookingStatus,
+  DashboardPeriod,
+  Salon
+} from '../dashboard/dashboardApi';
+
 // charts
 import {
-  AreaChart,
   Area,
-  BarChart,
+  AreaChart,
   Bar,
+  BarChart,
   CartesianGrid,
-  Legend,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
   Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis
 } from 'recharts';
 
-// ==============================|| TYPES ||============================== //
+// =========================================================
+// TYPES
+// =========================================================
 
-type Period = '7days' | '30days' | '3months' | '12months';
+type Period =
+  | '7days'
+  | '30days'
+  | '3months'
+  | '12months';
 
 interface StatCardProps {
   title: string;
   value: string;
-  change: string;
+  change?: string;
   positive?: boolean;
   icon: React.ReactNode;
   subtitle?: string;
 }
 
-// ==============================|| DUMMY DATA ||============================== //
+interface RevenueChartItem {
+  name: string;
+  revenue: number;
+  bookings: number;
+}
 
-const weeklyRevenue = [
-  { name: 'Mon', revenue: 18500, bookings: 32 },
-  { name: 'Tue', revenue: 22400, bookings: 41 },
-  { name: 'Wed', revenue: 19800, bookings: 37 },
-  { name: 'Thu', revenue: 27600, bookings: 48 },
-  { name: 'Fri', revenue: 32100, bookings: 56 },
-  { name: 'Sat', revenue: 42800, bookings: 72 },
-  { name: 'Sun', revenue: 38900, bookings: 64 }
-];
+interface BookingStatusItem {
+  name: string;
+  value: number;
+}
 
-const monthlyRevenue = [
-  { name: 'Jan', revenue: 420000, bookings: 620 },
-  { name: 'Feb', revenue: 465000, bookings: 684 },
-  { name: 'Mar', revenue: 498000, bookings: 721 },
-  { name: 'Apr', revenue: 535000, bookings: 768 },
-  { name: 'May', revenue: 582000, bookings: 824 },
-  { name: 'Jun', revenue: 621000, bookings: 891 },
-  { name: 'Jul', revenue: 684000, bookings: 965 },
-  { name: 'Aug', revenue: 721000, bookings: 1018 }
-];
+interface ServicePerformanceItem {
+  name: string;
+  bookings: number;
+  revenue: number;
+}
 
-const bookingStatusData = [
-  { name: 'Completed', value: 642 },
-  { name: 'Confirmed', value: 184 },
-  { name: 'Pending', value: 76 },
-  { name: 'Cancelled', value: 58 },
-  { name: 'No Show', value: 21 }
-];
+interface SalonPerformanceItem {
+  salon: string;
+  bookings: number;
+  revenue: number;
+  rating: number;
+}
 
-const servicePerformance = [
-  { name: 'Haircut', bookings: 284, revenue: 142000 },
-  { name: 'Hair Color', bookings: 172, revenue: 258000 },
-  { name: 'Facial', bookings: 196, revenue: 176400 },
-  { name: 'Manicure', bookings: 158, revenue: 94800 },
-  { name: 'Pedicure', bookings: 141, revenue: 112800 },
-  { name: 'Hair Spa', bookings: 124, revenue: 148800 }
-];
+interface CustomerGrowthItem {
+  name: string;
+  customers: number;
+}
 
-const salonPerformance = [
-  {
-    salon: 'Glow Studio',
-    bookings: 284,
-    revenue: 284000,
-    rating: 4.8
-  },
-  {
-    salon: 'The Beauty Lounge',
-    bookings: 246,
-    revenue: 251000,
-    rating: 4.7
-  },
-  {
-    salon: 'Urban Cuts',
-    bookings: 218,
-    revenue: 198000,
-    rating: 4.6
-  },
-  {
-    salon: 'Style Avenue',
-    bookings: 192,
-    revenue: 176000,
-    rating: 4.5
-  },
-  {
-    salon: 'Blush & Bloom',
-    bookings: 174,
-    revenue: 165000,
-    rating: 4.5
-  }
-];
+// =========================================================
+// CONSTANTS
+// =========================================================
 
-const customerGrowth = [
-  { name: 'Jan', customers: 820 },
-  { name: 'Feb', customers: 940 },
-  { name: 'Mar', customers: 1120 },
-  { name: 'Apr', customers: 1260 },
-  { name: 'May', customers: 1430 },
-  { name: 'Jun', customers: 1610 },
-  { name: 'Jul', customers: 1850 },
-  { name: 'Aug', customers: 2140 }
-];
-
-const COLORS = [
+const COLORS: string[] = [
   '#1677ff',
   '#52c41a',
   '#faad14',
@@ -159,7 +123,148 @@ const COLORS = [
   '#722ed1'
 ];
 
-// ==============================|| STAT CARD ||============================== //
+// =========================================================
+// HELPERS
+// =========================================================
+
+const formatCurrency = (value: number): string => {
+  return `₹${value.toLocaleString('en-IN')}`;
+};
+
+const formatCompactCurrency = (value: number): string => {
+  if (value >= 10000000) {
+    return `₹${(value / 10000000).toFixed(1)}Cr`;
+  }
+
+  if (value >= 100000) {
+    return `₹${(value / 100000).toFixed(1)}L`;
+  }
+
+  if (value >= 1000) {
+    return `₹${(value / 1000).toFixed(1)}K`;
+  }
+
+  return `₹${value.toLocaleString('en-IN')}`;
+};
+
+const parseDate = (
+  value?: string | null
+): Date | null => {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? null
+    : date;
+};
+
+const getBookingDate = (
+  booking: Booking
+): Date | null => {
+  if (
+    booking.bookingDate &&
+    booking.startTime
+  ) {
+    const combined = `${booking.bookingDate} ${booking.startTime}`;
+
+    const date = new Date(combined);
+
+    if (!Number.isNaN(date.getTime())) {
+      return date;
+    }
+  }
+
+  return parseDate(
+    booking.bookingDate
+  );
+};
+
+// =========================================================
+// PERIOD HELPERS
+// =========================================================
+
+const getPeriodDates = (
+  period: Period
+): {
+  start: Date;
+  end: Date;
+} => {
+  const end = new Date();
+
+  const start = new Date();
+
+  if (period === '7days') {
+    start.setDate(
+      end.getDate() - 6
+    );
+  }
+
+  if (period === '30days') {
+    start.setDate(
+      end.getDate() - 29
+    );
+  }
+
+  if (period === '3months') {
+    start.setMonth(
+      end.getMonth() - 3
+    );
+  }
+
+  if (period === '12months') {
+    start.setFullYear(
+      end.getFullYear() - 1
+    );
+  }
+
+  start.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+  end.setHours(
+    23,
+    59,
+    59,
+    999
+  );
+
+  return {
+    start,
+    end
+  };
+};
+
+const isBookingInPeriod = (
+  booking: Booking,
+  period: Period
+): boolean => {
+  const bookingDate =
+    getBookingDate(booking);
+
+  if (!bookingDate) {
+    return false;
+  }
+
+  const {
+    start,
+    end
+  } = getPeriodDates(period);
+
+  return (
+    bookingDate >= start &&
+    bookingDate <= end
+  );
+};
+
+// =========================================================
+// STAT CARD
+// =========================================================
 
 function StatCard({
   title,
@@ -176,7 +281,8 @@ function StatCard({
         borderRadius: 3,
         border: '1px solid',
         borderColor: 'divider',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        boxShadow:
+          '0 2px 8px rgba(0,0,0,0.04)'
       }}
     >
       <CardContent sx={{ p: 2.5 }}>
@@ -205,39 +311,50 @@ function StatCard({
               {value}
             </Typography>
 
-            <Stack direction="row" spacing={0.75} alignItems="center">
-              {positive ? (
-                <ArrowUpOutlined
-                  style={{
-                    color: '#52c41a',
-                    fontSize: 12
-                  }}
-                />
-              ) : (
-                <ArrowDownOutlined
-                  style={{
-                    color: '#ff4d4f',
-                    fontSize: 12
-                  }}
-                />
-              )}
-
-              <Typography
-                variant="caption"
-                sx={{
-                  color: positive ? 'success.main' : 'error.main',
-                  fontWeight: 600
-                }}
+            {change && (
+              <Stack
+                direction="row"
+                spacing={0.75}
+                alignItems="center"
               >
-                {change}
-              </Typography>
+                {positive ? (
+                  <ArrowUpOutlined
+                    style={{
+                      color: '#52c41a',
+                      fontSize: 12
+                    }}
+                  />
+                ) : (
+                  <ArrowDownOutlined
+                    style={{
+                      color: '#ff4d4f',
+                      fontSize: 12
+                    }}
+                  />
+                )}
 
-              {subtitle && (
-                <Typography variant="caption" color="text.secondary">
-                  {subtitle}
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: positive
+                      ? 'success.main'
+                      : 'error.main',
+                    fontWeight: 600
+                  }}
+                >
+                  {change}
                 </Typography>
-              )}
-            </Stack>
+
+                {subtitle && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    {subtitle}
+                  </Typography>
+                )}
+              </Stack>
+            )}
           </Box>
 
           <Box
@@ -261,27 +378,783 @@ function StatCard({
   );
 }
 
-// ==============================|| TOOLTIP ||============================== //
-
-const formatCurrency = (value: number) =>
-  `₹${value.toLocaleString('en-IN')}`;
-
-// ==============================|| ANALYTICS ||============================== //
+// =========================================================
+// ANALYTICS
+// =========================================================
 
 export default function Analytics() {
-  const [period, setPeriod] = useState<Period>('30days');
+  const [
+    period,
+    setPeriod
+  ] = useState<Period>('30days');
 
-  const revenueData = useMemo(() => {
-    if (period === '7days') {
-      return weeklyRevenue;
-    }
+  /*
+   * Convert Analytics period into
+   * Dashboard API period.
+   */
+  const dashboardPeriod: DashboardPeriod =
+    period === '7days'
+      ? 'week'
+      : period === '30days'
+        ? 'month'
+        : period === '3months'
+          ? 'month'
+          : 'year';
 
-    return monthlyRevenue;
-  }, [period]);
+  const {
+    data,
+    loading,
+    error,
+    refetch
+  } = useDashboardData(
+    dashboardPeriod
+  );
 
-  const handlePeriodChange = (event: SelectChangeEvent) => {
-    setPeriod(event.target.value as Period);
+  // =======================================================
+  // RAW DATA
+  // =======================================================
+
+  const customers =
+    data?.customers ?? [];
+
+  const salons =
+    data?.salons ?? [];
+
+  const bookings =
+    data?.bookings ?? [];
+
+  const reviews =
+    data?.reviews ?? [];
+
+  // =======================================================
+  // PERIOD BOOKINGS
+  // =======================================================
+
+  const periodBookings =
+    useMemo<Booking[]>(
+      () =>
+        bookings.filter(
+          (booking: Booking) =>
+            isBookingInPeriod(
+              booking,
+              period
+            )
+        ),
+      [
+        bookings,
+        period
+      ]
+    );
+
+  // =======================================================
+  // REVENUE CHART
+  // =======================================================
+
+  const revenueData =
+    useMemo<RevenueChartItem[]>(() => {
+      if (
+        period === '7days'
+      ) {
+        const result: RevenueChartItem[] =
+          [];
+
+        for (
+          let i = 6;
+          i >= 0;
+          i--
+        ) {
+          const date =
+            new Date();
+
+          date.setDate(
+            date.getDate() - i
+          );
+
+          const dayBookings =
+            bookings.filter(
+              (
+                booking: Booking
+              ) => {
+                const bookingDate =
+                  getBookingDate(
+                    booking
+                  );
+
+                if (!bookingDate) {
+                  return false;
+                }
+
+                return (
+                  bookingDate.getFullYear() ===
+                  date.getFullYear() &&
+                  bookingDate.getMonth() ===
+                  date.getMonth() &&
+                  bookingDate.getDate() ===
+                  date.getDate()
+                );
+              }
+            );
+
+          const revenue =
+            dayBookings
+              .filter(
+                (
+                  booking: Booking
+                ) =>
+                  booking.bookingStatus !==
+                  'CANCELLED'
+              )
+              .reduce(
+                (
+                  sum: number,
+                  booking: Booking
+                ) =>
+                  sum +
+                  Number(
+                    booking.totalAmount ||
+                    0
+                  ),
+                0
+              );
+
+          result.push({
+            name:
+              date.toLocaleDateString(
+                'en-IN',
+                {
+                  weekday: 'short'
+                }
+              ),
+            revenue,
+            bookings:
+              dayBookings.length
+          });
+        }
+
+        return result;
+      }
+
+      const result: RevenueChartItem[] =
+        [];
+
+      const months =
+        period === '12months'
+          ? 12
+          : period === '3months'
+            ? 3
+            : 1;
+
+      for (
+        let i = months - 1;
+        i >= 0;
+        i--
+      ) {
+        const date =
+          new Date();
+
+        date.setMonth(
+          date.getMonth() - i
+        );
+
+        const year =
+          date.getFullYear();
+
+        const month =
+          date.getMonth();
+
+        const monthBookings =
+          bookings.filter(
+            (
+              booking: Booking
+            ) => {
+              const bookingDate =
+                getBookingDate(
+                  booking
+                );
+
+              if (!bookingDate) {
+                return false;
+              }
+
+              return (
+                bookingDate.getFullYear() ===
+                year &&
+                bookingDate.getMonth() ===
+                month
+              );
+            }
+          );
+
+        const revenue =
+          monthBookings
+            .filter(
+              (
+                booking: Booking
+              ) =>
+                booking.bookingStatus !==
+                'CANCELLED'
+            )
+            .reduce(
+              (
+                sum: number,
+                booking: Booking
+              ) =>
+                sum +
+                Number(
+                  booking.totalAmount ||
+                  0
+                ),
+              0
+            );
+
+        result.push({
+          name:
+            date.toLocaleString(
+              'en-IN',
+              {
+                month: 'short'
+              }
+            ),
+          revenue,
+          bookings:
+            monthBookings.length
+        });
+      }
+
+      return result;
+    }, [
+      bookings,
+      period
+    ]);
+
+  // =======================================================
+  // BOOKING STATUS
+  // =======================================================
+
+  const bookingStatusData =
+    useMemo<BookingStatusItem[]>(
+      () => [
+        {
+          name: 'Completed',
+          value:
+            periodBookings.filter(
+              (
+                booking: Booking
+              ) =>
+                booking.bookingStatus ===
+                'COMPLETED'
+            ).length
+        },
+        {
+          name: 'Confirmed',
+          value:
+            periodBookings.filter(
+              (
+                booking: Booking
+              ) =>
+                booking.bookingStatus ===
+                'CONFIRMED'
+            ).length
+        },
+        {
+          name: 'Pending',
+          value:
+            periodBookings.filter(
+              (
+                booking: Booking
+              ) =>
+                booking.bookingStatus ===
+                'PENDING'
+            ).length
+        },
+        {
+          name: 'Cancelled',
+          value:
+            periodBookings.filter(
+              (
+                booking: Booking
+              ) =>
+                booking.bookingStatus ===
+                'CANCELLED'
+            ).length
+        },
+        {
+          name: 'No Show',
+          value:
+            periodBookings.filter(
+              (
+                booking: Booking
+              ) =>
+                booking.bookingStatus ===
+                'NO_SHOW'
+            ).length
+        }
+      ],
+      [
+        periodBookings
+      ]
+    );
+
+  // =======================================================
+  // CUSTOMER GROWTH
+  // =======================================================
+
+  const customerGrowth =
+    useMemo<CustomerGrowthItem[]>(
+      () => {
+        const result: CustomerGrowthItem[] =
+          [];
+
+        const months =
+          period === '12months'
+            ? 12
+            : period === '3months'
+              ? 3
+              : 1;
+
+        for (
+          let i = months - 1;
+          i >= 0;
+          i--
+        ) {
+          const date =
+            new Date();
+
+          date.setMonth(
+            date.getMonth() - i
+          );
+
+          const year =
+            date.getFullYear();
+
+          const month =
+            date.getMonth();
+
+          const count =
+            customers.filter(
+              (customer) => {
+                const created =
+                  parseDate(
+                    customer.createdAt
+                  );
+
+                if (!created) {
+                  return false;
+                }
+
+                return (
+                  created.getFullYear() ===
+                  year &&
+                  created.getMonth() ===
+                  month
+                );
+              }
+            ).length;
+
+          result.push({
+            name:
+              date.toLocaleString(
+                'en-IN',
+                {
+                  month: 'short'
+                }
+              ),
+            customers: count
+          });
+        }
+
+        /*
+         * For 7 days / 30 days show
+         * actual period customer counts.
+         */
+        if (
+          period === '7days' ||
+          period === '30days'
+        ) {
+          const {
+            start,
+            end
+          } =
+            getPeriodDates(
+              period
+            );
+
+          const filtered =
+            customers.filter(
+              (customer) => {
+                const created =
+                  parseDate(
+                    customer.createdAt
+                  );
+
+                return (
+                  created !== null &&
+                  created >= start &&
+                  created <= end
+                );
+              }
+            ).length;
+
+          return [
+            {
+              name: 'Customers',
+              customers:
+                filtered
+            }
+          ];
+        }
+
+        return result;
+      },
+      [
+        customers,
+        period
+      ]
+    );
+
+  // =======================================================
+  // SERVICE PERFORMANCE
+  // =======================================================
+
+  const servicePerformance =
+    useMemo<ServicePerformanceItem[]>(
+      () => {
+        const serviceMap =
+          new Map<
+            string,
+            ServicePerformanceItem
+          >();
+
+        periodBookings.forEach(
+          (booking: Booking) => {
+            booking.services.forEach(
+              (service) => {
+                const serviceId =
+                  service.serviceId ||
+                  service.name;
+
+                const existing =
+                  serviceMap.get(
+                    serviceId
+                  );
+
+                if (existing) {
+                  existing.bookings +=
+                    1;
+
+                  existing.revenue +=
+                    Number(
+                      service.price ||
+                      0
+                    );
+                } else {
+                  serviceMap.set(
+                    serviceId,
+                    {
+                      name:
+                        service.name,
+                      bookings: 1,
+                      revenue:
+                        Number(
+                          service.price ||
+                          0
+                        )
+                    }
+                  );
+                }
+              }
+            );
+          }
+        );
+
+        return Array.from(
+          serviceMap.values()
+        )
+          .sort(
+            (
+              a: ServicePerformanceItem,
+              b: ServicePerformanceItem
+            ) =>
+              b.bookings -
+              a.bookings
+          )
+          .slice(0, 10);
+      },
+      [
+        periodBookings
+      ]
+    );
+
+  // =======================================================
+  // SALON PERFORMANCE
+  // =======================================================
+
+  const salonPerformance =
+    useMemo<SalonPerformanceItem[]>(
+      () => {
+        const salonMap =
+          new Map<
+            string,
+            SalonPerformanceItem
+          >();
+
+        periodBookings.forEach(
+          (booking: Booking) => {
+            const salonId =
+              booking.salonId;
+
+            const existing =
+              salonMap.get(
+                salonId
+              );
+
+            if (existing) {
+              existing.bookings +=
+                1;
+
+              if (
+                booking.bookingStatus !==
+                'CANCELLED'
+              ) {
+                existing.revenue +=
+                  Number(
+                    booking.totalAmount ||
+                    0
+                  );
+              }
+            } else {
+              salonMap.set(
+                salonId,
+                {
+                  salon:
+                    booking.salonName ||
+                    'Unknown Salon',
+                  bookings: 1,
+                  revenue:
+                    booking.bookingStatus !==
+                      'CANCELLED'
+                      ? Number(
+                        booking.totalAmount ||
+                        0
+                      )
+                      : 0,
+                  rating: 0
+                }
+              );
+            }
+          }
+        );
+
+        const result =
+          Array.from(
+            salonMap.values()
+          );
+
+        result.forEach(
+          (
+            salon: SalonPerformanceItem
+          ) => {
+            const matchingSalon =
+              salons.find(
+                (
+                  item: Salon
+                ) =>
+                  item.salonName ===
+                  salon.salon
+              );
+
+            salon.rating =
+              Number(
+                matchingSalon?.averageRating ||
+                0
+              );
+          }
+        );
+
+        return result
+          .sort(
+            (
+              a: SalonPerformanceItem,
+              b: SalonPerformanceItem
+            ) =>
+              b.revenue -
+              a.revenue
+          )
+          .slice(0, 10);
+      },
+      [
+        periodBookings,
+        salons
+      ]
+    );
+
+  // =======================================================
+  // KPI VALUES
+  // =======================================================
+
+  const totalRevenue =
+    periodBookings
+      .filter(
+        (booking: Booking) =>
+          booking.bookingStatus !==
+          'CANCELLED'
+      )
+      .reduce(
+        (
+          sum: number,
+          booking: Booking
+        ) =>
+          sum +
+          Number(
+            booking.totalAmount ||
+            0
+          ),
+        0
+      );
+
+  const totalBookings =
+    periodBookings.length;
+
+  const completedBookings =
+    periodBookings.filter(
+      (booking: Booking) =>
+        booking.bookingStatus ===
+        'COMPLETED'
+    ).length;
+
+  const activeSalons =
+    salons.filter(
+      (salon: Salon) =>
+        salon.isActive &&
+        salon.isVisible &&
+        !salon.isDeleted
+    ).length;
+
+  const averageBookingValue =
+    totalBookings > 0
+      ? totalRevenue /
+      totalBookings
+      : 0;
+
+  const averageRating =
+    reviews.length > 0
+      ? reviews.reduce(
+        (
+          sum: number,
+          review
+        ) =>
+          sum +
+          Number(
+            review.rating || 0
+          ),
+        0
+      ) /
+      reviews.length
+      : 0;
+
+  const cancelledBookings =
+    periodBookings.filter(
+      (booking: Booking) =>
+        booking.bookingStatus ===
+        'CANCELLED'
+    ).length;
+
+  const cancellationRate =
+    totalBookings > 0
+      ? (
+        (cancelledBookings /
+          totalBookings) *
+        100
+      )
+      : 0;
+
+  // =======================================================
+  // PERIOD CHANGE
+  // =======================================================
+
+  const changeLabel =
+    period === '7days'
+      ? 'Last 7 days'
+      : period === '30days'
+        ? 'Last 30 days'
+        : period === '3months'
+          ? 'Last 3 months'
+          : 'Last 12 months';
+
+  // =======================================================
+  // PERIOD CHANGE HANDLER
+  // =======================================================
+
+  const handlePeriodChange = (
+    event: SelectChangeEvent<Period>
+  ): void => {
+    setPeriod(
+      event.target.value as Period
+    );
   };
+
+  // =======================================================
+  // LOADING
+  // =======================================================
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          p: 3,
+          display: 'flex',
+          justifyContent: 'center'
+        }}
+      >
+        <Typography color="text.secondary">
+          Loading analytics...
+        </Typography>
+      </Box>
+    );
+  }
+
+  // =======================================================
+  // ERROR
+  // =======================================================
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <MainCard>
+          <Stack
+            spacing={2}
+            alignItems="center"
+          >
+            <Typography
+              color="error"
+              variant="h6"
+            >
+              Unable to load analytics
+            </Typography>
+
+            <Typography
+              color="text.secondary"
+            >
+              {error}
+            </Typography>
+
+            <Chip
+              label="Retry"
+              color="primary"
+              onClick={() => {
+                void refetch();
+              }}
+              clickable
+            />
+          </Stack>
+        </MainCard>
+      </Box>
+    );
+  }
+
+  // =======================================================
+  // RENDER
+  // =======================================================
 
   return (
     <Box>
@@ -295,29 +1168,55 @@ export default function Analytics() {
       >
         <Grid item>
           <Stack spacing={0.5}>
-            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: 700 }}
+            >
               Analytics
             </Typography>
 
-            <Typography variant="body2" color="text.secondary">
-              Monitor your salon platform performance and business insights.
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              Monitor your salon platform
+              performance and business
+              insights.
             </Typography>
           </Stack>
         </Grid>
 
         <Grid item>
-          <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Period</InputLabel>
+          <FormControl
+            size="small"
+            sx={{ minWidth: 160 }}
+          >
+            <InputLabel>
+              Period
+            </InputLabel>
 
-            <Select
+            <Select<Period>
               value={period}
               label="Period"
-              onChange={handlePeriodChange}
+              onChange={
+                handlePeriodChange
+              }
             >
-              <MenuItem value="7days">Last 7 days</MenuItem>
-              <MenuItem value="30days">Last 30 days</MenuItem>
-              <MenuItem value="3months">Last 3 months</MenuItem>
-              <MenuItem value="12months">Last 12 months</MenuItem>
+              <MenuItem value="7days">
+                Last 7 days
+              </MenuItem>
+
+              <MenuItem value="30days">
+                Last 30 days
+              </MenuItem>
+
+              <MenuItem value="3months">
+                Last 3 months
+              </MenuItem>
+
+              <MenuItem value="12months">
+                Last 12 months
+              </MenuItem>
             </Select>
           </FormControl>
         </Grid>
@@ -325,113 +1224,195 @@ export default function Analytics() {
 
       {/* ============================== KPI CARDS ============================== */}
 
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} lg={3}>
+      <Grid
+        container
+        spacing={2.5}
+        sx={{ mb: 3 }}
+      >
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={3}
+        >
           <StatCard
             title="Total Revenue"
-            value="₹72.1L"
-            change="12.8%"
-            positive
-            subtitle="vs previous period"
-            icon={<DollarOutlined />}
+            value={formatCompactCurrency(
+              totalRevenue
+            )}
+            subtitle={changeLabel}
+            icon={
+              <DollarOutlined />
+            }
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={3}
+        >
           <StatCard
             title="Total Bookings"
-            value="4,856"
-            change="18.4%"
-            positive
-            subtitle="vs previous period"
-            icon={<CalendarOutlined />}
+            value={totalBookings.toLocaleString(
+              'en-IN'
+            )}
+            subtitle={changeLabel}
+            icon={
+              <CalendarOutlined />
+            }
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={3}
+        >
           <StatCard
             title="Total Customers"
-            value="12,482"
-            change="15.2%"
-            positive
-            subtitle="vs previous period"
-            icon={<TeamOutlined />}
+            value={customers.length.toLocaleString(
+              'en-IN'
+            )}
+            subtitle="All customers"
+            icon={
+              <TeamOutlined />
+            }
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={3}
+        >
           <StatCard
             title="Active Salons"
-            value="284"
-            change="8.6%"
-            positive
-            subtitle="vs previous period"
-            icon={<ShopOutlined />}
+            value={activeSalons.toLocaleString(
+              'en-IN'
+            )}
+            subtitle="Currently active"
+            icon={
+              <ShopOutlined />
+            }
           />
         </Grid>
       </Grid>
 
       {/* ============================== SECONDARY KPIs ============================== */}
 
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} lg={3}>
+      <Grid
+        container
+        spacing={2.5}
+        sx={{ mb: 3 }}
+      >
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={3}
+        >
           <StatCard
             title="Completed Bookings"
-            value="3,942"
-            change="14.5%"
-            positive
-            icon={<CheckCircleOutlined />}
+            value={completedBookings.toLocaleString(
+              'en-IN'
+            )}
+            icon={
+              <CheckCircleOutlined />
+            }
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={3}
+        >
           <StatCard
             title="Average Booking Value"
-            value="₹1,485"
-            change="6.2%"
-            positive
-            icon={<ShoppingCartOutlined />}
+            value={formatCurrency(
+              Math.round(
+                averageBookingValue
+              )
+            )}
+            icon={
+              <ShoppingCartOutlined />
+            }
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={3}
+        >
           <StatCard
             title="Average Rating"
-            value="4.6"
-            change="0.3"
-            positive
-            icon={<StarOutlined />}
+            value={averageRating.toFixed(
+              1
+            )}
+            icon={
+              <StarOutlined />
+            }
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={3}
+        >
           <StatCard
             title="Cancellation Rate"
-            value="7.4%"
-            change="2.1%"
-            positive
-            icon={<ClockCircleOutlined />}
+            value={`${cancellationRate.toFixed(
+              1
+            )}%`}
+            icon={
+              <ClockCircleOutlined />
+            }
           />
         </Grid>
       </Grid>
 
       {/* ============================== REVENUE + BOOKINGS ============================== */}
 
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid item xs={12} lg={8}>
+      <Grid
+        container
+        spacing={2.5}
+        sx={{ mb: 3 }}
+      >
+        <Grid
+          item
+          xs={12}
+          lg={8}
+        >
           <MainCard
             title="Revenue & Bookings"
             secondary={
               <Chip
-                label="Live data placeholder"
+                label="Live data"
                 size="small"
+                color="success"
                 variant="outlined"
               />
             }
           >
-            <Box sx={{ width: '100%', height: 360 }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: 360
+              }}
+            >
               <ResponsiveContainer>
-                <AreaChart data={revenueData}>
+                <AreaChart
+                  data={revenueData}
+                >
                   <defs>
                     <linearGradient
                       id="revenueGradient"
@@ -460,21 +1441,53 @@ export default function Analytics() {
                   <XAxis dataKey="name" />
 
                   <YAxis
-                    tickFormatter={(value) =>
-                      `₹${Number(value) / 1000}K`
+                    tickFormatter={(
+                      value: number
+                    ) =>
+                      `₹${(
+                        value / 1000
+                      ).toFixed(0)}K`
                     }
                   />
 
                   <Tooltip
-                    formatter={(value, name) => [
-                      typeof value === 'number' ? value.toLocaleString() : String(value ?? ''),
-                      String(name ?? '')
-                    ]}
+                    formatter={(
+                      value: unknown,
+                      name: unknown
+                    ) => {
+                      const numericValue =
+                        Number(
+                          value || 0
+                        );
+
+                      const label =
+                        String(
+                          name || ''
+                        );
+
+                      return [
+                        label ===
+                          'revenue'
+                          ? formatCurrency(
+                            numericValue
+                          )
+                          : numericValue.toLocaleString(
+                            'en-IN'
+                          ),
+                        label ===
+                          'revenue'
+                          ? 'Revenue'
+                          : 'Bookings'
+                      ];
+                    }}
                   />
+
+                  <Legend />
 
                   <Area
                     type="monotone"
                     dataKey="revenue"
+                    name="Revenue"
                     stroke="#1677ff"
                     fill="url(#revenueGradient)"
                     strokeWidth={2}
@@ -483,9 +1496,9 @@ export default function Analytics() {
                   <Line
                     type="monotone"
                     dataKey="bookings"
+                    name="Bookings"
                     stroke="#52c41a"
                     strokeWidth={2}
-                    yAxisId={0}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -493,13 +1506,24 @@ export default function Analytics() {
           </MainCard>
         </Grid>
 
-        <Grid item xs={12} lg={4}>
+        <Grid
+          item
+          xs={12}
+          lg={4}
+        >
           <MainCard title="Booking Status">
-            <Box sx={{ width: '100%', height: 360 }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: 360
+              }}
+            >
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
-                    data={bookingStatusData}
+                    data={
+                      bookingStatusData
+                    }
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
@@ -508,12 +1532,22 @@ export default function Analytics() {
                     outerRadius={115}
                     paddingAngle={3}
                   >
-                    {bookingStatusData.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
+                    {bookingStatusData.map(
+                      (
+                        item: BookingStatusItem,
+                        index: number
+                      ) => (
+                        <Cell
+                          key={`${item.name}-${index}`}
+                          fill={
+                            COLORS[
+                            index %
+                            COLORS.length
+                            ]
+                          }
+                        />
+                      )
+                    )}
                   </Pie>
 
                   <Tooltip />
@@ -531,12 +1565,29 @@ export default function Analytics() {
 
       {/* ============================== CUSTOMER GROWTH ============================== */}
 
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid item xs={12} lg={6}>
+      <Grid
+        container
+        spacing={2.5}
+        sx={{ mb: 3 }}
+      >
+        <Grid
+          item
+          xs={12}
+          lg={6}
+        >
           <MainCard title="Customer Growth">
-            <Box sx={{ width: '100%', height: 320 }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: 320
+              }}
+            >
               <ResponsiveContainer>
-                <LineChart data={customerGrowth}>
+                <LineChart
+                  data={
+                    customerGrowth
+                  }
+                >
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
@@ -551,6 +1602,7 @@ export default function Analytics() {
                   <Line
                     type="monotone"
                     dataKey="customers"
+                    name="Customers"
                     stroke="#722ed1"
                     strokeWidth={3}
                     dot={{ r: 4 }}
@@ -561,12 +1613,23 @@ export default function Analytics() {
           </MainCard>
         </Grid>
 
-        <Grid item xs={12} lg={6}>
+        <Grid
+          item
+          xs={12}
+          lg={6}
+        >
           <MainCard title="Top Services">
-            <Box sx={{ width: '100%', height: 320 }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: 320
+              }}
+            >
               <ResponsiveContainer>
                 <BarChart
-                  data={servicePerformance}
+                  data={
+                    servicePerformance
+                  }
                   layout="vertical"
                   margin={{
                     left: 20,
@@ -583,7 +1646,7 @@ export default function Analytics() {
                   <YAxis
                     type="category"
                     dataKey="name"
-                    width={90}
+                    width={100}
                   />
 
                   <Tooltip />
@@ -592,7 +1655,12 @@ export default function Analytics() {
                     dataKey="bookings"
                     name="Bookings"
                     fill="#1677ff"
-                    radius={[0, 6, 6, 0]}
+                    radius={[
+                      0,
+                      6,
+                      6,
+                      0
+                    ]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -603,12 +1671,28 @@ export default function Analytics() {
 
       {/* ============================== SERVICE PERFORMANCE ============================== */}
 
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid item xs={12}>
+      <Grid
+        container
+        spacing={2.5}
+        sx={{ mb: 3 }}
+      >
+        <Grid
+          item
+          xs={12}
+        >
           <MainCard title="Service Performance">
-            <Box sx={{ width: '100%', height: 350 }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: 350
+              }}
+            >
               <ResponsiveContainer>
-                <BarChart data={servicePerformance}>
+                <BarChart
+                  data={
+                    servicePerformance
+                  }
+                >
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
@@ -619,30 +1703,58 @@ export default function Analytics() {
                   <YAxis />
 
                   <Tooltip
-                    formatter={(value, name) => {
-                      const numericValue = typeof value === 'number' ? value : Number(value ?? 0);
-                      const label = String(name);
+                    formatter={(
+                      value: unknown,
+                      name: unknown
+                    ) => {
+                      const numericValue =
+                        Number(
+                          value || 0
+                        );
+
+                      const label =
+                        String(
+                          name || ''
+                        );
 
                       return [
-                        label === 'revenue' ? formatCurrency(numericValue) : numericValue,
-                        label === 'revenue' ? 'Revenue' : 'Bookings'
+                        label ===
+                          'Revenue'
+                          ? formatCurrency(
+                            numericValue
+                          )
+                          : numericValue.toLocaleString(
+                            'en-IN'
+                          ),
+                        label
                       ];
                     }}
                   />
+
                   <Legend />
 
                   <Bar
                     dataKey="bookings"
                     name="Bookings"
                     fill="#1677ff"
-                    radius={[6, 6, 0, 0]}
+                    radius={[
+                      6,
+                      6,
+                      0,
+                      0
+                    ]}
                   />
 
                   <Bar
                     dataKey="revenue"
                     name="Revenue"
                     fill="#52c41a"
-                    radius={[6, 6, 0, 0]}
+                    radius={[
+                      6,
+                      6,
+                      0,
+                      0
+                    ]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -653,142 +1765,230 @@ export default function Analytics() {
 
       {/* ============================== TOP SALONS ============================== */}
 
-      <Grid container spacing={2.5}>
-        <Grid item xs={12}>
+      <Grid
+        container
+        spacing={2.5}
+      >
+        <Grid
+          item
+          xs={12}
+        >
           <MainCard title="Top Performing Salons">
-            <Box sx={{ overflowX: 'auto' }}>
+            <Box
+              sx={{
+                overflowX: 'auto'
+              }}
+            >
               <Box
                 component="table"
                 sx={{
                   width: '100%',
-                  borderCollapse: 'collapse',
+                  borderCollapse:
+                    'collapse',
+
                   '& th': {
-                    textAlign: 'left',
-                    padding: '14px 12px',
-                    color: 'text.secondary',
-                    fontSize: '0.8rem',
+                    textAlign:
+                      'left',
+                    padding:
+                      '14px 12px',
+                    color:
+                      'text.secondary',
+                    fontSize:
+                      '0.8rem',
                     fontWeight: 600,
-                    borderBottom: '1px solid',
-                    borderColor: 'divider'
+                    borderBottom:
+                      '1px solid',
+                    borderColor:
+                      'divider'
                   },
+
                   '& td': {
-                    padding: '16px 12px',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider'
+                    padding:
+                      '16px 12px',
+                    borderBottom:
+                      '1px solid',
+                    borderColor:
+                      'divider'
                   }
                 }}
               >
                 <thead>
                   <tr>
-                    <th>Salon</th>
-                    <th>Bookings</th>
-                    <th>Revenue</th>
-                    <th>Rating</th>
-                    <th>Performance</th>
+                    <th>
+                      Salon
+                    </th>
+
+                    <th>
+                      Bookings
+                    </th>
+
+                    <th>
+                      Revenue
+                    </th>
+
+                    <th>
+                      Rating
+                    </th>
+
+                    <th>
+                      Performance
+                    </th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {salonPerformance.map((salon, index) => (
-                    <tr key={salon.salon}>
-                      <td>
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          alignItems="center"
-                        >
-                          <Box
+                  {salonPerformance.map(
+                    (
+                      salon: SalonPerformanceItem,
+                      index: number
+                    ) => (
+                      <tr
+                        key={
+                          salon.salon
+                        }
+                      >
+                        <td>
+                          <Stack
+                            direction="row"
+                            spacing={
+                              1.5
+                            }
+                            alignItems="center"
+                          >
+                            <Box
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 2,
+                                display:
+                                  'flex',
+                                alignItems:
+                                  'center',
+                                justifyContent:
+                                  'center',
+                                bgcolor:
+                                  'primary.lighter',
+                                color:
+                                  'primary.main'
+                              }}
+                            >
+                              <EnvironmentOutlined />
+                            </Box>
+
+                            <Box>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 600
+                                }}
+                              >
+                                {
+                                  salon.salon
+                                }
+                              </Typography>
+
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Rank #
+                                {index +
+                                  1}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </td>
+
+                        <td>
+                          <Typography variant="body2">
+                            {salon.bookings.toLocaleString(
+                              'en-IN'
+                            )}
+                          </Typography>
+                        </td>
+
+                        <td>
+                          <Typography
+                            variant="body2"
                             sx={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: 2,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              bgcolor: 'primary.lighter',
-                              color: 'primary.main'
+                              fontWeight: 600
                             }}
                           >
-                            <EnvironmentOutlined />
-                          </Box>
-
-                          <Box>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 600 }}
-                            >
-                              {salon.salon}
-                            </Typography>
-
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              Rank #{index + 1}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </td>
-
-                      <td>
-                        <Typography variant="body2">
-                          {salon.bookings.toLocaleString()}
-                        </Typography>
-                      </td>
-
-                      <td>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 600 }}
-                        >
-                          {formatCurrency(salon.revenue)}
-                        </Typography>
-                      </td>
-
-                      <td>
-                        <Stack
-                          direction="row"
-                          spacing={0.5}
-                          alignItems="center"
-                        >
-                          <StarOutlined
-                            style={{
-                              color: '#faad14'
-                            }}
-                          />
-
-                          <Typography variant="body2">
-                            {salon.rating}
+                            {formatCurrency(
+                              salon.revenue
+                            )}
                           </Typography>
-                        </Stack>
-                      </td>
+                        </td>
 
-                      <td>
-                        <Chip
-                          label={
-                            index === 0
-                              ? 'Excellent'
-                              : index < 3
-                                ? 'Very Good'
-                                : 'Good'
-                          }
-                          size="small"
-                          color={
-                            index === 0
-                              ? 'success'
-                              : 'default'
-                          }
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                        <td>
+                          <Stack
+                            direction="row"
+                            spacing={
+                              0.5
+                            }
+                            alignItems="center"
+                          >
+                            <StarOutlined
+                              style={{
+                                color:
+                                  '#faad14'
+                              }}
+                            />
+
+                            <Typography variant="body2">
+                              {salon.rating.toFixed(
+                                1
+                              )}
+                            </Typography>
+                          </Stack>
+                        </td>
+
+                        <td>
+                          <Chip
+                            label={
+                              index ===
+                                0
+                                ? 'Excellent'
+                                : index <
+                                  3
+                                  ? 'Very Good'
+                                  : 'Good'
+                            }
+                            size="small"
+                            color={
+                              index ===
+                                0
+                                ? 'success'
+                                : 'default'
+                            }
+                          />
+                        </td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </Box>
             </Box>
+
+            {salonPerformance.length ===
+              0 && (
+                <Box
+                  sx={{
+                    py: 5,
+                    textAlign:
+                      'center'
+                  }}
+                >
+                  <Typography color="text.secondary">
+                    No salon booking
+                    data available
+                    for this period.
+                  </Typography>
+                </Box>
+              )}
           </MainCard>
         </Grid>
       </Grid>
     </Box>
   );
 }
-
