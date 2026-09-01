@@ -236,7 +236,8 @@ export const REJECT_SALON = gql`
     }
   }
 `;
-const ADMIN_BOOKINGS = gql`
+
+export const ADMIN_BOOKINGS = gql`
   query AdminBookings(
     $search: String
     $bookingStatus: BookingStatus

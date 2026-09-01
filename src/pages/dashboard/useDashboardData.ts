@@ -1,44 +1,98 @@
 
-import { useCallback, useEffect, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useState
+} from 'react';
+
+import { useApolloClient } from '@apollo/client';
 
 import {
   DashboardData,
+  DashboardPeriod,
+  buildDashboardData,
   fetchDashboardData
 } from './dashboardApi';
 
-// ==============================|| DASHBOARD HOOK ||============================== //
+// =========================================================
+// HOOK
+// =========================================================
 
-export const useDashboardData = () => {
-  const [data, setData] = useState<DashboardData | null>(null);
+export const useDashboardData = (
+  period: DashboardPeriod
+) => {
+  const client = useApolloClient();
 
-  const [loading, setLoading] = useState(true);
+  const [
+    data,
+    setData
+  ] = useState<DashboardData | null>(null);
 
-  const [error, setError] = useState<string | null>(null);
+  const [
+    loading,
+    setLoading
+  ] = useState<boolean>(true);
 
-  const loadDashboard = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const [
+    error,
+    setError
+  ] = useState<string | null>(null);
 
-      const response = await fetchDashboardData();
+  // =======================================================
+  // LOAD DASHBOARD
+  // =======================================================
 
-      setData(response);
-    } catch (err) {
-      console.error('Dashboard loading error:', err);
+  const loadDashboard = useCallback(
+    async (): Promise<void> => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to load dashboard data'
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        const result = await fetchDashboardData(
+          client
+        );
+
+        const dashboard = buildDashboardData(
+          result.customers,
+          result.salons,
+          result.bookings,
+          result.reviews,
+          period
+        );
+
+        setData(dashboard);
+      } catch (err: unknown) {
+        console.error(
+          'Dashboard loading error:',
+          err
+        );
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Unable to load dashboard data'
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      client,
+      period
+    ]
+  );
+
+  // =======================================================
+  // LOAD ON MOUNT / PERIOD CHANGE
+  // =======================================================
 
   useEffect(() => {
-    loadDashboard();
+    void loadDashboard();
   }, [loadDashboard]);
+
+  // =======================================================
+  // RETURN
+  // =======================================================
 
   return {
     data,
@@ -49,3 +103,4 @@ export const useDashboardData = () => {
 };
 
 export default useDashboardData;
+
