@@ -1,5 +1,5 @@
-
 import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from '@apollo/client';
 
 // material-ui
 import {
@@ -33,177 +33,56 @@ import {
   DeleteOutlined,
   EyeOutlined,
   SearchOutlined,
-  StarFilled,
-  UserOutlined
+  StarFilled
 } from '@ant-design/icons';
+
+// GraphQL
+import {
+  ADMIN_REVIEWS,
+  UPDATE_REVIEW_STATUS
+} from 'graphql/queries';
 
 // ==============================|| TYPES ||============================== //
 
+type ReviewStatus =
+  | 'PUBLISHED'
+  | 'FLAGGED'
+  | 'HIDDEN';
+
 interface Review {
   reviewId: string;
+  bookingId?: string | null;
   salonId: string;
-  salonName: string;
+  salonName?: string | null;
   customerUserId: string;
-  customerName: string;
+  customerName?: string | null;
   rating: number;
   review: string;
   createdAt: string;
-
-  bookingId: string;
-  serviceName: string;
-
-  status: 'PUBLISHED' | 'FLAGGED' | 'HIDDEN';
+  status: ReviewStatus;
 }
 
-// ==============================|| STATIC DATA ||============================== //
+interface AdminReviewsData {
+  adminReviews: {
+    success: boolean;
+    message: string;
+    totalCount: number;
+    reviews: Review[];
+  };
+}
 
-const reviews: Review[] = [
-  {
-    reviewId: 'REV-10001',
-    salonId: 'SALON-001',
-    salonName: 'Glow Beauty Studio',
-    customerUserId: 'USR-001',
-    customerName: 'Ananya Sharma',
-    rating: 5,
-    review:
-      'Amazing experience! The staff were very professional and the service was excellent.',
-    createdAt: '2026-08-30 10:45 AM',
-    bookingId: 'BK-10001',
-    serviceName: 'Hair Cut & Hair Spa',
-    status: 'PUBLISHED'
-  },
-  {
-    reviewId: 'REV-10002',
-    salonId: 'SALON-002',
-    salonName: 'Urban Glam Salon',
-    customerUserId: 'USR-002',
-    customerName: 'Rahul Kumar',
-    rating: 4,
-    review:
-      'Good service and friendly staff. The salon was clean and comfortable.',
-    createdAt: '2026-08-29 04:20 PM',
-    bookingId: 'BK-10002',
-    serviceName: 'Men Haircut',
-    status: 'PUBLISHED'
-  },
-  {
-    reviewId: 'REV-10003',
-    salonId: 'SALON-003',
-    salonName: 'Luxe Hair & Spa',
-    customerUserId: 'USR-003',
-    customerName: 'Sneha Reddy',
-    rating: 5,
-    review:
-      'Loved the facial and manicure. Everything was handled professionally.',
-    createdAt: '2026-08-29 06:15 PM',
-    bookingId: 'BK-10003',
-    serviceName: 'Facial & Manicure',
-    status: 'PUBLISHED'
-  },
-  {
-    reviewId: 'REV-10004',
-    salonId: 'SALON-004',
-    salonName: 'Blush & Bloom',
-    customerUserId: 'USR-005',
-    customerName: 'Megha Patel',
-    rating: 4.5,
-    review:
-      'Beautiful salon and very good makeup trial. The artist understood exactly what I wanted.',
-    createdAt: '2026-08-28 02:30 PM',
-    bookingId: 'BK-10005',
-    serviceName: 'Bridal Makeup Trial',
-    status: 'PUBLISHED'
-  },
-  {
-    reviewId: 'REV-10005',
-    salonId: 'SALON-005',
-    salonName: 'The Hair Lounge',
-    customerUserId: 'USR-006',
-    customerName: 'Vikram Singh',
-    rating: 2,
-    review:
-      'The appointment was delayed and I had to wait for quite some time.',
-    createdAt: '2026-08-27 05:45 PM',
-    bookingId: 'BK-10006',
-    serviceName: 'Haircut',
-    status: 'FLAGGED'
-  },
-  {
-    reviewId: 'REV-10006',
-    salonId: 'SALON-001',
-    salonName: 'Glow Beauty Studio',
-    customerUserId: 'USR-007',
-    customerName: 'Pooja Rao',
-    rating: 3,
-    review:
-      'The service was okay but there is some room for improvement.',
-    createdAt: '2026-08-26 01:10 PM',
-    bookingId: 'BK-10007',
-    serviceName: 'Hair Coloring',
-    status: 'PUBLISHED'
-  },
-  {
-    reviewId: 'REV-10007',
-    salonId: 'SALON-002',
-    salonName: 'Urban Glam Salon',
-    customerUserId: 'USR-008',
-    customerName: 'Kiran Joshi',
-    rating: 1,
-    review:
-      'Very disappointing experience. I would not recommend this service.',
-    createdAt: '2026-08-25 07:30 PM',
-    bookingId: 'BK-10008',
-    serviceName: 'Hair Styling',
-    status: 'FLAGGED'
-  },
-  {
-    reviewId: 'REV-10008',
-    salonId: 'SALON-003',
-    salonName: 'Luxe Hair & Spa',
-    customerUserId: 'USR-009',
-    customerName: 'Divya Nair',
-    rating: 5,
-    review:
-      'Excellent service. Very clean salon and highly skilled staff.',
-    createdAt: '2026-08-24 11:25 AM',
-    bookingId: 'BK-10009',
-    serviceName: 'Spa Treatment',
-    status: 'PUBLISHED'
-  },
-  {
-    reviewId: 'REV-10009',
-    salonId: 'SALON-004',
-    salonName: 'Blush & Bloom',
-    customerUserId: 'USR-010',
-    customerName: 'Riya Mehta',
-    rating: 4,
-    review:
-      'Really nice experience. Staff were polite and the results were good.',
-    createdAt: '2026-08-23 03:45 PM',
-    bookingId: 'BK-10010',
-    serviceName: 'Facial',
-    status: 'PUBLISHED'
-  },
-  {
-    reviewId: 'REV-10010',
-    salonId: 'SALON-005',
-    salonName: 'The Hair Lounge',
-    customerUserId: 'USR-011',
-    customerName: 'Arjun Rao',
-    rating: 2.5,
-    review:
-      'Service was average and took longer than expected.',
-    createdAt: '2026-08-22 05:00 PM',
-    bookingId: 'BK-10011',
-    serviceName: 'Beard Styling',
-    status: 'HIDDEN'
-  }
-];
+interface UpdateReviewStatusData {
+  updateReviewStatus: {
+    success: boolean;
+    message: string;
+    review?: Review | null;
+  };
+}
 
 // ==============================|| HELPERS ||============================== //
 
 const getStatusColor = (
-  status: Review['status']
+  status: ReviewStatus
 ): 'success' | 'warning' | 'error' => {
   switch (status) {
     case 'PUBLISHED':
@@ -220,13 +99,44 @@ const getStatusColor = (
   }
 };
 
-const getInitials = (name: string) =>
-  name
-    .split(' ')
+const getInitials = (
+  name?: string | null
+) => {
+  if (!name) {
+    return 'CU';
+  }
+
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
     .map((word) => word.charAt(0))
     .slice(0, 2)
     .join('')
     .toUpperCase();
+};
+
+const formatDate = (
+  value?: string | null
+) => {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
 // ==============================|| STAT CARD ||============================== //
 
@@ -260,7 +170,10 @@ function StatCard({
         alignItems="flex-start"
       >
         <Box>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
             {title}
           </Typography>
 
@@ -308,36 +221,135 @@ export default function Reviews() {
   const [search, setSearch] = useState('');
 
   const [ratingFilter, setRatingFilter] =
-    useState<'ALL' | '5' | '4' | '3' | '2' | '1'>('ALL');
+    useState<
+      'ALL' | '5' | '4' | '3' | '2' | '1'
+    >('ALL');
 
   const [statusFilter, setStatusFilter] =
-    useState<'ALL' | Review['status']>('ALL');
+    useState<'ALL' | ReviewStatus>('ALL');
 
   const [page, setPage] = useState(0);
 
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] =
+    useState(10);
 
-  // ==============================|| STATISTICS ||============================== //
+  // ============================================================
+  // ADMIN REVIEWS QUERY
+  // ============================================================
+
+  const {
+    data,
+    loading,
+    error,
+    refetch
+  } = useQuery<AdminReviewsData>(
+    ADMIN_REVIEWS,
+    {
+      variables: {
+        search:
+          search.trim() || null,
+
+        rating:
+          ratingFilter === 'ALL'
+            ? null
+            : Number(ratingFilter),
+
+        status:
+          statusFilter === 'ALL'
+            ? null
+            : statusFilter,
+
+        salonId: null
+      },
+
+      fetchPolicy: 'network-only'
+    }
+  );
+
+  // ============================================================
+  // UPDATE REVIEW STATUS
+  // ============================================================
+
+  const [
+    updateReviewStatus,
+    {
+      loading: updating
+    }
+  ] = useMutation<UpdateReviewStatusData>(
+    UPDATE_REVIEW_STATUS,
+    {
+      onCompleted: (result) => {
+        if (
+          result?.updateReviewStatus?.success
+        ) {
+          refetch();
+          return;
+        }
+
+        alert(
+          result?.updateReviewStatus?.message ||
+            'Failed to update review status.'
+        );
+      },
+
+      onError: (mutationError) => {
+        console.error(
+          'UPDATE REVIEW STATUS ERROR:',
+          mutationError
+        );
+
+        alert(
+          mutationError.message ||
+            'Failed to update review status.'
+        );
+      }
+    }
+  );
+
+  // ============================================================
+  // DATA
+  // ============================================================
+
+  const reviews =
+    data?.adminReviews?.reviews ?? [];
+
+  const totalCount =
+    data?.adminReviews?.totalCount ??
+    reviews.length;
+
+  // ============================================================
+  // STATISTICS
+  // ============================================================
 
   const statistics = useMemo(() => {
     const total = reviews.length;
 
-    const published = reviews.filter(
-      (review) => review.status === 'PUBLISHED'
-    ).length;
+    const published =
+      reviews.filter(
+        (review) =>
+          review.status === 'PUBLISHED'
+      ).length;
 
-    const flagged = reviews.filter(
-      (review) => review.status === 'FLAGGED'
-    ).length;
+    const flagged =
+      reviews.filter(
+        (review) =>
+          review.status === 'FLAGGED'
+      ).length;
 
-    const hidden = reviews.filter(
-      (review) => review.status === 'HIDDEN'
-    ).length;
+    const hidden =
+      reviews.filter(
+        (review) =>
+          review.status === 'HIDDEN'
+      ).length;
 
     const averageRating =
       reviews.length > 0
         ? reviews.reduce(
-            (sum, review) => sum + review.rating,
+            (sum, review) =>
+              sum +
+              Number(
+                review.rating || 0
+              ),
             0
           ) / reviews.length
         : 0;
@@ -349,52 +361,35 @@ export default function Reviews() {
       hidden,
       averageRating
     };
-  }, []);
+  }, [reviews]);
 
-  // ==============================|| FILTER ||============================== //
+  // ============================================================
+  // HANDLERS
+  // ============================================================
 
-  const filteredReviews = useMemo(() => {
-    const searchValue = search.trim().toLowerCase();
-
-    return reviews.filter((review) => {
-      const matchesSearch =
-        !searchValue ||
-        review.reviewId.toLowerCase().includes(searchValue) ||
-        review.customerName.toLowerCase().includes(searchValue) ||
-        review.salonName.toLowerCase().includes(searchValue) ||
-        review.review.toLowerCase().includes(searchValue) ||
-        review.bookingId.toLowerCase().includes(searchValue) ||
-        review.serviceName.toLowerCase().includes(searchValue);
-
-      const matchesRating =
-        ratingFilter === 'ALL' ||
-        Math.floor(review.rating) === Number(ratingFilter);
-
-      const matchesStatus =
-        statusFilter === 'ALL' ||
-        review.status === statusFilter;
-
-      return (
-        matchesSearch &&
-        matchesRating &&
-        matchesStatus
-      );
-    });
-  }, [search, ratingFilter, statusFilter]);
-
-  // ==============================|| HANDLERS ||============================== //
-
-  const handleRatingChange = (event: SelectChangeEvent) => {
+  const handleRatingChange = (
+    event: SelectChangeEvent
+  ) => {
     setRatingFilter(
-      event.target.value as 'ALL' | '5' | '4' | '3' | '2' | '1'
+      event.target.value as
+        | 'ALL'
+        | '5'
+        | '4'
+        | '3'
+        | '2'
+        | '1'
     );
 
     setPage(0);
   };
 
-  const handleStatusChange = (event: SelectChangeEvent) => {
+  const handleStatusChange = (
+    event: SelectChangeEvent
+  ) => {
     setStatusFilter(
-      event.target.value as 'ALL' | Review['status']
+      event.target.value as
+        | 'ALL'
+        | ReviewStatus
     );
 
     setPage(0);
@@ -404,21 +399,174 @@ export default function Reviews() {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     setRowsPerPage(
-      parseInt(event.target.value, 10)
+      parseInt(
+        event.target.value,
+        10
+      )
     );
 
     setPage(0);
   };
 
-  // ==============================|| RENDER ||============================== //
+  // ============================================================
+  // VIEW REVIEW
+  // ============================================================
+
+  const handleViewReview = (
+    review: Review
+  ) => {
+    alert(
+      `Review ID: ${review.reviewId}
+
+Customer: ${
+        review.customerName ||
+        'Unknown Customer'
+      }
+
+Customer ID: ${
+        review.customerUserId
+      }
+
+Salon: ${
+        review.salonName ||
+        'Unknown Salon'
+      }
+
+Salon ID: ${
+        review.salonId
+      }
+
+Booking: ${
+        review.bookingId ||
+        '-'
+      }
+
+Rating: ${
+        Number(review.rating).toFixed(1)
+      }
+
+Status: ${
+        review.status
+      }
+
+Review:
+
+${review.review}`
+    );
+  };
+
+  // ============================================================
+  // UPDATE STATUS
+  // ============================================================
+
+  const changeReviewStatus = async (
+    review: Review,
+    status: ReviewStatus
+  ) => {
+    try {
+      await updateReviewStatus({
+        variables: {
+          input: {
+            reviewId:
+              review.reviewId,
+            status
+          }
+        }
+      });
+    } catch (error) {
+      console.error(
+        'CHANGE REVIEW STATUS ERROR:',
+        error
+      );
+    }
+  };
+
+  // ============================================================
+  // HIDE REVIEW
+  // ============================================================
+
+  const handleHideReview = async (
+    review: Review
+  ) => {
+    const confirmed =
+      window.confirm(
+        `Are you sure you want to hide review ${review.reviewId}?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await changeReviewStatus(
+      review,
+      'HIDDEN'
+    );
+  };
+
+  // ============================================================
+  // FLAG REVIEW
+  // ============================================================
+
+  const handleFlagReview = async (
+    review: Review
+  ) => {
+    const confirmed =
+      window.confirm(
+        `Are you sure you want to flag review ${review.reviewId}?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await changeReviewStatus(
+      review,
+      'FLAGGED'
+    );
+  };
+
+  // ============================================================
+  // PUBLISH REVIEW
+  // ============================================================
+
+  const handlePublishReview = async (
+    review: Review
+  ) => {
+    const confirmed =
+      window.confirm(
+        `Publish review ${review.reviewId}?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await changeReviewStatus(
+      review,
+      'PUBLISHED'
+    );
+  };
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
     <Box>
+      {/* ====================================================== */}
       {/* HEADER */}
+      {/* ====================================================== */}
+
       <Stack
-        direction={{ xs: 'column', sm: 'row' }}
+        direction={{
+          xs: 'column',
+          sm: 'row'
+        }}
         justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        alignItems={{
+          xs: 'flex-start',
+          sm: 'center'
+        }}
         spacing={2}
         sx={{ mb: 3 }}
       >
@@ -435,52 +583,91 @@ export default function Reviews() {
             color="text.secondary"
             sx={{ mt: 0.5 }}
           >
-            Monitor customer feedback and manage
-            reviews across all Clavata salons.
+            Monitor customer feedback and
+            manage reviews across all
+            Clavata salons.
           </Typography>
         </Box>
       </Stack>
 
+      {/* ====================================================== */}
       {/* STATISTICS */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      {/* ====================================================== */}
+
+      <Grid
+        container
+        spacing={2}
+        sx={{ mb: 3 }}
+      >
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <StatCard
             title="Total Reviews"
-            value={String(statistics.total)}
+            value={String(
+              statistics.total
+            )}
             description="All customer reviews"
             icon={<StarFilled />}
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <StatCard
             title="Average Rating"
-            value={statistics.averageRating.toFixed(1)}
+            value={statistics.averageRating.toFixed(
+              1
+            )}
             description="Across all salons"
             icon={<StarFilled />}
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <StatCard
             title="Published"
-            value={String(statistics.published)}
+            value={String(
+              statistics.published
+            )}
             description="Visible to customers"
             icon={<EyeOutlined />}
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <StatCard
             title="Flagged"
-            value={String(statistics.flagged)}
+            value={String(
+              statistics.flagged
+            )}
             description="Requires attention"
             icon={<DeleteOutlined />}
           />
         </Grid>
       </Grid>
 
+      {/* ====================================================== */}
       {/* TABLE */}
+      {/* ====================================================== */}
+
       <Paper
         elevation={0}
         sx={{
@@ -489,19 +676,30 @@ export default function Reviews() {
           borderRadius: 2
         }}
       >
+        {/* ==================================================== */}
         {/* FILTERS */}
+        {/* ==================================================== */}
+
         <Box sx={{ p: 2.5 }}>
           <Stack
-            direction={{ xs: 'column', md: 'row' }}
+            direction={{
+              xs: 'column',
+              md: 'row'
+            }}
             justifyContent="space-between"
             spacing={2}
           >
+            {/* SEARCH */}
+
             <TextField
               fullWidth
               placeholder="Search customer, salon, booking or review..."
               value={search}
               onChange={(event) => {
-                setSearch(event.target.value);
+                setSearch(
+                  event.target.value
+                );
+
                 setPage(0);
               }}
               sx={{
@@ -516,14 +714,21 @@ export default function Reviews() {
               }}
             />
 
+            {/* FILTERS */}
+
             <Stack
-              direction={{ xs: 'column', sm: 'row' }}
+              direction={{
+                xs: 'column',
+                sm: 'row'
+              }}
               spacing={2}
             >
               <Select
                 size="small"
                 value={ratingFilter}
-                onChange={handleRatingChange}
+                onChange={
+                  handleRatingChange
+                }
                 sx={{
                   minWidth: 150
                 }}
@@ -556,7 +761,9 @@ export default function Reviews() {
               <Select
                 size="small"
                 value={statusFilter}
-                onChange={handleStatusChange}
+                onChange={
+                  handleStatusChange
+                }
                 sx={{
                   minWidth: 160
                 }}
@@ -583,18 +790,58 @@ export default function Reviews() {
 
         <Divider />
 
-        {/* REVIEW TABLE */}
+        {/* ==================================================== */}
+        {/* ERROR */}
+        {/* ==================================================== */}
+
+        {error && (
+          <Box sx={{ p: 3 }}>
+            <Typography
+              color="error"
+              variant="body2"
+            >
+              Failed to load reviews:{' '}
+              {error.message}
+            </Typography>
+          </Box>
+        )}
+
+        {/* ==================================================== */}
+        {/* TABLE */}
+        {/* ==================================================== */}
+
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Customer</TableCell>
-                <TableCell>Salon</TableCell>
-                <TableCell>Service</TableCell>
-                <TableCell>Rating</TableCell>
-                <TableCell>Review</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>
+                  Customer
+                </TableCell>
+
+                <TableCell>
+                  Salon
+                </TableCell>
+
+                <TableCell>
+                  Booking
+                </TableCell>
+
+                <TableCell>
+                  Rating
+                </TableCell>
+
+                <TableCell>
+                  Review
+                </TableCell>
+
+                <TableCell>
+                  Date
+                </TableCell>
+
+                <TableCell>
+                  Status
+                </TableCell>
+
                 <TableCell align="right">
                   Actions
                 </TableCell>
@@ -602,96 +849,141 @@ export default function Reviews() {
             </TableHead>
 
             <TableBody>
-              {filteredReviews
-                .slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-                )
-                .map((review) => (
-                  <TableRow
-                    key={review.reviewId}
-                    hover
+              {/* ================================================= */}
+              {/* LOADING */}
+              {/* ================================================= */}
+
+              {loading && (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    align="center"
                   >
-                    {/* CUSTOMER */}
-                    <TableCell>
-                      <Stack
-                        direction="row"
-                        spacing={1.2}
-                        alignItems="center"
+                    <Box
+                      sx={{
+                        py: 6
+                      }}
+                    >
+                      <Typography
+                        color="text.secondary"
                       >
-                        <Avatar
-                          sx={{
-                            width: 36,
-                            height: 36,
-                            bgcolor: 'primary.lighter',
-                            color: 'primary.main',
-                            fontSize: 13
-                          }}
+                        Loading reviews...
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {/* ================================================= */}
+              {/* DATA */}
+              {/* ================================================= */}
+
+              {!loading &&
+                reviews
+                  .slice(
+                    page *
+                      rowsPerPage,
+                    page *
+                        rowsPerPage +
+                      rowsPerPage
+                  )
+                  .map((review) => (
+                    <TableRow
+                      key={
+                        review.reviewId
+                      }
+                      hover
+                    >
+                      {/* CUSTOMER */}
+
+                      <TableCell>
+                        <Stack
+                          direction="row"
+                          spacing={1.2}
+                          alignItems="center"
                         >
-                          {getInitials(
-                            review.customerName
-                          )}
-                        </Avatar>
-
-                        <Box>
-                          <Typography
-                            variant="body2"
-                            fontWeight={600}
+                          <Avatar
+                            sx={{
+                              width: 36,
+                              height: 36,
+                              bgcolor:
+                                'primary.lighter',
+                              color:
+                                'primary.main',
+                              fontSize: 13
+                            }}
                           >
-                            {review.customerName}
-                          </Typography>
+                            {getInitials(
+                              review.customerName
+                            )}
+                          </Avatar>
 
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            {review.customerUserId}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </TableCell>
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              fontWeight={600}
+                            >
+                              {review.customerName ||
+                                'Unknown Customer'}
+                            </Typography>
 
-                    {/* SALON */}
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        fontWeight={600}
-                      >
-                        {review.salonName}
-                      </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {
+                                review.customerUserId
+                              }
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
 
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                      >
-                        {review.salonId}
-                      </Typography>
-                    </TableCell>
+                      {/* SALON */}
 
-                    {/* SERVICE */}
-                    <TableCell>
-                      <Typography variant="body2">
-                        {review.serviceName}
-                      </Typography>
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                        >
+                          {review.salonName ||
+                            'Unknown Salon'}
+                        </Typography>
 
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                      >
-                        {review.bookingId}
-                      </Typography>
-                    </TableCell>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          {
+                            review.salonId
+                          }
+                        </Typography>
+                      </TableCell>
 
-                    {/* RATING */}
-                    <TableCell>
-                      <Stack spacing={0.5}>
+                      {/* BOOKING */}
+
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                        >
+                          {review.bookingId ||
+                            '-'}
+                        </Typography>
+                      </TableCell>
+
+                      {/* RATING */}
+
+                      <TableCell>
                         <Stack
                           direction="row"
                           alignItems="center"
                           spacing={0.5}
                         >
                           <Rating
-                            value={review.rating}
+                            value={Number(
+                              review.rating
+                            )}
                             precision={0.5}
                             size="small"
                             readOnly
@@ -701,144 +993,233 @@ export default function Reviews() {
                             variant="body2"
                             fontWeight={600}
                           >
-                            {review.rating}
+                            {Number(
+                              review.rating
+                            ).toFixed(1)}
                           </Typography>
                         </Stack>
-                      </Stack>
-                    </TableCell>
+                      </TableCell>
 
-                    {/* REVIEW */}
-                    <TableCell
-                      sx={{
-                        maxWidth: 350
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
+                      {/* REVIEW */}
+
+                      <TableCell
                         sx={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical'
+                          maxWidth: 350
                         }}
                       >
-                        {review.review}
-                      </Typography>
-                    </TableCell>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            overflow:
+                              'hidden',
+                            textOverflow:
+                              'ellipsis',
+                            display:
+                              '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient:
+                              'vertical'
+                          }}
+                        >
+                          {review.review}
+                        </Typography>
+                      </TableCell>
 
-                    {/* DATE */}
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                      >
-                        {review.createdAt}
-                      </Typography>
-                    </TableCell>
+                      {/* DATE */}
 
-                    {/* STATUS */}
-                    <TableCell>
-                      <Chip
-                        size="small"
-                        label={review.status}
-                        color={getStatusColor(
-                          review.status
-                        )}
-                        variant={
-                          review.status === 'PUBLISHED'
-                            ? 'outlined'
-                            : 'filled'
-                        }
-                      />
-                    </TableCell>
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                        >
+                          {formatDate(
+                            review.createdAt
+                          )}
+                        </Typography>
+                      </TableCell>
 
-                    {/* ACTIONS */}
-                    <TableCell align="right">
-                      <Stack
-                        direction="row"
-                        justifyContent="flex-end"
-                      >
-                        <Tooltip title="View Review">
-                          <IconButton
-                            color="primary"
-                            onClick={() => {
-                              alert(
-                                `Review ${review.reviewId}\n\n${review.review}`
-                              );
-                            }}
-                          >
-                            <EyeOutlined />
-                          </IconButton>
-                        </Tooltip>
+                      {/* STATUS */}
 
-                        {review.status !== 'HIDDEN' && (
-                          <Tooltip title="Hide Review">
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label={
+                            review.status
+                          }
+                          color={getStatusColor(
+                            review.status
+                          )}
+                          variant={
+                            review.status ===
+                            'PUBLISHED'
+                              ? 'outlined'
+                              : 'filled'
+                          }
+                        />
+                      </TableCell>
+
+                      {/* ACTIONS */}
+
+                      <TableCell align="right">
+                        <Stack
+                          direction="row"
+                          justifyContent="flex-end"
+                        >
+                          {/* VIEW */}
+
+                          <Tooltip title="View Review">
                             <IconButton
-                              color="error"
-                              onClick={() => {
-                                alert(
-                                  `Hide review ${review.reviewId} later through GraphQL`
-                                );
-                              }}
+                              color="primary"
+                              onClick={() =>
+                                handleViewReview(
+                                  review
+                                )
+                              }
                             >
-                              <DeleteOutlined />
+                              <EyeOutlined />
                             </IconButton>
                           </Tooltip>
-                        )}
-                      </Stack>
+
+                          {/* FLAG */}
+
+                          {review.status ===
+                            'PUBLISHED' && (
+                            <Tooltip title="Flag Review">
+                              <span>
+                                <IconButton
+                                  color="warning"
+                                  disabled={
+                                    updating
+                                  }
+                                  onClick={() =>
+                                    handleFlagReview(
+                                      review
+                                    )
+                                  }
+                                >
+                                  <StarFilled />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
+
+                          {/* PUBLISH */}
+
+                          {review.status !==
+                            'PUBLISHED' && (
+                            <Tooltip title="Publish Review">
+                              <span>
+                                <IconButton
+                                  color="success"
+                                  disabled={
+                                    updating
+                                  }
+                                  onClick={() =>
+                                    handlePublishReview(
+                                      review
+                                    )
+                                  }
+                                >
+                                  <EyeOutlined />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
+
+                          {/* HIDE */}
+
+                          {review.status !==
+                            'HIDDEN' && (
+                            <Tooltip title="Hide Review">
+                              <span>
+                                <IconButton
+                                  color="error"
+                                  disabled={
+                                    updating
+                                  }
+                                  onClick={() =>
+                                    handleHideReview(
+                                      review
+                                    )
+                                  }
+                                >
+                                  <DeleteOutlined />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+              {/* ================================================= */}
+              {/* EMPTY */}
+              {/* ================================================= */}
+
+              {!loading &&
+                reviews.length ===
+                  0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                    >
+                      <Box
+                        sx={{
+                          py: 7,
+                          textAlign:
+                            'center'
+                        }}
+                      >
+                        <StarFilled
+                          style={{
+                            fontSize: 34,
+                            opacity: 0.35
+                          }}
+                        />
+
+                        <Typography
+                          variant="h6"
+                          color="text.secondary"
+                          sx={{
+                            mt: 1
+                          }}
+                        >
+                          No reviews found
+                        </Typography>
+
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                        >
+                          Try changing your
+                          search or filters.
+                        </Typography>
+                      </Box>
                     </TableCell>
                   </TableRow>
-                ))}
-
-              {filteredReviews.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={8}>
-                    <Box
-                      sx={{
-                        py: 7,
-                        textAlign: 'center'
-                      }}
-                    >
-                      <StarFilled
-                        style={{
-                          fontSize: 34,
-                          opacity: 0.35
-                        }}
-                      />
-
-                      <Typography
-                        variant="h6"
-                        color="text.secondary"
-                        sx={{ mt: 1 }}
-                      >
-                        No reviews found
-                      </Typography>
-
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                      >
-                        Try changing your search or
-                        filters.
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              )}
+                )}
             </TableBody>
           </Table>
         </TableContainer>
 
+        {/* ==================================================== */}
         {/* PAGINATION */}
+        {/* ==================================================== */}
+
         <TablePagination
           component="div"
-          count={filteredReviews.length}
+          count={totalCount}
           page={page}
-          onPageChange={(_, newPage) =>
+          onPageChange={(
+            _,
+            newPage
+          ) =>
             setPage(newPage)
           }
-          rowsPerPage={rowsPerPage}
+          rowsPerPage={
+            rowsPerPage
+          }
           onRowsPerPageChange={
             handleRowsPerPageChange
           }
@@ -853,4 +1234,3 @@ export default function Reviews() {
     </Box>
   );
 }
-

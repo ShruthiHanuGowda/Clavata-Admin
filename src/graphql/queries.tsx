@@ -374,3 +374,60 @@ const UPDATE_BOOKING_STATUS = gql`
     }
   }
 `;
+
+export const ADMIN_REVIEWS = gql`
+  query AdminReviews(
+    $search: String
+    $rating: Int
+    $status: ReviewStatus
+    $salonId: ID
+  ) {
+    adminReviews(
+      search: $search
+      rating: $rating
+      status: $status
+      salonId: $salonId
+    ) {
+      success
+      message
+      totalCount
+
+      reviews {
+        reviewId
+        bookingId
+        salonId
+        salonName
+        customerUserId
+        customerName
+        rating
+        review
+        createdAt
+        status
+      }
+    }
+  }
+`;
+
+export const UPDATE_REVIEW_STATUS = gql`
+  mutation UpdateReviewStatus(
+    $input: UpdateReviewStatusInput!
+  ) {
+    updateReviewStatus(input: $input) {
+      success
+      message
+
+      review {
+        reviewId
+        bookingId
+        salonId
+        salonName
+        customerUserId
+        customerName
+        rating
+        review
+        createdAt
+        status
+      }
+    }
+  }
+`;
