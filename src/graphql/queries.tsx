@@ -432,3 +432,67 @@ export const UPDATE_REVIEW_STATUS = gql`
     }
   }
 `;
+
+export const GET_PAYMENT_TRANSACTIONS = gql`
+  query PaymentTransactions(
+    $search: String
+    $status: PaymentTransactionStatus
+    $paymentType: PaymentTransactionType
+  ) {
+    paymentTransactions(
+      search: $search
+      status: $status
+      paymentType: $paymentType
+    ) {
+      success
+      message
+      totalCount
+      transactions {
+        paymentTransactionId
+        bookingId
+        customerUserId
+        salonId
+        razorpayOrderId
+        razorpayPaymentId
+        amount
+        currency
+        paymentType
+        paymentMethod
+        status
+        failureReason
+        createdAt
+        updatedAt
+        paidAt
+      }
+    }
+  }
+`;
+
+export const GET_ADMIN_BOOKINGS = gql`
+  query AdminBookings {
+    adminBookings {
+      success
+      message
+      totalCount
+      bookings {
+        bookingId
+        salonId
+        customerUserId
+        salonName
+        customerName
+        customerPhone
+        bookingDate
+        createdAt
+        totalAmount
+        bookingFee
+        remainingAmount
+        paymentMethod
+        paymentStatus
+        bookingFeeStatus
+        razorpayOrderId
+        razorpayPaymentId
+        paymentGateway
+      }
+    }
+  }
+`;

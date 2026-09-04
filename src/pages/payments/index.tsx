@@ -1,13 +1,15 @@
-
 import { useMemo, useState } from 'react';
+import { useQuery } from '@apollo/client';
 
 // material-ui
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Divider,
   Grid,
   IconButton,
@@ -15,14 +17,15 @@ import {
   MenuItem,
   Paper,
   Select,
+  SelectChangeEvent,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TablePagination,
   TableRow,
+  TableHead,
   TextField,
   Typography
 } from '@mui/material';
@@ -41,11 +44,71 @@ import {
   WalletOutlined
 } from '@ant-design/icons';
 
+// ==============================|| GRAPHQL ||============================== //
+// Queries are maintained centrally in queries.tsx.
+
+import {
+  GET_ADMIN_BOOKINGS,
+  GET_PAYMENT_TRANSACTIONS
+} from '../../graphql/queries';
+
 // ==============================|| TYPES ||============================== //
 
-type PaymentStatus = 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED' | 'PARTIALLY_PAID';
+type PaymentStatus =
+  | 'PAID'
+  | 'PENDING'
+  | 'FAILED'
+  | 'REFUNDED'
+  | 'PARTIALLY_PAID';
 
 type PaymentMethod = 'ONLINE' | 'PAY_AT_SALON';
+
+type PaymentTransactionStatus =
+  | 'PENDING'
+  | 'SUCCESS'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'REFUNDED';
+
+type PaymentTransactionType = 'BOOKING_FEE';
+
+interface PaymentTransaction {
+  paymentTransactionId: string;
+  bookingId: string;
+  customerUserId: string;
+  salonId: string;
+  razorpayOrderId: string;
+  razorpayPaymentId?: string | null;
+  amount: number;
+  currency: string;
+  paymentType: PaymentTransactionType;
+  paymentMethod: PaymentMethod;
+  status: PaymentTransactionStatus;
+  failureReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  paidAt?: string | null;
+}
+
+interface Booking {
+  bookingId: string;
+  salonId: string;
+  customerUserId: string;
+  salonName: string;
+  customerName: string;
+  customerPhone: string;
+  bookingDate: string;
+  createdAt: string;
+  totalAmount: number;
+  bookingFee: number;
+  remainingAmount: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  bookingFeeStatus: PaymentStatus;
+  razorpayOrderId?: string | null;
+  razorpayPaymentId?: string | null;
+  paymentGateway?: string | null;
+}
 
 interface Payment {
   id: string;
@@ -59,150 +122,38 @@ interface Payment {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   paymentGateway: string;
-  razorpayOrderId?: string;
-  razorpayPaymentId?: string;
+  razorpayOrderId: string;
+  razorpayPaymentId?: string | null;
   bookingDate: string;
   createdAt: string;
+  transactionStatus: PaymentTransactionStatus;
+  failureReason?: string | null;
+  paidAt?: string | null;
 }
 
-// ==============================|| MOCK DATA ||============================== //
+interface PaymentTransactionsData {
+  paymentTransactions: {
+    success: boolean;
+    message: string;
+    totalCount: number;
+    transactions: PaymentTransaction[];
+  };
+}
 
-const mockPayments: Payment[] = [
-  {
-    id: 'PAY-10001',
-    bookingId: 'BK-10001',
-    customerName: 'Ananya Sharma',
-    customerPhone: '+91 9876543210',
-    salonName: 'Glow Beauty Studio',
-    amount: 850,
-    bookingFee: 100,
-    remainingAmount: 750,
-    paymentMethod: 'ONLINE',
-    paymentStatus: 'PAID',
-    paymentGateway: 'Razorpay',
-    razorpayOrderId: 'order_RZP10001',
-    razorpayPaymentId: 'pay_RZP10001',
-    bookingDate: '30 Aug 2026',
-    createdAt: '30 Aug 2026, 10:30 AM'
-  },
-  {
-    id: 'PAY-10002',
-    bookingId: 'BK-10002',
-    customerName: 'Priya Reddy',
-    customerPhone: '+91 9988776655',
-    salonName: 'Urban Hair Lounge',
-    amount: 1200,
-    bookingFee: 200,
-    remainingAmount: 1000,
-    paymentMethod: 'PAY_AT_SALON',
-    paymentStatus: 'PARTIALLY_PAID',
-    paymentGateway: 'Razorpay',
-    razorpayOrderId: 'order_RZP10002',
-    razorpayPaymentId: 'pay_RZP10002',
-    bookingDate: '30 Aug 2026',
-    createdAt: '30 Aug 2026, 09:15 AM'
-  },
-  {
-    id: 'PAY-10003',
-    bookingId: 'BK-10003',
-    customerName: 'Rahul Kumar',
-    customerPhone: '+91 9123456789',
-    salonName: 'The Barber Club',
-    amount: 650,
-    bookingFee: 50,
-    remainingAmount: 600,
-    paymentMethod: 'ONLINE',
-    paymentStatus: 'PENDING',
-    paymentGateway: 'Razorpay',
-    razorpayOrderId: 'order_RZP10003',
-    bookingDate: '29 Aug 2026',
-    createdAt: '29 Aug 2026, 06:40 PM'
-  },
-  {
-    id: 'PAY-10004',
-    bookingId: 'BK-10004',
-    customerName: 'Sneha Patel',
-    customerPhone: '+91 9345678901',
-    salonName: 'Blush & Bloom',
-    amount: 1500,
-    bookingFee: 250,
-    remainingAmount: 1250,
-    paymentMethod: 'ONLINE',
-    paymentStatus: 'FAILED',
-    paymentGateway: 'Razorpay',
-    razorpayOrderId: 'order_RZP10004',
-    bookingDate: '29 Aug 2026',
-    createdAt: '29 Aug 2026, 04:20 PM'
-  },
-  {
-    id: 'PAY-10005',
-    bookingId: 'BK-10005',
-    customerName: 'Megha Gowda',
-    customerPhone: '+91 9871234567',
-    salonName: 'Style Avenue',
-    amount: 950,
-    bookingFee: 100,
-    remainingAmount: 850,
-    paymentMethod: 'ONLINE',
-    paymentStatus: 'REFUNDED',
-    paymentGateway: 'Razorpay',
-    razorpayOrderId: 'order_RZP10005',
-    razorpayPaymentId: 'pay_RZP10005',
-    bookingDate: '28 Aug 2026',
-    createdAt: '28 Aug 2026, 02:10 PM'
-  },
-  {
-    id: 'PAY-10006',
-    bookingId: 'BK-10006',
-    customerName: 'Arjun Singh',
-    customerPhone: '+91 9988123456',
-    salonName: 'Gentlemen Cuts',
-    amount: 700,
-    bookingFee: 100,
-    remainingAmount: 600,
-    paymentMethod: 'ONLINE',
-    paymentStatus: 'PAID',
-    paymentGateway: 'Razorpay',
-    razorpayOrderId: 'order_RZP10006',
-    razorpayPaymentId: 'pay_RZP10006',
-    bookingDate: '28 Aug 2026',
-    createdAt: '28 Aug 2026, 11:45 AM'
-  },
-  {
-    id: 'PAY-10007',
-    bookingId: 'BK-10007',
-    customerName: 'Divya Nair',
-    customerPhone: '+91 9876541230',
-    salonName: 'Serenity Spa',
-    amount: 2200,
-    bookingFee: 300,
-    remainingAmount: 1900,
-    paymentMethod: 'PAY_AT_SALON',
-    paymentStatus: 'PARTIALLY_PAID',
-    paymentGateway: 'Razorpay',
-    razorpayOrderId: 'order_RZP10007',
-    razorpayPaymentId: 'pay_RZP10007',
-    bookingDate: '27 Aug 2026',
-    createdAt: '27 Aug 2026, 08:30 PM'
-  },
-  {
-    id: 'PAY-10008',
-    bookingId: 'BK-10008',
-    customerName: 'Kiran Rao',
-    customerPhone: '+91 9000012345',
-    salonName: 'Mirror Mirror Salon',
-    amount: 1100,
-    bookingFee: 150,
-    remainingAmount: 950,
-    paymentMethod: 'ONLINE',
-    paymentStatus: 'PAID',
-    paymentGateway: 'Razorpay',
-    razorpayOrderId: 'order_RZP10008',
-    razorpayPaymentId: 'pay_RZP10008',
-    bookingDate: '27 Aug 2026',
-    createdAt: '27 Aug 2026, 05:15 PM'
-  }
-];
+interface AdminBookingsData {
+  adminBookings: {
+    success: boolean;
+    message: string;
+    totalCount: number;
+    bookings: Booking[];
+  };
+}
+
+interface PaymentTransactionsVariables {
+  search?: string;
+  status?: PaymentTransactionStatus;
+  paymentType?: PaymentTransactionType;
+}
 
 // ==============================|| HELPERS ||============================== //
 
@@ -213,7 +164,43 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0
   }).format(value);
 
-const getStatusColor = (status: PaymentStatus) => {
+const formatDate = (value?: string | null) => {
+  if (!value) return '—';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }).format(date);
+};
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return '—';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+};
+
+const getStatusColor = (
+  status: PaymentStatus
+): 'success' | 'warning' | 'error' | 'default' | 'info' => {
   switch (status) {
     case 'PAID':
       return 'success';
@@ -227,6 +214,23 @@ const getStatusColor = (status: PaymentStatus) => {
       return 'info';
     default:
       return 'default';
+  }
+};
+
+const getPaymentStatusFromTransaction = (
+  status: PaymentTransactionStatus
+): PaymentStatus => {
+  switch (status) {
+    case 'SUCCESS':
+      return 'PAID';
+    case 'REFUNDED':
+      return 'REFUNDED';
+    case 'FAILED':
+    case 'CANCELLED':
+      return 'FAILED';
+    case 'PENDING':
+    default:
+      return 'PENDING';
   }
 };
 
@@ -290,21 +294,108 @@ function StatCard({ title, value, subtitle, icon }: StatCardProps) {
 // ==============================|| PAYMENTS PAGE ||============================== //
 
 export default function Payments() {
-  const [payments, setPayments] = useState<Payment[]>(mockPayments);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [methodFilter, setMethodFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | PaymentStatus>('ALL');
+  const [methodFilter, setMethodFilter] = useState<'ALL' | PaymentMethod>('ALL');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  /*
+   * Payment transactions are the source of truth for actual payment activity.
+   * Bookings are fetched separately because PaymentTransaction does not contain
+   * customerName, customerPhone or salonName.
+   */
+  const {
+    data: transactionData,
+    loading: transactionsLoading,
+    error: transactionsError,
+    refetch: refetchTransactions
+  } = useQuery<PaymentTransactionsData, PaymentTransactionsVariables>(
+    GET_PAYMENT_TRANSACTIONS,
+    {
+      variables: {
+        paymentType: 'BOOKING_FEE'
+      },
+      fetchPolicy: 'network-only'
+    }
+  );
+
+  const {
+    data: bookingData,
+    loading: bookingsLoading,
+    error: bookingsError,
+    refetch: refetchBookings
+  } = useQuery<AdminBookingsData>(GET_ADMIN_BOOKINGS, {
+    fetchPolicy: 'network-only'
+  });
+
+  const loading = transactionsLoading || bookingsLoading;
+  const error = transactionsError || bookingsError;
+
+  // ==============================|| MAP API DATA ||============================== //
+
+  const payments = useMemo<Payment[]>(() => {
+    const transactions = transactionData?.paymentTransactions?.transactions ?? [];
+    const bookings = bookingData?.adminBookings?.bookings ?? [];
+
+    const bookingMap = new Map<string, Booking>(
+      bookings.map((booking) => [booking.bookingId, booking])
+    );
+
+    return transactions.map((transaction) => {
+      const booking = bookingMap.get(transaction.bookingId);
+
+      /*
+       * Prefer the booking payment status because it supports PARTIALLY_PAID.
+       * Fall back to the transaction status when the booking is not returned.
+       */
+      const paymentStatus =
+        booking?.paymentStatus ??
+        getPaymentStatusFromTransaction(transaction.status);
+
+      return {
+        id: transaction.paymentTransactionId,
+        bookingId: transaction.bookingId,
+        customerName: booking?.customerName ?? transaction.customerUserId,
+        customerPhone: booking?.customerPhone ?? '—',
+        salonName: booking?.salonName ?? transaction.salonId,
+        amount: transaction.amount,
+        bookingFee: booking?.bookingFee ?? transaction.amount,
+        remainingAmount: booking?.remainingAmount ?? 0,
+        paymentMethod: transaction.paymentMethod,
+        paymentStatus,
+        paymentGateway: booking?.paymentGateway ?? 'Razorpay',
+        razorpayOrderId:
+          transaction.razorpayOrderId || booking?.razorpayOrderId || '—',
+        razorpayPaymentId:
+          transaction.razorpayPaymentId || booking?.razorpayPaymentId,
+        bookingDate: booking?.bookingDate ?? transaction.createdAt,
+        createdAt: transaction.createdAt,
+        transactionStatus: transaction.status,
+        failureReason: transaction.failureReason,
+        paidAt: transaction.paidAt
+      };
+    });
+  }, [transactionData, bookingData]);
 
   // ==============================|| STATISTICS ||============================== //
 
   const statistics = useMemo(() => {
-    const paidPayments = payments.filter((payment) => payment.paymentStatus === 'PAID');
+    const paidPayments = payments.filter(
+      (payment) =>
+        payment.transactionStatus === 'SUCCESS' &&
+        payment.paymentStatus !== 'REFUNDED'
+    );
 
-    const totalRevenue = paidPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    const totalRevenue = paidPayments.reduce(
+      (sum, payment) => sum + payment.amount,
+      0
+    );
 
-    const totalBookingFees = payments.reduce((sum, payment) => sum + payment.bookingFee, 0);
+    const totalBookingFees = payments.reduce(
+      (sum, payment) => sum + payment.amount,
+      0
+    );
 
     const pendingAmount = payments
       .filter(
@@ -312,7 +403,7 @@ export default function Payments() {
           payment.paymentStatus === 'PENDING' ||
           payment.paymentStatus === 'PARTIALLY_PAID'
       )
-      .reduce((sum, payment) => sum + payment.bookingFee, 0);
+      .reduce((sum, payment) => sum + payment.amount, 0);
 
     const refundedAmount = payments
       .filter((payment) => payment.paymentStatus === 'REFUNDED')
@@ -332,20 +423,30 @@ export default function Payments() {
     const query = search.trim().toLowerCase();
 
     return payments.filter((payment) => {
+      const searchableValues = [
+        payment.id,
+        payment.bookingId,
+        payment.customerName,
+        payment.customerPhone,
+        payment.salonName,
+        payment.razorpayOrderId,
+        payment.razorpayPaymentId ?? '',
+        payment.paymentGateway
+      ];
+
       const matchesSearch =
         !query ||
-        payment.id.toLowerCase().includes(query) ||
-        payment.bookingId.toLowerCase().includes(query) ||
-        payment.customerName.toLowerCase().includes(query) ||
-        payment.customerPhone.toLowerCase().includes(query) ||
-        payment.salonName.toLowerCase().includes(query) ||
-        payment.razorpayPaymentId?.toLowerCase().includes(query);
+        searchableValues.some((value) =>
+          value.toLowerCase().includes(query)
+        );
 
       const matchesStatus =
-        statusFilter === 'ALL' || payment.paymentStatus === statusFilter;
+        statusFilter === 'ALL' ||
+        payment.paymentStatus === statusFilter;
 
       const matchesMethod =
-        methodFilter === 'ALL' || payment.paymentMethod === methodFilter;
+        methodFilter === 'ALL' ||
+        payment.paymentMethod === methodFilter;
 
       return matchesSearch && matchesStatus && matchesMethod;
     });
@@ -353,13 +454,13 @@ export default function Payments() {
 
   // ==============================|| REFRESH ||============================== //
 
-  const handleRefresh = () => {
-    // Later replace this with GraphQL refetch().
-    setPayments([...mockPayments]);
-    setSearch('');
-    setStatusFilter('ALL');
-    setMethodFilter('ALL');
-    setPage(0);
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([refetchTransactions(), refetchBookings()]);
+      setPage(0);
+    } catch (refreshError) {
+      console.error('Failed to refresh payments:', refreshError);
+    }
   };
 
   // ==============================|| RENDER ||============================== //
@@ -387,12 +488,29 @@ export default function Payments() {
 
         <Button
           variant="outlined"
-          startIcon={<ReloadOutlined />}
+          startIcon={
+            transactionsLoading || bookingsLoading ? (
+              <CircularProgress size={16} />
+            ) : (
+              <ReloadOutlined />
+            )
+          }
           onClick={handleRefresh}
+          disabled={loading}
         >
           Refresh
         </Button>
       </Stack>
+
+      {/* ERROR */}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {transactionsError?.message ||
+            bookingsError?.message ||
+            'Unable to load payment data.'}
+        </Alert>
+      )}
 
       {/* STATISTICS */}
 
@@ -401,7 +519,7 @@ export default function Payments() {
           <StatCard
             title="Collected Revenue"
             value={formatCurrency(statistics.totalRevenue)}
-            subtitle="Successfully paid bookings"
+            subtitle="Successfully paid booking fees"
             icon={<DollarOutlined />}
           />
         </Grid>
@@ -410,7 +528,7 @@ export default function Payments() {
           <StatCard
             title="Booking Fees"
             value={formatCurrency(statistics.totalBookingFees)}
-            subtitle="Total booking fees recorded"
+            subtitle="Payment transactions recorded"
             icon={<WalletOutlined />}
           />
         </Grid>
@@ -480,20 +598,20 @@ export default function Payments() {
               <Select
                 size="small"
                 value={statusFilter}
-                onChange={(event) => {
-                  setStatusFilter(event.target.value);
+                onChange={(event: SelectChangeEvent<'ALL' | PaymentStatus>) => {
+                  setStatusFilter(event.target.value as 'ALL' | PaymentStatus);
                   setPage(0);
                 }}
                 displayEmpty
-                startAdornment={<FilterOutlined style={{ marginRight: 8 }} />}
+                startAdornment={
+                  <FilterOutlined style={{ marginRight: 8 }} />
+                }
                 sx={{ minWidth: 170 }}
               >
                 <MenuItem value="ALL">All Status</MenuItem>
                 <MenuItem value="PAID">Paid</MenuItem>
                 <MenuItem value="PENDING">Pending</MenuItem>
-                <MenuItem value="PARTIALLY_PAID">
-                  Partially Paid
-                </MenuItem>
+                <MenuItem value="PARTIALLY_PAID">Partially Paid</MenuItem>
                 <MenuItem value="FAILED">Failed</MenuItem>
                 <MenuItem value="REFUNDED">Refunded</MenuItem>
               </Select>
@@ -501,8 +619,8 @@ export default function Payments() {
               <Select
                 size="small"
                 value={methodFilter}
-                onChange={(event) => {
-                  setMethodFilter(event.target.value);
+                onChange={(event: SelectChangeEvent<'ALL' | PaymentMethod>) => {
+                  setMethodFilter(event.target.value as 'ALL' | PaymentMethod);
                   setPage(0);
                 }}
                 displayEmpty
@@ -510,9 +628,7 @@ export default function Payments() {
               >
                 <MenuItem value="ALL">All Methods</MenuItem>
                 <MenuItem value="ONLINE">Online</MenuItem>
-                <MenuItem value="PAY_AT_SALON">
-                  Pay at Salon
-                </MenuItem>
+                <MenuItem value="PAY_AT_SALON">Pay at Salon</MenuItem>
               </Select>
             </Stack>
           </Stack>
@@ -561,143 +677,202 @@ export default function Payments() {
             </TableHead>
 
             <TableBody>
-              {filteredPayments
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((payment) => (
-                  <TableRow
-                    key={payment.id}
-                    hover
-                    sx={{
-                      '&:last-child td': {
-                        borderBottom: 0
-                      }
-                    }}
-                  >
-                    {/* PAYMENT */}
-
-                    <TableCell>
-                      <Stack spacing={0.4}>
-                        <Typography fontWeight={600}>
-                          {payment.id}
-                        </Typography>
-
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          {payment.bookingId}
-                        </Typography>
-                      </Stack>
-                    </TableCell>
-
-                    {/* CUSTOMER */}
-
-                    <TableCell>
-                      <Stack spacing={0.4}>
-                        <Typography fontWeight={600}>
-                          {payment.customerName}
-                        </Typography>
-
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          {payment.customerPhone}
-                        </Typography>
-                      </Stack>
-                    </TableCell>
-
-                    {/* SALON */}
-
-                    <TableCell>
-                      <Typography fontWeight={500}>
-                        {payment.salonName}
-                      </Typography>
-                    </TableCell>
-
-                    {/* AMOUNT */}
-
-                    <TableCell>
-                      <Stack spacing={0.3}>
-                        <Typography fontWeight={700}>
-                          {formatCurrency(payment.amount)}
-                        </Typography>
-
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          Fee: {formatCurrency(payment.bookingFee)}
-                        </Typography>
-                      </Stack>
-                    </TableCell>
-
-                    {/* METHOD */}
-
-                    <TableCell>
-                      <Chip
-                        label={
-                          payment.paymentMethod === 'ONLINE'
-                            ? 'Online'
-                            : 'Pay at Salon'
+              {loading && payments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8}>
+                    <Box
+                      sx={{
+                        py: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <CircularProgress />
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredPayments
+                  .slice(
+                    page * rowsPerPage,
+                    page * rowsPerPage + rowsPerPage
+                  )
+                  .map((payment) => (
+                    <TableRow
+                      key={payment.id}
+                      hover
+                      sx={{
+                        '&:last-child td': {
+                          borderBottom: 0
                         }
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
+                      }}
+                    >
+                      {/* PAYMENT */}
 
-                    {/* STATUS */}
+                      <TableCell>
+                        <Stack spacing={0.4}>
+                          <Typography fontWeight={600}>
+                            {payment.id}
+                          </Typography>
 
-                    <TableCell>
-                      <Chip
-                        label={payment.paymentStatus.replace('_', ' ')}
-                        color={getStatusColor(payment.paymentStatus)}
-                        size="small"
-                        icon={
-                          payment.paymentStatus === 'PAID' ? (
-                            <CheckCircleOutlined />
-                          ) : payment.paymentStatus === 'PENDING' ? (
-                            <ClockCircleOutlined />
-                          ) : payment.paymentStatus === 'FAILED' ? (
-                            <CloseCircleOutlined />
-                          ) : undefined
-                        }
-                      />
-                    </TableCell>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            Booking: {payment.bookingId}
+                          </Typography>
 
-                    {/* DATE */}
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            {payment.razorpayPaymentId
+                              ? `Razorpay: ${payment.razorpayPaymentId}`
+                              : 'Razorpay payment ID unavailable'}
+                          </Typography>
+                        </Stack>
+                      </TableCell>
 
-                    <TableCell>
-                      <Stack spacing={0.3}>
-                        <Typography variant="body2">
-                          {payment.bookingDate}
+                      {/* CUSTOMER */}
+
+                      <TableCell>
+                        <Stack spacing={0.4}>
+                          <Typography fontWeight={600}>
+                            {payment.customerName}
+                          </Typography>
+
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            {payment.customerPhone}
+                          </Typography>
+                        </Stack>
+                      </TableCell>
+
+                      {/* SALON */}
+
+                      <TableCell>
+                        <Typography fontWeight={500}>
+                          {payment.salonName}
                         </Typography>
+                      </TableCell>
 
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
+                      {/* AMOUNT */}
+
+                      <TableCell>
+                        <Stack spacing={0.3}>
+                          <Typography fontWeight={700}>
+                            {formatCurrency(payment.amount)}
+                          </Typography>
+
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            Fee: {formatCurrency(payment.bookingFee)}
+                          </Typography>
+
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            Remaining:{' '}
+                            {formatCurrency(payment.remainingAmount)}
+                          </Typography>
+                        </Stack>
+                      </TableCell>
+
+                      {/* METHOD */}
+
+                      <TableCell>
+                        <Chip
+                          label={
+                            payment.paymentMethod === 'ONLINE'
+                              ? 'Online'
+                              : 'Pay at Salon'
+                          }
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+
+                      {/* STATUS */}
+
+                      <TableCell>
+                        <Stack spacing={0.5} alignItems="flex-start">
+                          <Chip
+                            label={payment.paymentStatus.replace('_', ' ')}
+                            color={getStatusColor(payment.paymentStatus)}
+                            size="small"
+                            icon={
+                              payment.paymentStatus === 'PAID' ? (
+                                <CheckCircleOutlined />
+                              ) : payment.paymentStatus === 'PENDING' ? (
+                                <ClockCircleOutlined />
+                              ) : payment.paymentStatus === 'FAILED' ? (
+                                <CloseCircleOutlined />
+                              ) : undefined
+                            }
+                          />
+
+                          {payment.failureReason && (
+                            <Typography
+                              variant="caption"
+                              color="error.main"
+                              sx={{ maxWidth: 180 }}
+                            >
+                              {payment.failureReason}
+                            </Typography>
+                          )}
+                        </Stack>
+                      </TableCell>
+
+                      {/* DATE */}
+
+                      <TableCell>
+                        <Stack spacing={0.3}>
+                          <Typography variant="body2">
+                            {formatDate(payment.bookingDate)}
+                          </Typography>
+
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            Created: {formatDateTime(payment.createdAt)}
+                          </Typography>
+
+                          {payment.paidAt && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              Paid: {formatDateTime(payment.paidAt)}
+                            </Typography>
+                          )}
+                        </Stack>
+                      </TableCell>
+
+                      {/* ACTION */}
+
+                      <TableCell align="center">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            console.log('Payment details:', payment);
+                          }}
+                          aria-label="View payment details"
                         >
-                          {payment.createdAt}
-                        </Typography>
-                      </Stack>
-                    </TableCell>
+                          <EyeOutlined />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
 
-                    {/* ACTION */}
-
-                    <TableCell align="center">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          console.log('Payment details:', payment);
-                        }}
-                      >
-                        <EyeOutlined />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-
-              {filteredPayments.length === 0 && (
+              {!loading && filteredPayments.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8}>
                     <Box
@@ -746,4 +921,3 @@ export default function Payments() {
     </Box>
   );
 }
-
