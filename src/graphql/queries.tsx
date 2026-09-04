@@ -560,3 +560,74 @@ export const REFUNDS_QUERY = gql`
     }
   }
 `;
+
+export const REVENUE_QUERY = gql`
+  query RevenueData(
+    $search: String
+    $bookingStatus: BookingStatus
+    $paymentStatus: PaymentStatus
+  ) {
+    adminBookings(
+      search: $search
+      bookingStatus: $bookingStatus
+      paymentStatus: $paymentStatus
+    ) {
+      success
+      message
+      totalCount
+      bookings {
+        bookingId
+        salonId
+        customerUserId
+        salonName
+        customerName
+        customerPhone
+        bookingDate
+        startTime
+        endTime
+        subtotal
+        discount
+        totalAmount
+        paymentMethod
+        paymentStatus
+        bookingStatus
+        bookingFee
+        bookingFeeStatus
+        bookingFeePaidAt
+        remainingAmount
+        razorpayOrderId
+        razorpayPaymentId
+        paymentGateway
+        createdAt
+        updatedAt
+      }
+    }
+
+    refunds {
+      success
+      message
+      totalCount
+      refunds {
+        refundId
+        bookingId
+        paymentTransactionId
+        customerUserId
+        customerName
+        customerPhone
+        salonId
+        salonName
+        originalAmount
+        refundAmount
+        reason
+        status
+        paymentMethod
+        razorpayPaymentId
+        razorpayRefundId
+        requestedAt
+        processedAt
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;

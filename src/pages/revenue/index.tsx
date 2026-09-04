@@ -1,5 +1,5 @@
-
 import { useMemo, useState } from 'react';
+import { useQuery } from '@apollo/client';
 
 // material-ui
 import {
@@ -8,6 +8,7 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Divider,
   FormControl,
   Grid,
@@ -40,172 +41,126 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 
+// query
+import { REVENUE_QUERY } from '../../graphql/queries';
+
 // ==============================|| TYPES ||============================== //
+
+type PaymentMethod = 'ONLINE' | 'PAY_AT_SALON';
+
+type PaymentStatus =
+  | 'PAID'
+  | 'PARTIALLY_PAID'
+  | 'REFUNDED'
+  | 'PENDING'
+  | 'FAILED';
+
+type BookingStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'NO_SHOW';
+
+type RefundStatus =
+  | 'REQUESTED'
+  | 'PROCESSING'
+  | 'APPROVED'
+  | 'COMPLETED'
+  | 'REJECTED';
+
+interface Booking {
+  bookingId: string;
+  salonId: string;
+  customerUserId: string;
+  salonName: string;
+  customerName: string;
+  customerPhone: string;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+  subtotal: number;
+  discount: number;
+  totalAmount: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  bookingStatus: BookingStatus;
+  bookingFee: number;
+  bookingFeeStatus: PaymentStatus;
+  bookingFeePaidAt?: string | null;
+  remainingAmount: number;
+  razorpayOrderId?: string | null;
+  razorpayPaymentId?: string | null;
+  paymentGateway?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Refund {
+  refundId: string;
+  bookingId: string;
+  paymentTransactionId: string;
+  customerUserId: string;
+  customerName: string;
+  customerPhone: string;
+  salonId: string;
+  salonName: string;
+  originalAmount: number;
+  refundAmount: number;
+  reason: string;
+  status: RefundStatus;
+  paymentMethod: PaymentMethod;
+  razorpayPaymentId?: string | null;
+  razorpayRefundId?: string | null;
+  requestedAt: string;
+  processedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface RevenueRecord {
   id: string;
   bookingId: string;
+  salonId: string;
   salonName: string;
   customerName: string;
   bookingDate: string;
   paymentDate: string;
-  paymentMethod: 'ONLINE' | 'PAY_AT_SALON';
+  paymentMethod: PaymentMethod;
   bookingFee: number;
   subtotal: number;
   discount: number;
   totalAmount: number;
   refundAmount: number;
   netRevenue: number;
-  paymentStatus: 'PAID' | 'PARTIALLY_PAID' | 'REFUNDED' | 'PENDING';
+  paymentStatus: PaymentStatus;
 }
 
-interface MonthlyRevenue {
-  month: string;
-  revenue: number;
-  bookings: number;
+interface AdminBookingsResponse {
+  adminBookings: {
+    success: boolean;
+    message: string;
+    totalCount: number;
+    bookings: Booking[];
+  };
 }
 
-// ==============================|| DUMMY DATA ||============================== //
+interface RefundsResponse {
+  refunds: {
+    success: boolean;
+    message: string;
+    totalCount: number;
+    refunds: Refund[];
+  };
+}
 
-const revenueRecords: RevenueRecord[] = [
-  {
-    id: 'REV-10001',
-    bookingId: 'BK-10001',
-    salonName: 'Glow Beauty Studio',
-    customerName: 'Ananya Sharma',
-    bookingDate: '2026-08-30',
-    paymentDate: '2026-08-30',
-    paymentMethod: 'ONLINE',
-    bookingFee: 50,
-    subtotal: 850,
-    discount: 50,
-    totalAmount: 800,
-    refundAmount: 0,
-    netRevenue: 800,
-    paymentStatus: 'PAID'
-  },
-  {
-    id: 'REV-10002',
-    bookingId: 'BK-10002',
-    salonName: 'Style & Shine Salon',
-    customerName: 'Priya Rao',
-    bookingDate: '2026-08-29',
-    paymentDate: '2026-08-29',
-    paymentMethod: 'PAY_AT_SALON',
-    bookingFee: 100,
-    subtotal: 1200,
-    discount: 100,
-    totalAmount: 1100,
-    refundAmount: 0,
-    netRevenue: 1100,
-    paymentStatus: 'PAID'
-  },
-  {
-    id: 'REV-10003',
-    bookingId: 'BK-10003',
-    salonName: 'Urban Cuts',
-    customerName: 'Rahul Kumar',
-    bookingDate: '2026-08-29',
-    paymentDate: '2026-08-29',
-    paymentMethod: 'ONLINE',
-    bookingFee: 50,
-    subtotal: 600,
-    discount: 0,
-    totalAmount: 600,
-    refundAmount: 600,
-    netRevenue: 0,
-    paymentStatus: 'REFUNDED'
-  },
-  {
-    id: 'REV-10004',
-    bookingId: 'BK-10004',
-    salonName: 'The Hair Lounge',
-    customerName: 'Sneha Patel',
-    bookingDate: '2026-08-28',
-    paymentDate: '2026-08-28',
-    paymentMethod: 'ONLINE',
-    bookingFee: 75,
-    subtotal: 1500,
-    discount: 150,
-    totalAmount: 1350,
-    refundAmount: 0,
-    netRevenue: 1350,
-    paymentStatus: 'PAID'
-  },
-  {
-    id: 'REV-10005',
-    bookingId: 'BK-10005',
-    salonName: 'Glow Beauty Studio',
-    customerName: 'Meera Nair',
-    bookingDate: '2026-08-27',
-    paymentDate: '2026-08-27',
-    paymentMethod: 'ONLINE',
-    bookingFee: 50,
-    subtotal: 950,
-    discount: 50,
-    totalAmount: 900,
-    refundAmount: 0,
-    netRevenue: 900,
-    paymentStatus: 'PAID'
-  },
-  {
-    id: 'REV-10006',
-    bookingId: 'BK-10006',
-    salonName: 'Style & Shine Salon',
-    customerName: 'Kavya Singh',
-    bookingDate: '2026-08-26',
-    paymentDate: '2026-08-26',
-    paymentMethod: 'PAY_AT_SALON',
-    bookingFee: 100,
-    subtotal: 700,
-    discount: 0,
-    totalAmount: 700,
-    refundAmount: 0,
-    netRevenue: 700,
-    paymentStatus: 'PAID'
-  },
-  {
-    id: 'REV-10007',
-    bookingId: 'BK-10007',
-    salonName: 'Urban Cuts',
-    customerName: 'Arjun Reddy',
-    bookingDate: '2026-08-25',
-    paymentDate: '2026-08-25',
-    paymentMethod: 'ONLINE',
-    bookingFee: 50,
-    subtotal: 500,
-    discount: 0,
-    totalAmount: 500,
-    refundAmount: 0,
-    netRevenue: 500,
-    paymentStatus: 'PAID'
-  },
-  {
-    id: 'REV-10008',
-    bookingId: 'BK-10008',
-    salonName: 'The Hair Lounge',
-    customerName: 'Divya Menon',
-    bookingDate: '2026-08-24',
-    paymentDate: '2026-08-24',
-    paymentMethod: 'ONLINE',
-    bookingFee: 75,
-    subtotal: 1800,
-    discount: 200,
-    totalAmount: 1600,
-    refundAmount: 0,
-    netRevenue: 1600,
-    paymentStatus: 'PAID'
-  }
-];
+interface RevenueQueryResponse extends AdminBookingsResponse, RefundsResponse {}
 
-const monthlyRevenue: MonthlyRevenue[] = [
-  { month: 'Mar', revenue: 48500, bookings: 72 },
-  { month: 'Apr', revenue: 62400, bookings: 91 },
-  { month: 'May', revenue: 71800, bookings: 105 },
-  { month: 'Jun', revenue: 85600, bookings: 124 },
-  { month: 'Jul', revenue: 94200, bookings: 138 },
-  { month: 'Aug', revenue: 108750, bookings: 156 }
-];
+interface RevenueQueryVariables {
+  search?: string;
+  bookingStatus?: BookingStatus;
+  paymentStatus?: PaymentStatus;
+}
 
 // ==============================|| HELPERS ||============================== //
 
@@ -214,11 +169,23 @@ const formatCurrency = (value: number) => {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 0
-  }).format(value);
+  }).format(value || 0);
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) return '—';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+
+  return date.toLocaleDateString('en-IN');
 };
 
 const getStatusColor = (
-  status: RevenueRecord['paymentStatus']
+  status: PaymentStatus
 ): 'success' | 'warning' | 'error' | 'default' => {
   switch (status) {
     case 'PAID':
@@ -228,11 +195,27 @@ const getStatusColor = (
       return 'warning';
 
     case 'REFUNDED':
+    case 'FAILED':
       return 'error';
 
     default:
       return 'default';
   }
+};
+
+const normalizeSearch = (value: string) => value.trim().toLowerCase();
+
+const getRefundAmountForBooking = (
+  bookingId: string,
+  refunds: Refund[]
+): number => {
+  return refunds
+    .filter(
+      (refund) =>
+        refund.bookingId === bookingId &&
+        refund.status === 'COMPLETED'
+    )
+    .reduce((sum, refund) => sum + Number(refund.refundAmount || 0), 0);
 };
 
 // ==============================|| STAT CARD ||============================== //
@@ -246,7 +229,14 @@ interface StatCardProps {
   trendUp?: boolean;
 }
 
-function StatCard({ title, value, subtitle, icon, trend, trendUp }: StatCardProps) {
+function StatCard({
+  title,
+  value,
+  subtitle,
+  icon,
+  trend,
+  trendUp
+}: StatCardProps) {
   return (
     <Card
       sx={{
@@ -256,7 +246,11 @@ function StatCard({ title, value, subtitle, icon, trend, trendUp }: StatCardProp
       }}
     >
       <CardContent>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="flex-start"
+        >
           <Box>
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {title}
@@ -288,7 +282,12 @@ function StatCard({ title, value, subtitle, icon, trend, trendUp }: StatCardProp
         </Stack>
 
         {trend && (
-          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 2 }}>
+          <Stack
+            direction="row"
+            spacing={0.5}
+            alignItems="center"
+            sx={{ mt: 2 }}
+          >
             {trendUp ? (
               <ArrowUpOutlined style={{ color: '#2e7d32' }} />
             ) : (
@@ -316,30 +315,104 @@ function StatCard({ title, value, subtitle, icon, trend, trendUp }: StatCardProp
 // ==============================|| REVENUE PAGE ||============================== //
 
 export default function Revenue() {
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [methodFilter, setMethodFilter] = useState('ALL');
-  const [salonFilter, setSalonFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [methodFilter, setMethodFilter] = useState<string>('ALL');
+  const [salonFilter, setSalonFilter] = useState<string>('ALL');
   const [search, setSearch] = useState('');
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  // ============================== QUERY ============================== //
+
+  const {
+    data,
+    loading,
+    error,
+    refetch
+  } = useQuery<RevenueQueryResponse, RevenueQueryVariables>(
+    REVENUE_QUERY,
+    {
+      variables: {},
+      fetchPolicy: 'network-only'
+    }
+  );
+
+  const bookings = data?.adminBookings?.bookings ?? [];
+  const refunds = data?.refunds?.refunds ?? [];
+
+  // ============================== REVENUE RECORDS ============================== //
+
+  const revenueRecords = useMemo<RevenueRecord[]>(() => {
+    return bookings.map((booking) => {
+      const refundAmount = getRefundAmountForBooking(
+        booking.bookingId,
+        refunds
+      );
+
+      const totalAmount = Number(booking.totalAmount || 0);
+
+      const netRevenue = Math.max(
+        0,
+        totalAmount - refundAmount
+      );
+
+      const paymentDate =
+        booking.bookingFeePaidAt ||
+        booking.updatedAt ||
+        booking.createdAt;
+
+      return {
+        id: booking.bookingId,
+        bookingId: booking.bookingId,
+        salonId: booking.salonId,
+        salonName: booking.salonName || 'Unknown Salon',
+        customerName: booking.customerName || 'Unknown Customer',
+        bookingDate: booking.bookingDate,
+        paymentDate,
+        paymentMethod: booking.paymentMethod,
+        bookingFee: Number(booking.bookingFee || 0),
+        subtotal: Number(booking.subtotal || 0),
+        discount: Number(booking.discount || 0),
+        totalAmount,
+        refundAmount,
+        netRevenue,
+        paymentStatus: booking.paymentStatus
+      };
+    });
+  }, [bookings, refunds]);
+
+  // ============================== SALONS ============================== //
+
   const salons = useMemo(() => {
-    return ['ALL', ...Array.from(new Set(revenueRecords.map((item) => item.salonName)))];
-  }, []);
+    const uniqueSalons = Array.from(
+      new Set(
+        revenueRecords
+          .map((record) => record.salonName)
+          .filter(Boolean)
+      )
+    );
+
+    return ['ALL', ...uniqueSalons];
+  }, [revenueRecords]);
+
+  // ============================== FILTER ============================== //
 
   const filteredRecords = useMemo(() => {
+    const searchValue = normalizeSearch(search);
+
     return revenueRecords.filter((record) => {
       const matchesStatus =
-        statusFilter === 'ALL' || record.paymentStatus === statusFilter;
+        statusFilter === 'ALL' ||
+        record.paymentStatus === statusFilter;
 
       const matchesMethod =
-        methodFilter === 'ALL' || record.paymentMethod === methodFilter;
+        methodFilter === 'ALL' ||
+        record.paymentMethod === methodFilter;
 
       const matchesSalon =
-        salonFilter === 'ALL' || record.salonName === salonFilter;
-
-      const searchValue = search.toLowerCase();
+        salonFilter === 'ALL' ||
+        record.salonName === salonFilter;
 
       const matchesSearch =
         !searchValue ||
@@ -348,45 +421,325 @@ export default function Revenue() {
         record.customerName.toLowerCase().includes(searchValue) ||
         record.salonName.toLowerCase().includes(searchValue);
 
-      return matchesStatus && matchesMethod && matchesSalon && matchesSearch;
+      return (
+        matchesStatus &&
+        matchesMethod &&
+        matchesSalon &&
+        matchesSearch
+      );
     });
-  }, [statusFilter, methodFilter, salonFilter, search]);
+  }, [
+    revenueRecords,
+    statusFilter,
+    methodFilter,
+    salonFilter,
+    search
+  ]);
 
-  const totalRevenue = revenueRecords.reduce((sum, item) => sum + item.totalAmount, 0);
+  // ============================== SUMMARY ============================== //
 
-  const totalRefunds = revenueRecords.reduce((sum, item) => sum + item.refundAmount, 0);
+  const summary = useMemo(() => {
+    const totalRevenue = revenueRecords.reduce(
+      (sum, item) => sum + item.totalAmount,
+      0
+    );
 
-  const netRevenue = revenueRecords.reduce((sum, item) => sum + item.netRevenue, 0);
+    const totalRefunds = revenueRecords.reduce(
+      (sum, item) => sum + item.refundAmount,
+      0
+    );
 
-  const onlineRevenue = revenueRecords
-    .filter((item) => item.paymentMethod === 'ONLINE')
-    .reduce((sum, item) => sum + item.netRevenue, 0);
+    const netRevenue = revenueRecords.reduce(
+      (sum, item) => sum + item.netRevenue,
+      0
+    );
 
-  const bookingFeeRevenue = revenueRecords.reduce(
-    (sum, item) => sum + item.bookingFee,
-    0
+    const onlineRevenue = revenueRecords
+      .filter((item) => item.paymentMethod === 'ONLINE')
+      .reduce(
+        (sum, item) => sum + item.netRevenue,
+        0
+      );
+
+    const bookingFeeRevenue = revenueRecords
+      .filter((item) => item.bookingFee > 0)
+      .reduce(
+        (sum, item) => sum + item.bookingFee,
+        0
+      );
+
+    const activeSalons = new Set(
+      revenueRecords.map((item) => item.salonId)
+    ).size;
+
+    return {
+      totalRevenue,
+      totalRefunds,
+      netRevenue,
+      onlineRevenue,
+      bookingFeeRevenue,
+      activeSalons
+    };
+  }, [revenueRecords]);
+
+  // ============================== MONTHLY REVENUE ============================== //
+
+  const monthlyRevenue = useMemo(() => {
+    const now = new Date();
+
+    const months: {
+      month: string;
+      revenue: number;
+      bookings: number;
+      key: string;
+    }[] = [];
+
+    for (let i = 5; i >= 0; i -= 1) {
+      const date = new Date(
+        now.getFullYear(),
+        now.getMonth() - i,
+        1
+      );
+
+      const key = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, '0')}`;
+
+      months.push({
+        key,
+        month: date.toLocaleDateString('en-IN', {
+          month: 'short'
+        }),
+        revenue: 0,
+        bookings: 0
+      });
+    }
+
+    revenueRecords.forEach((record) => {
+      if (!record.bookingDate) return;
+
+      const date = new Date(record.bookingDate);
+
+      if (Number.isNaN(date.getTime())) return;
+
+      const key = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, '0')}`;
+
+      const month = months.find((item) => item.key === key);
+
+      if (month) {
+        month.revenue += record.netRevenue;
+        month.bookings += 1;
+      }
+    });
+
+    return months;
+  }, [revenueRecords]);
+
+  const maxRevenue = Math.max(
+    ...monthlyRevenue.map((item) => item.revenue),
+    1
   );
 
-  const handleStatusChange = (event: SelectChangeEvent) => {
+  // ============================== CURRENT MONTH ============================== //
+
+  const currentMonthRevenue = useMemo(() => {
+    const now = new Date();
+
+    return revenueRecords
+      .filter((record) => {
+        const date = new Date(record.bookingDate);
+
+        return (
+          date.getMonth() === now.getMonth() &&
+          date.getFullYear() === now.getFullYear()
+        );
+      })
+      .reduce(
+        (sum, record) => sum + record.netRevenue,
+        0
+      );
+  }, [revenueRecords]);
+
+  // ============================== TREND ============================== //
+
+  const revenueTrend = useMemo(() => {
+    if (monthlyRevenue.length < 2) {
+      return {
+        value: '0.0%',
+        up: true
+      };
+    }
+
+    const current =
+      monthlyRevenue[monthlyRevenue.length - 1].revenue;
+
+    const previous =
+      monthlyRevenue[monthlyRevenue.length - 2].revenue;
+
+    if (previous === 0) {
+      return {
+        value: current > 0 ? '+100.0%' : '0.0%',
+        up: current >= 0
+      };
+    }
+
+    const percentage =
+      ((current - previous) / previous) * 100;
+
+    return {
+      value: `${percentage >= 0 ? '+' : ''}${percentage.toFixed(1)}%`,
+      up: percentage >= 0
+    };
+  }, [monthlyRevenue]);
+
+  // ============================== HANDLERS ============================== //
+
+  const handleStatusChange = (
+    event: SelectChangeEvent
+  ) => {
     setStatusFilter(event.target.value);
     setPage(0);
   };
 
-  const handleMethodChange = (event: SelectChangeEvent) => {
+  const handleMethodChange = (
+    event: SelectChangeEvent
+  ) => {
     setMethodFilter(event.target.value);
     setPage(0);
   };
 
-  const handleSalonChange = (event: SelectChangeEvent) => {
+  const handleSalonChange = (
+    event: SelectChangeEvent
+  ) => {
     setSalonFilter(event.target.value);
     setPage(0);
   };
 
   const handleExport = () => {
-    console.log('Export revenue report');
+    const headers = [
+      'Revenue ID',
+      'Booking ID',
+      'Salon',
+      'Customer',
+      'Booking Date',
+      'Payment Date',
+      'Payment Method',
+      'Booking Fee',
+      'Subtotal',
+      'Discount',
+      'Total Amount',
+      'Refund Amount',
+      'Net Revenue',
+      'Payment Status'
+    ];
+
+    const rows = filteredRecords.map((record) => [
+      record.id,
+      record.bookingId,
+      record.salonName,
+      record.customerName,
+      record.bookingDate,
+      record.paymentDate,
+      record.paymentMethod,
+      record.bookingFee,
+      record.subtotal,
+      record.discount,
+      record.totalAmount,
+      record.refundAmount,
+      record.netRevenue,
+      record.paymentStatus
+    ]);
+
+    const csv = [
+      headers,
+      ...rows
+    ]
+      .map((row) =>
+        row
+          .map((value) =>
+            `"${String(value ?? '').replace(/"/g, '""')}"`
+          )
+          .join(',')
+      )
+      .join('\n');
+
+    const blob = new Blob([csv], {
+      type: 'text/csv;charset=utf-8;'
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = `revenue-report-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
   };
 
-  const maxRevenue = Math.max(...monthlyRevenue.map((item) => item.revenue));
+  // ============================== LOADING ============================== //
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: 400,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <Stack alignItems="center" spacing={2}>
+          <CircularProgress />
+          <Typography color="text.secondary">
+            Loading revenue data...
+          </Typography>
+        </Stack>
+      </Box>
+    );
+  }
+
+  // ============================== ERROR ============================== //
+
+  if (error) {
+    return (
+      <Box sx={{ py: 8 }}>
+        <Stack
+          alignItems="center"
+          spacing={2}
+          textAlign="center"
+        >
+          <Typography variant="h6" color="error">
+            Failed to load revenue data
+          </Typography>
+
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            {error.message}
+          </Typography>
+
+          <Button
+            variant="contained"
+            onClick={() => refetch()}
+          >
+            Retry
+          </Button>
+        </Stack>
+      </Box>
+    );
+  }
+
+  // ============================== PAGE ============================== //
 
   return (
     <Box>
@@ -395,7 +748,10 @@ export default function Revenue() {
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        alignItems={{
+          xs: 'flex-start',
+          sm: 'center'
+        }}
         spacing={2}
         sx={{ mb: 3 }}
       >
@@ -404,8 +760,13 @@ export default function Revenue() {
             Revenue
           </Typography>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Monitor Clavata's overall revenue and financial performance
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 0.5 }}
+          >
+            Monitor Clavata's overall revenue and financial
+            performance
           </Typography>
         </Box>
 
@@ -413,6 +774,7 @@ export default function Revenue() {
           variant="outlined"
           startIcon={<DownloadOutlined />}
           onClick={handleExport}
+          disabled={filteredRecords.length === 0}
         >
           Export Report
         </Button>
@@ -424,55 +786,67 @@ export default function Revenue() {
         <Grid item xs={12} sm={6} lg={3}>
           <StatCard
             title="Total Revenue"
-            value={formatCurrency(totalRevenue)}
-            subtitle="Gross revenue"
-            icon={<DollarOutlined style={{ fontSize: 23 }} />}
-            trend="+14.8%"
-            trendUp
+            value={formatCurrency(summary.totalRevenue)}
+            subtitle="Gross booking revenue"
+            icon={
+              <DollarOutlined style={{ fontSize: 23 }} />
+            }
+            trend={revenueTrend.value}
+            trendUp={revenueTrend.up}
           />
         </Grid>
 
         <Grid item xs={12} sm={6} lg={3}>
           <StatCard
             title="Net Revenue"
-            value={formatCurrency(netRevenue)}
-            subtitle="After refunds"
-            icon={<WalletOutlined style={{ fontSize: 23 }} />}
-            trend="+12.4%"
-            trendUp
+            value={formatCurrency(summary.netRevenue)}
+            subtitle="After completed refunds"
+            icon={
+              <WalletOutlined style={{ fontSize: 23 }} />
+            }
           />
         </Grid>
 
         <Grid item xs={12} sm={6} lg={3}>
           <StatCard
             title="Online Revenue"
-            value={formatCurrency(onlineRevenue)}
-            subtitle="Razorpay / online"
-            icon={<CreditCardOutlined style={{ fontSize: 23 }} />}
-            trend="+18.2%"
-            trendUp
+            value={formatCurrency(summary.onlineRevenue)}
+            subtitle="Online payment bookings"
+            icon={
+              <CreditCardOutlined
+                style={{ fontSize: 23 }}
+              />
+            }
           />
         </Grid>
 
         <Grid item xs={12} sm={6} lg={3}>
           <StatCard
             title="Refunds"
-            value={formatCurrency(totalRefunds)}
-            subtitle="Total refunded"
-            icon={<ReloadOutlined style={{ fontSize: 23 }} />}
-            trend="-5.3%"
-            trendUp
+            value={formatCurrency(summary.totalRefunds)}
+            subtitle="Completed refunds"
+            icon={
+              <ReloadOutlined style={{ fontSize: 23 }} />
+            }
           />
         </Grid>
       </Grid>
 
       {/* ============================== SECONDARY SUMMARY ============================== */}
 
-      <Grid container spacing={2.5} sx={{ mt: 0.2 }}>
+      <Grid
+        container
+        spacing={2.5}
+        sx={{ mt: 0.2 }}
+      >
         <Grid item xs={12} md={4}>
           <Card sx={{ borderRadius: 3 }}>
             <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+              >
                 <Box
                   sx={{
                     width: 44,
@@ -489,12 +863,20 @@ export default function Revenue() {
                 </Box>
 
                 <Box>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
                     Booking Fee Revenue
                   </Typography>
 
-                  <Typography variant="h5" fontWeight={700}>
-                    {formatCurrency(bookingFeeRevenue)}
+                  <Typography
+                    variant="h5"
+                    fontWeight={700}
+                  >
+                    {formatCurrency(
+                      summary.bookingFeeRevenue
+                    )}
                   </Typography>
                 </Box>
               </Stack>
@@ -505,7 +887,11 @@ export default function Revenue() {
         <Grid item xs={12} md={4}>
           <Card sx={{ borderRadius: 3 }}>
             <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+              >
                 <Box
                   sx={{
                     width: 44,
@@ -522,12 +908,18 @@ export default function Revenue() {
                 </Box>
 
                 <Box>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
                     Active Revenue Sources
                   </Typography>
 
-                  <Typography variant="h5" fontWeight={700}>
-                    {new Set(revenueRecords.map((item) => item.salonName)).size} Salons
+                  <Typography
+                    variant="h5"
+                    fontWeight={700}
+                  >
+                    {summary.activeSalons} Salons
                   </Typography>
                 </Box>
               </Stack>
@@ -538,7 +930,11 @@ export default function Revenue() {
         <Grid item xs={12} md={4}>
           <Card sx={{ borderRadius: 3 }}>
             <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+              >
                 <Box
                   sx={{
                     width: 44,
@@ -555,12 +951,20 @@ export default function Revenue() {
                 </Box>
 
                 <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    August Revenue
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    Current Month Revenue
                   </Typography>
 
-                  <Typography variant="h5" fontWeight={700}>
-                    {formatCurrency(108750)}
+                  <Typography
+                    variant="h5"
+                    fontWeight={700}
+                  >
+                    {formatCurrency(
+                      currentMonthRevenue
+                    )}
                   </Typography>
                 </Box>
               </Stack>
@@ -580,22 +984,37 @@ export default function Revenue() {
       >
         <CardContent>
           <Stack
-            direction={{ xs: 'column', sm: 'row' }}
+            direction={{
+              xs: 'column',
+              sm: 'row'
+            }}
             justifyContent="space-between"
-            alignItems={{ xs: 'flex-start', sm: 'center' }}
+            alignItems={{
+              xs: 'flex-start',
+              sm: 'center'
+            }}
             spacing={1}
           >
             <Box>
-              <Typography variant="h6" fontWeight={700}>
+              <Typography
+                variant="h6"
+                fontWeight={700}
+              >
                 Revenue Overview
               </Typography>
 
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
                 Monthly revenue performance
               </Typography>
             </Box>
 
-            <Chip label="Last 6 Months" variant="outlined" />
+            <Chip
+              label="Last 6 Months"
+              variant="outlined"
+            />
           </Stack>
 
           <Box
@@ -610,11 +1029,12 @@ export default function Revenue() {
             }}
           >
             {monthlyRevenue.map((item) => {
-              const height = (item.revenue / maxRevenue) * 190;
+              const height =
+                (item.revenue / maxRevenue) * 190;
 
               return (
                 <Box
-                  key={item.month}
+                  key={item.key}
                   sx={{
                     flex: 1,
                     height: '100%',
@@ -629,7 +1049,10 @@ export default function Revenue() {
                     fontWeight={600}
                     sx={{
                       mb: 1,
-                      display: { xs: 'none', sm: 'block' }
+                      display: {
+                        xs: 'none',
+                        sm: 'block'
+                      }
                     }}
                   >
                     {formatCurrency(item.revenue)}
@@ -640,15 +1063,20 @@ export default function Revenue() {
                       width: '100%',
                       maxWidth: 70,
                       height,
-                      minHeight: 8,
-                      borderRadius: '8px 8px 2px 2px',
+                      minHeight:
+                        item.revenue > 0 ? 8 : 2,
+                      borderRadius:
+                        '8px 8px 2px 2px',
                       bgcolor: 'primary.main',
-                      transition: 'height 0.3s ease',
+                      transition:
+                        'height 0.3s ease',
                       '&:hover': {
                         opacity: 0.8
                       }
                     }}
-                    title={`${item.month}: ${formatCurrency(item.revenue)}`}
+                    title={`${item.month}: ${formatCurrency(
+                      item.revenue
+                    )}`}
                   />
 
                   <Typography
@@ -662,7 +1090,12 @@ export default function Revenue() {
                   <Typography
                     variant="caption"
                     color="text.secondary"
-                    sx={{ display: { xs: 'none', sm: 'block' } }}
+                    sx={{
+                      display: {
+                        xs: 'none',
+                        sm: 'block'
+                      }
+                    }}
                   >
                     {item.bookings} bookings
                   </Typography>
@@ -684,9 +1117,15 @@ export default function Revenue() {
       >
         <CardContent>
           <Stack
-            direction={{ xs: 'column', md: 'row' }}
+            direction={{
+              xs: 'column',
+              md: 'row'
+            }}
             spacing={2}
-            alignItems={{ xs: 'stretch', md: 'center' }}
+            alignItems={{
+              xs: 'stretch',
+              md: 'center'
+            }}
           >
             <TextField
               fullWidth
@@ -700,7 +1139,10 @@ export default function Revenue() {
               }}
             />
 
-            <FormControl size="small" sx={{ minWidth: 170 }}>
+            <FormControl
+              size="small"
+              sx={{ minWidth: 170 }}
+            >
               <InputLabel>Status</InputLabel>
 
               <Select
@@ -708,29 +1150,63 @@ export default function Revenue() {
                 label="Status"
                 onChange={handleStatusChange}
               >
-                <MenuItem value="ALL">All Status</MenuItem>
-                <MenuItem value="PAID">Paid</MenuItem>
-                <MenuItem value="PARTIALLY_PAID">Partially Paid</MenuItem>
-                <MenuItem value="REFUNDED">Refunded</MenuItem>
-                <MenuItem value="PENDING">Pending</MenuItem>
+                <MenuItem value="ALL">
+                  All Status
+                </MenuItem>
+
+                <MenuItem value="PAID">
+                  Paid
+                </MenuItem>
+
+                <MenuItem value="PARTIALLY_PAID">
+                  Partially Paid
+                </MenuItem>
+
+                <MenuItem value="REFUNDED">
+                  Refunded
+                </MenuItem>
+
+                <MenuItem value="PENDING">
+                  Pending
+                </MenuItem>
+
+                <MenuItem value="FAILED">
+                  Failed
+                </MenuItem>
               </Select>
             </FormControl>
 
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Payment Method</InputLabel>
+            <FormControl
+              size="small"
+              sx={{ minWidth: 180 }}
+            >
+              <InputLabel>
+                Payment Method
+              </InputLabel>
 
               <Select
                 value={methodFilter}
                 label="Payment Method"
                 onChange={handleMethodChange}
               >
-                <MenuItem value="ALL">All Methods</MenuItem>
-                <MenuItem value="ONLINE">Online</MenuItem>
-                <MenuItem value="PAY_AT_SALON">Pay at Salon</MenuItem>
+                <MenuItem value="ALL">
+                  All Methods
+                </MenuItem>
+
+                <MenuItem value="ONLINE">
+                  Online
+                </MenuItem>
+
+                <MenuItem value="PAY_AT_SALON">
+                  Pay at Salon
+                </MenuItem>
               </Select>
             </FormControl>
 
-            <FormControl size="small" sx={{ minWidth: 180 }}>
+            <FormControl
+              size="small"
+              sx={{ minWidth: 180 }}
+            >
               <InputLabel>Salon</InputLabel>
 
               <Select
@@ -739,8 +1215,13 @@ export default function Revenue() {
                 onChange={handleSalonChange}
               >
                 {salons.map((salon) => (
-                  <MenuItem key={salon} value={salon}>
-                    {salon === 'ALL' ? 'All Salons' : salon}
+                  <MenuItem
+                    key={salon}
+                    value={salon}
+                  >
+                    {salon === 'ALL'
+                      ? 'All Salons'
+                      : salon}
                   </MenuItem>
                 ))}
               </Select>
@@ -756,16 +1237,23 @@ export default function Revenue() {
           mt: 3,
           borderRadius: 3,
           overflow: 'hidden',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+          boxShadow:
+            '0 2px 12px rgba(0,0,0,0.06)'
         }}
       >
         <CardContent sx={{ pb: 1 }}>
-          <Typography variant="h6" fontWeight={700}>
+          <Typography
+            variant="h6"
+            fontWeight={700}
+          >
             Revenue Records
           </Typography>
 
-          <Typography variant="body2" color="text.secondary">
-            Revenue generated from completed and paid bookings
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            Revenue generated from bookings
           </Typography>
         </CardContent>
 
@@ -775,58 +1263,103 @@ export default function Revenue() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Revenue ID</TableCell>
-                <TableCell>Salon</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Booking Date</TableCell>
-                <TableCell>Payment Method</TableCell>
-                <TableCell align="right">Total</TableCell>
-                <TableCell align="right">Refund</TableCell>
-                <TableCell align="right">Net Revenue</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>
+                  Revenue ID
+                </TableCell>
+
+                <TableCell>
+                  Salon
+                </TableCell>
+
+                <TableCell>
+                  Customer
+                </TableCell>
+
+                <TableCell>
+                  Booking Date
+                </TableCell>
+
+                <TableCell>
+                  Payment Method
+                </TableCell>
+
+                <TableCell align="right">
+                  Total
+                </TableCell>
+
+                <TableCell align="right">
+                  Refund
+                </TableCell>
+
+                <TableCell align="right">
+                  Net Revenue
+                </TableCell>
+
+                <TableCell>
+                  Status
+                </TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
               {filteredRecords
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .slice(
+                  page * rowsPerPage,
+                  page * rowsPerPage +
+                    rowsPerPage
+                )
                 .map((record) => (
                   <TableRow
                     key={record.id}
                     hover
                     sx={{
-                      '&:last-child td, &:last-child th': {
-                        border: 0
-                      }
+                      '&:last-child td, &:last-child th':
+                        {
+                          border: 0
+                        }
                     }}
                   >
                     <TableCell>
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                      >
                         {record.id}
                       </Typography>
 
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                      >
                         {record.bookingId}
                       </Typography>
                     </TableCell>
 
                     <TableCell>
-                      <Typography variant="body2" fontWeight={500}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={500}
+                      >
                         {record.salonName}
                       </Typography>
                     </TableCell>
 
-                    <TableCell>{record.customerName}</TableCell>
+                    <TableCell>
+                      {record.customerName}
+                    </TableCell>
 
                     <TableCell>
-                      {new Date(record.bookingDate).toLocaleDateString('en-IN')}
+                      {formatDate(
+                        record.bookingDate
+                      )}
                     </TableCell>
 
                     <TableCell>
                       <Chip
                         size="small"
                         label={
-                          record.paymentMethod === 'ONLINE'
+                          record.paymentMethod ===
+                          'ONLINE'
                             ? 'Online'
                             : 'Pay at Salon'
                         }
@@ -835,18 +1368,32 @@ export default function Revenue() {
                     </TableCell>
 
                     <TableCell align="right">
-                      <Typography variant="body2" fontWeight={600}>
-                        {formatCurrency(record.totalAmount)}
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                      >
+                        {formatCurrency(
+                          record.totalAmount
+                        )}
                       </Typography>
                     </TableCell>
 
                     <TableCell align="right">
                       {record.refundAmount > 0 ? (
-                        <Typography variant="body2" color="error.main">
-                          -{formatCurrency(record.refundAmount)}
+                        <Typography
+                          variant="body2"
+                          color="error.main"
+                        >
+                          -
+                          {formatCurrency(
+                            record.refundAmount
+                          )}
                         </Typography>
                       ) : (
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                        >
                           —
                         </Typography>
                       )}
@@ -858,15 +1405,22 @@ export default function Revenue() {
                         fontWeight={700}
                         color="success.main"
                       >
-                        {formatCurrency(record.netRevenue)}
+                        {formatCurrency(
+                          record.netRevenue
+                        )}
                       </Typography>
                     </TableCell>
 
                     <TableCell>
                       <Chip
                         size="small"
-                        label={record.paymentStatus.replace('_', ' ')}
-                        color={getStatusColor(record.paymentStatus)}
+                        label={record.paymentStatus.replace(
+                          '_',
+                          ' '
+                        )}
+                        color={getStatusColor(
+                          record.paymentStatus
+                        )}
                       />
                     </TableCell>
                   </TableRow>
@@ -881,12 +1435,19 @@ export default function Revenue() {
                         textAlign: 'center'
                       }}
                     >
-                      <Typography variant="h6" color="text.secondary">
+                      <Typography
+                        variant="h6"
+                        color="text.secondary"
+                      >
                         No revenue records found
                       </Typography>
 
-                      <Typography variant="body2" color="text.secondary">
-                        Try changing your filters or search term.
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        Try changing your filters
+                        or search term.
                       </Typography>
                     </Box>
                   </TableCell>
@@ -900,10 +1461,14 @@ export default function Revenue() {
           component="div"
           count={filteredRecords.length}
           page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
+          onPageChange={(_, newPage) =>
+            setPage(newPage)
+          }
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
+            setRowsPerPage(
+              parseInt(event.target.value, 10)
+            );
             setPage(0);
           }}
           rowsPerPageOptions={[5, 10, 25]}
@@ -912,4 +1477,3 @@ export default function Revenue() {
     </Box>
   );
 }
-
