@@ -631,3 +631,88 @@ export const REVENUE_QUERY = gql`
     }
   }
 `;
+
+export const GET_LOCATIONS = gql`
+  query GetLocations($search: String, $status: LocationStatus) {
+    locations(search: $search, status: $status) {
+      success
+      message
+      totalCount
+      locations {
+        locationId
+        city
+        state
+        country
+        pincode
+        salons
+        customers
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const CREATE_LOCATION = gql`
+  mutation CreateLocation($input: CreateLocationInput!) {
+    createLocation(input: $input) {
+      success
+      message
+      location {
+        locationId
+        city
+        state
+        country
+        pincode
+        salons
+        customers
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const UPDATE_LOCATION = gql`
+  mutation UpdateLocation($input: UpdateLocationInput!) {
+    updateLocation(input: $input) {
+      success
+      message
+      location {
+        locationId
+        city
+        state
+        country
+        pincode
+        salons
+        customers
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const DELETE_LOCATION = gql`
+  mutation DeleteLocation($locationId: ID!) {
+    deleteLocation(locationId: $locationId) {
+      success
+      message
+      location {
+        locationId
+        city
+        state
+        country
+        pincode
+        salons
+        customers
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;

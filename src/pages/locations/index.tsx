@@ -1,11 +1,12 @@
-
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery } from '@apollo/client';
 
 // material-ui
 import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -42,176 +43,255 @@ import {
 // project imports
 import MainCard from 'components/MainCard';
 
+// graphql
+import { GET_LOCATIONS } from '../../graphql/queries';
+import {
+  CREATE_LOCATION,
+  UPDATE_LOCATION,
+  DELETE_LOCATION
+} from '../../graphql/queries';
+
 // ==============================|| TYPES ||============================== //
 
+type LocationStatus = 'ACTIVE' | 'INACTIVE';
+
+type StatusFilter = 'ALL' | LocationStatus;
+
 interface LocationData {
-  id: string;
+  locationId: string;
   city: string;
   state: string;
   country: string;
   pincode: string;
   salons: number;
   customers: number;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: LocationStatus;
   createdAt: string;
+  updatedAt: string;
 }
 
-// ==============================|| MOCK DATA ||============================== //
+interface LocationForm {
+  city: string;
+  state: string;
+  country: string;
+  pincode: string;
+  status: LocationStatus;
+}
 
-const initialLocations: LocationData[] = [
-  {
-    id: 'LOC-001',
-    city: 'Bengaluru',
-    state: 'Karnataka',
-    country: 'India',
-    pincode: '560001',
-    salons: 42,
-    customers: 1250,
-    status: 'ACTIVE',
-    createdAt: '2026-01-10'
-  },
-  {
-    id: 'LOC-002',
-    city: 'Mysuru',
-    state: 'Karnataka',
-    country: 'India',
-    pincode: '570001',
-    salons: 18,
-    customers: 540,
-    status: 'ACTIVE',
-    createdAt: '2026-01-15'
-  },
-  {
-    id: 'LOC-003',
-    city: 'Mangaluru',
-    state: 'Karnataka',
-    country: 'India',
-    pincode: '575001',
-    salons: 11,
-    customers: 310,
-    status: 'ACTIVE',
-    createdAt: '2026-02-05'
-  },
-  {
-    id: 'LOC-004',
-    city: 'Hubballi',
-    state: 'Karnataka',
-    country: 'India',
-    pincode: '580001',
-    salons: 7,
-    customers: 180,
-    status: 'ACTIVE',
-    createdAt: '2026-02-12'
-  },
-  {
-    id: 'LOC-005',
-    city: 'Chennai',
-    state: 'Tamil Nadu',
-    country: 'India',
-    pincode: '600001',
-    salons: 24,
-    customers: 720,
-    status: 'ACTIVE',
-    createdAt: '2026-03-01'
-  },
-  {
-    id: 'LOC-006',
-    city: 'Hyderabad',
-    state: 'Telangana',
-    country: 'India',
-    pincode: '500001',
-    salons: 21,
-    customers: 610,
-    status: 'ACTIVE',
-    createdAt: '2026-03-08'
-  },
-  {
-    id: 'LOC-007',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    country: 'India',
-    pincode: '400001',
-    salons: 16,
-    customers: 490,
-    status: 'INACTIVE',
-    createdAt: '2026-03-18'
-  }
-];
+interface LocationsQueryData {
+  locations: {
+    success: boolean;
+    message: string;
+    totalCount: number;
+    locations: LocationData[];
+  };
+}
+
+interface LocationsQueryVariables {
+  search?: string;
+  status?: LocationStatus;
+}
+
+interface CreateLocationData {
+  createLocation: {
+    success: boolean;
+    message: string;
+    location: LocationData | null;
+  };
+}
+
+interface CreateLocationVariables {
+  input: {
+    city: string;
+    state: string;
+    country: string;
+    pincode: string;
+    status: LocationStatus;
+  };
+}
+
+interface UpdateLocationData {
+  updateLocation: {
+    success: boolean;
+    message: string;
+    location: LocationData | null;
+  };
+}
+
+interface UpdateLocationVariables {
+  input: {
+    locationId: string;
+    city: string;
+    state: string;
+    country: string;
+    pincode: string;
+    status: LocationStatus;
+  };
+}
+
+interface DeleteLocationData {
+  deleteLocation: {
+    success: boolean;
+    message: string;
+    location: LocationData | null;
+  };
+}
+
+interface DeleteLocationVariables {
+  locationId: string;
+}
 
 // ==============================|| INITIAL FORM ||============================== //
 
-const emptyForm = {
+const emptyForm: LocationForm = {
   city: '',
   state: '',
   country: 'India',
   pincode: '',
-  status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE'
+  status: 'ACTIVE'
 };
 
 // ==============================|| LOCATION PAGE ||============================== //
 
 export default function Locations() {
-  const [locations, setLocations] = useState<LocationData[]>(initialLocations);
+  // ==============================|| STATE ||============================== //
 
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+
+  const [statusFilter, setStatusFilter] =
+    useState<StatusFilter>('ALL');
 
   const [page, setPage] = useState(0);
+
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const [openDialog, setOpenDialog] = useState(false);
-  const [editingLocation, setEditingLocation] = useState<LocationData | null>(null);
 
-  const [form, setForm] = useState(emptyForm);
+  const [editingLocation, setEditingLocation] =
+    useState<LocationData | null>(null);
 
-  // ==============================|| FILTER ||============================== //
+  const [form, setForm] = useState<LocationForm>(emptyForm);
 
-  const filteredLocations = useMemo(() => {
-    return locations.filter((location) => {
-      const searchText = search.toLowerCase();
+  const [formError, setFormError] = useState('');
 
-      const matchesSearch =
-        location.city.toLowerCase().includes(searchText) ||
-        location.state.toLowerCase().includes(searchText) ||
-        location.country.toLowerCase().includes(searchText) ||
-        location.pincode.toLowerCase().includes(searchText);
+  // ==============================|| QUERY ||============================== //
 
-      const matchesStatus =
-        statusFilter === 'ALL' || location.status === statusFilter;
+  const {
+    data,
+    loading,
+    error,
+    refetch
+  } = useQuery<
+    LocationsQueryData,
+    LocationsQueryVariables
+  >(GET_LOCATIONS, {
+    variables: {
+      search: search.trim() || undefined,
+      status:
+        statusFilter === 'ALL'
+          ? undefined
+          : statusFilter
+    },
+    fetchPolicy: 'network-only'
+  });
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [locations, search, statusFilter]);
+  // ==============================|| MUTATIONS ||============================== //
+
+  const [
+    createLocation,
+    {
+      loading: creating
+    }
+  ] = useMutation<
+    CreateLocationData,
+    CreateLocationVariables
+  >(CREATE_LOCATION);
+
+  const [
+    updateLocation,
+    {
+      loading: updating
+    }
+  ] = useMutation<
+    UpdateLocationData,
+    UpdateLocationVariables
+  >(UPDATE_LOCATION);
+
+  const [
+    deleteLocation,
+    {
+      loading: deleting
+    }
+  ] = useMutation<
+    DeleteLocationData,
+    DeleteLocationVariables
+  >(DELETE_LOCATION);
+
+  // ==============================|| DATA ||============================== //
+
+  const locations: LocationData[] =
+    data?.locations?.locations || [];
+
+  const totalCount =
+    data?.locations?.totalCount || 0;
+
+  // ==============================|| RESET PAGE ||============================== //
+
+  useEffect(() => {
+    setPage(0);
+  }, [search, statusFilter]);
 
   // ==============================|| STATISTICS ||============================== //
 
-  const totalLocations = locations.length;
+  /*
+   * IMPORTANT:
+   *
+   * Because the query is filtered by search/status,
+   * statistics should not be calculated from the filtered
+   * table if you want global totals.
+   *
+   * The backend currently returns the location list only.
+   *
+   * For now, these statistics represent the locations
+   * returned by the current query.
+   */
 
-  const activeLocations = locations.filter(
-    (location) => location.status === 'ACTIVE'
-  ).length;
+  const activeLocations = useMemo(() => {
+    return locations.filter(
+      (location) => location.status === 'ACTIVE'
+    ).length;
+  }, [locations]);
 
-  const totalSalons = locations.reduce(
-    (sum, location) => sum + location.salons,
-    0
-  );
+  const totalSalons = useMemo(() => {
+    return locations.reduce(
+      (sum, location) =>
+        sum + Number(location.salons || 0),
+      0
+    );
+  }, [locations]);
 
-  const totalCustomers = locations.reduce(
-    (sum, location) => sum + location.customers,
-    0
-  );
+  const totalCustomers = useMemo(() => {
+    return locations.reduce(
+      (sum, location) =>
+        sum + Number(location.customers || 0),
+      0
+    );
+  }, [locations]);
 
   // ==============================|| OPEN ADD ||============================== //
 
   const handleAddLocation = () => {
     setEditingLocation(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm });
+    setFormError('');
     setOpenDialog(true);
   };
 
   // ==============================|| OPEN EDIT ||============================== //
 
-  const handleEditLocation = (location: LocationData) => {
+  const handleEditLocation = (
+    location: LocationData
+  ) => {
     setEditingLocation(location);
 
     setForm({
@@ -222,88 +302,325 @@ export default function Locations() {
       status: location.status
     });
 
+    setFormError('');
     setOpenDialog(true);
   };
 
-  // ==============================|| DELETE ||============================== //
+  // ==============================|| CLOSE DIALOG ||============================== //
 
-  const handleDeleteLocation = (id: string) => {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this location?'
-    );
-
-    if (!confirmed) return;
-
-    setLocations((previous) =>
-      previous.filter((location) => location.id !== id)
-    );
-  };
-
-  // ==============================|| SAVE ||============================== //
-
-  const handleSaveLocation = () => {
-    if (!form.city.trim() || !form.state.trim() || !form.pincode.trim()) {
-      window.alert('Please enter city, state and pincode.');
+  const handleCloseDialog = () => {
+    if (creating || updating) {
       return;
-    }
-
-    if (editingLocation) {
-      setLocations((previous) =>
-        previous.map((location) =>
-          location.id === editingLocation.id
-            ? {
-                ...location,
-                city: form.city,
-                state: form.state,
-                country: form.country,
-                pincode: form.pincode,
-                status: form.status
-              }
-            : location
-        )
-      );
-    } else {
-      const newLocation: LocationData = {
-        id: `LOC-${String(locations.length + 1).padStart(3, '0')}`,
-        city: form.city,
-        state: form.state,
-        country: form.country,
-        pincode: form.pincode,
-        salons: 0,
-        customers: 0,
-        status: form.status,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-
-      setLocations((previous) => [...previous, newLocation]);
     }
 
     setOpenDialog(false);
     setEditingLocation(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm });
+    setFormError('');
+  };
+
+  // ==============================|| DELETE ||============================== //
+
+  const handleDeleteLocation = async (
+    locationId: string
+  ) => {
+    const location = locations.find(
+      (item) => item.locationId === locationId
+    );
+
+    if (!location) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${location.city}?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const result = await deleteLocation({
+        variables: {
+          locationId
+        }
+      });
+
+      const response =
+        result.data?.deleteLocation;
+
+      if (!response?.success) {
+        window.alert(
+          response?.message ||
+            'Failed to delete location.'
+        );
+
+        return;
+      }
+
+      window.alert(
+        response.message ||
+          'Location deleted successfully.'
+      );
+
+      await refetch();
+    } catch (mutationError) {
+      console.error(
+        'Delete location error:',
+        mutationError
+      );
+
+      window.alert(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Failed to delete location.'
+      );
+    }
+  };
+
+  // ==============================|| VALIDATION ||============================== //
+
+  const validateForm = (): boolean => {
+    const city = form.city.trim();
+    const state = form.state.trim();
+    const country = form.country.trim();
+    const pincode = form.pincode.trim();
+
+    if (!city) {
+      setFormError('Please enter city.');
+      return false;
+    }
+
+    if (!state) {
+      setFormError('Please enter state.');
+      return false;
+    }
+
+    if (!country) {
+      setFormError('Please enter country.');
+      return false;
+    }
+
+    if (!pincode) {
+      setFormError('Please enter pincode.');
+      return false;
+    }
+
+    if (!/^\d{6}$/.test(pincode)) {
+      setFormError(
+        'Pincode must contain exactly 6 digits.'
+      );
+
+      return false;
+    }
+
+    return true;
+  };
+
+  // ==============================|| SAVE ||============================== //
+
+  const handleSaveLocation = async () => {
+    setFormError('');
+
+    if (!validateForm()) {
+      return;
+    }
+
+    const input = {
+      city: form.city.trim(),
+      state: form.state.trim(),
+      country: form.country.trim(),
+      pincode: form.pincode.trim(),
+      status: form.status
+    };
+
+    try {
+      // ==============================|| UPDATE ||============================== //
+
+      if (editingLocation) {
+        const result = await updateLocation({
+          variables: {
+            input: {
+              locationId:
+                editingLocation.locationId,
+              ...input
+            }
+          }
+        });
+
+        const response =
+          result.data?.updateLocation;
+
+        if (!response?.success) {
+          setFormError(
+            response?.message ||
+              'Failed to update location.'
+          );
+
+          return;
+        }
+
+        setOpenDialog(false);
+        setEditingLocation(null);
+        setForm({ ...emptyForm });
+
+        window.alert(
+          response.message ||
+            'Location updated successfully.'
+        );
+
+        await refetch();
+
+        return;
+      }
+
+      // ==============================|| CREATE ||============================== //
+
+      const result = await createLocation({
+        variables: {
+          input
+        }
+      });
+
+      const response =
+        result.data?.createLocation;
+
+      if (!response?.success) {
+        setFormError(
+          response?.message ||
+            'Failed to create location.'
+        );
+
+        return;
+      }
+
+      setOpenDialog(false);
+      setEditingLocation(null);
+      setForm({ ...emptyForm });
+
+      window.alert(
+        response.message ||
+          'Location created successfully.'
+      );
+
+      await refetch();
+    } catch (mutationError) {
+      console.error(
+        'Save location error:',
+        mutationError
+      );
+
+      setFormError(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Something went wrong.'
+      );
+    }
   };
 
   // ==============================|| PAGINATION ||============================== //
 
-  const paginatedLocations = filteredLocations.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  const paginatedLocations = useMemo(() => {
+    const start =
+      page * rowsPerPage;
+
+    const end =
+      start + rowsPerPage;
+
+    return locations.slice(start, end);
+  }, [locations, page, rowsPerPage]);
+
+  // ==============================|| LOADING ||============================== //
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: 400,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <Stack
+          spacing={2}
+          alignItems="center"
+        >
+          <CircularProgress />
+
+          <Typography
+            color="text.secondary"
+          >
+            Loading locations...
+          </Typography>
+        </Stack>
+      </Box>
+    );
+  }
+
+  // ==============================|| ERROR ||============================== //
+
+  if (error) {
+    return (
+      <Box>
+        <MainCard>
+          <Stack
+            spacing={2}
+            alignItems="center"
+            sx={{ py: 5 }}
+          >
+            <Typography
+              variant="h6"
+              color="error"
+            >
+              Failed to load locations
+            </Typography>
+
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              {error.message}
+            </Typography>
+
+            <Button
+              variant="contained"
+              onClick={() => refetch()}
+            >
+              Retry
+            </Button>
+          </Stack>
+        </MainCard>
+      </Box>
+    );
+  }
 
   // ==============================|| RENDER ||============================== //
 
   return (
     <Box>
       {/* PAGE HEADER */}
+
       <Stack
-        direction={{ xs: 'column', sm: 'row' }}
+        direction={{
+          xs: 'column',
+          sm: 'row'
+        }}
         justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        alignItems={{
+          xs: 'flex-start',
+          sm: 'center'
+        }}
         spacing={2}
         sx={{ mb: 3 }}
       >
         <Box>
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+          >
             <EnvironmentOutlined
               style={{
                 fontSize: 28
@@ -320,7 +637,8 @@ export default function Locations() {
             color="text.secondary"
             sx={{ mt: 0.5 }}
           >
-            Manage cities and geographic areas supported by Clavata.
+            Manage cities and geographic areas
+            supported by Clavata.
           </Typography>
         </Box>
 
@@ -334,50 +652,99 @@ export default function Locations() {
       </Stack>
 
       {/* STATISTICS */}
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+
+      <Grid
+        container
+        spacing={2.5}
+        sx={{ mb: 3 }}
+      >
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <MainCard>
-            <Typography color="text.secondary" variant="body2">
+            <Typography
+              color="text.secondary"
+              variant="body2"
+            >
               Total Locations
             </Typography>
 
-            <Typography variant="h3" sx={{ mt: 1 }}>
-              {totalLocations}
+            <Typography
+              variant="h3"
+              sx={{ mt: 1 }}
+            >
+              {totalCount}
             </Typography>
           </MainCard>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <MainCard>
-            <Typography color="text.secondary" variant="body2">
+            <Typography
+              color="text.secondary"
+              variant="body2"
+            >
               Active Locations
             </Typography>
 
-            <Typography variant="h3" sx={{ mt: 1 }}>
+            <Typography
+              variant="h3"
+              sx={{ mt: 1 }}
+            >
               {activeLocations}
             </Typography>
           </MainCard>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <MainCard>
-            <Typography color="text.secondary" variant="body2">
+            <Typography
+              color="text.secondary"
+              variant="body2"
+            >
               Total Salons
             </Typography>
 
-            <Typography variant="h3" sx={{ mt: 1 }}>
+            <Typography
+              variant="h3"
+              sx={{ mt: 1 }}
+            >
               {totalSalons}
             </Typography>
           </MainCard>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <MainCard>
-            <Typography color="text.secondary" variant="body2">
+            <Typography
+              color="text.secondary"
+              variant="body2"
+            >
               Total Customers
             </Typography>
 
-            <Typography variant="h3" sx={{ mt: 1 }}>
+            <Typography
+              variant="h3"
+              sx={{ mt: 1 }}
+            >
               {totalCustomers.toLocaleString()}
             </Typography>
           </MainCard>
@@ -385,16 +752,28 @@ export default function Locations() {
       </Grid>
 
       {/* TABLE CARD */}
+
       <MainCard content={false}>
         {/* FILTER BAR */}
+
         <Box sx={{ p: 2.5 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={8}>
+          <Grid
+            container
+            spacing={2}
+          >
+            <Grid
+              item
+              xs={12}
+              md={8}
+            >
               <TextField
                 fullWidth
                 value={search}
                 onChange={(event) => {
-                  setSearch(event.target.value);
+                  setSearch(
+                    event.target.value
+                  );
+
                   setPage(0);
                 }}
                 placeholder="Search by city, state or pincode..."
@@ -408,20 +787,33 @@ export default function Locations() {
               />
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            <Grid
+              item
+              xs={12}
+              md={4}
+            >
               <Select
                 fullWidth
                 value={statusFilter}
                 onChange={(event) => {
                   setStatusFilter(
-                    event.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE'
+                    event.target.value as StatusFilter
                   );
+
                   setPage(0);
                 }}
               >
-                <MenuItem value="ALL">All Status</MenuItem>
-                <MenuItem value="ACTIVE">Active</MenuItem>
-                <MenuItem value="INACTIVE">Inactive</MenuItem>
+                <MenuItem value="ALL">
+                  All Status
+                </MenuItem>
+
+                <MenuItem value="ACTIVE">
+                  Active
+                </MenuItem>
+
+                <MenuItem value="INACTIVE">
+                  Inactive
+                </MenuItem>
               </Select>
             </Grid>
           </Grid>
@@ -430,133 +822,191 @@ export default function Locations() {
         <Divider />
 
         {/* TABLE */}
-        <TableContainer component={Paper} elevation={0}>
+
+        <TableContainer
+          component={Paper}
+          elevation={0}
+        >
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Location</TableCell>
-                <TableCell>State</TableCell>
-                <TableCell>Pincode</TableCell>
-                <TableCell align="center">Salons</TableCell>
-                <TableCell align="center">Customers</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Created</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>
+                  Location
+                </TableCell>
+
+                <TableCell>
+                  State
+                </TableCell>
+
+                <TableCell>
+                  Pincode
+                </TableCell>
+
+                <TableCell align="center">
+                  Salons
+                </TableCell>
+
+                <TableCell align="center">
+                  Customers
+                </TableCell>
+
+                <TableCell>
+                  Status
+                </TableCell>
+
+                <TableCell>
+                  Created
+                </TableCell>
+
+                <TableCell align="right">
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
               {paginatedLocations.length > 0 ? (
-                paginatedLocations.map((location) => (
-                  <TableRow
-                    hover
-                    key={location.id}
-                  >
-                    <TableCell>
-                      <Stack
-                        direction="row"
-                        spacing={1.5}
-                        alignItems="center"
-                      >
-                        <Box
-                          sx={{
-                            width: 38,
-                            height: 38,
-                            borderRadius: 1.5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            bgcolor: 'primary.lighter'
-                          }}
+                paginatedLocations.map(
+                  (location) => (
+                    <TableRow
+                      hover
+                      key={
+                        location.locationId
+                      }
+                    >
+                      <TableCell>
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
                         >
-                          <EnvironmentOutlined
-                            style={{
-                              fontSize: 20
+                          <Box
+                            sx={{
+                              width: 38,
+                              height: 38,
+                              borderRadius: 1.5,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent:
+                                'center',
+                              bgcolor:
+                                'primary.lighter'
                             }}
-                          />
-                        </Box>
-
-                        <Box>
-                          <Typography variant="subtitle1">
-                            {location.city}
-                          </Typography>
-
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
                           >
-                            {location.country}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </TableCell>
+                            <EnvironmentOutlined
+                              style={{
+                                fontSize: 20
+                              }}
+                            />
+                          </Box>
 
-                    <TableCell>
-                      {location.state}
-                    </TableCell>
+                          <Box>
+                            <Typography
+                              variant="subtitle1"
+                            >
+                              {location.city}
+                            </Typography>
 
-                    <TableCell>
-                      {location.pincode}
-                    </TableCell>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {location.country}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
 
-                    <TableCell align="center">
-                      <Typography fontWeight={600}>
-                        {location.salons}
-                      </Typography>
-                    </TableCell>
+                      <TableCell>
+                        {location.state}
+                      </TableCell>
 
-                    <TableCell align="center">
-                      <Typography fontWeight={600}>
-                        {location.customers.toLocaleString()}
-                      </Typography>
-                    </TableCell>
+                      <TableCell>
+                        {location.pincode}
+                      </TableCell>
 
-                    <TableCell>
-                      <Chip
-                        label={location.status}
-                        size="small"
-                        color={
-                          location.status === 'ACTIVE'
-                            ? 'success'
-                            : 'default'
-                        }
-                      />
-                    </TableCell>
+                      <TableCell align="center">
+                        <Typography fontWeight={600}>
+                          {Number(
+                            location.salons || 0
+                          )}
+                        </Typography>
+                      </TableCell>
 
-                    <TableCell>
-                      {location.createdAt}
-                    </TableCell>
+                      <TableCell align="center">
+                        <Typography fontWeight={600}>
+                          {Number(
+                            location.customers ||
+                              0
+                          ).toLocaleString()}
+                        </Typography>
+                      </TableCell>
 
-                    <TableCell align="right">
-                      <Stack
-                        direction="row"
-                        justifyContent="flex-end"
-                      >
-                        <Tooltip title="Edit">
-                          <IconButton
-                            color="primary"
-                            onClick={() =>
-                              handleEditLocation(location)
-                            }
-                          >
-                            <EditOutlined />
-                          </IconButton>
-                        </Tooltip>
+                      <TableCell>
+                        <Chip
+                          label={
+                            location.status
+                          }
+                          size="small"
+                          color={
+                            location.status ===
+                            'ACTIVE'
+                              ? 'success'
+                              : 'default'
+                          }
+                        />
+                      </TableCell>
 
-                        <Tooltip title="Delete">
-                          <IconButton
-                            color="error"
-                            onClick={() =>
-                              handleDeleteLocation(location.id)
-                            }
-                          >
-                            <DeleteOutlined />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      <TableCell>
+                        {location.createdAt
+                          ? new Date(
+                              location.createdAt
+                            ).toLocaleDateString(
+                              'en-IN'
+                            )
+                          : '-'}
+                      </TableCell>
+
+                      <TableCell align="right">
+                        <Stack
+                          direction="row"
+                          justifyContent="flex-end"
+                        >
+                          <Tooltip title="Edit">
+                            <IconButton
+                              color="primary"
+                              onClick={() =>
+                                handleEditLocation(
+                                  location
+                                )
+                              }
+                            >
+                              <EditOutlined />
+                            </IconButton>
+                          </Tooltip>
+
+                          <Tooltip title="Delete">
+                            <span>
+                              <IconButton
+                                color="error"
+                                disabled={
+                                  deleting
+                                }
+                                onClick={() =>
+                                  handleDeleteLocation(
+                                    location.locationId
+                                  )
+                                }
+                              >
+                                <DeleteOutlined />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  )
+                )
               ) : (
                 <TableRow>
                   <TableCell
@@ -564,9 +1014,17 @@ export default function Locations() {
                     align="center"
                     sx={{ py: 6 }}
                   >
+                    <EnvironmentOutlined
+                      style={{
+                        fontSize: 40,
+                        opacity: 0.4
+                      }}
+                    />
+
                     <Typography
                       variant="h6"
                       color="text.secondary"
+                      sx={{ mt: 1 }}
                     >
                       No locations found
                     </Typography>
@@ -576,7 +1034,8 @@ export default function Locations() {
                       color="text.secondary"
                       sx={{ mt: 0.5 }}
                     >
-                      Try changing your search or filter.
+                      Try changing your search
+                      or filter.
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -586,24 +1045,39 @@ export default function Locations() {
         </TableContainer>
 
         {/* PAGINATION */}
+
         <TablePagination
           component="div"
-          count={filteredLocations.length}
+          count={locations.length}
           page={page}
           rowsPerPage={rowsPerPage}
-          onPageChange={(_, newPage) => setPage(newPage)}
+          onPageChange={(_, newPage) =>
+            setPage(newPage)
+          }
           onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
+            setRowsPerPage(
+              parseInt(
+                event.target.value,
+                10
+              )
+            );
+
             setPage(0);
           }}
-          rowsPerPageOptions={[5, 10, 25, 50]}
+          rowsPerPageOptions={[
+            5,
+            10,
+            25,
+            50
+          ]}
         />
       </MainCard>
 
       {/* ADD / EDIT DIALOG */}
+
       <Dialog
         open={openDialog}
-        onClose={() => setOpenDialog(false)}
+        onClose={handleCloseDialog}
         fullWidth
         maxWidth="sm"
       >
@@ -614,57 +1088,78 @@ export default function Locations() {
         </DialogTitle>
 
         <DialogContent>
-          <Stack spacing={2.5} sx={{ mt: 1 }}>
+          <Stack
+            spacing={2.5}
+            sx={{ mt: 1 }}
+          >
             <TextField
               fullWidth
+              required
               label="City"
               value={form.city}
               onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  city: event.target.value
-                }))
+                setForm(
+                  (previous) => ({
+                    ...previous,
+                    city: event.target.value
+                  })
+                )
               }
               placeholder="e.g. Bengaluru"
             />
 
             <TextField
               fullWidth
+              required
               label="State"
               value={form.state}
               onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  state: event.target.value
-                }))
+                setForm(
+                  (previous) => ({
+                    ...previous,
+                    state: event.target.value
+                  })
+                )
               }
               placeholder="e.g. Karnataka"
             />
 
             <TextField
               fullWidth
+              required
               label="Country"
               value={form.country}
               onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  country: event.target.value
-                }))
+                setForm(
+                  (previous) => ({
+                    ...previous,
+                    country: event.target.value
+                  })
+                )
               }
             />
 
             <TextField
               fullWidth
+              required
               label="Pincode"
               value={form.pincode}
-              onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  pincode: event.target.value
-                }))
-              }
+              onChange={(event) => {
+                const value =
+                  event.target.value
+                    .replace(/\D/g, '')
+                    .slice(0, 6);
+
+                setForm(
+                  (previous) => ({
+                    ...previous,
+                    pincode: value
+                  })
+                );
+              }}
               inputProps={{
-                maxLength: 6
+                maxLength: 6,
+                inputMode: 'numeric'
               }}
               placeholder="e.g. 560001"
             />
@@ -673,12 +1168,14 @@ export default function Locations() {
               fullWidth
               value={form.status}
               onChange={(event) =>
-                setForm((previous) => ({
-                  ...previous,
-                  status: event.target.value as
-                    | 'ACTIVE'
-                    | 'INACTIVE'
-                }))
+                setForm(
+                  (previous) => ({
+                    ...previous,
+                    status:
+                      event.target
+                        .value as LocationStatus
+                  })
+                )
               }
             >
               <MenuItem value="ACTIVE">
@@ -689,12 +1186,29 @@ export default function Locations() {
                 Inactive
               </MenuItem>
             </Select>
+
+            {formError && (
+              <Typography
+                variant="body2"
+                color="error"
+              >
+                {formError}
+              </Typography>
+            )}
           </Stack>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 2.5
+          }}
+        >
           <Button
-            onClick={() => setOpenDialog(false)}
+            onClick={handleCloseDialog}
+            disabled={
+              creating || updating
+            }
           >
             Cancel
           </Button>
@@ -702,12 +1216,28 @@ export default function Locations() {
           <Button
             variant="contained"
             onClick={handleSaveLocation}
+            disabled={
+              creating || updating
+            }
+            startIcon={
+              creating || updating ? (
+                <CircularProgress
+                  size={18}
+                  color="inherit"
+                />
+              ) : undefined
+            }
           >
-            {editingLocation ? 'Update' : 'Add Location'}
+            {creating
+              ? 'Adding...'
+              : updating
+                ? 'Updating...'
+                : editingLocation
+                  ? 'Update'
+                  : 'Add Location'}
           </Button>
         </DialogActions>
       </Dialog>
     </Box>
   );
 }
-
