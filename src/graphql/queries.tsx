@@ -434,38 +434,56 @@ export const UPDATE_REVIEW_STATUS = gql`
 `;
 
 export const GET_PAYMENT_TRANSACTIONS = gql`
-  query PaymentTransactions(
-    $search: String
-    $status: PaymentTransactionStatus
-    $paymentType: PaymentTransactionType
+ query PaymentTransactions(
+  $bookingId: ID
+  $customerUserId: ID
+  $salonId: ID
+  $status: PaymentTransactionStatus
+  $paymentType: PaymentTransactionType
+  $search: String
+) {
+  paymentTransactions(
+    bookingId: $bookingId
+    customerUserId: $customerUserId
+    salonId: $salonId
+    status: $status
+    paymentType: $paymentType
+    search: $search
   ) {
-    paymentTransactions(
-      search: $search
-      status: $status
-      paymentType: $paymentType
-    ) {
-      success
-      message
-      totalCount
-      transactions {
-        paymentTransactionId
-        bookingId
-        customerUserId
-        salonId
-        razorpayOrderId
-        razorpayPaymentId
-        amount
-        currency
-        paymentType
-        paymentMethod
-        status
-        failureReason
-        createdAt
-        updatedAt
-        paidAt
-      }
+    success
+    message
+    totalCount
+
+    transactions {
+      paymentTransactionId
+      bookingId
+
+      customerUserId
+      customerName
+
+      salonId
+      salonName
+
+      razorpayOrderId
+      razorpayPaymentId
+
+      amount
+      fee
+      netAmount
+      currency
+
+      paymentType
+      paymentMethod
+      status
+
+      failureReason
+
+      createdAt
+      updatedAt
+      paidAt
     }
   }
+}
 `;
 
 export const GET_ADMIN_BOOKINGS = gql`
@@ -492,6 +510,52 @@ export const GET_ADMIN_BOOKINGS = gql`
         razorpayOrderId
         razorpayPaymentId
         paymentGateway
+      }
+    }
+  }
+`;
+
+export const REFUNDS_QUERY = gql`
+  query Refunds(
+    $bookingId: ID
+    $customerUserId: ID
+    $salonId: ID
+    $status: RefundStatus
+    $reason: RefundReason
+    $search: String
+  ) {
+    refunds(
+      bookingId: $bookingId
+      customerUserId: $customerUserId
+      salonId: $salonId
+      status: $status
+      reason: $reason
+      search: $search
+    ) {
+      success
+      message
+      totalCount
+
+      refunds {
+        refundId
+        bookingId
+        paymentTransactionId
+        customerUserId
+        customerName
+        customerPhone
+        salonId
+        salonName
+        originalAmount
+        refundAmount
+        reason
+        status
+        paymentMethod
+        razorpayPaymentId
+        razorpayRefundId
+        requestedAt
+        processedAt
+        createdAt
+        updatedAt
       }
     }
   }
