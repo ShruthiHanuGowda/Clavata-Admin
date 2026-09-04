@@ -716,3 +716,93 @@ export const DELETE_LOCATION = gql`
     }
   }
 `;
+
+export const GET_CATEGORIES = gql`
+  query GetCategories(
+    $search: String
+    $status: CategoryStatus
+  ) {
+    categories(
+      search: $search
+      status: $status
+    ) {
+      success
+      message
+      totalCount
+
+      categories {
+        categoryId
+        name
+        description
+        servicesCount
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const CREATE_CATEGORY = gql`
+  mutation CreateCategory(
+    $input: CreateCategoryInput!
+  ) {
+    createCategory(input: $input) {
+      success
+      message
+
+      category {
+        categoryId
+        name
+        description
+        servicesCount
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const UPDATE_CATEGORY = gql`
+  mutation UpdateCategory(
+    $input: UpdateCategoryInput!
+  ) {
+    updateCategory(input: $input) {
+      success
+      message
+
+      category {
+        categoryId
+        name
+        description
+        servicesCount
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+export const DELETE_CATEGORY = gql`
+  mutation DeleteCategory(
+    $categoryId: ID!
+  ) {
+    deleteCategory(
+      categoryId: $categoryId
+    ) {
+      success
+      message
+
+      category {
+        categoryId
+        name
+        description
+        servicesCount
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;

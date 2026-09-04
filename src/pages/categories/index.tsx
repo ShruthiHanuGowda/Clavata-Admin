@@ -1,11 +1,10 @@
+import { useEffect, useMemo, useState } from 'react';
 
-import { useMemo, useState } from 'react';
-
-// material-ui
 import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -31,7 +30,6 @@ import {
   Typography
 } from '@mui/material';
 
-// icons
 import {
   DeleteOutlined,
   EditOutlined,
@@ -40,101 +38,75 @@ import {
   TagsOutlined
 } from '@ant-design/icons';
 
-// ==============================|| TYPES ||============================== //
+import { useMutation, useQuery } from '@apollo/client';
+
+import {
+  CREATE_CATEGORY,
+  UPDATE_CATEGORY,
+  DELETE_CATEGORY,
+  GET_CATEGORIES
+} from '../../graphql/queries';
+
+// ======================================================
+// TYPES
+// ======================================================
+
+type CategoryStatus = 'ACTIVE' | 'INACTIVE';
+
+type StatusFilter = 'ALL' | CategoryStatus;
 
 interface Category {
-  id: string;
+  categoryId: string;
   name: string;
-  description: string;
+  description: string | null;
   servicesCount: number;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: CategoryStatus;
   createdAt: string;
+  updatedAt: string;
 }
-
-// ==============================|| STATIC DATA ||============================== //
-
-const INITIAL_CATEGORIES: Category[] = [
-  {
-    id: 'CAT001',
-    name: 'Hair',
-    description: 'Haircuts, styling, coloring and hair treatments',
-    servicesCount: 24,
-    status: 'ACTIVE',
-    createdAt: '12 Aug 2026'
-  },
-  {
-    id: 'CAT002',
-    name: 'Skin',
-    description: 'Facials, cleanup, skin treatments and skincare',
-    servicesCount: 18,
-    status: 'ACTIVE',
-    createdAt: '12 Aug 2026'
-  },
-  {
-    id: 'CAT003',
-    name: 'Nails',
-    description: 'Manicure, pedicure, nail art and nail care',
-    servicesCount: 12,
-    status: 'ACTIVE',
-    createdAt: '13 Aug 2026'
-  },
-  {
-    id: 'CAT004',
-    name: 'Makeup',
-    description: 'Party, bridal, engagement and professional makeup',
-    servicesCount: 15,
-    status: 'ACTIVE',
-    createdAt: '13 Aug 2026'
-  },
-  {
-    id: 'CAT005',
-    name: 'Spa',
-    description: 'Relaxation, massage and wellness services',
-    servicesCount: 10,
-    status: 'ACTIVE',
-    createdAt: '14 Aug 2026'
-  },
-  {
-    id: 'CAT006',
-    name: 'Bridal',
-    description: 'Bridal packages and wedding preparation services',
-    servicesCount: 8,
-    status: 'ACTIVE',
-    createdAt: '14 Aug 2026'
-  },
-  {
-    id: 'CAT007',
-    name: 'Hair Removal',
-    description: 'Waxing, threading and other hair removal services',
-    servicesCount: 9,
-    status: 'ACTIVE',
-    createdAt: '15 Aug 2026'
-  },
-  {
-    id: 'CAT008',
-    name: 'Men Grooming',
-    description: 'Men-specific grooming and personal care services',
-    servicesCount: 14,
-    status: 'ACTIVE',
-    createdAt: '15 Aug 2026'
-  },
-  {
-    id: 'CAT009',
-    name: 'Beauty Packages',
-    description: 'Combined beauty and salon service packages',
-    servicesCount: 6,
-    status: 'INACTIVE',
-    createdAt: '16 Aug 2026'
-  }
-];
-
-// ==============================|| CATEGORY FORM ||============================== //
 
 interface CategoryForm {
   name: string;
   description: string;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: CategoryStatus;
 }
+
+interface GetCategoriesData {
+  categories: {
+    success: boolean;
+    message: string;
+    totalCount: number;
+    categories: Category[];
+  };
+}
+
+interface CreateCategoryData {
+  createCategory: {
+    success: boolean;
+    message: string;
+    category: Category | null;
+  };
+}
+
+interface UpdateCategoryData {
+  updateCategory: {
+    success: boolean;
+    message: string;
+    category: Category | null;
+  };
+}
+
+interface DeleteCategoryData {
+  deleteCategory: {
+    success: boolean;
+    message: string;
+    category: Category | null;
+  };
+}
+
+// ======================================================
+// DEFAULT FORM
+// ======================================================
 
 const EMPTY_FORM: CategoryForm = {
   name: '',
@@ -142,82 +114,250 @@ const EMPTY_FORM: CategoryForm = {
   status: 'ACTIVE'
 };
 
-// ==============================|| MAIN COMPONENT ||============================== //
+// ======================================================
+// COMPONENT
+// ======================================================
 
 export default function Categories() {
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  // ====================================================
+  // UI STATE ONLY
+  // ====================================================
 
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+
+  const [statusFilter, setStatusFilter] =
+    useState<StatusFilter>('ALL');
 
   const [page, setPage] = useState(0);
+
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const [openDialog, setOpenDialog] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
-  const [form, setForm] = useState<CategoryForm>(EMPTY_FORM);
+  const [editingCategory, setEditingCategory] =
+    useState<Category | null>(null);
 
-  const [deleteDialog, setDeleteDialog] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [form, setForm] =
+    useState<CategoryForm>(EMPTY_FORM);
 
-  // ==============================|| FILTERING ||============================== //
+  const [deleteDialog, setDeleteDialog] =
+    useState(false);
 
-  const filteredCategories = useMemo(() => {
-    return categories.filter((category) => {
-      const matchesSearch =
-        category.name.toLowerCase().includes(search.toLowerCase()) ||
-        category.description.toLowerCase().includes(search.toLowerCase());
+  const [categoryToDelete, setCategoryToDelete] =
+    useState<Category | null>(null);
 
-      const matchesStatus =
-        statusFilter === 'ALL' || category.status === statusFilter;
+  const [errorMessage, setErrorMessage] =
+    useState('');
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [categories, search, statusFilter]);
+  // ====================================================
+  // FETCH CATEGORIES
+  // ====================================================
 
-  // ==============================|| COUNTERS ||============================== //
+  const {
+    data,
+    loading,
+    error,
+    refetch
+  } = useQuery<GetCategoriesData>(
+    GET_CATEGORIES,
+    {
+      variables: {
+        search: search.trim()
+          ? search.trim()
+          : undefined,
 
-  const totalCategories = categories.length;
+        status:
+          statusFilter === 'ALL'
+            ? undefined
+            : statusFilter
+      },
 
-  const activeCategories = categories.filter(
-    (category) => category.status === 'ACTIVE'
-  ).length;
+      fetchPolicy: 'network-only',
 
-  const inactiveCategories = categories.filter(
-    (category) => category.status === 'INACTIVE'
-  ).length;
-
-  const totalServices = categories.reduce(
-    (total, category) => total + category.servicesCount,
-    0
+      notifyOnNetworkStatusChange: true
+    }
   );
 
-  // ==============================|| HANDLERS ||============================== //
+  // ====================================================
+  // MUTATIONS
+  // ====================================================
+
+  const [
+    createCategory,
+    {
+      loading: creating
+    }
+  ] = useMutation<CreateCategoryData>(
+    CREATE_CATEGORY
+  );
+
+  const [
+    updateCategory,
+    {
+      loading: updating
+    }
+  ] = useMutation<UpdateCategoryData>(
+    UPDATE_CATEGORY
+  );
+
+  const [
+    deleteCategory,
+    {
+      loading: deleting
+    }
+  ] = useMutation<DeleteCategoryData>(
+    DELETE_CATEGORY
+  );
+
+  // ====================================================
+  // SERVER DATA
+  // ====================================================
+
+  const categories: Category[] =
+    data?.categories?.categories ?? [];
+
+  const totalCategories =
+    data?.categories?.totalCount ?? 0;
+
+  // ====================================================
+  // COUNTERS
+  // ====================================================
+
+  const activeCategories = useMemo(
+    () =>
+      categories.filter(
+        (category) =>
+          category.status === 'ACTIVE'
+      ).length,
+    [categories]
+  );
+
+  const inactiveCategories = useMemo(
+    () =>
+      categories.filter(
+        (category) =>
+          category.status === 'INACTIVE'
+      ).length,
+    [categories]
+  );
+
+  const totalServices = useMemo(
+    () =>
+      categories.reduce(
+        (total, category) =>
+          total +
+          Number(
+            category.servicesCount ?? 0
+          ),
+        0
+      ),
+    [categories]
+  );
+
+  // ====================================================
+  // PAGINATION
+  // ====================================================
+
+  const paginatedCategories = useMemo(
+    () =>
+      categories.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+      ),
+    [
+      categories,
+      page,
+      rowsPerPage
+    ]
+  );
+
+  useEffect(() => {
+    const maxPage = Math.max(
+      0,
+      Math.ceil(
+        categories.length / rowsPerPage
+      ) - 1
+    );
+
+    if (page > maxPage) {
+      setPage(maxPage);
+    }
+  }, [
+    categories.length,
+    page,
+    rowsPerPage
+  ]);
+
+  // ====================================================
+  // ERROR
+  // ====================================================
+
+  useEffect(() => {
+    if (error) {
+      setErrorMessage(error.message);
+    }
+  }, [error]);
+
+  // ====================================================
+  // CREATE
+  // ====================================================
 
   const handleOpenCreate = () => {
     setEditingCategory(null);
-    setForm(EMPTY_FORM);
+
+    setForm({
+      ...EMPTY_FORM
+    });
+
+    setErrorMessage('');
+
     setOpenDialog(true);
   };
 
-  const handleOpenEdit = (category: Category) => {
+  // ====================================================
+  // EDIT
+  // ====================================================
+
+  const handleOpenEdit = (
+    category: Category
+  ) => {
     setEditingCategory(category);
 
     setForm({
       name: category.name,
-      description: category.description,
+      description:
+        category.description ?? '',
       status: category.status
     });
+
+    setErrorMessage('');
 
     setOpenDialog(true);
   };
 
+  // ====================================================
+  // CLOSE FORM
+  // ====================================================
+
   const handleCloseDialog = () => {
+    if (creating || updating) {
+      return;
+    }
+
     setOpenDialog(false);
+
     setEditingCategory(null);
-    setForm(EMPTY_FORM);
+
+    setForm({
+      ...EMPTY_FORM
+    });
+
+    setErrorMessage('');
   };
+
+  // ====================================================
+  // INPUT
+  // ====================================================
 
   const handleInputChange = (
     field: keyof CategoryForm,
@@ -227,92 +367,333 @@ export default function Categories() {
       ...previous,
       [field]: value
     }));
+
+    setErrorMessage('');
   };
 
-  const handleStatusChange = (event: SelectChangeEvent) => {
+  // ====================================================
+  // STATUS INPUT
+  // ====================================================
+
+  const handleFormStatusChange = (
+    event: SelectChangeEvent
+  ) => {
     setForm((previous) => ({
       ...previous,
-      status: event.target.value as 'ACTIVE' | 'INACTIVE'
+      status:
+        event.target.value as CategoryStatus
     }));
+
+    setErrorMessage('');
   };
 
-  const handleSave = () => {
-    if (!form.name.trim()) {
+  // ====================================================
+  // SAVE CATEGORY
+  // ====================================================
+
+  const handleSave = async () => {
+    const name = form.name.trim();
+
+    const description =
+      form.description.trim();
+
+    if (!name) {
+      setErrorMessage(
+        'Category name is required.'
+      );
+
       return;
     }
 
-    if (editingCategory) {
-      setCategories((previous) =>
-        previous.map((category) =>
-          category.id === editingCategory.id
-            ? {
-                ...category,
-                name: form.name.trim(),
-                description: form.description.trim(),
+    try {
+      setErrorMessage('');
+
+      // ==============================================
+      // UPDATE EXISTING
+      // ==============================================
+
+      if (editingCategory) {
+        const response =
+          await updateCategory({
+            variables: {
+              input: {
+                categoryId:
+                  editingCategory.categoryId,
+
+                name,
+
+                description:
+                  description || null,
+
                 status: form.status
               }
-            : category
-        )
+            }
+          });
+
+        const result =
+          response.data?.updateCategory;
+
+        if (!result?.success) {
+          throw new Error(
+            result?.message ||
+            'Failed to update category.'
+          );
+        }
+      }
+
+      // ==============================================
+      // CREATE NEW
+      // ==============================================
+
+      else {
+        const response =
+          await createCategory({
+            variables: {
+              input: {
+                name,
+
+                description:
+                  description || null,
+
+                status: form.status
+              }
+            }
+          });
+
+        const result =
+          response.data?.createCategory;
+
+        if (!result?.success) {
+          throw new Error(
+            result?.message ||
+            'Failed to create category.'
+          );
+        }
+      }
+
+      // ==============================================
+      // REFRESH SERVER DATA
+      // ==============================================
+
+      await refetch();
+
+      // ==============================================
+      // CLOSE
+      // ==============================================
+
+      setOpenDialog(false);
+
+      setEditingCategory(null);
+
+      setForm({
+        ...EMPTY_FORM
+      });
+
+      setErrorMessage('');
+    } catch (err) {
+      console.error(
+        'Category save error:',
+        err
       );
-    } else {
-      const newCategory: Category = {
-        id: `CAT${String(categories.length + 1).padStart(3, '0')}`,
-        name: form.name.trim(),
-        description: form.description.trim(),
-        servicesCount: 0,
-        status: form.status,
-        createdAt: new Date().toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric'
-        })
-      };
 
-      setCategories((previous) => [newCategory, ...previous]);
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Failed to save category.'
+      );
     }
-
-    handleCloseDialog();
   };
 
-  const handleOpenDelete = (category: Category) => {
+  // ====================================================
+  // DELETE DIALOG
+  // ====================================================
+
+  const handleOpenDelete = (
+    category: Category
+  ) => {
     setCategoryToDelete(category);
+
+    setErrorMessage('');
+
     setDeleteDialog(true);
   };
 
   const handleCloseDelete = () => {
+    if (deleting) {
+      return;
+    }
+
     setDeleteDialog(false);
+
     setCategoryToDelete(null);
+
+    setErrorMessage('');
   };
 
-  const handleDelete = () => {
-    if (!categoryToDelete) return;
+  // ====================================================
+  // DELETE
+  // ====================================================
 
-    setCategories((previous) =>
-      previous.filter(
-        (category) => category.id !== categoryToDelete.id
-      )
-    );
+  const handleDelete = async () => {
+    if (!categoryToDelete) {
+      return;
+    }
 
-    handleCloseDelete();
+    try {
+      setErrorMessage('');
+
+      const response =
+        await deleteCategory({
+          variables: {
+            categoryId:
+              categoryToDelete.categoryId
+          }
+        });
+
+      const result =
+        response.data?.deleteCategory;
+
+      if (!result?.success) {
+        throw new Error(
+          result?.message ||
+          'Failed to delete category.'
+        );
+      }
+
+      await refetch();
+
+      setDeleteDialog(false);
+
+      setCategoryToDelete(null);
+
+      setErrorMessage('');
+    } catch (err) {
+      console.error(
+        'Category delete error:',
+        err
+      );
+
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Failed to delete category.'
+      );
+    }
   };
 
-  const handleToggleStatus = (category: Category) => {
-    setCategories((previous) =>
-      previous.map((item) =>
-        item.id === category.id
-          ? {
-              ...item,
-              status:
-                item.status === 'ACTIVE'
-                  ? 'INACTIVE'
-                  : 'ACTIVE'
+  // ====================================================
+  // TOGGLE ACTIVE / INACTIVE
+  // ====================================================
+
+  const handleToggleStatus = async (
+    category: Category
+  ) => {
+    try {
+      setErrorMessage('');
+
+      const newStatus: CategoryStatus =
+        category.status === 'ACTIVE'
+          ? 'INACTIVE'
+          : 'ACTIVE';
+
+      const response =
+        await updateCategory({
+          variables: {
+            input: {
+              categoryId:
+                category.categoryId,
+
+              status: newStatus
             }
-          : item
+          }
+        });
+
+      const result =
+        response.data?.updateCategory;
+
+      if (!result?.success) {
+        throw new Error(
+          result?.message ||
+          'Failed to update category status.'
+        );
+      }
+
+      await refetch();
+    } catch (err) {
+      console.error(
+        'Category status error:',
+        err
+      );
+
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Failed to update category status.'
+      );
+    }
+  };
+
+  // ====================================================
+  // SEARCH
+  // ====================================================
+
+  const handleSearchChange = (
+    value: string
+  ) => {
+    setSearch(value);
+
+    setPage(0);
+  };
+
+  // ====================================================
+  // STATUS FILTER
+  // ====================================================
+
+  const handleStatusFilterChange = (
+    event: SelectChangeEvent
+  ) => {
+    setStatusFilter(
+      event.target.value as StatusFilter
+    );
+
+    setPage(0);
+  };
+
+  // ====================================================
+  // DATE FORMAT
+  // ====================================================
+
+  const formatDate = (
+    date?: string
+  ) => {
+    if (!date) {
+      return '—';
+    }
+
+    const parsedDate =
+      new Date(date);
+
+    if (
+      Number.isNaN(
+        parsedDate.getTime()
       )
+    ) {
+      return date;
+    }
+
+    return parsedDate.toLocaleDateString(
+      'en-GB',
+      {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }
     );
   };
 
-  // ==============================|| SUMMARY CARD ||============================== //
+  // ====================================================
+  // SUMMARY CARD
+  // ====================================================
 
   const SummaryCard = ({
     title,
@@ -331,7 +712,8 @@ export default function Categories() {
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: 2,
-        background: 'background.paper'
+        background:
+          'background.paper'
       }}
     >
       <Typography
@@ -362,23 +744,33 @@ export default function Categories() {
     </Paper>
   );
 
-  // ==============================|| RENDER ||============================== //
+  // ====================================================
+  // RENDER
+  // ====================================================
 
   return (
     <Box>
-      {/* PAGE HEADER */}
+
+      {/* ==================================================
+          HEADER
+      ================================================== */}
+
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent:
+            'space-between',
           mb: 3,
           gap: 2,
           flexWrap: 'wrap'
         }}
       >
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 700 }}
+          >
             Categories
           </Typography>
 
@@ -387,14 +779,19 @@ export default function Categories() {
             color="text.secondary"
             sx={{ mt: 0.5 }}
           >
-            Manage service categories available across Clavata.
+            Manage service categories
+            available across Clavata.
           </Typography>
         </Box>
 
         <Button
           variant="contained"
-          startIcon={<PlusOutlined />}
-          onClick={handleOpenCreate}
+          startIcon={
+            <PlusOutlined />
+          }
+          onClick={
+            handleOpenCreate
+          }
           sx={{
             borderRadius: 1.5,
             textTransform: 'none',
@@ -406,37 +803,91 @@ export default function Categories() {
         </Button>
       </Box>
 
-      {/* SUMMARY */}
+      {/* ==================================================
+          ERROR
+      ================================================== */}
+
+      {errorMessage && (
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 3,
+            p: 2,
+            border: '1px solid',
+            borderColor:
+              'error.light',
+            borderRadius: 2
+          }}
+        >
+          <Typography
+            variant="body2"
+            color="error"
+          >
+            {errorMessage}
+          </Typography>
+        </Paper>
+      )}
+
+      {/* ==================================================
+          SUMMARY
+      ================================================== */}
+
       <Grid
         container
         spacing={2}
         sx={{ mb: 3 }}
       >
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <SummaryCard
             title="Total Categories"
-            value={totalCategories}
+            value={
+              totalCategories
+            }
             subtitle="All configured categories"
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <SummaryCard
             title="Active"
-            value={activeCategories}
+            value={
+              activeCategories
+            }
             subtitle="Currently available"
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <SummaryCard
             title="Inactive"
-            value={inactiveCategories}
+            value={
+              inactiveCategories
+            }
             subtitle="Currently disabled"
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+        >
           <SummaryCard
             title="Services"
             value={totalServices}
@@ -445,7 +896,10 @@ export default function Categories() {
         </Grid>
       </Grid>
 
-      {/* TABLE CARD */}
+      {/* ==================================================
+          TABLE
+      ================================================== */}
+
       <Paper
         elevation={0}
         sx={{
@@ -455,19 +909,28 @@ export default function Categories() {
           overflow: 'hidden'
         }}
       >
-        {/* FILTER HEADER */}
+
+        {/* FILTERS */}
+
         <Box sx={{ p: 2.5 }}>
           <Stack
-            direction={{ xs: 'column', md: 'row' }}
+            direction={{
+              xs: 'column',
+              md: 'row'
+            }}
             spacing={2}
             justifyContent="space-between"
           >
+
+            {/* SEARCH */}
+
             <TextField
               value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(0);
-              }}
+              onChange={(event) =>
+                handleSearchChange(
+                  event.target.value
+                )
+              }
               placeholder="Search categories..."
               size="small"
               sx={{
@@ -485,18 +948,16 @@ export default function Categories() {
               }}
             />
 
+            {/* STATUS */}
+
             <Select
-              value={statusFilter}
+              value={
+                statusFilter
+              }
               size="small"
-              onChange={(event) => {
-                setStatusFilter(
-                  event.target.value as
-                    | 'ALL'
-                    | 'ACTIVE'
-                    | 'INACTIVE'
-                );
-                setPage(0);
-              }}
+              onChange={
+                handleStatusFilterChange
+              }
               sx={{
                 minWidth: 150
               }}
@@ -519,236 +980,377 @@ export default function Categories() {
         <Divider />
 
         {/* TABLE */}
+
         <TableContainer>
           <Table>
+
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>
+
+                <TableCell
+                  sx={{
+                    fontWeight: 700
+                  }}
+                >
                   Category
                 </TableCell>
 
-                <TableCell sx={{ fontWeight: 700 }}>
+                <TableCell
+                  sx={{
+                    fontWeight: 700
+                  }}
+                >
                   Description
                 </TableCell>
 
                 <TableCell
                   align="center"
-                  sx={{ fontWeight: 700 }}
+                  sx={{
+                    fontWeight: 700
+                  }}
                 >
                   Services
                 </TableCell>
 
-                <TableCell sx={{ fontWeight: 700 }}>
+                <TableCell
+                  sx={{
+                    fontWeight: 700
+                  }}
+                >
                   Status
                 </TableCell>
 
-                <TableCell sx={{ fontWeight: 700 }}>
+                <TableCell
+                  sx={{
+                    fontWeight: 700
+                  }}
+                >
                   Created
                 </TableCell>
 
                 <TableCell
                   align="right"
-                  sx={{ fontWeight: 700 }}
+                  sx={{
+                    fontWeight: 700
+                  }}
                 >
                   Actions
                 </TableCell>
+
               </TableRow>
             </TableHead>
 
             <TableBody>
-              {filteredCategories
-                .slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-                )
-                .map((category) => (
-                  <TableRow
-                    key={category.id}
-                    hover
-                  >
-                    {/* CATEGORY */}
-                    <TableCell>
-                      <Stack
-                        direction="row"
-                        spacing={1.5}
-                        alignItems="center"
-                      >
-                        <Box
-                          sx={{
-                            width: 38,
-                            height: 38,
-                            borderRadius: 1.5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: 'primary.lighter',
-                            color: 'primary.main'
-                          }}
-                        >
-                          <TagsOutlined
-                            style={{ fontSize: 19 }}
-                          />
-                        </Box>
 
-                        <Box>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: 600 }}
-                          >
-                            {category.name}
-                          </Typography>
+              {/* LOADING */}
 
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            {category.id}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </TableCell>
-
-                    {/* DESCRIPTION */}
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          maxWidth: 350
-                        }}
-                      >
-                        {category.description || '—'}
-                      </Typography>
-                    </TableCell>
-
-                    {/* SERVICES */}
-                    <TableCell align="center">
-                      <Chip
-                        label={category.servicesCount}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-
-                    {/* STATUS */}
-                    <TableCell>
-                      <Chip
-                        label={category.status}
-                        size="small"
-                        color={
-                          category.status === 'ACTIVE'
-                            ? 'success'
-                            : 'default'
-                        }
-                        variant="outlined"
-                        onClick={() =>
-                          handleToggleStatus(category)
-                        }
-                        sx={{
-                          cursor: 'pointer',
-                          fontWeight: 600
-                        }}
-                      />
-                    </TableCell>
-
-                    {/* CREATED */}
-                    <TableCell>
-                      <Typography variant="body2">
-                        {category.createdAt}
-                      </Typography>
-                    </TableCell>
-
-                    {/* ACTIONS */}
-                    <TableCell align="right">
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        justifyContent="flex-end"
-                      >
-                        <Tooltip title="Edit">
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              handleOpenEdit(category)
-                            }
-                          >
-                            <EditOutlined />
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Delete">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() =>
-                              handleOpenDelete(category)
-                            }
-                          >
-                            <DeleteOutlined />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-
-              {filteredCategories.length === 0 && (
+              {loading && (
                 <TableRow>
                   <TableCell
                     colSpan={6}
                     align="center"
-                    sx={{ py: 8 }}
+                    sx={{
+                      py: 8
+                    }}
                   >
-                    <TagsOutlined
-                      style={{
-                        fontSize: 40,
-                        opacity: 0.4,
-                        marginBottom: 12
-                      }}
-                    />
-
-                    <Typography
-                      variant="h6"
-                      color="text.secondary"
+                    <Stack
+                      spacing={2}
+                      alignItems="center"
                     >
-                      No categories found
-                    </Typography>
+                      <CircularProgress
+                        size={32}
+                      />
 
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                    >
-                      Try changing your search or filters.
-                    </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        Loading categories...
+                      </Typography>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               )}
+
+              {/* DATA */}
+
+              {!loading &&
+                paginatedCategories.map(
+                  (category) => (
+                    <TableRow
+                      key={
+                        category.categoryId
+                      }
+                      hover
+                    >
+
+                      {/* CATEGORY */}
+
+                      <TableCell>
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
+                        >
+                          <Box
+                            sx={{
+                              width: 38,
+                              height: 38,
+                              borderRadius: 1.5,
+                              display:
+                                'flex',
+                              alignItems:
+                                'center',
+                              justifyContent:
+                                'center',
+                              backgroundColor:
+                                'primary.lighter',
+                              color:
+                                'primary.main'
+                            }}
+                          >
+                            <TagsOutlined
+                              style={{
+                                fontSize: 19
+                              }}
+                            />
+                          </Box>
+
+                          <Box>
+                            <Typography
+                              variant="subtitle2"
+                              sx={{
+                                fontWeight: 600
+                              }}
+                            >
+                              {
+                                category.name
+                              }
+                            </Typography>
+
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {
+                                category.categoryId
+                              }
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
+
+                      {/* DESCRIPTION */}
+
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            maxWidth: 350
+                          }}
+                        >
+                          {
+                            category.description ||
+                            '—'
+                          }
+                        </Typography>
+                      </TableCell>
+
+                      {/* SERVICES */}
+
+                      <TableCell align="center">
+                        <Chip
+                          label={Number(
+                            category.servicesCount ??
+                            0
+                          )}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+
+                      {/* STATUS */}
+
+                      <TableCell>
+                        <Tooltip
+                          title={
+                            category.status ===
+                              'ACTIVE'
+                              ? 'Click to deactivate'
+                              : 'Click to activate'
+                          }
+                        >
+                          <Chip
+                            label={
+                              category.status
+                            }
+                            size="small"
+                            color={
+                              category.status ===
+                                'ACTIVE'
+                                ? 'success'
+                                : 'default'
+                            }
+                            variant="outlined"
+                            onClick={() =>
+                              handleToggleStatus(
+                                category
+                              )
+                            }
+                            sx={{
+                              cursor:
+                                'pointer',
+                              fontWeight:
+                                600
+                            }}
+                          />
+                        </Tooltip>
+                      </TableCell>
+
+                      {/* CREATED */}
+
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                        >
+                          {formatDate(
+                            category.createdAt
+                          )}
+                        </Typography>
+                      </TableCell>
+
+                      {/* ACTIONS */}
+
+                      <TableCell align="right">
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          justifyContent="flex-end"
+                        >
+                          <Tooltip title="Edit">
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                handleOpenEdit(
+                                  category
+                                )
+                              }
+                            >
+                              <EditOutlined />
+                            </IconButton>
+                          </Tooltip>
+
+                          <Tooltip title="Delete">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() =>
+                                handleOpenDelete(
+                                  category
+                                )
+                              }
+                            >
+                              <DeleteOutlined />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+
+                    </TableRow>
+                  )
+                )}
+
+              {/* EMPTY */}
+
+              {!loading &&
+                paginatedCategories.length ===
+                0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      align="center"
+                      sx={{
+                        py: 8
+                      }}
+                    >
+                      <TagsOutlined
+                        style={{
+                          fontSize: 40,
+                          opacity: 0.4,
+                          marginBottom: 12
+                        }}
+                      />
+
+                      <Typography
+                        variant="h6"
+                        color="text.secondary"
+                      >
+                        No categories found
+                      </Typography>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        {search
+                          ? 'Try changing your search.'
+                          : 'Create your first category to get started.'}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+
             </TableBody>
           </Table>
         </TableContainer>
 
         {/* PAGINATION */}
+
         <TablePagination
           component="div"
-          count={filteredCategories.length}
+          count={
+            categories.length
+          }
           page={page}
-          rowsPerPage={rowsPerPage}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(event) => {
+          rowsPerPage={
+            rowsPerPage
+          }
+          onPageChange={(
+            _,
+            newPage
+          ) =>
+            setPage(newPage)
+          }
+          onRowsPerPageChange={(
+            event
+          ) => {
             setRowsPerPage(
-              parseInt(event.target.value, 10)
+              parseInt(
+                event.target.value,
+                10
+              )
             );
+
             setPage(0);
           }}
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[
+            5,
+            10,
+            25
+          ]}
         />
       </Paper>
 
-      {/* ==============================|| CREATE / EDIT DIALOG ||============================== */}
+      {/* ==================================================
+          CREATE / EDIT DIALOG
+      ================================================== */}
 
       <Dialog
         open={openDialog}
-        onClose={handleCloseDialog}
+        onClose={
+          handleCloseDialog
+        }
         fullWidth
         maxWidth="sm"
       >
@@ -759,49 +1361,98 @@ export default function Categories() {
         </DialogTitle>
 
         <DialogContent>
-          <Stack spacing={2.5} sx={{ mt: 1 }}>
+          <Stack
+            spacing={2.5}
+            sx={{ mt: 1 }}
+          >
+
+            {/* ERROR */}
+
+            {errorMessage && (
+              <Typography
+                variant="body2"
+                color="error"
+              >
+                {errorMessage}
+              </Typography>
+            )}
+
+            {/* NAME */}
+
             <TextField
               label="Category Name"
               fullWidth
               required
-              value={form.name}
-              onChange={(event) =>
+              value={
+                form.name
+              }
+              onChange={(
+                event
+              ) =>
                 handleInputChange(
                   'name',
                   event.target.value
                 )
               }
               placeholder="e.g. Hair"
+              disabled={
+                creating ||
+                updating
+              }
             />
+
+            {/* DESCRIPTION */}
 
             <TextField
               label="Description"
               fullWidth
               multiline
               minRows={3}
-              value={form.description}
-              onChange={(event) =>
+              value={
+                form.description
+              }
+              onChange={(
+                event
+              ) =>
                 handleInputChange(
                   'description',
                   event.target.value
                 )
               }
               placeholder="Describe what services belong to this category"
+              disabled={
+                creating ||
+                updating
+              }
             />
+
+            {/* STATUS */}
 
             <Box>
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ mb: 0.75, display: 'block' }}
+                sx={{
+                  mb: 0.75,
+                  display:
+                    'block'
+                }}
               >
                 Status
               </Typography>
 
               <Select
                 fullWidth
-                value={form.status}
-                onChange={handleStatusChange}
+                value={
+                  form.status
+                }
+                onChange={
+                  handleFormStatusChange
+                }
+                disabled={
+                  creating ||
+                  updating
+                }
               >
                 <MenuItem value="ACTIVE">
                   Active
@@ -812,34 +1463,72 @@ export default function Categories() {
                 </MenuItem>
               </Select>
             </Box>
+
           </Stack>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 2.5
+          }}
+        >
+
           <Button
-            onClick={handleCloseDialog}
+            onClick={
+              handleCloseDialog
+            }
             color="inherit"
+            disabled={
+              creating ||
+              updating
+            }
           >
             Cancel
           </Button>
 
           <Button
             variant="contained"
-            onClick={handleSave}
-            disabled={!form.name.trim()}
+            onClick={
+              handleSave
+            }
+            disabled={
+              !form.name.trim() ||
+              creating ||
+              updating
+            }
+            startIcon={
+              creating ||
+                updating ? (
+                <CircularProgress
+                  size={16}
+                  color="inherit"
+                />
+              ) : undefined
+            }
           >
-            {editingCategory
-              ? 'Save Changes'
-              : 'Create Category'}
+            {creating ||
+              updating
+              ? 'Saving...'
+              : editingCategory
+                ? 'Save Changes'
+                : 'Create Category'}
           </Button>
+
         </DialogActions>
       </Dialog>
 
-      {/* ==============================|| DELETE DIALOG ||============================== */}
+      {/* ==================================================
+          DELETE DIALOG
+      ================================================== */}
 
       <Dialog
-        open={deleteDialog}
-        onClose={handleCloseDelete}
+        open={
+          deleteDialog
+        }
+        onClose={
+          handleCloseDelete
+        }
         maxWidth="xs"
         fullWidth
       >
@@ -848,34 +1537,70 @@ export default function Categories() {
         </DialogTitle>
 
         <DialogContent>
-          <Typography variant="body2">
-            Are you sure you want to delete{' '}
+
+          {errorMessage && (
+            <Typography
+              variant="body2"
+              color="error"
+              sx={{
+                mb: 2
+              }}
+            >
+              {errorMessage}
+            </Typography>
+          )}
+
+          <Typography
+            variant="body2"
+          >
+            Are you sure you want
+            to delete{' '}
             <strong>
-              {categoryToDelete?.name}
+              {
+                categoryToDelete?.name
+              }
             </strong>
             ?
           </Typography>
 
           {categoryToDelete &&
-            categoryToDelete.servicesCount > 0 && (
+            categoryToDelete.servicesCount >
+            0 && (
               <Typography
                 variant="body2"
                 color="error"
-                sx={{ mt: 2 }}
+                sx={{
+                  mt: 2
+                }}
               >
-                This category currently contains{' '}
-                {categoryToDelete.servicesCount} services.
-                In the production version, categories with
-                existing services should normally be
-                deactivated instead of deleted.
+                This category currently
+                contains{' '}
+                {
+                  categoryToDelete.servicesCount
+                }{' '}
+                services. It is recommended
+                to deactivate this category
+                instead of deleting it.
               </Typography>
             )}
+
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 2.5
+          }}
+        >
+
           <Button
-            onClick={handleCloseDelete}
+            onClick={
+              handleCloseDelete
+            }
             color="inherit"
+            disabled={
+              deleting
+            }
           >
             Cancel
           </Button>
@@ -883,13 +1608,31 @@ export default function Categories() {
           <Button
             color="error"
             variant="contained"
-            onClick={handleDelete}
+            onClick={
+              handleDelete
+            }
+            disabled={
+              deleting
+            }
+            startIcon={
+              deleting ? (
+                <CircularProgress
+                  size={16}
+                  color="inherit"
+                />
+              ) : (
+                <DeleteOutlined />
+              )
+            }
           >
-            Delete
+            {deleting
+              ? 'Deleting...'
+              : 'Delete'}
           </Button>
+
         </DialogActions>
       </Dialog>
+
     </Box>
   );
 }
-
