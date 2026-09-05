@@ -1,5 +1,5 @@
-
 import { useMemo, useState } from 'react';
+import { gql, useMutation, useQuery } from '@apollo/client';
 
 // material-ui
 import {
@@ -7,6 +7,7 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -43,6 +44,126 @@ import {
   SendOutlined
 } from '@ant-design/icons';
 
+// ==============================|| GRAPHQL ||============================== //
+
+const GET_NOTIFICATIONS = gql`
+  query GetNotifications {
+    notifications {
+      success
+      message
+      totalCount
+      notifications {
+        notificationId
+        title
+        message
+        type
+        recipient
+        status
+        scheduledAt
+        sentAt
+        createdAt
+        updatedAt
+        createdBy
+        createdByName
+        recipientsCount
+      }
+    }
+  }
+`;
+
+const CREATE_NOTIFICATION = gql`
+  mutation CreateNotification(
+    $input: CreateNotificationInput!
+  ) {
+    createNotification(input: $input) {
+      success
+      message
+      notification {
+        notificationId
+        title
+        message
+        type
+        recipient
+        status
+        scheduledAt
+        sentAt
+        createdAt
+        updatedAt
+        createdBy
+        createdByName
+        recipientsCount
+      }
+    }
+  }
+`;
+
+const UPDATE_NOTIFICATION = gql`
+  mutation UpdateNotification(
+    $input: UpdateNotificationInput!
+  ) {
+    updateNotification(input: $input) {
+      success
+      message
+      notification {
+        notificationId
+        title
+        message
+        type
+        recipient
+        status
+        scheduledAt
+        sentAt
+        createdAt
+        updatedAt
+        createdBy
+        createdByName
+        recipientsCount
+      }
+    }
+  }
+`;
+
+const DELETE_NOTIFICATION = gql`
+  mutation DeleteNotification(
+    $notificationId: ID!
+  ) {
+    deleteNotification(
+      notificationId: $notificationId
+    ) {
+      success
+      message
+    }
+  }
+`;
+
+const SEND_NOTIFICATION = gql`
+  mutation SendNotification(
+    $notificationId: ID!
+  ) {
+    sendNotification(
+      notificationId: $notificationId
+    ) {
+      success
+      message
+      notification {
+        notificationId
+        title
+        message
+        type
+        recipient
+        status
+        scheduledAt
+        sentAt
+        createdAt
+        updatedAt
+        createdBy
+        createdByName
+        recipientsCount
+      }
+    }
+  }
+`;
+
 // ==============================|| TYPES ||============================== //
 
 type NotificationType =
@@ -66,102 +187,20 @@ type RecipientType =
   | 'SALONS';
 
 interface Notification {
-  id: string;
+  notificationId: string;
   title: string;
   message: string;
   type: NotificationType;
   recipient: RecipientType;
   status: NotificationStatus;
-  scheduledAt?: string;
-  sentAt?: string;
+  scheduledAt?: string | null;
+  sentAt?: string | null;
   createdAt: string;
-  createdBy: string;
+  updatedAt: string;
+  createdBy?: string | null;
+  createdByName?: string | null;
   recipientsCount: number;
 }
-
-// ==============================|| STATIC DATA ||============================== //
-
-const INITIAL_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'NOT001',
-    title: 'Welcome to Clavata',
-    message:
-      'Welcome to Clavata. Discover and book trusted salon services near you.',
-    type: 'SYSTEM',
-    recipient: 'ALL_USERS',
-    status: 'SENT',
-    sentAt: '30 Aug 2026, 09:30 AM',
-    createdAt: '30 Aug 2026',
-    createdBy: 'Admin',
-    recipientsCount: 1248
-  },
-  {
-    id: 'NOT002',
-    title: 'New Booking Received',
-    message:
-      'You have received a new salon booking. Please review the booking details.',
-    type: 'BOOKING',
-    recipient: 'PROVIDERS',
-    status: 'SENT',
-    sentAt: '29 Aug 2026, 06:15 PM',
-    createdAt: '29 Aug 2026',
-    createdBy: 'System',
-    recipientsCount: 86
-  },
-  {
-    id: 'NOT003',
-    title: 'Payment Successful',
-    message:
-      'Your booking payment has been successfully processed.',
-    type: 'PAYMENT',
-    recipient: 'CUSTOMERS',
-    status: 'SENT',
-    sentAt: '29 Aug 2026, 05:45 PM',
-    createdAt: '29 Aug 2026',
-    createdBy: 'System',
-    recipientsCount: 342
-  },
-  {
-    id: 'NOT004',
-    title: 'Salon Verification Required',
-    message:
-      'Your salon application is pending verification. Please submit the required documents.',
-    type: 'VERIFICATION',
-    recipient: 'PROVIDERS',
-    status: 'SCHEDULED',
-    scheduledAt: '31 Aug 2026, 10:00 AM',
-    createdAt: '29 Aug 2026',
-    createdBy: 'Admin',
-    recipientsCount: 14
-  },
-  {
-    id: 'NOT005',
-    title: 'Weekend Beauty Offer',
-    message:
-      'Explore exclusive salon offers available this weekend on Clavata.',
-    type: 'PROMOTION',
-    recipient: 'CUSTOMERS',
-    status: 'DRAFT',
-    createdAt: '28 Aug 2026',
-    createdBy: 'Admin',
-    recipientsCount: 0
-  },
-  {
-    id: 'NOT006',
-    title: 'Platform Maintenance',
-    message:
-      'Clavata will undergo scheduled maintenance. Some services may be temporarily unavailable.',
-    type: 'SYSTEM',
-    recipient: 'ALL_USERS',
-    status: 'CANCELLED',
-    scheduledAt: '28 Aug 2026, 02:00 AM',
-    createdAt: '27 Aug 2026',
-    createdBy: 'Admin',
-    recipientsCount: 1248
-  }
-];
-
-// ==============================|| FORM ||============================== //
 
 interface NotificationForm {
   title: string;
@@ -181,66 +220,184 @@ const EMPTY_FORM: NotificationForm = {
   scheduledAt: ''
 };
 
+// ==============================|| HELPERS ||============================== //
+
+const formatDate = (
+  value?: string | null
+): string => {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const formatDateOnly = (
+  value?: string | null
+): string => {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+};
+
 // ==============================|| MAIN COMPONENT ||============================== //
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState<Notification[]>(
-    INITIAL_NOTIFICATIONS
-  );
+  // ==============================|| QUERY ||============================== //
+
+  const {
+    data,
+    loading,
+    error,
+    refetch
+  } = useQuery(GET_NOTIFICATIONS, {
+    fetchPolicy: 'network-only'
+  });
+
+  // ==============================|| MUTATIONS ||============================== //
+
+  const [
+    createNotification,
+    {
+      loading: creating
+    }
+  ] = useMutation(CREATE_NOTIFICATION);
+
+  const [
+    updateNotification,
+    {
+      loading: updating
+    }
+  ] = useMutation(UPDATE_NOTIFICATION);
+
+  const [
+    deleteNotification,
+    {
+      loading: deleting
+    }
+  ] = useMutation(DELETE_NOTIFICATION);
+
+  const [
+    sendNotification,
+    {
+      loading: sending
+    }
+  ] = useMutation(SEND_NOTIFICATION);
+
+  // ==============================|| STATE ||============================== //
+
+  const notifications: Notification[] =
+    data?.notifications?.notifications || [];
 
   const [search, setSearch] = useState('');
 
-  const [typeFilter, setTypeFilter] = useState<
-    'ALL' | NotificationType
-  >('ALL');
+  const [
+    typeFilter,
+    setTypeFilter
+  ] = useState<'ALL' | NotificationType>('ALL');
 
-  const [statusFilter, setStatusFilter] = useState<
-    'ALL' | NotificationStatus
-  >('ALL');
+  const [
+    statusFilter,
+    setStatusFilter
+  ] = useState<'ALL' | NotificationStatus>('ALL');
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingNotification, setEditingNotification] =
-    useState<Notification | null>(null);
+  const [rowsPerPage, setRowsPerPage] =
+    useState(10);
+
+  const [openDialog, setOpenDialog] =
+    useState(false);
+
+  const [
+    editingNotification,
+    setEditingNotification
+  ] = useState<Notification | null>(null);
 
   const [form, setForm] =
     useState<NotificationForm>(EMPTY_FORM);
 
-  const [deleteDialog, setDeleteDialog] = useState(false);
-  const [notificationToDelete, setNotificationToDelete] =
-    useState<Notification | null>(null);
+  const [deleteDialog, setDeleteDialog] =
+    useState(false);
 
-  const [viewDialog, setViewDialog] = useState(false);
-  const [viewNotification, setViewNotification] =
-    useState<Notification | null>(null);
+  const [
+    notificationToDelete,
+    setNotificationToDelete
+  ] = useState<Notification | null>(null);
+
+  const [viewDialog, setViewDialog] =
+    useState(false);
+
+  const [
+    viewNotification,
+    setViewNotification
+  ] = useState<Notification | null>(null);
+
+  const [actionError, setActionError] =
+    useState<string | null>(null);
+
+  const [actionSuccess, setActionSuccess] =
+    useState<string | null>(null);
 
   // ==============================|| FILTERING ||============================== //
 
   const filteredNotifications = useMemo(() => {
-    return notifications.filter((notification) => {
-      const searchValue = search.toLowerCase();
+    const searchValue =
+      search.trim().toLowerCase();
 
-      const matchesSearch =
-        notification.title.toLowerCase().includes(searchValue) ||
-        notification.message.toLowerCase().includes(searchValue) ||
-        notification.id.toLowerCase().includes(searchValue);
+    return notifications.filter(
+      (notification) => {
+        const matchesSearch =
+          !searchValue ||
+          notification.title
+            .toLowerCase()
+            .includes(searchValue) ||
+          notification.message
+            .toLowerCase()
+            .includes(searchValue) ||
+          notification.notificationId
+            .toLowerCase()
+            .includes(searchValue);
 
-      const matchesType =
-        typeFilter === 'ALL' ||
-        notification.type === typeFilter;
+        const matchesType =
+          typeFilter === 'ALL' ||
+          notification.type === typeFilter;
 
-      const matchesStatus =
-        statusFilter === 'ALL' ||
-        notification.status === statusFilter;
+        const matchesStatus =
+          statusFilter === 'ALL' ||
+          notification.status === statusFilter;
 
-      return (
-        matchesSearch &&
-        matchesType &&
-        matchesStatus
-      );
-    });
+        return (
+          matchesSearch &&
+          matchesType &&
+          matchesStatus
+        );
+      }
+    );
   }, [
     notifications,
     search,
@@ -250,23 +407,30 @@ export default function Notifications() {
 
   // ==============================|| COUNTERS ||============================== //
 
-  const totalNotifications = notifications.length;
+  const totalNotifications =
+    notifications.length;
 
-  const sentNotifications = notifications.filter(
-    (item) => item.status === 'SENT'
-  ).length;
+  const sentNotifications =
+    notifications.filter(
+      (item) => item.status === 'SENT'
+    ).length;
 
-  const scheduledNotifications = notifications.filter(
-    (item) => item.status === 'SCHEDULED'
-  ).length;
+  const scheduledNotifications =
+    notifications.filter(
+      (item) => item.status === 'SCHEDULED'
+    ).length;
 
-  const draftNotifications = notifications.filter(
-    (item) => item.status === 'DRAFT'
-  ).length;
+  const draftNotifications =
+    notifications.filter(
+      (item) => item.status === 'DRAFT'
+    ).length;
 
-  // ==============================|| HANDLERS ||============================== //
+  // ==============================|| DIALOG HANDLERS ||============================== //
 
   const handleOpenCreate = () => {
+    setActionError(null);
+    setActionSuccess(null);
+
     setEditingNotification(null);
     setForm(EMPTY_FORM);
     setOpenDialog(true);
@@ -275,6 +439,9 @@ export default function Notifications() {
   const handleOpenEdit = (
     notification: Notification
   ) => {
+    setActionError(null);
+    setActionSuccess(null);
+
     setEditingNotification(notification);
 
     setForm({
@@ -283,13 +450,21 @@ export default function Notifications() {
       type: notification.type,
       recipient: notification.recipient,
       status: notification.status,
-      scheduledAt: notification.scheduledAt || ''
+      scheduledAt: notification.scheduledAt
+        ? toDateTimeLocal(
+            notification.scheduledAt
+          )
+        : ''
     });
 
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
+    if (creating || updating) {
+      return;
+    }
+
     setOpenDialog(false);
     setEditingNotification(null);
     setForm(EMPTY_FORM);
@@ -319,7 +494,8 @@ export default function Notifications() {
   ) => {
     setForm((previous) => ({
       ...previous,
-      recipient: event.target.value as RecipientType
+      recipient:
+        event.target.value as RecipientType
     }));
   };
 
@@ -328,11 +504,14 @@ export default function Notifications() {
   ) => {
     setForm((previous) => ({
       ...previous,
-      status: event.target.value as NotificationStatus
+      status:
+        event.target.value as NotificationStatus
     }));
   };
 
-  const handleSave = () => {
+  // ==============================|| CREATE / UPDATE ||============================== //
+
+  const handleSave = async () => {
     if (
       !form.title.trim() ||
       !form.message.trim()
@@ -340,127 +519,203 @@ export default function Notifications() {
       return;
     }
 
-    if (editingNotification) {
-      setNotifications((previous) =>
-        previous.map((notification) =>
-          notification.id ===
-          editingNotification.id
-            ? {
-                ...notification,
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      if (editingNotification) {
+        const result =
+          await updateNotification({
+            variables: {
+              input: {
+                notificationId:
+                  editingNotification.notificationId,
                 title: form.title.trim(),
                 message: form.message.trim(),
                 type: form.type,
                 recipient: form.recipient,
                 status: form.status,
                 scheduledAt:
-                  form.scheduledAt || undefined
+                  form.scheduledAt || null
               }
-            : notification
-        )
+            }
+          });
+
+        const response =
+          result.data?.updateNotification;
+
+        if (!response?.success) {
+          throw new Error(
+            response?.message ||
+              'Failed to update notification.'
+          );
+        }
+
+        setActionSuccess(
+          'Notification updated successfully.'
+        );
+      } else {
+        const result =
+          await createNotification({
+            variables: {
+              input: {
+                title: form.title.trim(),
+                message: form.message.trim(),
+                type: form.type,
+                recipient: form.recipient,
+                status: form.status,
+                scheduledAt:
+                  form.scheduledAt || null
+              }
+            }
+          });
+
+        const response =
+          result.data?.createNotification;
+
+        if (!response?.success) {
+          throw new Error(
+            response?.message ||
+              'Failed to create notification.'
+          );
+        }
+
+        setActionSuccess(
+          'Notification created successfully.'
+        );
+      }
+
+      await refetch();
+
+      handleCloseDialog();
+    } catch (err: any) {
+      console.error(
+        'Notification save error:',
+        err
       );
-    } else {
-      const newNotification: Notification = {
-        id: `NOT${String(
-          notifications.length + 1
-        ).padStart(3, '0')}`,
-        title: form.title.trim(),
-        message: form.message.trim(),
-        type: form.type,
-        recipient: form.recipient,
-        status: form.status,
-        scheduledAt:
-          form.scheduledAt || undefined,
-        createdAt: new Date().toLocaleDateString(
-          'en-GB',
-          {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-          }
-        ),
-        createdBy: 'Admin',
-        recipientsCount: 0
-      };
 
-      setNotifications((previous) => [
-        newNotification,
-        ...previous
-      ]);
+      setActionError(
+        err?.message ||
+          'Unable to save notification.'
+      );
     }
-
-    handleCloseDialog();
   };
 
-  const handleSendNow = (
+  // ==============================|| SEND ||============================== //
+
+  const handleSendNow = async (
     notification: Notification
   ) => {
-    setNotifications((previous) =>
-      previous.map((item) =>
-        item.id === notification.id
-          ? {
-              ...item,
-              status: 'SENT',
-              sentAt: new Date().toLocaleString(
-                'en-GB',
-                {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }
-              ),
-              recipientsCount:
-                item.recipientsCount ||
-                getRecipientCount(
-                  item.recipient
-                )
-            }
-          : item
-      )
-    );
-  };
+    setActionError(null);
+    setActionSuccess(null);
 
-  const getRecipientCount = (
-    recipient: RecipientType
-  ) => {
-    switch (recipient) {
-      case 'CUSTOMERS':
-        return 1042;
-      case 'PROVIDERS':
-        return 86;
-      case 'SALONS':
-        return 86;
-      case 'ALL_USERS':
-      default:
-        return 1248;
+    try {
+      const result =
+        await sendNotification({
+          variables: {
+            notificationId:
+              notification.notificationId
+          }
+        });
+
+      const response =
+        result.data?.sendNotification;
+
+      if (!response?.success) {
+        throw new Error(
+          response?.message ||
+            'Failed to send notification.'
+        );
+      }
+
+      setActionSuccess(
+        response.message ||
+          'Notification sent successfully.'
+      );
+
+      await refetch();
+    } catch (err: any) {
+      console.error(
+        'Send notification error:',
+        err
+      );
+
+      setActionError(
+        err?.message ||
+          'Unable to send notification.'
+      );
     }
   };
+
+  // ==============================|| DELETE ||============================== //
 
   const handleOpenDelete = (
     notification: Notification
   ) => {
+    setActionError(null);
+    setActionSuccess(null);
+
     setNotificationToDelete(notification);
     setDeleteDialog(true);
   };
 
   const handleCloseDelete = () => {
+    if (deleting) {
+      return;
+    }
+
     setDeleteDialog(false);
     setNotificationToDelete(null);
   };
 
-  const handleDelete = () => {
-    if (!notificationToDelete) return;
+  const handleDelete = async () => {
+    if (!notificationToDelete) {
+      return;
+    }
 
-    setNotifications((previous) =>
-      previous.filter(
-        (item) =>
-          item.id !== notificationToDelete.id
-      )
-    );
+    setActionError(null);
+    setActionSuccess(null);
 
-    handleCloseDelete();
+    try {
+      const result =
+        await deleteNotification({
+          variables: {
+            notificationId:
+              notificationToDelete.notificationId
+          }
+        });
+
+      const response =
+        result.data?.deleteNotification;
+
+      if (!response?.success) {
+        throw new Error(
+          response?.message ||
+            'Failed to delete notification.'
+        );
+      }
+
+      setActionSuccess(
+        'Notification deleted successfully.'
+      );
+
+      await refetch();
+
+      handleCloseDelete();
+    } catch (err: any) {
+      console.error(
+        'Delete notification error:',
+        err
+      );
+
+      setActionError(
+        err?.message ||
+          'Unable to delete notification.'
+      );
+    }
   };
+
+  // ==============================|| VIEW ||============================== //
 
   const handleOpenView = (
     notification: Notification
@@ -482,14 +737,19 @@ export default function Notifications() {
     switch (type) {
       case 'BOOKING':
         return 'primary';
+
       case 'PAYMENT':
         return 'success';
+
       case 'VERIFICATION':
         return 'warning';
+
       case 'PROMOTION':
         return 'secondary';
+
       case 'SYSTEM':
         return 'info';
+
       default:
         return 'primary';
     }
@@ -506,12 +766,16 @@ export default function Notifications() {
     switch (status) {
       case 'SENT':
         return 'success';
+
       case 'SCHEDULED':
         return 'info';
+
       case 'DRAFT':
         return 'warning';
+
       case 'CANCELLED':
         return 'error';
+
       default:
         return 'default';
     }
@@ -523,12 +787,16 @@ export default function Notifications() {
     switch (recipient) {
       case 'ALL_USERS':
         return 'All Users';
+
       case 'CUSTOMERS':
         return 'Customers';
+
       case 'PROVIDERS':
         return 'Providers';
+
       case 'SALONS':
         return 'Salons';
+
       default:
         return recipient;
     }
@@ -582,11 +850,69 @@ export default function Notifications() {
     </Paper>
   );
 
+  // ==============================|| LOADING ||============================== //
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: 400,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <Stack
+          spacing={2}
+          alignItems="center"
+        >
+          <CircularProgress />
+          <Typography color="text.secondary">
+            Loading notifications...
+          </Typography>
+        </Stack>
+      </Box>
+    );
+  }
+
+  // ==============================|| ERROR ||============================== //
+
+  if (error) {
+    return (
+      <Box>
+        <Alert
+          severity="error"
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => refetch()}
+            >
+              Retry
+            </Button>
+          }
+        >
+          Failed to load notifications:{' '}
+          {error.message}
+        </Alert>
+      </Box>
+    );
+  }
+
+  // ==============================|| PAGINATION ||============================== //
+
+  const paginatedNotifications =
+    filteredNotifications.slice(
+      page * rowsPerPage,
+      page * rowsPerPage + rowsPerPage
+    );
+
   // ==============================|| RENDER ||============================== //
 
   return (
     <Box>
-      {/* HEADER */}
+      {/* ============================== HEADER ============================== */}
+
       <Box
         sx={{
           display: 'flex',
@@ -631,7 +957,34 @@ export default function Notifications() {
         </Button>
       </Box>
 
-      {/* SUMMARY */}
+      {/* ============================== ALERTS ============================== */}
+
+      {actionError && (
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          onClose={() =>
+            setActionError(null)
+          }
+        >
+          {actionError}
+        </Alert>
+      )}
+
+      {actionSuccess && (
+        <Alert
+          severity="success"
+          sx={{ mb: 2 }}
+          onClose={() =>
+            setActionSuccess(null)
+          }
+        >
+          {actionSuccess}
+        </Alert>
+      )}
+
+      {/* ============================== SUMMARY ============================== */}
+
       <Grid
         container
         spacing={2}
@@ -670,7 +1023,8 @@ export default function Notifications() {
         </Grid>
       </Grid>
 
-      {/* TABLE */}
+      {/* ============================== TABLE ============================== */}
+
       <Paper
         elevation={0}
         sx={{
@@ -681,6 +1035,7 @@ export default function Notifications() {
         }}
       >
         {/* FILTERS */}
+
         <Box sx={{ p: 2.5 }}>
           <Stack
             direction={{
@@ -694,7 +1049,9 @@ export default function Notifications() {
               size="small"
               value={search}
               onChange={(event) => {
-                setSearch(event.target.value);
+                setSearch(
+                  event.target.value
+                );
                 setPage(0);
               }}
               placeholder="Search notifications..."
@@ -733,21 +1090,27 @@ export default function Notifications() {
                 <MenuItem value="ALL">
                   All Types
                 </MenuItem>
+
                 <MenuItem value="SYSTEM">
                   System
                 </MenuItem>
+
                 <MenuItem value="BOOKING">
                   Booking
                 </MenuItem>
+
                 <MenuItem value="PAYMENT">
                   Payment
                 </MenuItem>
+
                 <MenuItem value="VERIFICATION">
                   Verification
                 </MenuItem>
+
                 <MenuItem value="PROMOTION">
                   Promotion
                 </MenuItem>
+
                 <MenuItem value="GENERAL">
                   General
                 </MenuItem>
@@ -769,15 +1132,19 @@ export default function Notifications() {
                 <MenuItem value="ALL">
                   All Status
                 </MenuItem>
+
                 <MenuItem value="DRAFT">
                   Draft
                 </MenuItem>
+
                 <MenuItem value="SCHEDULED">
                   Scheduled
                 </MenuItem>
+
                 <MenuItem value="SENT">
                   Sent
                 </MenuItem>
+
                 <MenuItem value="CANCELLED">
                   Cancelled
                 </MenuItem>
@@ -792,33 +1159,23 @@ export default function Notifications() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell
-                  sx={{ fontWeight: 700 }}
-                >
+                <TableCell sx={{ fontWeight: 700 }}>
                   Notification
                 </TableCell>
 
-                <TableCell
-                  sx={{ fontWeight: 700 }}
-                >
+                <TableCell sx={{ fontWeight: 700 }}>
                   Type
                 </TableCell>
 
-                <TableCell
-                  sx={{ fontWeight: 700 }}
-                >
+                <TableCell sx={{ fontWeight: 700 }}>
                   Recipient
                 </TableCell>
 
-                <TableCell
-                  sx={{ fontWeight: 700 }}
-                >
+                <TableCell sx={{ fontWeight: 700 }}>
                   Status
                 </TableCell>
 
-                <TableCell
-                  sx={{ fontWeight: 700 }}
-                >
+                <TableCell sx={{ fontWeight: 700 }}>
                   Date
                 </TableCell>
 
@@ -832,18 +1189,16 @@ export default function Notifications() {
             </TableHead>
 
             <TableBody>
-              {filteredNotifications
-                .slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage +
-                    rowsPerPage
-                )
-                .map((notification) => (
+              {paginatedNotifications.map(
+                (notification) => (
                   <TableRow
                     hover
-                    key={notification.id}
+                    key={
+                      notification.notificationId
+                    }
                   >
                     {/* NOTIFICATION */}
+
                     <TableCell>
                       <Stack
                         direction="row"
@@ -880,20 +1235,25 @@ export default function Notifications() {
                               fontWeight: 600
                             }}
                           >
-                            {notification.title}
+                            {
+                              notification.title
+                            }
                           </Typography>
 
                           <Typography
                             variant="caption"
                             color="text.secondary"
                           >
-                            {notification.id}
+                            {
+                              notification.notificationId
+                            }
                           </Typography>
                         </Box>
                       </Stack>
                     </TableCell>
 
                     {/* TYPE */}
+
                     <TableCell>
                       <Chip
                         label={
@@ -908,6 +1268,7 @@ export default function Notifications() {
                     </TableCell>
 
                     {/* RECIPIENT */}
+
                     <TableCell>
                       <Typography variant="body2">
                         {getRecipientLabel(
@@ -925,6 +1286,7 @@ export default function Notifications() {
                     </TableCell>
 
                     {/* STATUS */}
+
                     <TableCell>
                       <Chip
                         label={
@@ -939,15 +1301,19 @@ export default function Notifications() {
                     </TableCell>
 
                     {/* DATE */}
+
                     <TableCell>
                       <Typography variant="body2">
-                        {notification.sentAt ||
-                          notification.scheduledAt ||
-                          notification.createdAt}
+                        {formatDate(
+                          notification.sentAt ||
+                            notification.scheduledAt ||
+                            notification.createdAt
+                        )}
                       </Typography>
                     </TableCell>
 
                     {/* ACTIONS */}
+
                     <TableCell align="right">
                       <Stack
                         direction="row"
@@ -972,6 +1338,9 @@ export default function Notifications() {
                           <Tooltip title="Edit">
                             <IconButton
                               size="small"
+                              disabled={
+                                updating
+                              }
                               onClick={() =>
                                 handleOpenEdit(
                                   notification
@@ -984,26 +1353,40 @@ export default function Notifications() {
                         )}
 
                         {notification.status !==
-                          'SENT' && (
-                          <Tooltip title="Send Now">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() =>
-                                handleSendNow(
-                                  notification
-                                )
-                              }
-                            >
-                              <SendOutlined />
-                            </IconButton>
-                          </Tooltip>
-                        )}
+                          'SENT' &&
+                          notification.status !==
+                            'CANCELLED' && (
+                            <Tooltip title="Send Now">
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                disabled={
+                                  sending
+                                }
+                                onClick={() =>
+                                  handleSendNow(
+                                    notification
+                                  )
+                                }
+                              >
+                                {sending ? (
+                                  <CircularProgress
+                                    size={18}
+                                  />
+                                ) : (
+                                  <SendOutlined />
+                                )}
+                              </IconButton>
+                            </Tooltip>
+                          )}
 
                         <Tooltip title="Delete">
                           <IconButton
                             size="small"
                             color="error"
+                            disabled={
+                              deleting
+                            }
                             onClick={() =>
                               handleOpenDelete(
                                 notification
@@ -1016,9 +1399,10 @@ export default function Notifications() {
                       </Stack>
                     </TableCell>
                   </TableRow>
-                ))}
+                )
+              )}
 
-              {filteredNotifications.length ===
+              {paginatedNotifications.length ===
                 0 && (
                 <TableRow>
                   <TableCell
@@ -1082,7 +1466,7 @@ export default function Notifications() {
         />
       </Paper>
 
-      {/* ==============================|| CREATE / EDIT DIALOG ||============================== */}
+      {/* ============================== CREATE / EDIT ============================== */}
 
       <Dialog
         open={openDialog}
@@ -1241,10 +1625,6 @@ export default function Notifications() {
                     Scheduled
                   </MenuItem>
 
-                  <MenuItem value="SENT">
-                    Sent
-                  </MenuItem>
-
                   <MenuItem value="CANCELLED">
                     Cancelled
                   </MenuItem>
@@ -1271,10 +1651,9 @@ export default function Notifications() {
             </Grid>
 
             <Alert severity="info">
-              In the production version, the
-              selected recipient group will be
-              resolved dynamically from the user
-              database.
+              Recipient count is resolved
+              dynamically by the backend when
+              the notification is sent.
             </Alert>
           </Stack>
         </DialogContent>
@@ -1288,6 +1667,9 @@ export default function Notifications() {
           <Button
             onClick={handleCloseDialog}
             color="inherit"
+            disabled={
+              creating || updating
+            }
           >
             Cancel
           </Button>
@@ -1296,18 +1678,27 @@ export default function Notifications() {
             variant="contained"
             onClick={handleSave}
             disabled={
+              creating ||
+              updating ||
               !form.title.trim() ||
               !form.message.trim()
             }
           >
-            {editingNotification
-              ? 'Save Changes'
-              : 'Create Notification'}
+            {creating || updating ? (
+              <CircularProgress
+                size={20}
+                color="inherit"
+              />
+            ) : editingNotification ? (
+              'Save Changes'
+            ) : (
+              'Create Notification'
+            )}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* ==============================|| VIEW DIALOG ||============================== */}
+      {/* ============================== VIEW ============================== */}
 
       <Dialog
         open={viewDialog}
@@ -1438,7 +1829,9 @@ export default function Notifications() {
                   </Typography>
 
                   <Typography variant="body2">
-                    {viewNotification.createdBy}
+                    {viewNotification.createdByName ||
+                      viewNotification.createdBy ||
+                      'Admin'}
                   </Typography>
                 </Grid>
 
@@ -1451,9 +1844,45 @@ export default function Notifications() {
                   </Typography>
 
                   <Typography variant="body2">
-                    {viewNotification.createdAt}
+                    {formatDate(
+                      viewNotification.createdAt
+                    )}
                   </Typography>
                 </Grid>
+
+                {viewNotification.scheduledAt && (
+                  <Grid item xs={6}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Scheduled At
+                    </Typography>
+
+                    <Typography variant="body2">
+                      {formatDate(
+                        viewNotification.scheduledAt
+                      )}
+                    </Typography>
+                  </Grid>
+                )}
+
+                {viewNotification.sentAt && (
+                  <Grid item xs={6}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Sent At
+                    </Typography>
+
+                    <Typography variant="body2">
+                      {formatDate(
+                        viewNotification.sentAt
+                      )}
+                    </Typography>
+                  </Grid>
+                )}
               </Grid>
             </Stack>
           )}
@@ -1475,7 +1904,7 @@ export default function Notifications() {
         </DialogActions>
       </Dialog>
 
-      {/* ==============================|| DELETE DIALOG ||============================== */}
+      {/* ============================== DELETE ============================== */}
 
       <Dialog
         open={deleteDialog}
@@ -1506,6 +1935,7 @@ export default function Notifications() {
           <Button
             onClick={handleCloseDelete}
             color="inherit"
+            disabled={deleting}
           >
             Cancel
           </Button>
@@ -1514,11 +1944,40 @@ export default function Notifications() {
             color="error"
             variant="contained"
             onClick={handleDelete}
+            disabled={deleting}
           >
-            Delete
+            {deleting ? (
+              <CircularProgress
+                size={20}
+                color="inherit"
+              />
+            ) : (
+              'Delete'
+            )}
           </Button>
         </DialogActions>
       </Dialog>
     </Box>
   );
+}
+
+// ==============================|| DATE INPUT HELPER ||============================== //
+
+function toDateTimeLocal(
+  value: string
+): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const pad = (number: number) =>
+    String(number).padStart(2, '0');
+
+  return `${date.getFullYear()}-${pad(
+    date.getMonth() + 1
+  )}-${pad(date.getDate())}T${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}`;
 }
