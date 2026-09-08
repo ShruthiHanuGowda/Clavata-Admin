@@ -806,3 +806,103 @@ export const DELETE_CATEGORY = gql`
     }
   }
 `;
+
+export const ADMIN_OFFERS = gql`
+  query AdminOffers(
+    $search: String
+    $status: OfferStatus
+    $salonId: ID
+  ) {
+    adminOffers(
+      search: $search
+      status: $status
+      salonId: $salonId
+    ) {
+      success
+      message
+      totalCount
+      offers {
+        offerId
+        salonId
+        title
+        description
+        discountType
+        discountValue
+        couponCode
+        minimumBookingAmount
+        category
+        serviceIds
+        startDate
+        endDate
+        usageLimit
+        usageCount
+        customerLimit
+        status
+        rejectionReason
+        approvedBy
+        approvedAt
+        rejectedBy
+        rejectedAt
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const ADMIN_APPROVE_OFFER = gql`
+  mutation AdminApproveOffer(
+    $input: AdminApproveOfferInput!
+  ) {
+    adminApproveOffer(input: $input) {
+      success
+      message
+      offer {
+        offerId
+        salonId
+        title
+        description
+        discountType
+        discountValue
+        couponCode
+        minimumBookingAmount
+        category
+        serviceIds
+        startDate
+        endDate
+        usageLimit
+        usageCount
+        customerLimit
+        status
+        rejectionReason
+        approvedBy
+        approvedAt
+        rejectedBy
+        rejectedAt
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const ADMIN_REJECT_OFFER = gql`
+  mutation AdminRejectOffer(
+    $input: AdminRejectOfferInput!
+  ) {
+    adminRejectOffer(input: $input) {
+      success
+      message
+      offer {
+        offerId
+        salonId
+        title
+        status
+        rejectionReason
+        rejectedBy
+        rejectedAt
+        updatedAt
+      }
+    }
+  }
+`;

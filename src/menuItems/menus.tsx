@@ -176,6 +176,18 @@ const managementMenu: NavItemType = {
       type: 'item',
       url: '/reviews',
       icon: icons.StarOutlined
+    },
+     {
+      id: 'offers',
+      title: (
+        <FormattedMessage
+          id="Offers"
+          defaultMessage="Offers"
+        />
+      ),
+      type: 'item',
+      url: '/offers',
+      icon: icons.BellOutlined
     }
   ]
 };

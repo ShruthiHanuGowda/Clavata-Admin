@@ -65,7 +65,9 @@ const Bookings = Loadable(
 const Reviews = Loadable(
   lazy(() => import('pages/reviews'))
 );
-
+const Offers = Loadable(
+  lazy(() => import('pages/offers'))
+);
 const Payments = Loadable(
   lazy(() => import('pages/payments'))
 );
@@ -237,6 +239,10 @@ const MainRoutes = {
         {
           path: 'reviews',
           element: <Reviews />
+        },
+        {
+          path: 'offers',
+          element: <Offers />
         },
 
         // ============================== //
