@@ -821,28 +821,40 @@ export const ADMIN_OFFERS = gql`
       success
       message
       totalCount
+
       offers {
         offerId
         salonId
+        salonName
+
         title
         description
+
         discountType
         discountValue
+
         couponCode
         minimumBookingAmount
+
         category
         serviceIds
+
         startDate
         endDate
+
         usageLimit
         usageCount
         customerLimit
+
         status
         rejectionReason
+
         approvedBy
         approvedAt
+
         rejectedBy
         rejectedAt
+
         createdAt
         updatedAt
       }
@@ -857,28 +869,40 @@ export const ADMIN_APPROVE_OFFER = gql`
     adminApproveOffer(input: $input) {
       success
       message
+
       offer {
         offerId
         salonId
+        salonName
+
         title
         description
+
         discountType
         discountValue
+
         couponCode
         minimumBookingAmount
+
         category
         serviceIds
+
         startDate
         endDate
+
         usageLimit
         usageCount
         customerLimit
+
         status
         rejectionReason
+
         approvedBy
         approvedAt
+
         rejectedBy
         rejectedAt
+
         createdAt
         updatedAt
       }
@@ -893,9 +917,12 @@ export const ADMIN_REJECT_OFFER = gql`
     adminRejectOffer(input: $input) {
       success
       message
+
       offer {
         offerId
         salonId
+        salonName
+
         title
         status
         rejectionReason

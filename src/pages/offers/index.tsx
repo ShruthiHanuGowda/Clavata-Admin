@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+
 import {
   Alert,
   Box,
@@ -24,6 +25,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -31,8 +33,15 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
-import { gql, useMutation, useQuery } from '@apollo/client';
-import { ADMIN_APPROVE_OFFER, ADMIN_OFFERS, ADMIN_REJECT_OFFER } from '../../graphql/queries';
+
+import { useMutation, useQuery } from '@apollo/client';
+
+import {
+  ADMIN_APPROVE_OFFER,
+  ADMIN_OFFERS,
+  ADMIN_REJECT_OFFER,
+} from '../../graphql/queries';
+
 /* =========================================================
    TYPES
 ========================================================= */
@@ -51,26 +60,44 @@ type OfferDiscountType =
 
 type Offer = {
   offerId: string;
+
   salonId: string;
+
+  // Added - this was returned by GraphQL
+  salonName?: string | null;
+
   title: string;
   description: string;
+
   discountType: OfferDiscountType;
   discountValue: number;
+
   couponCode?: string | null;
+
   minimumBookingAmount?: number | null;
+
   category?: string | null;
+
   serviceIds: string[];
+
   startDate: string;
   endDate: string;
+
   usageLimit?: number | null;
   usageCount: number;
+
   customerLimit?: number | null;
+
   status: OfferStatus;
+
   rejectionReason?: string | null;
+
   approvedBy?: string | null;
   approvedAt?: string | null;
+
   rejectedBy?: string | null;
   rejectedAt?: string | null;
+
   createdAt: string;
   updatedAt: string;
 };
@@ -203,6 +230,19 @@ const getStatusLabel = (
   }
 };
 
+const formatServiceIds = (
+  serviceIds?: string[] | null,
+) => {
+  if (
+    !serviceIds ||
+    serviceIds.length === 0
+  ) {
+    return '-';
+  }
+
+  return serviceIds.join(', ');
+};
+
 /* =========================================================
    COMPONENT
 ========================================================= */
@@ -216,23 +256,35 @@ export default function Offer() {
       OfferStatus | ''
     >('');
 
-  const [selectedOffer, setSelectedOffer] =
-    useState<Offer | null>(null);
+  const [
+    selectedOffer,
+    setSelectedOffer,
+  ] = useState<Offer | null>(null);
 
-  const [detailsOpen, setDetailsOpen] =
-    useState(false);
+  const [
+    detailsOpen,
+    setDetailsOpen,
+  ] = useState(false);
 
-  const [rejectOpen, setRejectOpen] =
-    useState(false);
+  const [
+    rejectOpen,
+    setRejectOpen,
+  ] = useState(false);
 
-  const [rejectReason, setRejectReason] =
-    useState('');
+  const [
+    rejectReason,
+    setRejectReason,
+  ] = useState('');
 
-  const [approveLoading, setApproveLoading] =
-    useState(false);
+  const [
+    approveLoading,
+    setApproveLoading,
+  ] = useState(false);
 
-  const [rejectLoading, setRejectLoading] =
-    useState(false);
+  const [
+    rejectLoading,
+    setRejectLoading,
+  ] = useState(false);
 
   /* =======================================================
      QUERY
@@ -427,9 +479,11 @@ export default function Offer() {
     offer: Offer,
   ) => {
     setSelectedOffer(offer);
+
     setRejectReason(
       offer.rejectionReason || '',
     );
+
     setRejectOpen(true);
   };
 
@@ -449,6 +503,7 @@ export default function Offer() {
       alert(
         'Please enter a rejection reason.',
       );
+
       return;
     }
 
@@ -521,16 +576,10 @@ export default function Offer() {
 
   if (error) {
     return (
-      <Box
-        sx={{
-          p: 3,
-        }}
-      >
+      <Box sx={{ p: 3 }}>
         <Alert
           severity="error"
-          sx={{
-            mb: 2,
-          }}
+          sx={{ mb: 2 }}
         >
           Failed to load offers:
           {' '}
@@ -580,9 +629,7 @@ export default function Offer() {
           md: 'center',
         }}
         spacing={2}
-        sx={{
-          mb: 3,
-        }}
+        sx={{ mb: 3 }}
       >
         <Box>
           <Stack
@@ -607,9 +654,7 @@ export default function Offer() {
           <Typography
             variant="body2"
             color="text.secondary"
-            sx={{
-              mt: 0.5,
-            }}
+            sx={{ mt: 0.5 }}
           >
             Review and manage salon
             offers submitted for
@@ -797,7 +842,7 @@ export default function Offer() {
         >
           <TextField
             fullWidth
-            placeholder="Search offers..."
+            placeholder="Search offers or salon..."
             value={search}
             onChange={event =>
               setSearch(
@@ -921,7 +966,11 @@ export default function Offer() {
             </Typography>
           </Box>
         ) : (
-          <TableContainer>
+          <TableContainer
+            sx={{
+              overflowX: 'auto',
+            }}
+          >
             <Table>
               <TableHead>
                 <TableRow>
@@ -929,8 +978,13 @@ export default function Offer() {
                     Offer
                   </TableCell>
 
+                  {/* Changed from Salon ID */}
                   <TableCell>
-                    Salon ID
+                    Salon
+                  </TableCell>
+
+                  <TableCell>
+                    Category
                   </TableCell>
 
                   <TableCell>
@@ -968,6 +1022,7 @@ export default function Offer() {
                       }
                       hover
                     >
+                      {/* OFFER */}
                       <TableCell>
                         <Box
                           sx={{
@@ -1008,20 +1063,54 @@ export default function Offer() {
                         </Box>
                       </TableCell>
 
+                      {/* SALON */}
                       <TableCell>
-                        <Typography
-                          variant="body2"
+                        <Box
                           sx={{
-                            fontFamily:
-                              'monospace',
+                            minWidth: 180,
+                            maxWidth: 240,
                           }}
                         >
-                          {
-                            offer.salonId
-                          }
-                        </Typography>
+                          <Typography
+                            fontWeight={600}
+                            noWrap
+                          >
+                            {offer.salonName ||
+                              'Salon name unavailable'}
+                          </Typography>
+
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              display:
+                                'block',
+                              fontFamily:
+                                'monospace',
+                              wordBreak:
+                                'break-all',
+                            }}
+                          >
+                            ID: {
+                              offer.salonId
+                            }
+                          </Typography>
+                        </Box>
                       </TableCell>
 
+                      {/* CATEGORY */}
+                      <TableCell>
+                        <Chip
+                          label={
+                            offer.category ||
+                            'All Services'
+                          }
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+
+                      {/* DISCOUNT */}
                       <TableCell>
                         <Typography
                           fontWeight={700}
@@ -1037,6 +1126,7 @@ export default function Offer() {
                           <Typography
                             variant="caption"
                             color="text.secondary"
+                            display="block"
                           >
                             Min ₹
                             {
@@ -1046,6 +1136,7 @@ export default function Offer() {
                         )}
                       </TableCell>
 
+                      {/* VALIDITY */}
                       <TableCell>
                         <Typography
                           variant="body2"
@@ -1070,6 +1161,7 @@ export default function Offer() {
                         </Typography>
                       </TableCell>
 
+                      {/* USAGE */}
                       <TableCell>
                         <Typography
                           variant="body2"
@@ -1077,8 +1169,9 @@ export default function Offer() {
                           {
                             offer.usageCount
                           }
+
                           {offer.usageLimit !=
-                            null
+                          null
                             ? ` / ${offer.usageLimit}`
                             : ' / ∞'}
                         </Typography>
@@ -1088,8 +1181,9 @@ export default function Offer() {
                           <Typography
                             variant="caption"
                             color="text.secondary"
+                            display="block"
                           >
-                            Customer limit:{' '}
+                            Customer:{' '}
                             {
                               offer.customerLimit
                             }
@@ -1097,6 +1191,7 @@ export default function Offer() {
                         )}
                       </TableCell>
 
+                      {/* STATUS */}
                       <TableCell>
                         <Chip
                           label={getStatusLabel(
@@ -1111,6 +1206,7 @@ export default function Offer() {
                         />
                       </TableCell>
 
+                      {/* CREATED */}
                       <TableCell>
                         <Typography
                           variant="body2"
@@ -1123,6 +1219,7 @@ export default function Offer() {
                         </Typography>
                       </TableCell>
 
+                      {/* ACTIONS */}
                       <TableCell align="right">
                         <Stack
                           direction="row"
@@ -1222,7 +1319,8 @@ export default function Offer() {
 
         <DialogContent dividers>
           {selectedOffer && (
-            <Stack spacing={2}>
+            <Stack spacing={3}>
+              {/* TITLE */}
               <Box>
                 <Typography
                   variant="h5"
@@ -1238,6 +1336,9 @@ export default function Offer() {
                   spacing={1}
                   sx={{
                     mt: 1,
+                    flexWrap:
+                      'wrap',
+                    gap: 1,
                   }}
                 >
                   <Chip
@@ -1258,9 +1359,87 @@ export default function Offer() {
                     )}
                     size="small"
                   />
+
+                  {selectedOffer.category && (
+                    <Chip
+                      label={
+                        selectedOffer.category
+                      }
+                      size="small"
+                      variant="outlined"
+                    />
+                  )}
                 </Stack>
               </Box>
 
+              {/* SALON INFORMATION */}
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  sx={{ mb: 1.5 }}
+                >
+                  Salon Information
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns:
+                      {
+                        xs: '1fr',
+                        sm: '1fr 1fr',
+                      },
+                    gap: 2,
+                  }}
+                >
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Salon Name
+                    </Typography>
+
+                    <Typography
+                      fontWeight={600}
+                    >
+                      {selectedOffer.salonName ||
+                        'Salon name unavailable'}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Salon ID
+                    </Typography>
+
+                    <Typography
+                      sx={{
+                        fontFamily:
+                          'monospace',
+                        wordBreak:
+                          'break-all',
+                      }}
+                    >
+                      {
+                        selectedOffer.salonId
+                      }
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+
+              {/* DESCRIPTION */}
               <Box>
                 <Typography
                   variant="subtitle2"
@@ -1269,166 +1448,381 @@ export default function Offer() {
                   Description
                 </Typography>
 
-                <Typography>
+                <Typography
+                  sx={{ mt: 0.5 }}
+                >
                   {
-                    selectedOffer.description
+                    selectedOffer.description ||
+                    '-'
                   }
                 </Typography>
               </Box>
 
-              <Box
+              {/* OFFER INFORMATION */}
+              <Paper
+                variant="outlined"
                 sx={{
-                  display: 'grid',
-                  gridTemplateColumns:
-                    'repeat(2, minmax(0, 1fr))',
-                  gap: 2,
+                  p: 2,
+                  borderRadius: 2,
                 }}
               >
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    Offer ID
-                  </Typography>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  sx={{ mb: 1.5 }}
+                >
+                  Offer Information
+                </Typography>
 
-                  <Typography
-                    sx={{
-                      fontFamily:
-                        'monospace',
-                      wordBreak:
-                        'break-all',
-                    }}
-                  >
-                    {
-                      selectedOffer.offerId
-                    }
-                  </Typography>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns:
+                      {
+                        xs: '1fr',
+                        sm: '1fr 1fr',
+                      },
+                    gap: 2,
+                  }}
+                >
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Offer ID
+                    </Typography>
+
+                    <Typography
+                      sx={{
+                        fontFamily:
+                          'monospace',
+                        wordBreak:
+                          'break-all',
+                      }}
+                    >
+                      {
+                        selectedOffer.offerId
+                      }
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Category
+                    </Typography>
+
+                    <Typography>
+                      {
+                        selectedOffer.category ||
+                        'All Services'
+                      }
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Discount Type
+                    </Typography>
+
+                    <Typography>
+                      {
+                        selectedOffer.discountType
+                      }
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Discount Value
+                    </Typography>
+
+                    <Typography
+                      fontWeight={700}
+                    >
+                      {getDiscountText(
+                        selectedOffer,
+                      )}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Coupon Code
+                    </Typography>
+
+                    <Typography>
+                      {
+                        selectedOffer.couponCode ||
+                        '-'
+                      }
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Minimum Booking
+                    </Typography>
+
+                    <Typography>
+                      {selectedOffer.minimumBookingAmount !=
+                      null
+                        ? `₹${selectedOffer.minimumBookingAmount}`
+                        : '-'}
+                    </Typography>
+                  </Box>
                 </Box>
+              </Paper>
 
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
+              {/* SERVICE IDS */}
+              <Box>
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                  sx={{ mb: 0.5 }}
+                >
+                  Service IDs
+                </Typography>
+
+                {selectedOffer.serviceIds &&
+                selectedOffer.serviceIds
+                  .length > 0 ? (
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    useFlexGap
+                    flexWrap="wrap"
                   >
-                    Salon ID
-                  </Typography>
-
-                  <Typography
-                    sx={{
-                      fontFamily:
-                        'monospace',
-                      wordBreak:
-                        'break-all',
-                    }}
-                  >
-                    {
-                      selectedOffer.salonId
-                    }
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    Category
-                  </Typography>
-
+                    {selectedOffer.serviceIds.map(
+                      serviceId => (
+                        <Chip
+                          key={serviceId}
+                          label={serviceId}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            fontFamily:
+                              'monospace',
+                          }}
+                        />
+                      ),
+                    )}
+                  </Stack>
+                ) : (
                   <Typography>
-                    {
-                      selectedOffer.category ||
-                      '-'
-                    }
+                    All services
                   </Typography>
-                </Box>
-
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    Coupon Code
-                  </Typography>
-
-                  <Typography>
-                    {
-                      selectedOffer.couponCode ||
-                      '-'
-                    }
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    Minimum Booking
-                  </Typography>
-
-                  <Typography>
-                    {selectedOffer.minimumBookingAmount !=
-                    null
-                      ? `₹${selectedOffer.minimumBookingAmount}`
-                      : '-'}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    Usage
-                  </Typography>
-
-                  <Typography>
-                    {
-                      selectedOffer.usageCount
-                    }
-                    {selectedOffer.usageLimit !=
-                    null
-                      ? ` / ${selectedOffer.usageLimit}`
-                      : ' / Unlimited'}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    Start Date
-                  </Typography>
-
-                  <Typography>
-                    {
-                      formatDate(
-                        selectedOffer.startDate,
-                      )
-                    }
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    End Date
-                  </Typography>
-
-                  <Typography>
-                    {
-                      formatDate(
-                        selectedOffer.endDate,
-                      )
-                    }
-                  </Typography>
-                </Box>
+                )}
               </Box>
+
+              {/* VALIDITY + USAGE */}
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  sx={{ mb: 1.5 }}
+                >
+                  Validity & Usage
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns:
+                      {
+                        xs: '1fr',
+                        sm: '1fr 1fr',
+                      },
+                    gap: 2,
+                  }}
+                >
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Start Date
+                    </Typography>
+
+                    <Typography>
+                      {
+                        formatDate(
+                          selectedOffer.startDate,
+                        )
+                      }
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      End Date
+                    </Typography>
+
+                    <Typography>
+                      {
+                        formatDate(
+                          selectedOffer.endDate,
+                        )
+                      }
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Usage
+                    </Typography>
+
+                    <Typography>
+                      {
+                        selectedOffer.usageCount
+                      }
+
+                      {selectedOffer.usageLimit !=
+                      null
+                        ? ` / ${selectedOffer.usageLimit}`
+                        : ' / Unlimited'}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Customer Limit
+                    </Typography>
+
+                    <Typography>
+                      {selectedOffer.customerLimit !=
+                      null
+                        ? selectedOffer.customerLimit
+                        : 'Unlimited'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+
+              {/* APPROVAL / REJECTION */}
+              {(selectedOffer.approvedAt ||
+                selectedOffer.rejectedAt ||
+                selectedOffer.rejectionReason) && (
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={700}
+                    sx={{ mb: 1.5 }}
+                  >
+                    Review Information
+                  </Typography>
+
+                  <Stack spacing={1.5}>
+                    {selectedOffer.approvedBy && (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          Approved By
+                        </Typography>
+
+                        <Typography>
+                          {
+                            selectedOffer.approvedBy
+                          }
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {selectedOffer.approvedAt && (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          Approved At
+                        </Typography>
+
+                        <Typography>
+                          {
+                            formatDateTime(
+                              selectedOffer.approvedAt,
+                            )
+                          }
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {selectedOffer.rejectedBy && (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          Rejected By
+                        </Typography>
+
+                        <Typography>
+                          {
+                            selectedOffer.rejectedBy
+                          }
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {selectedOffer.rejectedAt && (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          Rejected At
+                        </Typography>
+
+                        <Typography>
+                          {
+                            formatDateTime(
+                              selectedOffer.rejectedAt,
+                            )
+                          }
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </Paper>
+              )}
 
               {selectedOffer.status ===
                 'REJECTED' &&
@@ -1443,43 +1837,52 @@ export default function Offer() {
                   </Alert>
                 )}
 
-              {selectedOffer.approvedAt && (
+              {/* CREATED / UPDATED */}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns:
+                    {
+                      xs: '1fr',
+                      sm: '1fr 1fr',
+                    },
+                  gap: 2,
+                }}
+              >
                 <Box>
                   <Typography
                     variant="caption"
                     color="text.secondary"
                   >
-                    Approved At
+                    Created At
                   </Typography>
 
                   <Typography>
                     {
                       formatDateTime(
-                        selectedOffer.approvedAt,
+                        selectedOffer.createdAt,
                       )
                     }
                   </Typography>
                 </Box>
-              )}
 
-              {selectedOffer.rejectedAt && (
                 <Box>
                   <Typography
                     variant="caption"
                     color="text.secondary"
                   >
-                    Rejected At
+                    Updated At
                   </Typography>
 
                   <Typography>
                     {
                       formatDateTime(
-                        selectedOffer.rejectedAt,
+                        selectedOffer.updatedAt,
                       )
                     }
                   </Typography>
                 </Box>
-              )}
+              </Box>
             </Stack>
           )}
         </DialogContent>
@@ -1500,6 +1903,7 @@ export default function Offer() {
                     setDetailsOpen(
                       false,
                     );
+
                     openRejectDialog(
                       selectedOffer,
                     );
@@ -1565,20 +1969,33 @@ export default function Offer() {
 
         <DialogContent>
           {selectedOffer && (
-            <Typography
-              variant="body2"
-              sx={{
-                mb: 2,
-              }}
-            >
-              You are rejecting:
-              {' '}
-              <strong>
+            <Box sx={{ mb: 2 }}>
+              <Typography
+                variant="body2"
+                sx={{ mb: 0.5 }}
+              >
+                You are rejecting:
+              </Typography>
+
+              <Typography
+                fontWeight={600}
+              >
                 {
                   selectedOffer.title
                 }
-              </strong>
-            </Typography>
+              </Typography>
+
+              {selectedOffer.salonName && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  Salon: {
+                    selectedOffer.salonName
+                  }
+                </Typography>
+              )}
+            </Box>
           )}
 
           <TextField
