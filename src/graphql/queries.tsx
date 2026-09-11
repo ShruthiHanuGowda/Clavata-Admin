@@ -1121,84 +1121,135 @@ export const DELETE_SALON_MEDIA = gql`
 `;
 
 export const ADMIN_SALON_PROFILE_CHANGES = gql`
-query AdminSalonProfileChanges(
-	$salonId: ID
-	$status: SalonProfileChangeStatus
-) {
-	adminSalonProfileChanges(
-		salonId: $salonId
-		status: $status
-	) {
-		success
-		message
-		totalCount
+  query AdminSalonProfileChanges(
+    $status: SalonProfileChangeStatus
+  ) {
+    adminSalonProfileChanges(
+      status: $status
+    ) {
+      success
+      message
+      totalCount
 
-		changes {
-			changeId
-			salonId
-			salonName
-			ownerName
-			businessType
-			email
-			ownerPhoneNumber
-			alternatePhone
-			address {
-				addressLine
-				city
-				state
-				pincode
-			}
+      changes {
+        changeId
+        salonId
+        salonName
+        ownerName
+        businessType
+        email
+        ownerPhoneNumber
+        alternatePhone
 
-			status
-			submittedBy
-			submittedAt
-			reviewedBy
-			reviewedAt
-			rejectionReason
+        address {
+          addressLine
+          city
+          state
+          pincode
+        }
 
-			previousProfile {
-				salonName
-				ownerName
-				businessType
-				email
-				ownerPhoneNumber
-				alternatePhone
-				address {
-					addressLine
-					city
-					state
-					pincode
-				}
-			}
+        logoUrl
+        coverImageUrl
+        galleryImages
 
-			requestedProfile {
-				salonName
-				ownerName
-				businessType
-				email
-				ownerPhoneNumber
-				alternatePhone
-				address {
-					addressLine
-					city
-					state
-					pincode
-				}
-			}
+        logoMedia {
+          imageId
+          salonId
+          mediaType
+          key
+          objectUrl
+          status
+          uploadedAt
+          approvedAt
+          approvedBy
+          rejectedAt
+          rejectedBy
+          rejectionReason
+        }
 
-			changes {
-				field
-				label
-				oldValue
-				newValue
-				changeType
-			}
+        coverMedia {
+          imageId
+          salonId
+          mediaType
+          key
+          objectUrl
+          status
+          uploadedAt
+          approvedAt
+          approvedBy
+          rejectedAt
+          rejectedBy
+          rejectionReason
+        }
 
-			changedFields
-			changeCount
-		}
-	}
-}`;
+        galleryMedia {
+          imageId
+          salonId
+          mediaType
+          key
+          objectUrl
+          status
+          uploadedAt
+          approvedAt
+          approvedBy
+          rejectedAt
+          rejectedBy
+          rejectionReason
+        }
+
+        status
+        submittedBy
+        submittedAt
+        reviewedBy
+        reviewedAt
+        rejectionReason
+
+        previousProfile {
+          salonName
+          ownerName
+          businessType
+          email
+          ownerPhoneNumber
+          alternatePhone
+
+          address {
+            addressLine
+            city
+            state
+            pincode
+          }
+        }
+
+        requestedProfile {
+          salonName
+          ownerName
+          businessType
+          email
+          ownerPhoneNumber
+          alternatePhone
+
+          address {
+            addressLine
+            city
+            state
+            pincode
+          }
+        }
+
+        changes {
+          field
+          label
+          oldValue
+          newValue
+          changeType
+        }
+
+        changedFields
+        changeCount
+      }
+    }
+  }
+`;
 
 export const ADMIN_APPROVE_SALON_PROFILE_CHANGE = gql`
   mutation AdminApproveSalonProfileChange(

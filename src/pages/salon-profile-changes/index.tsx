@@ -31,6 +31,8 @@ import {
     Typography
 } from '@mui/material';
 
+import { alpha } from '@mui/material/styles';
+
 import {
     CheckCircleOutlined,
     CloseCircleOutlined,
@@ -68,13 +70,13 @@ interface SalonAddress {
 }
 
 interface SalonProfileSnapshot {
-    salonName?: string | null;
-    ownerName?: string | null;
-    businessType?: string | null;
-    email?: string | null;
-    ownerPhoneNumber?: string | null;
+    salonName: string;
+    ownerName: string;
+    businessType: string;
+    email: string;
+    ownerPhoneNumber: string;
     alternatePhone?: string | null;
-    address?: SalonAddress | null;
+    address: SalonAddress;
 }
 
 interface SalonProfileFieldChange {
@@ -131,16 +133,29 @@ interface SalonProfileChange {
     rejectionReason?: string | null;
 
     // ========================================================
-    // CHANGE COMPARISON
+    // PROFILE HISTORY
+    //
+    // AWSJSON may arrive from AppSync as either:
+    //   1. already parsed object/array
+    //   2. JSON string
     // ========================================================
 
-    previousProfile?: SalonProfileSnapshot | null;
+    previousProfile?:
+    | SalonProfileSnapshot
+    | string
+    | null;
 
-    requestedProfile?: SalonProfileSnapshot | null;
+    requestedProfile?:
+    | SalonProfileSnapshot
+    | string
+    | null;
 
-    changes?: SalonProfileFieldChange[] | null;
+    changes?:
+    | SalonProfileFieldChange[]
+    | string
+    | null;
 
-    changedFields?: string[] | null;
+    changedFields?: string[] | string | null;
 
     changeCount?: number | null;
 }
@@ -152,10 +167,85 @@ interface ApiResponse {
 }
 
 // ============================================================
+// SAFE AWSJSON PARSERS
+// ============================================================
+
+const parseJsonValue = <T,>(
+    value: unknown
+): T | null => {
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return null;
+    }
+
+    if (typeof value !== 'string') {
+        return value as T;
+    }
+
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(trimmed) as T;
+    } catch {
+        return null;
+    }
+};
+
+const getPreviousProfile = (
+    change: SalonProfileChange
+): SalonProfileSnapshot | null => {
+    return parseJsonValue<SalonProfileSnapshot>(
+        change.previousProfile
+    );
+};
+
+const getRequestedProfile = (
+    change: SalonProfileChange
+): SalonProfileSnapshot | null => {
+    return parseJsonValue<SalonProfileSnapshot>(
+        change.requestedProfile
+    );
+};
+
+const getStoredChanges = (
+    change: SalonProfileChange
+): SalonProfileFieldChange[] => {
+    const parsed =
+        parseJsonValue<SalonProfileFieldChange[]>(
+            change.changes
+        );
+
+    return Array.isArray(parsed)
+        ? parsed
+        : [];
+};
+
+const getChangedFields = (
+    change: SalonProfileChange
+): string[] => {
+    const parsed =
+        parseJsonValue<string[]>(
+            change.changedFields
+        );
+
+    return Array.isArray(parsed)
+        ? parsed
+        : [];
+};
+
+// ============================================================
 // HELPERS
 // ============================================================
 
-const formatDate = (value?: string | null) => {
+const formatDate = (
+    value?: string | null
+) => {
     if (!value) {
         return '-';
     }
@@ -235,11 +325,23 @@ const formatChangeValue = (
     }
 
     if (typeof value === 'string') {
+        const parsed =
+            parseJsonValue<unknown>(value);
+
+        if (
+            parsed !== null &&
+            typeof parsed !== 'string'
+        ) {
+            return formatChangeValue(parsed);
+        }
+
         return value;
     }
 
-    if (typeof value === 'number' ||
-        typeof value === 'boolean') {
+    if (
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+    ) {
         return String(value);
     }
 
@@ -249,13 +351,19 @@ const formatChangeValue = (
         }
 
         return value
-            .map((item) => formatChangeValue(item))
+            .map((item) =>
+                formatChangeValue(item)
+            )
             .join(', ');
     }
 
     if (typeof value === 'object') {
         try {
-            return JSON.stringify(value);
+            return JSON.stringify(
+                value,
+                null,
+                2
+            );
         } catch {
             return String(value);
         }
@@ -265,12 +373,7 @@ const formatChangeValue = (
 };
 
 // ============================================================
-// FALLBACK CHANGE DETECTION
-//
-// This is intentionally included as a safety net.
-// If Lambda returns previousProfile/requestedProfile but
-// changes is missing, the admin UI can still calculate the
-// differences.
+// NORMALIZE VALUE FOR COMPARISON
 // ============================================================
 
 const normalizeCompareValue = (
@@ -283,17 +386,38 @@ const normalizeCompareValue = (
         return '';
     }
 
+    if (typeof value === 'string') {
+        return value.trim();
+    }
+
     return String(value).trim();
 };
+
+// ============================================================
+// FALLBACK CHANGE DETECTION
+//
+// Includes EVERY profile field:
+//
+// salonName
+// ownerName
+// businessType
+// email
+// ownerPhoneNumber
+// alternatePhone
+// address.addressLine
+// address.city
+// address.state
+// address.pincode
+// ============================================================
 
 const buildFallbackChanges = (
     change: SalonProfileChange
 ): SalonProfileFieldChange[] => {
     const previous =
-        change.previousProfile;
+        getPreviousProfile(change);
 
     const requested =
-        change.requestedProfile || {
+        getRequestedProfile(change) || {
             salonName: change.salonName,
             ownerName: change.ownerName,
             businessType: change.businessType,
@@ -302,14 +426,21 @@ const buildFallbackChanges = (
                 change.ownerPhoneNumber,
             alternatePhone:
                 change.alternatePhone,
-            address: change.address
+            address:
+                change.address || {
+                    addressLine: '',
+                    city: '',
+                    state: '',
+                    pincode: ''
+                }
         };
 
     if (!previous) {
         return [];
     }
 
-    const result: SalonProfileFieldChange[] = [];
+    const result: SalonProfileFieldChange[] =
+        [];
 
     const compareField = (
         field: string,
@@ -318,40 +449,49 @@ const buildFallbackChanges = (
         newValue: unknown
     ) => {
         if (
-            normalizeCompareValue(oldValue) !==
-            normalizeCompareValue(newValue)
+            normalizeCompareValue(
+                oldValue
+            ) ===
+            normalizeCompareValue(
+                newValue
+            )
         ) {
-            let changeType:
-                ProfileChangeType =
-                'UPDATED';
-
-            const oldEmpty =
-                normalizeCompareValue(
-                    oldValue
-                ) === '';
-
-            const newEmpty =
-                normalizeCompareValue(
-                    newValue
-                ) === '';
-
-            if (oldEmpty && !newEmpty) {
-                changeType = 'ADDED';
-            } else if (
-                !oldEmpty &&
-                newEmpty
-            ) {
-                changeType = 'REMOVED';
-            }
-
-            result.push({
-                field,
-                label,
-                oldValue,
-                newValue,
-                changeType
-            });
+            return;
         }
+
+        let changeType:
+            ProfileChangeType =
+            'UPDATED';
+
+        const oldEmpty =
+            normalizeCompareValue(
+                oldValue
+            ) === '';
+
+        const newEmpty =
+            normalizeCompareValue(
+                newValue
+            ) === '';
+
+        if (
+            oldEmpty &&
+            !newEmpty
+        ) {
+            changeType = 'ADDED';
+        } else if (
+            !oldEmpty &&
+            newEmpty
+        ) {
+            changeType = 'REMOVED';
+        }
+
+        result.push({
+            field,
+            label,
+            oldValue,
+            newValue,
+            changeType
+        });
     };
 
     compareField(
@@ -427,14 +567,18 @@ const buildFallbackChanges = (
     return result;
 };
 
+// ============================================================
+// ACTUAL CHANGES
+// ============================================================
+
 const getActualChanges = (
     change: SalonProfileChange
 ): SalonProfileFieldChange[] => {
-    if (
-        change.changes &&
-        change.changes.length > 0
-    ) {
-        return change.changes;
+    const storedChanges =
+        getStoredChanges(change);
+
+    if (storedChanges.length > 0) {
+        return storedChanges;
     }
 
     return buildFallbackChanges(change);
@@ -446,32 +590,51 @@ const getActualChanges = (
 
 export default function SalonProfileChanges() {
     const [status, setStatus] =
-        useState<ProfileChangeStatus>('PENDING');
+        useState<ProfileChangeStatus>(
+            'PENDING'
+        );
 
-    const [selectedChange, setSelectedChange] =
-        useState<SalonProfileChange | null>(null);
+    const [
+        selectedChange,
+        setSelectedChange
+    ] =
+        useState<SalonProfileChange | null>(
+            null
+        );
 
-    const [viewModalOpen, setViewModalOpen] =
-        useState(false);
+    const [
+        viewModalOpen,
+        setViewModalOpen
+    ] = useState(false);
 
-    const [approveModalOpen, setApproveModalOpen] =
-        useState(false);
+    const [
+        approveModalOpen,
+        setApproveModalOpen
+    ] = useState(false);
 
-    const [rejectModalOpen, setRejectModalOpen] =
-        useState(false);
+    const [
+        rejectModalOpen,
+        setRejectModalOpen
+    ] = useState(false);
 
-    const [rejectionReason, setRejectionReason] =
-        useState('');
+    const [
+        rejectionReason,
+        setRejectionReason
+    ] = useState('');
 
-    const [actionError, setActionError] =
-        useState<string | null>(null);
+    const [
+        actionError,
+        setActionError
+    ] = useState<string | null>(null);
 
-    const [actionSuccess, setActionSuccess] =
-        useState<string | null>(null);
+    const [
+        actionSuccess,
+        setActionSuccess
+    ] = useState<string | null>(null);
 
-    // ==========================================================
+    // ========================================================
     // QUERY
-    // ==========================================================
+    // ========================================================
 
     const {
         data,
@@ -488,41 +651,49 @@ export default function SalonProfileChanges() {
         }
     );
 
-    // ==========================================================
+    // ========================================================
     // APPROVE
-    // ==========================================================
+    // ========================================================
 
     const [
         approveProfileChange,
-        { loading: approving }
+        {
+            loading: approving
+        }
     ] = useMutation(
         ADMIN_APPROVE_SALON_PROFILE_CHANGE
     );
 
-    // ==========================================================
+    // ========================================================
     // REJECT
-    // ==========================================================
+    // ========================================================
 
     const [
         rejectProfileChange,
-        { loading: rejecting }
+        {
+            loading: rejecting
+        }
     ] = useMutation(
         ADMIN_REJECT_SALON_PROFILE_CHANGE
     );
 
-    // ==========================================================
+    // ========================================================
     // DATA
-    // ==========================================================
+    // ========================================================
 
     const changes: SalonProfileChange[] =
-        data?.adminSalonProfileChanges?.changes || [];
+        data
+            ?.adminSalonProfileChanges
+            ?.changes || [];
 
     const totalCount =
-        data?.adminSalonProfileChanges?.totalCount || 0;
+        data
+            ?.adminSalonProfileChanges
+            ?.totalCount || 0;
 
-    // ==========================================================
+    // ========================================================
     // TABLE COLUMNS
-    // ==========================================================
+    // ========================================================
 
     const columns = useMemo(
         () => [
@@ -536,9 +707,9 @@ export default function SalonProfileChanges() {
         []
     );
 
-    // ==========================================================
+    // ========================================================
     // STATUS CHANGE
-    // ==========================================================
+    // ========================================================
 
     const handleStatusChange = (
         event: SelectChangeEvent
@@ -551,9 +722,9 @@ export default function SalonProfileChanges() {
         setActionSuccess(null);
     };
 
-    // ==========================================================
+    // ========================================================
     // VIEW
-    // ==========================================================
+    // ========================================================
 
     const handleView = (
         change: SalonProfileChange
@@ -565,12 +736,15 @@ export default function SalonProfileChanges() {
         setActionSuccess(null);
     };
 
-    // ==========================================================
+    // ========================================================
     // CLOSE VIEW
-    // ==========================================================
+    // ========================================================
 
     const handleCloseView = () => {
-        if (approving || rejecting) {
+        if (
+            approving ||
+            rejecting
+        ) {
             return;
         }
 
@@ -578,9 +752,9 @@ export default function SalonProfileChanges() {
         setSelectedChange(null);
     };
 
-    // ==========================================================
+    // ========================================================
     // OPEN APPROVE
-    // ==========================================================
+    // ========================================================
 
     const openApproveModal = (
         change: SalonProfileChange
@@ -592,9 +766,9 @@ export default function SalonProfileChanges() {
         setActionSuccess(null);
     };
 
-    // ==========================================================
+    // ========================================================
     // CLOSE APPROVE
-    // ==========================================================
+    // ========================================================
 
     const closeApproveModal = () => {
         if (approving) {
@@ -605,9 +779,9 @@ export default function SalonProfileChanges() {
         setActionError(null);
     };
 
-    // ==========================================================
+    // ========================================================
     // APPROVE
-    // ==========================================================
+    // ========================================================
 
     const handleApprove = async () => {
         if (!selectedChange) {
@@ -657,9 +831,9 @@ export default function SalonProfileChanges() {
         }
     };
 
-    // ==========================================================
+    // ========================================================
     // OPEN REJECT
-    // ==========================================================
+    // ========================================================
 
     const openRejectModal = (
         change: SalonProfileChange
@@ -672,9 +846,9 @@ export default function SalonProfileChanges() {
         setActionSuccess(null);
     };
 
-    // ==========================================================
+    // ========================================================
     // CLOSE REJECT
-    // ==========================================================
+    // ========================================================
 
     const closeRejectModal = () => {
         if (rejecting) {
@@ -686,9 +860,9 @@ export default function SalonProfileChanges() {
         setActionError(null);
     };
 
-    // ==========================================================
+    // ========================================================
     // REJECT
-    // ==========================================================
+    // ========================================================
 
     const handleReject = async () => {
         if (!selectedChange) {
@@ -752,15 +926,15 @@ export default function SalonProfileChanges() {
         }
     };
 
-    // ==========================================================
+    // ========================================================
     // RETURN
-    // ==========================================================
+    // ========================================================
 
     return (
         <Box>
-            {/* ======================================================
+            {/* ====================================================
                 HEADER
-            ====================================================== */}
+            ==================================================== */}
 
             <Box
                 sx={{
@@ -770,7 +944,8 @@ export default function SalonProfileChanges() {
                         xs: 'flex-start',
                         md: 'center'
                     },
-                    justifyContent: 'space-between',
+                    justifyContent:
+                        'space-between',
                     flexDirection: {
                         xs: 'column',
                         md: 'row'
@@ -780,11 +955,22 @@ export default function SalonProfileChanges() {
             >
                 <Box>
                     <Typography
+                        variant="h5"
+                        sx={{
+                            fontWeight: 700,
+                            mb: 0.5
+                        }}
+                    >
+                        Salon Profile Changes
+                    </Typography>
+
+                    <Typography
                         variant="body2"
                         color="text.secondary"
                     >
-                        Review and approve profile changes
-                        requested by salons.
+                        Review and approve profile
+                        changes requested by
+                        salons.
                     </Typography>
                 </Box>
 
@@ -838,7 +1024,9 @@ export default function SalonProfileChanges() {
                         startIcon={
                             <ReloadOutlined />
                         }
-                        onClick={() => refetch()}
+                        onClick={() =>
+                            refetch()
+                        }
                         disabled={loading}
                     >
                         Refresh
@@ -846,9 +1034,9 @@ export default function SalonProfileChanges() {
                 </Stack>
             </Box>
 
-            {/* ======================================================
+            {/* ====================================================
                 SUCCESS
-            ====================================================== */}
+            ==================================================== */}
 
             {actionSuccess && (
                 <Alert
@@ -862,9 +1050,9 @@ export default function SalonProfileChanges() {
                 </Alert>
             )}
 
-            {/* ======================================================
+            {/* ====================================================
                 GENERAL ERROR
-            ====================================================== */}
+            ==================================================== */}
 
             {actionError &&
                 !rejectModalOpen &&
@@ -880,9 +1068,9 @@ export default function SalonProfileChanges() {
                     </Alert>
                 )}
 
-            {/* ======================================================
+            {/* ====================================================
                 TABLE
-            ====================================================== */}
+            ==================================================== */}
 
             <Paper
                 elevation={0}
@@ -904,7 +1092,8 @@ export default function SalonProfileChanges() {
                                 fontWeight: 600
                             }}
                         >
-                            Unable to load profile changes
+                            Unable to load profile
+                            changes
                         </Typography>
 
                         <Typography variant="body2">
@@ -918,9 +1107,12 @@ export default function SalonProfileChanges() {
                         sx={{
                             minHeight: 350,
                             display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexDirection: 'column',
+                            alignItems:
+                                'center',
+                            justifyContent:
+                                'center',
+                            flexDirection:
+                                'column',
                             gap: 2
                         }}
                     >
@@ -933,14 +1125,18 @@ export default function SalonProfileChanges() {
                             Loading profile changes...
                         </Typography>
                     </Box>
-                ) : changes.length === 0 ? (
+                ) : changes.length ===
+                    0 ? (
                     <Box
                         sx={{
                             minHeight: 300,
                             display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexDirection: 'column',
+                            alignItems:
+                                'center',
+                            justifyContent:
+                                'center',
+                            flexDirection:
+                                'column',
                             p: 4
                         }}
                     >
@@ -960,7 +1156,8 @@ export default function SalonProfileChanges() {
                                 mb: 0.5
                             }}
                         >
-                            {status === 'PENDING'
+                            {status ===
+                                'PENDING'
                                 ? 'No pending salon profile changes'
                                 : 'No profile changes found'}
                         </Typography>
@@ -970,8 +1167,10 @@ export default function SalonProfileChanges() {
                             color="text.secondary"
                             textAlign="center"
                         >
-                            There are currently no profile
-                            change requests for this status.
+                            There are currently
+                            no profile change
+                            requests for this
+                            status.
                         </Typography>
                     </Box>
                 ) : (
@@ -980,16 +1179,22 @@ export default function SalonProfileChanges() {
                             <TableHead>
                                 <TableRow>
                                     {columns.map(
-                                        (column) => (
+                                        (
+                                            column
+                                        ) => (
                                             <TableCell
-                                                key={column}
+                                                key={
+                                                    column
+                                                }
                                                 sx={{
                                                     fontWeight: 600,
                                                     whiteSpace:
                                                         'nowrap'
                                                 }}
                                             >
-                                                {column}
+                                                {
+                                                    column
+                                                }
                                             </TableCell>
                                         )
                                     )}
@@ -1018,7 +1223,9 @@ export default function SalonProfileChanges() {
                                                 <TableCell>
                                                     <Stack
                                                         direction="row"
-                                                        spacing={1.5}
+                                                        spacing={
+                                                            1.5
+                                                        }
                                                         alignItems="center"
                                                     >
                                                         <Avatar
@@ -1129,18 +1336,17 @@ export default function SalonProfileChanges() {
 
                                                         {actualChanges.length >
                                                             0 && (
-                                                            <Chip
-                                                                size="small"
-                                                                variant="outlined"
-                                                                label={`${actualChanges.length} change${
-                                                                    actualChanges.length ===
-                                                                    1
+                                                                <Chip
+                                                                    size="small"
+                                                                    variant="outlined"
+                                                                    label={`${actualChanges.length} change${actualChanges.length ===
+                                                                        1
                                                                         ? ''
                                                                         : 's'
-                                                                }`}
-                                                                color="warning"
-                                                            />
-                                                        )}
+                                                                        }`}
+                                                                    color="warning"
+                                                                />
+                                                            )}
                                                     </Stack>
                                                 </TableCell>
 
@@ -1167,48 +1373,48 @@ export default function SalonProfileChanges() {
 
                                                         {change.status ===
                                                             'PENDING' && (
-                                                            <>
-                                                                <Button
-                                                                    size="small"
-                                                                    variant="contained"
-                                                                    color="success"
-                                                                    startIcon={
-                                                                        <CheckCircleOutlined />
-                                                                    }
-                                                                    onClick={() =>
-                                                                        openApproveModal(
-                                                                            change
-                                                                        )
-                                                                    }
-                                                                    disabled={
-                                                                        approving ||
-                                                                        rejecting
-                                                                    }
-                                                                >
-                                                                    Approve
-                                                                </Button>
+                                                                <>
+                                                                    <Button
+                                                                        size="small"
+                                                                        variant="contained"
+                                                                        color="success"
+                                                                        startIcon={
+                                                                            <CheckCircleOutlined />
+                                                                        }
+                                                                        onClick={() =>
+                                                                            openApproveModal(
+                                                                                change
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            approving ||
+                                                                            rejecting
+                                                                        }
+                                                                    >
+                                                                        Approve
+                                                                    </Button>
 
-                                                                <Button
-                                                                    size="small"
-                                                                    variant="outlined"
-                                                                    color="error"
-                                                                    startIcon={
-                                                                        <CloseCircleOutlined />
-                                                                    }
-                                                                    onClick={() =>
-                                                                        openRejectModal(
-                                                                            change
-                                                                        )
-                                                                    }
-                                                                    disabled={
-                                                                        approving ||
-                                                                        rejecting
-                                                                    }
-                                                                >
-                                                                    Reject
-                                                                </Button>
-                                                            </>
-                                                        )}
+                                                                    <Button
+                                                                        size="small"
+                                                                        variant="outlined"
+                                                                        color="error"
+                                                                        startIcon={
+                                                                            <CloseCircleOutlined />
+                                                                        }
+                                                                        onClick={() =>
+                                                                            openRejectModal(
+                                                                                change
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            approving ||
+                                                                            rejecting
+                                                                        }
+                                                                    >
+                                                                        Reject
+                                                                    </Button>
+                                                                </>
+                                                            )}
                                                     </Stack>
                                                 </TableCell>
                                             </TableRow>
@@ -1221,13 +1427,16 @@ export default function SalonProfileChanges() {
                 )}
 
                 {!loading &&
-                    changes.length > 0 && (
+                    changes.length >
+                    0 && (
                         <Box
                             sx={{
                                 px: 2,
                                 py: 1.5,
-                                borderTop: '1px solid',
-                                borderColor: 'divider'
+                                borderTop:
+                                    '1px solid',
+                                borderColor:
+                                    'divider'
                             }}
                         >
                             <Typography
@@ -1236,7 +1445,8 @@ export default function SalonProfileChanges() {
                             >
                                 Total {totalCount}{' '}
                                 profile change
-                                {totalCount === 1
+                                {totalCount ===
+                                    1
                                     ? ''
                                     : 's'}
                             </Typography>
@@ -1244,13 +1454,15 @@ export default function SalonProfileChanges() {
                     )}
             </Paper>
 
-            {/* ======================================================
+            {/* ====================================================
                 VIEW PROFILE CHANGE
-            ====================================================== */}
+            ==================================================== */}
 
             <Dialog
                 open={viewModalOpen}
-                onClose={handleCloseView}
+                onClose={
+                    handleCloseView
+                }
                 fullWidth
                 maxWidth="md"
             >
@@ -1268,7 +1480,8 @@ export default function SalonProfileChanges() {
                                     fontWeight: 600
                                 }}
                             >
-                                Salon Profile Change Request
+                                Salon Profile Change
+                                Request
                             </Typography>
 
                             {selectedChange && (
@@ -1301,7 +1514,9 @@ export default function SalonProfileChanges() {
                 <DialogContent dividers>
                     {selectedChange && (
                         <ProfileChangeDetails
-                            change={selectedChange}
+                            change={
+                                selectedChange
+                            }
                         />
                     )}
                 </DialogContent>
@@ -1324,49 +1539,55 @@ export default function SalonProfileChanges() {
 
                     {selectedChange?.status ===
                         'PENDING' && (
-                        <>
-                            <Button
-                                variant="outlined"
-                                color="error"
-                                startIcon={
-                                    <CloseCircleOutlined />
-                                }
-                                onClick={() =>
-                                    openRejectModal(
-                                        selectedChange
-                                    )
-                                }
-                                disabled={approving}
-                            >
-                                Reject
-                            </Button>
+                            <>
+                                <Button
+                                    variant="outlined"
+                                    color="error"
+                                    startIcon={
+                                        <CloseCircleOutlined />
+                                    }
+                                    onClick={() =>
+                                        openRejectModal(
+                                            selectedChange
+                                        )
+                                    }
+                                    disabled={
+                                        approving
+                                    }
+                                >
+                                    Reject
+                                </Button>
 
-                            <Button
-                                variant="contained"
-                                color="success"
-                                startIcon={
-                                    <CheckCircleOutlined />
-                                }
-                                onClick={() =>
-                                    openApproveModal(
-                                        selectedChange
-                                    )
-                                }
-                                disabled={approving}
-                            >
-                                Approve Changes
-                            </Button>
-                        </>
-                    )}
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    startIcon={
+                                        <CheckCircleOutlined />
+                                    }
+                                    onClick={() =>
+                                        openApproveModal(
+                                            selectedChange
+                                        )
+                                    }
+                                    disabled={
+                                        approving
+                                    }
+                                >
+                                    Approve Changes
+                                </Button>
+                            </>
+                        )}
                 </DialogActions>
             </Dialog>
 
-            {/* ======================================================
+            {/* ====================================================
                 APPROVE
-            ====================================================== */}
+            ==================================================== */}
 
             <Dialog
-                open={approveModalOpen}
+                open={
+                    approveModalOpen
+                }
                 onClose={
                     closeApproveModal
                 }
@@ -1381,8 +1602,9 @@ export default function SalonProfileChanges() {
                     {selectedChange && (
                         <Stack spacing={2}>
                             <Alert severity="warning">
-                                You are about to approve
-                                the requested profile
+                                You are about to
+                                approve the
+                                requested profile
                                 changes for{' '}
                                 <strong>
                                     {
@@ -1392,16 +1614,19 @@ export default function SalonProfileChanges() {
                                 .
                             </Alert>
 
-                            {/* SHOW CHANGES HERE TOO */}
-
                             <ProfileChangeSummary
-                                change={selectedChange}
+                                change={
+                                    selectedChange
+                                }
                             />
 
                             <Typography variant="body2">
-                                Once approved, the requested
-                                information will become the
-                                salon's active profile.
+                                Once approved,
+                                the requested
+                                information
+                                will become the
+                                salon's active
+                                profile.
                             </Typography>
                         </Stack>
                     )}
@@ -1427,7 +1652,9 @@ export default function SalonProfileChanges() {
                         onClick={
                             closeApproveModal
                         }
-                        disabled={approving}
+                        disabled={
+                            approving
+                        }
                     >
                         Cancel
                     </Button>
@@ -1445,8 +1672,12 @@ export default function SalonProfileChanges() {
                                 <CheckCircleOutlined />
                             )
                         }
-                        onClick={handleApprove}
-                        disabled={approving}
+                        onClick={
+                            handleApprove
+                        }
+                        disabled={
+                            approving
+                        }
                     >
                         {approving
                             ? 'Approving...'
@@ -1455,12 +1686,14 @@ export default function SalonProfileChanges() {
                 </DialogActions>
             </Dialog>
 
-            {/* ======================================================
+            {/* ====================================================
                 REJECTION
-            ====================================================== */}
+            ==================================================== */}
 
             <Dialog
-                open={rejectModalOpen}
+                open={
+                    rejectModalOpen
+                }
                 onClose={
                     closeRejectModal
                 }
@@ -1468,14 +1701,16 @@ export default function SalonProfileChanges() {
                 maxWidth="sm"
             >
                 <DialogTitle>
-                    Reject Salon Profile Changes
+                    Reject Salon Profile
+                    Changes
                 </DialogTitle>
 
                 <DialogContent dividers>
                     {selectedChange && (
                         <Stack spacing={2}>
                             <Alert severity="warning">
-                                Rejecting changes for{' '}
+                                Rejecting changes
+                                for{' '}
                                 <strong>
                                     {
                                         selectedChange.salonName
@@ -1488,14 +1723,17 @@ export default function SalonProfileChanges() {
                                 variant="body2"
                                 color="text.secondary"
                             >
-                                Please provide a clear
-                                reason so the salon owner
-                                knows what needs to be
-                                corrected.
+                                Please provide a
+                                clear reason so
+                                the salon owner
+                                knows what needs
+                                to be corrected.
                             </Typography>
 
                             <ProfileChangeSummary
-                                change={selectedChange}
+                                change={
+                                    selectedChange
+                                }
                             />
 
                             <TextField
@@ -1505,13 +1743,9 @@ export default function SalonProfileChanges() {
                                 maxRows={10}
                                 label="Rejection Reason"
                                 placeholder="Enter rejection reason..."
-                                value={
-                                    rejectionReason
-                                }
+                                value={rejectionReason}
                                 onChange={(event) =>
-                                    setRejectionReason(
-                                        event.target.value
-                                    )
+                                    setRejectionReason(event.target.value)
                                 }
                                 inputProps={{
                                     maxLength: 1000
@@ -1525,7 +1759,9 @@ export default function SalonProfileChanges() {
 
                             {actionError && (
                                 <Alert severity="error">
-                                    {actionError}
+                                    {
+                                        actionError
+                                    }
                                 </Alert>
                             )}
                         </Stack>
@@ -1543,7 +1779,9 @@ export default function SalonProfileChanges() {
                         onClick={
                             closeRejectModal
                         }
-                        disabled={rejecting}
+                        disabled={
+                            rejecting
+                        }
                     >
                         Cancel
                     </Button>
@@ -1561,8 +1799,12 @@ export default function SalonProfileChanges() {
                                 <CloseCircleOutlined />
                             )
                         }
-                        onClick={handleReject}
-                        disabled={rejecting}
+                        onClick={
+                            handleReject
+                        }
+                        disabled={
+                            rejecting
+                        }
                     >
                         {rejecting
                             ? 'Rejecting...'
@@ -1594,18 +1836,17 @@ function ProfileChangeDetails({
 
     return (
         <Stack spacing={3}>
-
-            {/* ======================================================
+            {/* ====================================================
                 CHANGE SUMMARY
-            ====================================================== */}
+            ==================================================== */}
 
             <ProfileChangeSummary
                 change={change}
             />
 
-            {/* ======================================================
+            {/* ====================================================
                 STATUS
-            ====================================================== */}
+            ==================================================== */}
 
             <Alert
                 severity={getStatusColor(
@@ -1636,9 +1877,9 @@ function ProfileChangeDetails({
                 </Typography>
             </Alert>
 
-            {/* ======================================================
+            {/* ====================================================
                 BUSINESS INFORMATION
-            ====================================================== */}
+            ==================================================== */}
 
             <Box>
                 <Typography
@@ -1662,8 +1903,12 @@ function ProfileChangeDetails({
                         <HighlightedInfoItem
                             label="Salon Name"
                             field="salonName"
-                            value={change.salonName}
-                            change={actualChanges}
+                            value={
+                                change.salonName
+                            }
+                            change={
+                                actualChanges
+                            }
                             xs={12}
                             sm={6}
                         />
@@ -1671,8 +1916,12 @@ function ProfileChangeDetails({
                         <HighlightedInfoItem
                             label="Owner Name"
                             field="ownerName"
-                            value={change.ownerName}
-                            change={actualChanges}
+                            value={
+                                change.ownerName
+                            }
+                            change={
+                                actualChanges
+                            }
                             xs={12}
                             sm={6}
                         />
@@ -1684,7 +1933,9 @@ function ProfileChangeDetails({
                                 change.businessType ||
                                 '-'
                             }
-                            change={actualChanges}
+                            change={
+                                actualChanges
+                            }
                             xs={12}
                             sm={6}
                         />
@@ -1693,21 +1944,26 @@ function ProfileChangeDetails({
                             label="Email"
                             field="email"
                             value={
-                                change.email || '-'
+                                change.email ||
+                                '-'
                             }
-                            change={actualChanges}
+                            change={
+                                actualChanges
+                            }
                             xs={12}
                             sm={6}
                         />
 
                         <HighlightedInfoItem
-                            label="Phone"
+                            label="Owner Phone Number"
                             field="ownerPhoneNumber"
                             value={
                                 change.ownerPhoneNumber ||
                                 '-'
                             }
-                            change={actualChanges}
+                            change={
+                                actualChanges
+                            }
                             xs={12}
                             sm={6}
                         />
@@ -1719,7 +1975,9 @@ function ProfileChangeDetails({
                                 change.alternatePhone ||
                                 '-'
                             }
-                            change={actualChanges}
+                            change={
+                                actualChanges
+                            }
                             xs={12}
                             sm={6}
                         />
@@ -1770,9 +2028,9 @@ function ProfileChangeDetails({
 
             <Divider />
 
-            {/* ======================================================
+            {/* ====================================================
                 ADDRESS
-            ====================================================== */}
+            ==================================================== */}
 
             <Box>
                 <Typography
@@ -1801,7 +2059,9 @@ function ProfileChangeDetails({
                                     ?.addressLine ||
                                 '-'
                             }
-                            change={actualChanges}
+                            change={
+                                actualChanges
+                            }
                             xs={12}
                         />
 
@@ -1809,10 +2069,13 @@ function ProfileChangeDetails({
                             label="City"
                             field="address.city"
                             value={
-                                change.address?.city ||
+                                change.address
+                                    ?.city ||
                                 '-'
                             }
-                            change={actualChanges}
+                            change={
+                                actualChanges
+                            }
                             xs={12}
                             sm={4}
                         />
@@ -1821,10 +2084,13 @@ function ProfileChangeDetails({
                             label="State"
                             field="address.state"
                             value={
-                                change.address?.state ||
+                                change.address
+                                    ?.state ||
                                 '-'
                             }
-                            change={actualChanges}
+                            change={
+                                actualChanges
+                            }
                             xs={12}
                             sm={4}
                         />
@@ -1833,10 +2099,13 @@ function ProfileChangeDetails({
                             label="Pincode"
                             field="address.pincode"
                             value={
-                                change.address?.pincode ||
+                                change.address
+                                    ?.pincode ||
                                 '-'
                             }
-                            change={actualChanges}
+                            change={
+                                actualChanges
+                            }
                             xs={12}
                             sm={4}
                         />
@@ -1846,9 +2115,9 @@ function ProfileChangeDetails({
 
             <Divider />
 
-            {/* ======================================================
+            {/* ====================================================
                 REQUESTED IMAGES
-            ====================================================== */}
+            ==================================================== */}
 
             <Box>
                 <Typography
@@ -1866,7 +2135,8 @@ function ProfileChangeDetails({
                         variant="body2"
                         color="text.secondary"
                     >
-                        No image changes requested.
+                        No image changes
+                        requested.
                     </Typography>
                 ) : (
                     <Grid
@@ -1874,7 +2144,10 @@ function ProfileChangeDetails({
                         spacing={2}
                     >
                         {images.map(
-                            (url, index) => (
+                            (
+                                url,
+                                index
+                            ) => (
                                 <Grid
                                     item
                                     xs={12}
@@ -1884,7 +2157,9 @@ function ProfileChangeDetails({
                                 >
                                     <ImagePreview
                                         url={url}
-                                        index={index}
+                                        index={
+                                            index
+                                        }
                                     />
                                 </Grid>
                             )
@@ -1895,9 +2170,9 @@ function ProfileChangeDetails({
 
             <Divider />
 
-            {/* ======================================================
+            {/* ====================================================
                 MEDIA STATUS
-            ====================================================== */}
+            ==================================================== */}
 
             <Box>
                 <Typography
@@ -1933,13 +2208,17 @@ function ProfileChangeDetails({
                         change.galleryMedia
                             .length > 0 &&
                         change.galleryMedia.map(
-                            (media) => (
+                            (
+                                media
+                            ) => (
                                 <MediaStatus
                                     key={
                                         media.imageId
                                     }
                                     label="Gallery Image"
-                                    media={media}
+                                    media={
+                                        media
+                                    }
                                 />
                             )
                         )}
@@ -1948,21 +2227,23 @@ function ProfileChangeDetails({
                         !change.coverMedia &&
                         (!change.galleryMedia ||
                             change.galleryMedia
-                                .length === 0) && (
+                                .length ===
+                            0) && (
                             <Typography
                                 variant="body2"
                                 color="text.secondary"
                             >
                                 No media approval
-                                information available.
+                                information
+                                available.
                             </Typography>
                         )}
                 </Stack>
             </Box>
 
-            {/* ======================================================
+            {/* ====================================================
                 REJECTION
-            ====================================================== */}
+            ==================================================== */}
 
             {change.status ===
                 'REJECTED' &&
@@ -2014,14 +2295,17 @@ function ProfileChangeSummary({
                         fontWeight: 600
                     }}
                 >
-                    No field-level changes detected
+                    No field-level changes
+                    detected
                 </Typography>
 
                 <Typography variant="body2">
-                    The submitted profile is currently
-                    identical to the stored comparison
-                    values, or this request was created
-                    before change tracking was enabled.
+                    The submitted profile is
+                    currently identical to
+                    the stored comparison
+                    values, or this request
+                    was created before change
+                    tracking was enabled.
                 </Typography>
             </Alert>
         );
@@ -2033,7 +2317,8 @@ function ProfileChangeSummary({
             sx={{
                 borderRadius: 2,
                 overflow: 'hidden',
-                borderColor: 'warning.main'
+                borderColor:
+                    'warning.main'
             }}
         >
             {/* HEADER */}
@@ -2042,9 +2327,16 @@ function ProfileChangeSummary({
                 sx={{
                     px: 2,
                     py: 1.5,
-                    bgcolor: 'warning.lighter',
-                    borderBottom: '1px solid',
-                    borderColor: 'warning.main'
+                    bgcolor: (theme) =>
+                        alpha(
+                            theme.palette.warning
+                                .main,
+                            0.08
+                        ),
+                    borderBottom:
+                        '1px solid',
+                    borderColor:
+                        'warning.main'
                 }}
             >
                 <Stack
@@ -2067,18 +2359,18 @@ function ProfileChangeSummary({
                             variant="body2"
                             color="text.secondary"
                         >
-                            Review exactly what the salon
-                            wants to change.
+                            Review exactly what
+                            the salon wants to
+                            change.
                         </Typography>
                     </Box>
 
                     <Chip
-                        label={`${actualChanges.length} ${
-                            actualChanges.length ===
+                        label={`${actualChanges.length} ${actualChanges.length ===
                             1
-                                ? 'field'
-                                : 'fields'
-                        } changed`}
+                            ? 'field'
+                            : 'fields'
+                            } changed`}
                         color="warning"
                         sx={{
                             fontWeight: 700
@@ -2095,33 +2387,49 @@ function ProfileChangeSummary({
                 }
             >
                 {actualChanges.map(
-                    (item, index) => (
+                    (
+                        item,
+                        index
+                    ) => (
                         <Box
                             key={`${item.field}-${index}`}
                             sx={{
                                 p: 2,
-                                bgcolor:
-                                    'rgba(255, 152, 0, 0.04)'
+                                bgcolor: (theme) =>
+                                    alpha(
+                                        theme
+                                            .palette
+                                            .warning
+                                            .main,
+                                        0.035
+                                    )
                             }}
                         >
-                            <Stack
-                                spacing={1}
-                            >
+                            <Stack spacing={1}>
                                 <Stack
                                     direction="row"
                                     alignItems="center"
                                     justifyContent="space-between"
                                     spacing={2}
                                 >
-                                    <Typography
-                                        variant="subtitle2"
-                                        sx={{
-                                            fontWeight: 700
-                                        }}
-                                    >
-                                        {item.label ||
-                                            item.field}
-                                    </Typography>
+                                    <Box>
+                                        <Typography
+                                            variant="subtitle2"
+                                            sx={{
+                                                fontWeight: 700
+                                            }}
+                                        >
+                                            {item.label ||
+                                                item.field}
+                                        </Typography>
+
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                        >
+                                            {item.field}
+                                        </Typography>
+                                    </Box>
 
                                     <Chip
                                         size="small"
@@ -2131,7 +2439,7 @@ function ProfileChangeSummary({
                                         }
                                         color={
                                             item.changeType ===
-                                            'ADDED'
+                                                'ADDED'
                                                 ? 'success'
                                                 : item.changeType ===
                                                     'REMOVED'
@@ -2141,14 +2449,20 @@ function ProfileChangeSummary({
                                     />
                                 </Stack>
 
-                                {/* OLD VALUE */}
+                                {/* CURRENT VALUE */}
 
                                 <Box
                                     sx={{
                                         p: 1.5,
                                         borderRadius: 1.5,
-                                        bgcolor:
-                                            'error.lighter',
+                                        bgcolor: (theme) =>
+                                            alpha(
+                                                theme
+                                                    .palette
+                                                    .error
+                                                    .main,
+                                                0.06
+                                            ),
                                         border:
                                             '1px solid',
                                         borderColor:
@@ -2160,7 +2474,8 @@ function ProfileChangeSummary({
                                         sx={{
                                             display:
                                                 'block',
-                                            fontWeight: 700,
+                                            fontWeight:
+                                                700,
                                             color:
                                                 'error.main',
                                             mb: 0.5
@@ -2174,9 +2489,11 @@ function ProfileChangeSummary({
                                         sx={{
                                             wordBreak:
                                                 'break-word',
+                                            whiteSpace:
+                                                'pre-wrap',
                                             textDecoration:
                                                 item.changeType ===
-                                                'UPDATED'
+                                                    'UPDATED'
                                                     ? 'line-through'
                                                     : 'none'
                                         }}
@@ -2199,7 +2516,8 @@ function ProfileChangeSummary({
                                 >
                                     <Typography
                                         sx={{
-                                            fontWeight: 700,
+                                            fontWeight:
+                                                700,
                                             color:
                                                 'warning.main',
                                             fontSize: 18
@@ -2209,14 +2527,20 @@ function ProfileChangeSummary({
                                     </Typography>
                                 </Box>
 
-                                {/* NEW VALUE */}
+                                {/* REQUESTED VALUE */}
 
                                 <Box
                                     sx={{
                                         p: 1.5,
                                         borderRadius: 1.5,
-                                        bgcolor:
-                                            'success.lighter',
+                                        bgcolor: (theme) =>
+                                            alpha(
+                                                theme
+                                                    .palette
+                                                    .success
+                                                    .main,
+                                                0.06
+                                            ),
                                         border:
                                             '1px solid',
                                         borderColor:
@@ -2228,7 +2552,8 @@ function ProfileChangeSummary({
                                         sx={{
                                             display:
                                                 'block',
-                                            fontWeight: 700,
+                                            fontWeight:
+                                                700,
                                             color:
                                                 'success.main',
                                             mb: 0.5
@@ -2240,9 +2565,12 @@ function ProfileChangeSummary({
                                     <Typography
                                         variant="body2"
                                         sx={{
-                                            fontWeight: 700,
+                                            fontWeight:
+                                                700,
                                             wordBreak:
-                                                'break-word'
+                                                'break-word',
+                                            whiteSpace:
+                                                'pre-wrap'
                                         }}
                                     >
                                         {formatChangeValue(
@@ -2279,7 +2607,8 @@ function HighlightedInfoItem({
     sm?: number;
 }) {
     const changed = change.find(
-        (item) => item.field === field
+        (item) =>
+            item.field === field
     );
 
     if (!changed) {
@@ -2299,16 +2628,22 @@ function HighlightedInfoItem({
             xs={xs}
             sm={sm}
             sx={{
-                borderBottom: '1px solid',
-                borderColor: 'divider'
+                borderBottom:
+                    '1px solid',
+                borderColor:
+                    'divider'
             }}
         >
             <Box
                 sx={{
                     p: 2,
                     minHeight: 70,
-                    bgcolor:
-                        'rgba(255, 152, 0, 0.08)',
+                    bgcolor: (theme) =>
+                        alpha(
+                            theme.palette.warning
+                                .main,
+                            0.08
+                        ),
                     borderLeft:
                         '4px solid',
                     borderLeftColor:
@@ -2327,9 +2662,11 @@ function HighlightedInfoItem({
                     <Typography
                         variant="caption"
                         sx={{
-                            display: 'block',
+                            display:
+                                'block',
                             fontWeight: 700,
-                            color: 'warning.dark'
+                            color:
+                                'warning.dark'
                         }}
                     >
                         {label}
@@ -2337,8 +2674,18 @@ function HighlightedInfoItem({
 
                     <Chip
                         size="small"
-                        label="CHANGED"
-                        color="warning"
+                        label={
+                            changed.changeType
+                        }
+                        color={
+                            changed.changeType ===
+                                'ADDED'
+                                ? 'success'
+                                : changed.changeType ===
+                                    'REMOVED'
+                                    ? 'error'
+                                    : 'warning'
+                        }
                         sx={{
                             height: 22,
                             fontSize: 10,
@@ -2347,22 +2694,65 @@ function HighlightedInfoItem({
                     />
                 </Stack>
 
+                {/* CURRENT */}
+
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                        display:
+                            'block'
+                    }}
+                >
+                    Current
+                </Typography>
+
+                <Typography
+                    variant="body2"
+                    sx={{
+                        wordBreak:
+                            'break-word',
+                        textDecoration:
+                            changed.changeType ===
+                                'UPDATED'
+                                ? 'line-through'
+                                : 'none',
+                        color:
+                            'error.main'
+                    }}
+                >
+                    {formatChangeValue(
+                        changed.oldValue
+                    )}
+                </Typography>
+
+                {/* REQUESTED */}
+
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                        display:
+                            'block',
+                        mt: 0.8
+                    }}
+                >
+                    Requested
+                </Typography>
+
                 <Typography
                     variant="body2"
                     sx={{
                         fontWeight: 700,
                         wordBreak:
-                            'break-word'
+                            'break-word',
+                        color:
+                            'success.main'
                     }}
                 >
-                    {value}
-                </Typography>
-
-                <Typography
-                    variant="caption"
-                    color="text.secondary"
-                >
-                    Requested value
+                    {formatChangeValue(
+                        changed.newValue
+                    )}
                 </Typography>
             </Box>
         </Grid>
@@ -2406,7 +2796,8 @@ function InfoItem({
                     variant="caption"
                     color="text.secondary"
                     sx={{
-                        display: 'block',
+                        display:
+                            'block',
                         mb: 0.5
                     }}
                 >
@@ -2439,8 +2830,10 @@ function ImagePreview({
     url: string;
     index: number;
 }) {
-    const [imageOpen, setImageOpen] =
-        useState(false);
+    const [
+        imageOpen,
+        setImageOpen
+    ] = useState(false);
 
     const getImageLabel = () => {
         if (index === 0) {
@@ -2451,7 +2844,8 @@ function ImagePreview({
             return 'Cover Image';
         }
 
-        return `Gallery Image ${index - 1}`;
+        return `Gallery Image ${index - 1
+            }`;
     };
 
     return (
@@ -2490,13 +2884,17 @@ function ImagePreview({
                     <Box
                         component="img"
                         src={url}
-                        alt={getImageLabel()}
+                        alt={
+                            getImageLabel()
+                        }
                         sx={{
                             width: '100%',
                             height: '100%',
                             objectFit: 'cover'
                         }}
-                        onError={(event) => {
+                        onError={(
+                            event
+                        ) => {
                             event.currentTarget.style.display =
                                 'none';
                         }}
@@ -2529,7 +2927,9 @@ function ImagePreview({
             <Dialog
                 open={imageOpen}
                 onClose={() =>
-                    setImageOpen(false)
+                    setImageOpen(
+                        false
+                    )
                 }
                 maxWidth="lg"
             >
@@ -2542,12 +2942,18 @@ function ImagePreview({
                     <Box
                         component="img"
                         src={url}
-                        alt={getImageLabel()}
+                        alt={
+                            getImageLabel()
+                        }
                         sx={{
-                            display: 'block',
-                            maxWidth: '90vw',
-                            maxHeight: '85vh',
-                            objectFit: 'contain'
+                            display:
+                                'block',
+                            maxWidth:
+                                '90vw',
+                            maxHeight:
+                                '85vh',
+                            objectFit:
+                                'contain'
                         }}
                     />
                 </DialogContent>
@@ -2555,7 +2961,9 @@ function ImagePreview({
                 <DialogActions>
                     <Button
                         onClick={() =>
-                            setImageOpen(false)
+                            setImageOpen(
+                                false
+                            )
                         }
                     >
                         Close
@@ -2648,7 +3056,8 @@ function MediaStatus({
                 <Chip
                     size="small"
                     label={
-                        media.status || 'PENDING'
+                        media.status ||
+                        'PENDING'
                     }
                     color={getMediaStatusColor(
                         media.status
@@ -2783,10 +3192,12 @@ function MediaStatus({
                             <Typography
                                 variant="caption"
                                 sx={{
-                                    fontWeight: 600
+                                    fontWeight:
+                                        600
                                 }}
                             >
-                                Media Rejection Reason
+                                Media Rejection
+                                Reason
                             </Typography>
 
                             <Typography variant="body2">
