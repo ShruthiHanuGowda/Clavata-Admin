@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { gql, useQuery } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
 
 // material-ui
 import {
@@ -31,7 +31,11 @@ import {
   TextField,
   Typography
 } from '@mui/material';
+
+// graphql
 import { REFUNDS_QUERY } from '../../graphql/queries';
+import { PROCESS_REFUND_MUTATION } from '../../graphql/queries';
+
 // ant design icons
 import {
   CheckCircleOutlined,
@@ -46,8 +50,6 @@ import {
 
 // project import
 import MainCard from 'components/MainCard';
-
-
 
 // ==============================|| TYPES ||============================== //
 
@@ -84,6 +86,8 @@ interface Refund {
 
   originalAmount: number;
   refundAmount: number;
+  clavataAmount: number;
+  salonAmount: number;
 
   reason: RefundReason;
   status: RefundStatus;
@@ -109,9 +113,19 @@ interface RefundsResponse {
   };
 }
 
+interface ProcessRefundResponse {
+  processRefund: {
+    success: boolean;
+    message: string;
+    refund?: Refund | null;
+  };
+}
+
 // ==============================|| HELPERS ||============================== //
 
-const formatCurrency = (value: number): string =>
+const formatCurrency = (
+  value: number
+): string =>
   new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -139,6 +153,13 @@ const formatDate = (
     minute: '2-digit'
   }).format(date);
 };
+
+const normalizeStatus = (
+  status?: string | null
+): string =>
+  String(status || '')
+    .trim()
+    .toUpperCase();
 
 const getReasonLabel = (
   reason: RefundReason
@@ -185,7 +206,7 @@ const getPaymentMethodLabel = (
 const getStatusColor = (
   status: RefundStatus
 ): 'success' | 'warning' | 'error' | 'info' | 'default' => {
-  switch (status) {
+  switch (normalizeStatus(status)) {
     case 'COMPLETED':
       return 'success';
 
@@ -209,7 +230,7 @@ const StatusIcon = ({
 }: {
   status: RefundStatus;
 }) => {
-  switch (status) {
+  switch (normalizeStatus(status)) {
     case 'COMPLETED':
       return <CheckCircleOutlined />;
 
@@ -243,20 +264,29 @@ export default function Refunds() {
 
   const [page, setPage] = useState(0);
 
-  const [rowsPerPage, setRowsPerPage] =
-    useState(10);
+  const [
+    rowsPerPage,
+    setRowsPerPage
+  ] = useState(10);
 
   const [
     selectedRefund,
     setSelectedRefund
   ] = useState<Refund | null>(null);
 
+  const [
+    processingRefundId,
+    setProcessingRefundId
+  ] = useState<string | null>(null);
+
   // ==============================|| VARIABLES ||============================== //
 
   const variables = useMemo(
     () => ({
       bookingId: null,
+
       customerUserId: null,
+
       salonId: null,
 
       status:
@@ -272,7 +302,11 @@ export default function Refunds() {
       search:
         search.trim() || null
     }),
-    [search, status, reason]
+    [
+      search,
+      status,
+      reason
+    ]
   );
 
   // ==============================|| QUERY ||============================== //
@@ -290,6 +324,19 @@ export default function Refunds() {
     }
   );
 
+  // ==============================|| PROCESS REFUND MUTATION ||============================== //
+
+  const [
+    processRefundMutation,
+    {
+      loading: processRefundLoading
+    }
+  ] = useMutation<ProcessRefundResponse>(
+    PROCESS_REFUND_MUTATION
+  );
+
+  // ==============================|| DATA ||============================== //
+
   const refunds =
     data?.refunds?.refunds ?? [];
 
@@ -303,21 +350,36 @@ export default function Refunds() {
     const completed =
       refunds.filter(
         (refund) =>
-          refund.status === 'COMPLETED'
+          normalizeStatus(
+            refund.status
+          ) === 'COMPLETED'
       );
 
     const pending =
       refunds.filter(
-        (refund) =>
-          refund.status === 'REQUESTED' ||
-          refund.status === 'PROCESSING' ||
-          refund.status === 'APPROVED'
+        (refund) => {
+          const currentStatus =
+            normalizeStatus(
+              refund.status
+            );
+
+          return (
+            currentStatus ===
+              'REQUESTED' ||
+            currentStatus ===
+              'PROCESSING' ||
+            currentStatus ===
+              'APPROVED'
+          );
+        }
       );
 
     const rejected =
       refunds.filter(
         (refund) =>
-          refund.status === 'REJECTED'
+          normalizeStatus(
+            refund.status
+          ) === 'REJECTED'
       );
 
     return {
@@ -326,7 +388,7 @@ export default function Refunds() {
           (sum, refund) =>
             sum +
             Number(
-              refund.refundAmount
+              refund.refundAmount || 0
             ),
           0
         ),
@@ -336,7 +398,7 @@ export default function Refunds() {
           (sum, refund) =>
             sum +
             Number(
-              refund.refundAmount
+              refund.refundAmount || 0
             ),
           0
         ),
@@ -396,7 +458,10 @@ export default function Refunds() {
   const handleSearchChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setSearch(event.target.value);
+    setSearch(
+      event.target.value
+    );
+
     setPage(0);
   };
 
@@ -427,6 +492,115 @@ export default function Refunds() {
     setPage(0);
   };
 
+  // ==============================|| PROCESS REFUND ||============================== //
+
+  const handleProcessRefund = async (
+    refund: Refund
+  ) => {
+    /*
+     * IMPORTANT:
+     * Only REQUESTED refunds can be processed.
+     *
+     * The Lambda also protects this transition
+     * with a REQUESTED status condition.
+     */
+    if (
+      normalizeStatus(
+        refund.status
+      ) !== 'REQUESTED'
+    ) {
+      return;
+    }
+
+    const refundAmount =
+      Number(
+        refund.refundAmount || 0
+      );
+
+    let confirmationMessage = '';
+
+    if (refundAmount > 0) {
+      confirmationMessage =
+        `Process ${formatCurrency(
+          refundAmount
+        )} customer refund for booking ${refund.bookingId}?`;
+    } else {
+      confirmationMessage =
+        `This refund has no customer refund amount.\n\n` +
+        `Original booking fee: ${formatCurrency(
+          refund.originalAmount
+        )}\n` +
+        `Customer refund: ${formatCurrency(
+          refund.refundAmount
+        )}\n` +
+        `Clavata amount: ${formatCurrency(
+          refund.clavataAmount
+        )}\n` +
+        `Salon amount: ${formatCurrency(
+          refund.salonAmount
+        )}\n\n` +
+        `Continue and complete this refund request?`;
+    }
+
+    const confirmed =
+      window.confirm(
+        confirmationMessage
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setProcessingRefundId(
+        refund.refundId
+      );
+
+      const result =
+        await processRefundMutation({
+          variables: {
+            refundId:
+              refund.refundId
+          }
+        });
+
+      const response =
+        result.data?.processRefund;
+
+      if (!response?.success) {
+        window.alert(
+          response?.message ||
+            'Failed to process refund.'
+        );
+
+        return;
+      }
+
+      window.alert(
+        response.message ||
+          'Refund processed successfully.'
+      );
+
+      setSelectedRefund(null);
+
+      await refetch();
+    } catch (mutationError: any) {
+      console.error(
+        'Process refund error:',
+        mutationError
+      );
+
+      window.alert(
+        mutationError?.message ||
+          'Failed to process refund.'
+      );
+    } finally {
+      setProcessingRefundId(
+        null
+      );
+    }
+  };
+
   // ==============================|| EXPORT ||============================== //
 
   const handleExport = () => {
@@ -444,7 +618,9 @@ export default function Refunds() {
       'Salon ID',
       'Salon Name',
       'Original Amount',
-      'Refund Amount',
+      'Customer Refund Amount',
+      'Clavata Amount',
+      'Salon Amount',
       'Reason',
       'Status',
       'Payment Method',
@@ -456,32 +632,34 @@ export default function Refunds() {
       'Updated At'
     ];
 
-    const rows = refunds.map(
-      (refund) => [
-        refund.refundId,
-        refund.bookingId,
-        refund.paymentTransactionId,
-        refund.customerUserId,
-        refund.customerName,
-        refund.customerPhone,
-        refund.salonId,
-        refund.salonName,
-        refund.originalAmount,
-        refund.refundAmount,
-        refund.reason,
-        refund.status,
-        refund.paymentMethod,
-        refund.razorpayPaymentId ??
-          '',
-        refund.razorpayRefundId ??
-          '',
-        refund.requestedAt,
-        refund.processedAt ??
-          '',
-        refund.createdAt,
-        refund.updatedAt
-      ]
-    );
+    const rows =
+      refunds.map(
+        (refund) => [
+          refund.refundId,
+          refund.bookingId,
+          refund.paymentTransactionId,
+          refund.customerUserId,
+          refund.customerName,
+          refund.customerPhone,
+          refund.salonId,
+          refund.salonName,
+          refund.originalAmount,
+          refund.refundAmount,
+          refund.clavataAmount,
+          refund.salonAmount,
+          refund.reason,
+          refund.status,
+          refund.paymentMethod,
+          refund.razorpayPaymentId ??
+            '',
+          refund.razorpayRefundId ??
+            '',
+          refund.requestedAt,
+          refund.processedAt ?? '',
+          refund.createdAt,
+          refund.updatedAt
+        ]
+      );
 
     const csv = [
       headers,
@@ -491,7 +669,9 @@ export default function Refunds() {
         row
           .map(
             (value) =>
-              `"${String(value).replace(
+              `"${String(
+                value
+              ).replace(
                 /"/g,
                 '""'
               )}"`
@@ -500,19 +680,24 @@ export default function Refunds() {
       )
       .join('\n');
 
-    const blob = new Blob(
-      [csv],
-      {
-        type:
-          'text/csv;charset=utf-8;'
-      }
-    );
+    const blob =
+      new Blob(
+        [csv],
+        {
+          type:
+            'text/csv;charset=utf-8;'
+        }
+      );
 
     const url =
-      URL.createObjectURL(blob);
+      URL.createObjectURL(
+        blob
+      );
 
     const link =
-      document.createElement('a');
+      document.createElement(
+        'a'
+      );
 
     link.href = url;
 
@@ -533,7 +718,9 @@ export default function Refunds() {
       link
     );
 
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(
+      url
+    );
   };
 
   // ==============================|| ERROR ||============================== //
@@ -586,7 +773,9 @@ export default function Refunds() {
         <Box>
           <Typography
             variant="h4"
-            sx={{ fontWeight: 600 }}
+            sx={{
+              fontWeight: 600
+            }}
           >
             Refunds
           </Typography>
@@ -624,7 +813,9 @@ export default function Refunds() {
             startIcon={
               <DownloadOutlined />
             }
-            onClick={handleExport}
+            onClick={
+              handleExport
+            }
             disabled={
               !refunds.length
             }
@@ -810,7 +1001,10 @@ export default function Refunds() {
       {/* ============================== FILTERS ============================== */}
 
       <MainCard sx={{ mb: 3 }}>
-        <Grid container spacing={2}>
+        <Grid
+          container
+          spacing={2}
+        >
           {/* Search */}
 
           <Grid
@@ -974,7 +1168,11 @@ export default function Refunds() {
             overflowX: 'auto'
           }}
         >
-          <Table>
+          <Table
+            sx={{
+              minWidth: 1700
+            }}
+          >
             <TableHead>
               <TableRow>
                 <TableCell>
@@ -998,11 +1196,19 @@ export default function Refunds() {
                 </TableCell>
 
                 <TableCell align="right">
-                  Original Amount
+                  Original
                 </TableCell>
 
                 <TableCell align="right">
-                  Refund Amount
+                  Customer Refund
+                </TableCell>
+
+                <TableCell align="right">
+                  Clavata
+                </TableCell>
+
+                <TableCell align="right">
+                  Salon
                 </TableCell>
 
                 <TableCell>
@@ -1017,7 +1223,12 @@ export default function Refunds() {
                   Requested
                 </TableCell>
 
-                <TableCell align="center">
+                <TableCell
+                  align="center"
+                  sx={{
+                    minWidth: 240
+                  }}
+                >
                   Action
                 </TableCell>
               </TableRow>
@@ -1028,212 +1239,336 @@ export default function Refunds() {
               paginatedRefunds.length >
                 0 ? (
                 paginatedRefunds.map(
-                  (refund) => (
-                    <TableRow
-                      key={
-                        refund.refundId
-                      }
-                      hover
-                      sx={{
-                        '&:last-child td, &:last-child th':
-                          {
-                            border: 0
-                          }
-                      }}
-                    >
-                      {/* Refund ID */}
+                  (refund) => {
+                    const isProcessing =
+                      processingRefundId ===
+                      refund.refundId;
 
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: 600
-                          }}
-                        >
-                          {
-                            refund.refundId
-                          }
-                        </Typography>
+                    const normalizedStatus =
+                      normalizeStatus(
+                        refund.status
+                      );
 
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          {
-                            refund.paymentTransactionId
-                          }
-                        </Typography>
-                      </TableCell>
+                    /*
+                     * IMPORTANT:
+                     * Only REQUESTED is processable.
+                     */
+                    const canProcess =
+                      normalizedStatus ===
+                      'REQUESTED';
 
-                      {/* Booking */}
+                    const customerRefund =
+                      Number(
+                        refund.refundAmount ||
+                          0
+                      );
 
-                      <TableCell>
-                        <Typography variant="body2">
-                          {
-                            refund.bookingId
-                          }
-                        </Typography>
-                      </TableCell>
+                    return (
+                      <TableRow
+                        key={
+                          refund.refundId
+                        }
+                        hover
+                        sx={{
+                          '&:last-child td, &:last-child th':
+                            {
+                              border: 0
+                            }
+                        }}
+                      >
+                        {/* Refund ID */}
 
-                      {/* Customer */}
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600
+                            }}
+                          >
+                            {
+                              refund.refundId
+                            }
+                          </Typography>
 
-                      <TableCell>
-                        <Typography variant="body2">
-                          {
-                            refund.customerName
-                          }
-                        </Typography>
-
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          {
-                            refund.customerPhone
-                          }
-                        </Typography>
-                      </TableCell>
-
-                      {/* Salon */}
-
-                      <TableCell>
-                        <Typography variant="body2">
-                          {
-                            refund.salonName
-                          }
-                        </Typography>
-                      </TableCell>
-
-                      {/* Reason */}
-
-                      <TableCell>
-                        <Chip
-                          label={getReasonLabel(
-                            refund.reason
-                          )}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </TableCell>
-
-                      {/* Original Amount */}
-
-                      <TableCell align="right">
-                        {formatCurrency(
-                          refund.originalAmount
-                        )}
-                      </TableCell>
-
-                      {/* Refund Amount */}
-
-                      <TableCell align="right">
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: 600
-                          }}
-                        >
-                          {formatCurrency(
-                            refund.refundAmount
-                          )}
-                        </Typography>
-                      </TableCell>
-
-                      {/* Payment */}
-
-                      <TableCell>
-                        <Typography variant="body2">
-                          {getPaymentMethodLabel(
-                            refund.paymentMethod
-                          )}
-                        </Typography>
-
-                        {refund.razorpayPaymentId && (
                           <Typography
                             variant="caption"
                             color="text.secondary"
                           >
                             {
-                              refund.razorpayPaymentId
+                              refund.paymentTransactionId
                             }
                           </Typography>
-                        )}
-                      </TableCell>
+                        </TableCell>
 
-                      {/* Status */}
+                        {/* Booking */}
 
-                      <TableCell>
-                        <Chip
-                          icon={
-                            <StatusIcon
-                              status={
-                                refund.status
-                              }
-                            />
-                          }
-                          label={
-                            refund.status
-                          }
-                          color={getStatusColor(
-                            refund.status
-                          )}
-                          size="small"
-                        />
-                      </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {
+                              refund.bookingId
+                            }
+                          </Typography>
+                        </TableCell>
 
-                      {/* Requested */}
+                        {/* Customer */}
 
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            whiteSpace:
-                              'nowrap'
-                          }}
-                        >
-                          {formatDate(
-                            refund.requestedAt
-                          )}
-                        </Typography>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {
+                              refund.customerName
+                            }
+                          </Typography>
 
-                        {refund.processedAt && (
                           <Typography
                             variant="caption"
                             color="text.secondary"
                           >
-                            Processed:{' '}
-                            {formatDate(
-                              refund.processedAt
+                            {
+                              refund.customerPhone
+                            }
+                          </Typography>
+                        </TableCell>
+
+                        {/* Salon */}
+
+                        <TableCell>
+                          <Typography variant="body2">
+                            {
+                              refund.salonName
+                            }
+                          </Typography>
+                        </TableCell>
+
+                        {/* Reason */}
+
+                        <TableCell>
+                          <Chip
+                            label={getReasonLabel(
+                              refund.reason
+                            )}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </TableCell>
+
+                        {/* Original */}
+
+                        <TableCell align="right">
+                          {formatCurrency(
+                            refund.originalAmount
+                          )}
+                        </TableCell>
+
+                        {/* Customer Refund */}
+
+                        <TableCell align="right">
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 700,
+                              color:
+                                customerRefund >
+                                0
+                                  ? 'success.main'
+                                  : 'text.secondary'
+                            }}
+                          >
+                            {formatCurrency(
+                              refund.refundAmount
                             )}
                           </Typography>
-                        )}
-                      </TableCell>
+                        </TableCell>
 
-                      {/* Action */}
+                        {/* Clavata */}
 
-                      <TableCell align="center">
-                        <Button
-                          size="small"
-                          variant="text"
-                          startIcon={
-                            <EyeOutlined />
-                          }
-                          onClick={() =>
-                            setSelectedRefund(
-                              refund
-                            )
-                          }
+                        <TableCell align="right">
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600
+                            }}
+                          >
+                            {formatCurrency(
+                              refund.clavataAmount
+                            )}
+                          </Typography>
+                        </TableCell>
+
+                        {/* Salon */}
+
+                        <TableCell align="right">
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600
+                            }}
+                          >
+                            {formatCurrency(
+                              refund.salonAmount
+                            )}
+                          </Typography>
+                        </TableCell>
+
+                        {/* Payment */}
+
+                        <TableCell>
+                          <Typography variant="body2">
+                            {getPaymentMethodLabel(
+                              refund.paymentMethod
+                            )}
+                          </Typography>
+
+                          {refund.razorpayPaymentId && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {
+                                refund.razorpayPaymentId
+                              }
+                            </Typography>
+                          )}
+                        </TableCell>
+
+                        {/* Status */}
+
+                        <TableCell>
+                          <Chip
+                            icon={
+                              <StatusIcon
+                                status={
+                                  refund.status
+                                }
+                              />
+                            }
+                            label={
+                              normalizedStatus
+                            }
+                            color={getStatusColor(
+                              refund.status
+                            )}
+                            size="small"
+                          />
+                        </TableCell>
+
+                        {/* Requested */}
+
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              whiteSpace:
+                                'nowrap'
+                            }}
+                          >
+                            {formatDate(
+                              refund.requestedAt
+                            )}
+                          </Typography>
+
+                          {refund.processedAt && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display:
+                                  'block',
+                                mt: 0.5
+                              }}
+                            >
+                              Processed:{' '}
+                              {formatDate(
+                                refund.processedAt
+                              )}
+                            </Typography>
+                          )}
+                        </TableCell>
+
+                        {/* ACTION */}
+
+                        <TableCell
+                          align="center"
+                          sx={{
+                            minWidth: 240,
+                            whiteSpace:
+                              'nowrap'
+                          }}
                         >
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            justifyContent="center"
+                            alignItems="center"
+                          >
+                            {/* VIEW */}
+
+                            <Button
+                              size="small"
+                              variant="text"
+                              startIcon={
+                                <EyeOutlined />
+                              }
+                              onClick={() =>
+                                setSelectedRefund(
+                                  refund
+                                )
+                              }
+                            >
+                              View
+                            </Button>
+
+                            {/* PROCESS / COMPLETE */}
+
+                            {canProcess && (
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color={
+                                  customerRefund >
+                                  0
+                                    ? 'primary'
+                                    : 'success'
+                                }
+                                startIcon={
+                                  isProcessing ? (
+                                    <CircularProgress
+                                      size={
+                                        14
+                                      }
+                                      color="inherit"
+                                    />
+                                  ) : (
+                                    <CheckCircleOutlined />
+                                  )
+                                }
+                                disabled={
+                                  isProcessing ||
+                                  processRefundLoading
+                                }
+                                onClick={() =>
+                                  handleProcessRefund(
+                                    refund
+                                  )
+                                }
+                              >
+                                {isProcessing
+                                  ? 'Processing...'
+                                  : customerRefund >
+                                      0
+                                    ? 'Process Refund'
+                                    : 'Complete Refund'}
+                              </Button>
+                            )}
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
                 )
               ) : !loading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={11}
+                    colSpan={13}
                   >
                     <Box
                       sx={{
@@ -1355,19 +1690,80 @@ export default function Refunds() {
                 }
               />
 
-              <DetailRow
-                label="Original Amount"
-                value={formatCurrency(
-                  selectedRefund.originalAmount
-                )}
-              />
+              {/* ============================== AMOUNT BREAKDOWN ============================== */}
 
-              <DetailRow
-                label="Refund Amount"
-                value={formatCurrency(
-                  selectedRefund.refundAmount
-                )}
-              />
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 1,
+                  bgcolor:
+                    'background.default',
+                  border:
+                    '1px solid',
+                  borderColor:
+                    'divider'
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 700,
+                    mb: 1.5
+                  }}
+                >
+                  Amount Breakdown
+                </Typography>
+
+                <Stack spacing={1}>
+                  <DetailRow
+                    label="Original Booking Fee"
+                    value={formatCurrency(
+                      selectedRefund.originalAmount
+                    )}
+                  />
+
+                  <DetailRow
+                    label="Customer Refund"
+                    value={formatCurrency(
+                      selectedRefund.refundAmount
+                    )}
+                  />
+
+                  <DetailRow
+                    label="Clavata Amount"
+                    value={formatCurrency(
+                      selectedRefund.clavataAmount
+                    )}
+                  />
+
+                  <DetailRow
+                    label="Salon Amount"
+                    value={formatCurrency(
+                      selectedRefund.salonAmount
+                    )}
+                  />
+
+                  <DetailRow
+                    label="Total Allocation"
+                    value={formatCurrency(
+                      Number(
+                        selectedRefund.refundAmount ||
+                          0
+                      ) +
+                        Number(
+                          selectedRefund.clavataAmount ||
+                            0
+                        ) +
+                        Number(
+                          selectedRefund.salonAmount ||
+                            0
+                        )
+                    )}
+                  />
+                </Stack>
+              </Box>
+
+              {/* ============================== STATUS ============================== */}
 
               <DetailRow
                 label="Reason"
@@ -1378,9 +1774,9 @@ export default function Refunds() {
 
               <DetailRow
                 label="Status"
-                value={
+                value={normalizeStatus(
                   selectedRefund.status
-                }
+                )}
               />
 
               <DetailRow
@@ -1438,6 +1834,56 @@ export default function Refunds() {
         </DialogContent>
 
         <DialogActions>
+          {/* PROCESS FROM DETAILS */}
+
+          {selectedRefund &&
+            normalizeStatus(
+              selectedRefund.status
+            ) === 'REQUESTED' && (
+              <Button
+                variant="contained"
+                color={
+                  Number(
+                    selectedRefund.refundAmount ||
+                      0
+                  ) > 0
+                    ? 'primary'
+                    : 'success'
+                }
+                startIcon={
+                  processingRefundId ===
+                    selectedRefund.refundId ? (
+                    <CircularProgress
+                      size={16}
+                      color="inherit"
+                    />
+                  ) : (
+                    <CheckCircleOutlined />
+                  )
+                }
+                disabled={
+                  processingRefundId ===
+                    selectedRefund.refundId ||
+                  processRefundLoading
+                }
+                onClick={() =>
+                  handleProcessRefund(
+                    selectedRefund
+                  )
+                }
+              >
+                {processingRefundId ===
+                  selectedRefund.refundId
+                  ? 'Processing...'
+                  : Number(
+                        selectedRefund.refundAmount ||
+                          0
+                      ) > 0
+                    ? 'Process Refund'
+                    : 'Complete Refund'}
+              </Button>
+            )}
+
           <Button
             onClick={() =>
               setSelectedRefund(null)
@@ -1497,7 +1943,16 @@ function DetailRow({
             sm: 'right'
           },
           wordBreak:
-            'break-word'
+            'break-word',
+          fontWeight:
+            label ===
+              'Customer Refund' ||
+            label ===
+              'Clavata Amount' ||
+            label ===
+              'Salon Amount'
+              ? 600
+              : 400
         }}
       >
         {value}
@@ -1505,4 +1960,3 @@ function DetailRow({
     </Stack>
   );
 }
-

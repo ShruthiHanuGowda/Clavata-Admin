@@ -547,6 +547,8 @@ export const REFUNDS_QUERY = gql`
         salonName
         originalAmount
         refundAmount
+        clavataAmount
+        salonAmount
         reason
         status
         paymentMethod
@@ -560,7 +562,38 @@ export const REFUNDS_QUERY = gql`
     }
   }
 `;
+export const PROCESS_REFUND_MUTATION = gql`
+  mutation ProcessRefund($refundId: ID!) {
+    processRefund(refundId: $refundId) {
+      success
+      message
 
+      refund {
+        refundId
+        bookingId
+        paymentTransactionId
+        customerUserId
+        customerName
+        customerPhone
+        salonId
+        salonName
+        originalAmount
+        refundAmount
+        clavataAmount
+        salonAmount
+        reason
+        status
+        paymentMethod
+        razorpayPaymentId
+        razorpayRefundId
+        requestedAt
+        processedAt
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
 export const REVENUE_QUERY = gql`
   query RevenueData(
     $search: String
@@ -929,6 +962,281 @@ export const ADMIN_REJECT_OFFER = gql`
         rejectedBy
         rejectedAt
         updatedAt
+      }
+    }
+  }
+`;
+
+
+// ============================================================
+// GET SALON
+// ============================================================
+
+export const GET_SALON = gql`
+    query GetSalon($salonId: ID!) {
+        getSalon(salonId: $salonId) {
+            salonId
+            ownerUserId
+            salonName
+            ownerName
+            businessType
+            ownerPhoneNumber
+            alternatePhone
+            email
+
+            address {
+                addressLine
+                city
+                state
+                pincode
+            }
+
+            latitude
+            longitude
+
+            logoUrl
+            coverImageUrl
+            galleryImages
+
+            businessHours
+
+            kycStatus
+            salonStatus
+
+            isActive
+            isVisible
+            isDeleted
+
+            averageRating
+            totalReviews
+            totalAppointments
+            totalCompletedAppointments
+            totalCancelledAppointments
+            totalRevenue
+
+            createdAt
+            updatedAt
+        }
+    }
+`;
+
+
+// ============================================================
+// UPDATE SALON PROFILE
+// ============================================================
+
+export const UPDATE_SALON_PROFILE = gql`
+    mutation UpdateSalonProfile(
+        $input: UpdateSalonProfileInput!
+    ) {
+        updateSalonProfile(input: $input) {
+            success
+            message
+
+            salon {
+                salonId
+                ownerUserId
+                salonName
+                ownerName
+                businessType
+                ownerPhoneNumber
+                alternatePhone
+                email
+
+                address {
+                    addressLine
+                    city
+                    state
+                    pincode
+                }
+
+                logoUrl
+                coverImageUrl
+                galleryImages
+
+                kycStatus
+                salonStatus
+
+                isActive
+                isVisible
+                isDeleted
+
+                averageRating
+                totalReviews
+                totalAppointments
+                totalCompletedAppointments
+                totalCancelledAppointments
+                totalRevenue
+
+                createdAt
+                updatedAt
+            }
+        }
+    }
+`;
+
+
+// ============================================================
+// S3 UPLOAD URL
+// ============================================================
+
+export const GENERATE_SALON_MEDIA_UPLOAD_URL = gql`
+    mutation GenerateSalonMediaUploadUrl(
+        $input: GenerateSalonMediaUploadUrlInput!
+    ) {
+        generateSalonMediaUploadUrl(
+            input: $input
+        ) {
+            success
+            message
+            uploadUrl
+            objectUrl
+            key
+            salonId
+            mediaType
+            contentType
+            imageId
+            expiresIn
+        }
+    }
+`;
+
+
+// ============================================================
+// S3 DELETE
+// ============================================================
+
+export const DELETE_SALON_MEDIA = gql`
+    mutation DeleteSalonMedia(
+        $input: DeleteSalonMediaInput!
+    ) {
+        deleteSalonMedia(
+            input: $input
+        ) {
+            success
+            message
+            key
+        }
+    }
+`;
+
+export const ADMIN_SALON_PROFILE_CHANGES = gql`
+query AdminSalonProfileChanges(
+	$salonId: ID
+	$status: SalonProfileChangeStatus
+) {
+	adminSalonProfileChanges(
+		salonId: $salonId
+		status: $status
+	) {
+		success
+		message
+		totalCount
+
+		changes {
+			changeId
+			salonId
+			salonName
+			ownerName
+			businessType
+			email
+			ownerPhoneNumber
+			alternatePhone
+			address {
+				addressLine
+				city
+				state
+				pincode
+			}
+
+			status
+			submittedBy
+			submittedAt
+			reviewedBy
+			reviewedAt
+			rejectionReason
+
+			previousProfile {
+				salonName
+				ownerName
+				businessType
+				email
+				ownerPhoneNumber
+				alternatePhone
+				address {
+					addressLine
+					city
+					state
+					pincode
+				}
+			}
+
+			requestedProfile {
+				salonName
+				ownerName
+				businessType
+				email
+				ownerPhoneNumber
+				alternatePhone
+				address {
+					addressLine
+					city
+					state
+					pincode
+				}
+			}
+
+			changes {
+				field
+				label
+				oldValue
+				newValue
+				changeType
+			}
+
+			changedFields
+			changeCount
+		}
+	}
+}`;
+
+export const ADMIN_APPROVE_SALON_PROFILE_CHANGE = gql`
+  mutation AdminApproveSalonProfileChange(
+    $input: AdminApproveSalonProfileChangeInput!
+  ) {
+    adminApproveSalonProfileChange(input: $input) {
+      success
+      message
+      change {
+        changeId
+        salonId
+        salonName
+        status
+        submittedAt
+        reviewedBy
+        reviewedAt
+        rejectionReason
+      }
+    }
+  }
+`;
+
+export const ADMIN_REJECT_SALON_PROFILE_CHANGE = gql`
+  mutation AdminRejectSalonProfileChange(
+    $input: AdminRejectSalonProfileChangeInput!
+  ) {
+    adminRejectSalonProfileChange(input: $input) {
+      success
+      message
+      change {
+        changeId
+        salonId
+        salonName
+        status
+        submittedAt
+        reviewedBy
+        reviewedAt
+        rejectionReason
       }
     }
   }

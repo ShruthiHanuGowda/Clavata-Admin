@@ -302,6 +302,18 @@ const verificationMenu: NavItemType = {
       type: 'item',
       url: '/pending-approvals',
       icon: icons.CheckCircleOutlined
+    },
+    {
+      id: 'salon-profile-changes',
+      title: (
+        <FormattedMessage
+          id="Salon Profile Changes"
+          defaultMessage="Salon Profile Changes"
+        />
+      ),
+      type: 'item',
+      url: '/salon-profile-changes',
+      icon: icons.CheckCircleOutlined
     }
   ]
 };

@@ -80,7 +80,7 @@ const Transactions = Loadable(
 // You currently have Refunds importing the transactions page.
 // Keep this only if that is intentional.
 const Refunds = Loadable(
-  lazy(() => import('pages/transactions'))
+  lazy(() => import('pages/refunds'))
 );
 
 const Revenue = Loadable(
@@ -101,6 +101,10 @@ const Locations = Loadable(
 
 const PendingApprovals = Loadable(
   lazy(() => import('pages/pending-approvals'))
+);
+
+const SalonProfileChanges = Loadable(
+  lazy(() => import('pages/salon-profile-changes'))
 );
 
 const Notifications = Loadable(
@@ -287,7 +291,10 @@ const MainRoutes = {
           path: 'pending-approvals',
           element: <PendingApprovals />
         },
-
+        {
+          path: 'salon-profile-changes',
+          element: <SalonProfileChanges />
+        },
         {
           path: 'locations',
           element: <Locations />
