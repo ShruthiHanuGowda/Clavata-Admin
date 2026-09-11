@@ -89,12 +89,18 @@ interface SalonProfileFieldChange {
 
 interface SalonMedia {
     imageId: string;
-    salonId: string;
+    salonId?: string | null;
     mediaType: string;
     key: string;
     objectUrl?: string | null;
-    status: string;
-    uploadedAt: string;
+
+    /*
+     * These fields are optional because media inside
+     * SalonProfileChanges is REQUESTED media, not independently
+     * approved media.
+     */
+    status?: string | null;
+    uploadedAt?: string | null;
     approvedAt?: string | null;
     approvedBy?: string | null;
     rejectedAt?: string | null;
@@ -119,9 +125,27 @@ interface SalonProfileChange {
     coverImageUrl?: string | null;
     galleryImages?: string[] | null;
 
+    /*
+     * Requested media belonging to THIS profile request.
+     */
     logoMedia?: SalonMedia | null;
     coverMedia?: SalonMedia | null;
     galleryMedia?: SalonMedia[] | null;
+
+    /*
+     * Original live media stored by the backend for audit.
+     */
+    previousLogoMedia?: SalonMedia | null;
+    previousCoverMedia?: SalonMedia | null;
+    previousGalleryMedia?: SalonMedia[] | null;
+
+    /*
+     * Media-specific change summary.
+     */
+    mediaChanges?:
+        | SalonProfileFieldChange[]
+        | string
+        | null;
 
     status: ProfileChangeStatus;
 
@@ -132,28 +156,20 @@ interface SalonProfileChange {
     reviewedAt?: string | null;
     rejectionReason?: string | null;
 
-    // ========================================================
-    // PROFILE HISTORY
-    //
-    // AWSJSON may arrive from AppSync as either:
-    //   1. already parsed object/array
-    //   2. JSON string
-    // ========================================================
-
     previousProfile?:
-    | SalonProfileSnapshot
-    | string
-    | null;
+        | SalonProfileSnapshot
+        | string
+        | null;
 
     requestedProfile?:
-    | SalonProfileSnapshot
-    | string
-    | null;
+        | SalonProfileSnapshot
+        | string
+        | null;
 
     changes?:
-    | SalonProfileFieldChange[]
-    | string
-    | null;
+        | SalonProfileFieldChange[]
+        | string
+        | null;
 
     changedFields?: string[] | string | null;
 
@@ -219,6 +235,19 @@ const getStoredChanges = (
     const parsed =
         parseJsonValue<SalonProfileFieldChange[]>(
             change.changes
+        );
+
+    return Array.isArray(parsed)
+        ? parsed
+        : [];
+};
+
+const getMediaChanges = (
+    change: SalonProfileChange
+): SalonProfileFieldChange[] => {
+    const parsed =
+        parseJsonValue<SalonProfileFieldChange[]>(
+            change.mediaChanges
         );
 
     return Array.isArray(parsed)
@@ -293,17 +322,20 @@ const getStatusLabel = (
     }
 };
 
-const getMediaStatusColor = (
-    status?: string
-): 'warning' | 'success' | 'error' => {
-    switch (status) {
-        case 'APPROVED':
+const getChangeChipColor = (
+    changeType?: ProfileChangeType
+):
+    | 'warning'
+    | 'success'
+    | 'error' => {
+    switch (changeType) {
+        case 'ADDED':
             return 'success';
 
-        case 'REJECTED':
+        case 'REMOVED':
             return 'error';
 
-        case 'PENDING':
+        case 'UPDATED':
         default:
             return 'warning';
     }
@@ -316,28 +348,47 @@ const getMediaStatusColor = (
 const formatChangeValue = (
     value: unknown
 ): string => {
-    if (
-        value === null ||
-        value === undefined ||
-        value === ''
-    ) {
-        return '-';
+    // Null / undefined
+    if (value === null || value === undefined) {
+        return 'Not provided';
     }
 
+    // Strings
     if (typeof value === 'string') {
-        const parsed =
-            parseJsonValue<unknown>(value);
+        const trimmed = value.trim();
 
-        if (
-            parsed !== null &&
-            typeof parsed !== 'string'
-        ) {
-            return formatChangeValue(parsed);
+        // Empty string
+        if (!trimmed) {
+            return 'Not provided';
         }
 
-        return value;
+        // JSON encoded empty string: ""
+        if (trimmed === '""' || trimmed === "''") {
+            return 'Not provided';
+        }
+
+        // Try parsing AWSJSON / JSON encoded values
+        try {
+            const parsed = JSON.parse(trimmed);
+
+            // JSON string
+            if (typeof parsed === 'string') {
+                const parsedTrimmed = parsed.trim();
+
+                return parsedTrimmed
+                    ? parsed
+                    : 'Not provided';
+            }
+
+            // JSON object / array / other value
+            return formatChangeValue(parsed);
+        } catch {
+            // Normal non-JSON string
+            return value;
+        }
     }
 
+    // Numbers / booleans
     if (
         typeof value === 'number' ||
         typeof value === 'boolean'
@@ -345,25 +396,21 @@ const formatChangeValue = (
         return String(value);
     }
 
+    // Arrays
     if (Array.isArray(value)) {
         if (value.length === 0) {
-            return '-';
+            return 'Not provided';
         }
 
         return value
-            .map((item) =>
-                formatChangeValue(item)
-            )
+            .map((item) => formatChangeValue(item))
             .join(', ');
     }
 
+    // Objects
     if (typeof value === 'object') {
         try {
-            return JSON.stringify(
-                value,
-                null,
-                2
-            );
+            return JSON.stringify(value, null, 2);
         } catch {
             return String(value);
         }
@@ -394,20 +441,7 @@ const normalizeCompareValue = (
 };
 
 // ============================================================
-// FALLBACK CHANGE DETECTION
-//
-// Includes EVERY profile field:
-//
-// salonName
-// ownerName
-// businessType
-// email
-// ownerPhoneNumber
-// alternatePhone
-// address.addressLine
-// address.city
-// address.state
-// address.pincode
+// FALLBACK PROFILE CHANGE DETECTION
 // ============================================================
 
 const buildFallbackChanges = (
@@ -568,10 +602,10 @@ const buildFallbackChanges = (
 };
 
 // ============================================================
-// ACTUAL CHANGES
+// ACTUAL PROFILE CHANGES
 // ============================================================
 
-const getActualChanges = (
+const getActualProfileChanges = (
     change: SalonProfileChange
 ): SalonProfileFieldChange[] => {
     const storedChanges =
@@ -582,6 +616,170 @@ const getActualChanges = (
     }
 
     return buildFallbackChanges(change);
+};
+
+// ============================================================
+// ACTUAL MEDIA CHANGES
+// ============================================================
+
+const getActualMediaChanges = (
+    change: SalonProfileChange
+): SalonProfileFieldChange[] => {
+    return getMediaChanges(change);
+};
+
+// ============================================================
+// ALL CHANGES
+// ============================================================
+
+const getAllActualChanges = (
+    change: SalonProfileChange
+): SalonProfileFieldChange[] => {
+    const profileChanges =
+        getActualProfileChanges(change);
+
+    const mediaChanges =
+        getActualMediaChanges(change);
+
+    return [
+        ...profileChanges,
+        ...mediaChanges
+    ];
+};
+
+// ============================================================
+// MEDIA HELPERS
+// ============================================================
+
+const getRequestedMediaItems = (
+    change: SalonProfileChange
+) => {
+    const items: Array<{
+        type: 'LOGO' | 'COVER' | 'GALLERY';
+        label: string;
+        media: SalonMedia;
+        index?: number;
+    }> = [];
+
+    if (change.logoMedia) {
+        items.push({
+            type: 'LOGO',
+            label: 'Logo',
+            media: change.logoMedia
+        });
+    }
+
+    if (change.coverMedia) {
+        items.push({
+            type: 'COVER',
+            label: 'Cover Image',
+            media: change.coverMedia
+        });
+    }
+
+    if (
+        Array.isArray(
+            change.galleryMedia
+        )
+    ) {
+        change.galleryMedia.forEach(
+            (media, index) => {
+                if (!media) {
+                    return;
+                }
+
+                items.push({
+                    type: 'GALLERY',
+                    label: `Gallery Image ${
+                        index + 1
+                    }`,
+                    media,
+                    index
+                });
+            }
+        );
+    }
+
+    /*
+     * Fallback for older records that have URLs
+     * but don't have media objects.
+     */
+
+    if (
+        !change.logoMedia &&
+        change.logoUrl
+    ) {
+        items.push({
+            type: 'LOGO',
+            label: 'Logo',
+            media: {
+                imageId:
+                    `legacy-logo-${change.changeId}`,
+                salonId:
+                    change.salonId,
+                mediaType: 'LOGO',
+                key: '',
+                objectUrl:
+                    change.logoUrl
+            }
+        });
+    }
+
+    if (
+        !change.coverMedia &&
+        change.coverImageUrl
+    ) {
+        items.push({
+            type: 'COVER',
+            label: 'Cover Image',
+            media: {
+                imageId:
+                    `legacy-cover-${change.changeId}`,
+                salonId:
+                    change.salonId,
+                mediaType: 'COVER',
+                key: '',
+                objectUrl:
+                    change.coverImageUrl
+            }
+        });
+    }
+
+    if (
+        (!change.galleryMedia ||
+            change.galleryMedia.length === 0) &&
+        Array.isArray(
+            change.galleryImages
+        )
+    ) {
+        change.galleryImages.forEach(
+            (url, index) => {
+                if (!url) {
+                    return;
+                }
+
+                items.push({
+                    type: 'GALLERY',
+                    label: `Gallery Image ${
+                        index + 1
+                    }`,
+                    media: {
+                        imageId:
+                            `legacy-gallery-${change.changeId}-${index}`,
+                        salonId:
+                            change.salonId,
+                        mediaType:
+                            'GALLERY',
+                        key: '',
+                        objectUrl: url
+                    },
+                    index
+                });
+            }
+        );
+    }
+
+    return items;
 };
 
 // ============================================================
@@ -701,6 +899,7 @@ export default function SalonProfileChanges() {
             'Owner',
             'Business Type',
             'Submitted',
+            'Changes',
             'Status',
             'Actions'
         ],
@@ -809,13 +1008,13 @@ export default function SalonProfileChanges() {
             if (!response?.success) {
                 throw new Error(
                     response?.message ||
-                    'Failed to approve profile changes.'
+                    'Failed to approve salon profile changes.'
                 );
             }
 
             setActionSuccess(
                 response.message ||
-                'Salon profile changes approved successfully.'
+                'Salon profile and media changes approved successfully.'
             );
 
             setApproveModalOpen(false);
@@ -826,7 +1025,7 @@ export default function SalonProfileChanges() {
         } catch (err: any) {
             setActionError(
                 err?.message ||
-                'Unable to approve profile changes.'
+                'Unable to approve salon profile changes.'
             );
         }
     };
@@ -874,7 +1073,7 @@ export default function SalonProfileChanges() {
 
         if (!reason) {
             setActionError(
-                'Please enter a rejection reason before rejecting the profile changes.'
+                'Please enter a rejection reason before rejecting the salon changes.'
             );
 
             return;
@@ -903,13 +1102,13 @@ export default function SalonProfileChanges() {
             if (!response?.success) {
                 throw new Error(
                     response?.message ||
-                    'Failed to reject profile changes.'
+                    'Failed to reject salon profile changes.'
                 );
             }
 
             setActionSuccess(
                 response.message ||
-                'The salon profile changes have been rejected.'
+                'The salon profile and media changes have been rejected.'
             );
 
             setRejectModalOpen(false);
@@ -921,7 +1120,7 @@ export default function SalonProfileChanges() {
         } catch (err: any) {
             setActionError(
                 err?.message ||
-                'Unable to reject profile changes.'
+                'Unable to reject salon profile changes.'
             );
         }
     };
@@ -968,9 +1167,10 @@ export default function SalonProfileChanges() {
                         variant="body2"
                         color="text.secondary"
                     >
-                        Review and approve profile
-                        changes requested by
-                        salons.
+                        Review profile information
+                        and requested media changes
+                        together before approving or
+                        rejecting the salon request.
                     </Typography>
                 </Box>
 
@@ -1122,7 +1322,8 @@ export default function SalonProfileChanges() {
                             variant="body2"
                             color="text.secondary"
                         >
-                            Loading profile changes...
+                            Loading salon profile
+                            changes...
                         </Typography>
                     </Box>
                 ) : changes.length ===
@@ -1158,8 +1359,8 @@ export default function SalonProfileChanges() {
                         >
                             {status ===
                                 'PENDING'
-                                ? 'No pending salon profile changes'
-                                : 'No profile changes found'}
+                                ? 'No pending salon changes'
+                                : 'No salon changes found'}
                         </Typography>
 
                         <Typography
@@ -1168,9 +1369,9 @@ export default function SalonProfileChanges() {
                             textAlign="center"
                         >
                             There are currently
-                            no profile change
-                            requests for this
-                            status.
+                            no salon profile or
+                            media change requests
+                            for this status.
                         </Typography>
                     </Box>
                 ) : (
@@ -1206,10 +1407,20 @@ export default function SalonProfileChanges() {
                                     (
                                         change
                                     ) => {
-                                        const actualChanges =
-                                            getActualChanges(
+                                        const allChanges =
+                                            getAllActualChanges(
                                                 change
                                             );
+
+                                        const profileChangeCount =
+                                            getActualProfileChanges(
+                                                change
+                                            ).length;
+
+                                        const mediaChangeCount =
+                                            getActualMediaChanges(
+                                                change
+                                            ).length;
 
                                         return (
                                             <TableRow
@@ -1320,34 +1531,54 @@ export default function SalonProfileChanges() {
                                                     </Typography>
                                                 </TableCell>
 
+                                                {/* CHANGES */}
+
+                                                <TableCell>
+                                                    <Stack
+                                                        spacing={
+                                                            0.7
+                                                        }
+                                                    >
+                                                        <Chip
+                                                            size="small"
+                                                            variant="outlined"
+                                                            label={`${allChanges.length} total`}
+                                                        />
+
+                                                        {profileChangeCount >
+                                                            0 && (
+                                                            <Chip
+                                                                size="small"
+                                                                color="warning"
+                                                                variant="outlined"
+                                                                label={`${profileChangeCount} profile`}
+                                                            />
+                                                        )}
+
+                                                        {mediaChangeCount >
+                                                            0 && (
+                                                            <Chip
+                                                                size="small"
+                                                                color="info"
+                                                                variant="outlined"
+                                                                label={`${mediaChangeCount} media`}
+                                                            />
+                                                        )}
+                                                    </Stack>
+                                                </TableCell>
+
                                                 {/* STATUS */}
 
                                                 <TableCell>
-                                                    <Stack spacing={0.7}>
-                                                        <Chip
-                                                            size="small"
-                                                            label={getStatusLabel(
-                                                                change.status
-                                                            )}
-                                                            color={getStatusColor(
-                                                                change.status
-                                                            )}
-                                                        />
-
-                                                        {actualChanges.length >
-                                                            0 && (
-                                                                <Chip
-                                                                    size="small"
-                                                                    variant="outlined"
-                                                                    label={`${actualChanges.length} change${actualChanges.length ===
-                                                                        1
-                                                                        ? ''
-                                                                        : 's'
-                                                                        }`}
-                                                                    color="warning"
-                                                                />
-                                                            )}
-                                                    </Stack>
+                                                    <Chip
+                                                        size="small"
+                                                        label={getStatusLabel(
+                                                            change.status
+                                                        )}
+                                                        color={getStatusColor(
+                                                            change.status
+                                                        )}
+                                                    />
                                                 </TableCell>
 
                                                 {/* ACTIONS */}
@@ -1366,55 +1597,55 @@ export default function SalonProfileChanges() {
                                                                     change
                                                                 )
                                                             }
-                                                            title="View changes"
+                                                            title="View complete request"
                                                         >
                                                             <EyeOutlined />
                                                         </IconButton>
 
                                                         {change.status ===
                                                             'PENDING' && (
-                                                                <>
-                                                                    <Button
-                                                                        size="small"
-                                                                        variant="contained"
-                                                                        color="success"
-                                                                        startIcon={
-                                                                            <CheckCircleOutlined />
-                                                                        }
-                                                                        onClick={() =>
-                                                                            openApproveModal(
-                                                                                change
-                                                                            )
-                                                                        }
-                                                                        disabled={
-                                                                            approving ||
-                                                                            rejecting
-                                                                        }
-                                                                    >
-                                                                        Approve
-                                                                    </Button>
+                                                            <>
+                                                                <Button
+                                                                    size="small"
+                                                                    variant="contained"
+                                                                    color="success"
+                                                                    startIcon={
+                                                                        <CheckCircleOutlined />
+                                                                    }
+                                                                    onClick={() =>
+                                                                        openApproveModal(
+                                                                            change
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        approving ||
+                                                                        rejecting
+                                                                    }
+                                                                >
+                                                                    Approve
+                                                                </Button>
 
-                                                                    <Button
-                                                                        size="small"
-                                                                        variant="outlined"
-                                                                        color="error"
-                                                                        startIcon={
-                                                                            <CloseCircleOutlined />
-                                                                        }
-                                                                        onClick={() =>
-                                                                            openRejectModal(
-                                                                                change
-                                                                            )
-                                                                        }
-                                                                        disabled={
-                                                                            approving ||
-                                                                            rejecting
-                                                                        }
-                                                                    >
-                                                                        Reject
-                                                                    </Button>
-                                                                </>
-                                                            )}
+                                                                <Button
+                                                                    size="small"
+                                                                    variant="outlined"
+                                                                    color="error"
+                                                                    startIcon={
+                                                                        <CloseCircleOutlined />
+                                                                    }
+                                                                    onClick={() =>
+                                                                        openRejectModal(
+                                                                            change
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        approving ||
+                                                                        rejecting
+                                                                    }
+                                                                >
+                                                                    Reject
+                                                                </Button>
+                                                            </>
+                                                        )}
                                                     </Stack>
                                                 </TableCell>
                                             </TableRow>
@@ -1444,7 +1675,8 @@ export default function SalonProfileChanges() {
                                 color="text.secondary"
                             >
                                 Total {totalCount}{' '}
-                                profile change
+                                salon change
+                                request
                                 {totalCount ===
                                     1
                                     ? ''
@@ -1455,7 +1687,7 @@ export default function SalonProfileChanges() {
             </Paper>
 
             {/* ====================================================
-                VIEW PROFILE CHANGE
+                VIEW COMPLETE REQUEST
             ==================================================== */}
 
             <Dialog
@@ -1480,8 +1712,7 @@ export default function SalonProfileChanges() {
                                     fontWeight: 600
                                 }}
                             >
-                                Salon Profile Change
-                                Request
+                                Salon Change Request
                             </Typography>
 
                             {selectedChange && (
@@ -1539,44 +1770,44 @@ export default function SalonProfileChanges() {
 
                     {selectedChange?.status ===
                         'PENDING' && (
-                            <>
-                                <Button
-                                    variant="outlined"
-                                    color="error"
-                                    startIcon={
-                                        <CloseCircleOutlined />
-                                    }
-                                    onClick={() =>
-                                        openRejectModal(
-                                            selectedChange
-                                        )
-                                    }
-                                    disabled={
-                                        approving
-                                    }
-                                >
-                                    Reject
-                                </Button>
+                        <>
+                            <Button
+                                variant="outlined"
+                                color="error"
+                                startIcon={
+                                    <CloseCircleOutlined />
+                                }
+                                onClick={() =>
+                                    openRejectModal(
+                                        selectedChange
+                                    )
+                                }
+                                disabled={
+                                    rejecting
+                                }
+                            >
+                                Reject
+                            </Button>
 
-                                <Button
-                                    variant="contained"
-                                    color="success"
-                                    startIcon={
-                                        <CheckCircleOutlined />
-                                    }
-                                    onClick={() =>
-                                        openApproveModal(
-                                            selectedChange
-                                        )
-                                    }
-                                    disabled={
-                                        approving
-                                    }
-                                >
-                                    Approve Changes
-                                </Button>
-                            </>
-                        )}
+                            <Button
+                                variant="contained"
+                                color="success"
+                                startIcon={
+                                    <CheckCircleOutlined />
+                                }
+                                onClick={() =>
+                                    openApproveModal(
+                                        selectedChange
+                                    )
+                                }
+                                disabled={
+                                    approving
+                                }
+                            >
+                                Approve Changes
+                            </Button>
+                        </>
+                    )}
                 </DialogActions>
             </Dialog>
 
@@ -1595,7 +1826,7 @@ export default function SalonProfileChanges() {
                 maxWidth="sm"
             >
                 <DialogTitle>
-                    Approve Profile Changes?
+                    Approve Complete Salon Request?
                 </DialogTitle>
 
                 <DialogContent dividers>
@@ -1603,9 +1834,8 @@ export default function SalonProfileChanges() {
                         <Stack spacing={2}>
                             <Alert severity="warning">
                                 You are about to
-                                approve the
-                                requested profile
-                                changes for{' '}
+                                approve the complete
+                                profile request for{' '}
                                 <strong>
                                     {
                                         selectedChange.salonName
@@ -1614,6 +1844,18 @@ export default function SalonProfileChanges() {
                                 .
                             </Alert>
 
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                            >
+                                This approval applies
+                                to the profile
+                                information and all
+                                requested logo, cover,
+                                and gallery media
+                                together.
+                            </Typography>
+
                             <ProfileChangeSummary
                                 change={
                                     selectedChange
@@ -1621,12 +1863,11 @@ export default function SalonProfileChanges() {
                             />
 
                             <Typography variant="body2">
-                                Once approved,
-                                the requested
-                                information
-                                will become the
+                                Once approved, the
+                                requested profile and
+                                media will become the
                                 salon's active
-                                profile.
+                                information.
                             </Typography>
                         </Stack>
                     )}
@@ -1681,7 +1922,7 @@ export default function SalonProfileChanges() {
                     >
                         {approving
                             ? 'Approving...'
-                            : 'Approve Changes'}
+                            : 'Approve Complete Request'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -1701,16 +1942,16 @@ export default function SalonProfileChanges() {
                 maxWidth="sm"
             >
                 <DialogTitle>
-                    Reject Salon Profile
-                    Changes
+                    Reject Complete Salon Request
                 </DialogTitle>
 
                 <DialogContent dividers>
                     {selectedChange && (
                         <Stack spacing={2}>
                             <Alert severity="warning">
-                                Rejecting changes
-                                for{' '}
+                                Rejecting the complete
+                                profile and media
+                                request for{' '}
                                 <strong>
                                     {
                                         selectedChange.salonName
@@ -1723,11 +1964,11 @@ export default function SalonProfileChanges() {
                                 variant="body2"
                                 color="text.secondary"
                             >
-                                Please provide a
-                                clear reason so
-                                the salon owner
-                                knows what needs
-                                to be corrected.
+                                The current live salon
+                                profile will remain
+                                unchanged. The salon
+                                owner will receive the
+                                rejection reason.
                             </Typography>
 
                             <ProfileChangeSummary
@@ -1745,7 +1986,9 @@ export default function SalonProfileChanges() {
                                 placeholder="Enter rejection reason..."
                                 value={rejectionReason}
                                 onChange={(event) =>
-                                    setRejectionReason(event.target.value)
+                                    setRejectionReason(
+                                        event.target.value
+                                    )
                                 }
                                 inputProps={{
                                     maxLength: 1000
@@ -1808,7 +2051,7 @@ export default function SalonProfileChanges() {
                     >
                         {rejecting
                             ? 'Rejecting...'
-                            : 'Reject Changes'}
+                            : 'Reject Complete Request'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -1825,19 +2068,19 @@ function ProfileChangeDetails({
 }: {
     change: SalonProfileChange;
 }) {
-    const images = [
-        change.logoUrl,
-        change.coverImageUrl,
-        ...(change.galleryImages || [])
-    ].filter(Boolean) as string[];
+    const actualProfileChanges =
+        getActualProfileChanges(change);
 
-    const actualChanges =
-        getActualChanges(change);
+    const actualMediaChanges =
+        getActualMediaChanges(change);
+
+    const requestedMedia =
+        getRequestedMediaItems(change);
 
     return (
         <Stack spacing={3}>
             {/* ====================================================
-                CHANGE SUMMARY
+                COMPLETE CHANGE SUMMARY
             ==================================================== */}
 
             <ProfileChangeSummary
@@ -1859,7 +2102,7 @@ function ProfileChangeDetails({
                         fontWeight: 600
                     }}
                 >
-                    Status:{' '}
+                    Request Status:{' '}
                     {getStatusLabel(
                         change.status
                     )}
@@ -1868,12 +2111,12 @@ function ProfileChangeDetails({
                 <Typography variant="body2">
                     {change.status ===
                         'PENDING'
-                        ? 'These changes are waiting for admin review.'
+                        ? 'The profile information and requested media are waiting for admin review.'
                         : change.status ===
                             'REJECTED'
                             ? change.rejectionReason ||
-                            'This request was rejected.'
-                            : 'These changes were approved.'}
+                            'This complete salon change request was rejected.'
+                            : 'The profile information and requested media were approved together.'}
                 </Typography>
             </Alert>
 
@@ -1907,7 +2150,7 @@ function ProfileChangeDetails({
                                 change.salonName
                             }
                             change={
-                                actualChanges
+                                actualProfileChanges
                             }
                             xs={12}
                             sm={6}
@@ -1920,7 +2163,7 @@ function ProfileChangeDetails({
                                 change.ownerName
                             }
                             change={
-                                actualChanges
+                                actualProfileChanges
                             }
                             xs={12}
                             sm={6}
@@ -1931,10 +2174,10 @@ function ProfileChangeDetails({
                             field="businessType"
                             value={
                                 change.businessType ||
-                                '-'
+                                'Not provided'
                             }
                             change={
-                                actualChanges
+                                actualProfileChanges
                             }
                             xs={12}
                             sm={6}
@@ -1944,11 +2187,12 @@ function ProfileChangeDetails({
                             label="Email"
                             field="email"
                             value={
-                                change.email ||
-                                '-'
+                                formatChangeValue(
+                                    change.email
+                                )
                             }
                             change={
-                                actualChanges
+                                actualProfileChanges
                             }
                             xs={12}
                             sm={6}
@@ -1958,11 +2202,12 @@ function ProfileChangeDetails({
                             label="Owner Phone Number"
                             field="ownerPhoneNumber"
                             value={
-                                change.ownerPhoneNumber ||
-                                '-'
+                                formatChangeValue(
+                                    change.ownerPhoneNumber
+                                )
                             }
                             change={
-                                actualChanges
+                                actualProfileChanges
                             }
                             xs={12}
                             sm={6}
@@ -1972,11 +2217,12 @@ function ProfileChangeDetails({
                             label="Alternate Phone"
                             field="alternatePhone"
                             value={
-                                change.alternatePhone ||
-                                '-'
+                                formatChangeValue(
+                                    change.alternatePhone
+                                )
                             }
                             change={
-                                actualChanges
+                                actualProfileChanges
                             }
                             xs={12}
                             sm={6}
@@ -1986,7 +2232,7 @@ function ProfileChangeDetails({
                             label="Submitted By"
                             value={
                                 change.submittedBy ||
-                                '-'
+                                'Not provided'
                             }
                             xs={12}
                             sm={6}
@@ -2055,12 +2301,13 @@ function ProfileChangeDetails({
                             label="Address"
                             field="address.addressLine"
                             value={
-                                change.address
-                                    ?.addressLine ||
-                                '-'
+                                formatChangeValue(
+                                    change.address
+                                        ?.addressLine
+                                )
                             }
                             change={
-                                actualChanges
+                                actualProfileChanges
                             }
                             xs={12}
                         />
@@ -2069,12 +2316,13 @@ function ProfileChangeDetails({
                             label="City"
                             field="address.city"
                             value={
-                                change.address
-                                    ?.city ||
-                                '-'
+                                formatChangeValue(
+                                    change.address
+                                        ?.city
+                                )
                             }
                             change={
-                                actualChanges
+                                actualProfileChanges
                             }
                             xs={12}
                             sm={4}
@@ -2084,12 +2332,13 @@ function ProfileChangeDetails({
                             label="State"
                             field="address.state"
                             value={
-                                change.address
-                                    ?.state ||
-                                '-'
+                                formatChangeValue(
+                                    change.address
+                                        ?.state
+                                )
                             }
                             change={
-                                actualChanges
+                                actualProfileChanges
                             }
                             xs={12}
                             sm={4}
@@ -2099,12 +2348,13 @@ function ProfileChangeDetails({
                             label="Pincode"
                             field="address.pincode"
                             value={
-                                change.address
-                                    ?.pincode ||
-                                '-'
+                                formatChangeValue(
+                                    change.address
+                                        ?.pincode
+                                )
                             }
                             change={
-                                actualChanges
+                                actualProfileChanges
                             }
                             xs={12}
                             sm={4}
@@ -2116,49 +2366,94 @@ function ProfileChangeDetails({
             <Divider />
 
             {/* ====================================================
-                REQUESTED IMAGES
+                REQUESTED MEDIA
             ==================================================== */}
 
             <Box>
-                <Typography
-                    variant="h6"
-                    sx={{
-                        fontWeight: 600,
-                        mb: 2
+                <Stack
+                    direction={{
+                        xs: 'column',
+                        sm: 'row'
                     }}
+                    alignItems={{
+                        xs: 'flex-start',
+                        sm: 'center'
+                    }}
+                    justifyContent="space-between"
+                    spacing={1}
+                    sx={{ mb: 2 }}
                 >
-                    Requested Images
-                </Typography>
+                    <Box>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 600
+                            }}
+                        >
+                            Requested Media
+                        </Typography>
 
-                {images.length === 0 ? (
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                        >
+                            These images are part of
+                            the same salon profile
+                            approval request.
+                        </Typography>
+                    </Box>
+
+                    {actualMediaChanges.length >
+                        0 && (
+                        <Chip
+                            size="small"
+                            color="info"
+                            label={`${actualMediaChanges.length} media change${
+                                actualMediaChanges.length ===
+                                1
+                                    ? ''
+                                    : 's'
+                            }`}
+                        />
+                    )}
+                </Stack>
+
+                {requestedMedia.length ===
+                0 ? (
                     <Typography
                         variant="body2"
                         color="text.secondary"
                     >
-                        No image changes
-                        requested.
+                        No media changes requested.
                     </Typography>
                 ) : (
                     <Grid
                         container
                         spacing={2}
                     >
-                        {images.map(
+                        {requestedMedia.map(
                             (
-                                url,
-                                index
+                                item
                             ) => (
                                 <Grid
                                     item
                                     xs={12}
                                     sm={6}
                                     md={4}
-                                    key={`${url}-${index}`}
+                                    key={`${item.media.imageId}-${item.label}`}
                                 >
                                     <ImagePreview
-                                        url={url}
-                                        index={
-                                            index
+                                        url={
+                                            item.media
+                                                .objectUrl ||
+                                            ''
+                                        }
+                                        label={
+                                            item.label
+                                        }
+                                        mediaType={
+                                            item.media
+                                                .mediaType
                                         }
                                     />
                                 </Grid>
@@ -2168,78 +2463,44 @@ function ProfileChangeDetails({
                 )}
             </Box>
 
-            <Divider />
-
             {/* ====================================================
-                MEDIA STATUS
+                MEDIA CHANGE DETAILS
             ==================================================== */}
 
-            <Box>
-                <Typography
-                    variant="h6"
-                    sx={{
-                        fontWeight: 600,
-                        mb: 2
-                    }}
-                >
-                    Media Status
-                </Typography>
+            {actualMediaChanges.length >
+                0 && (
+                <>
+                    <Divider />
 
-                <Stack spacing={1.5}>
-                    {change.logoMedia && (
-                        <MediaStatus
-                            label="Logo"
-                            media={
-                                change.logoMedia
-                            }
-                        />
-                    )}
+                    <Box>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 600,
+                                mb: 2
+                            }}
+                        >
+                            Media Changes
+                        </Typography>
 
-                    {change.coverMedia && (
-                        <MediaStatus
-                            label="Cover Image"
-                            media={
-                                change.coverMedia
-                            }
-                        />
-                    )}
-
-                    {change.galleryMedia &&
-                        change.galleryMedia
-                            .length > 0 &&
-                        change.galleryMedia.map(
-                            (
-                                media
-                            ) => (
-                                <MediaStatus
-                                    key={
-                                        media.imageId
-                                    }
-                                    label="Gallery Image"
-                                    media={
-                                        media
-                                    }
-                                />
-                            )
-                        )}
-
-                    {!change.logoMedia &&
-                        !change.coverMedia &&
-                        (!change.galleryMedia ||
-                            change.galleryMedia
-                                .length ===
-                            0) && (
-                            <Typography
-                                variant="body2"
-                                color="text.secondary"
-                            >
-                                No media approval
-                                information
-                                available.
-                            </Typography>
-                        )}
-                </Stack>
-            </Box>
+                        <Stack spacing={1.5}>
+                            {actualMediaChanges.map(
+                                (
+                                    item,
+                                    index
+                                ) => (
+                                    <MediaChangeItem
+                                        key={`${item.field}-${index}`}
+                                        change={
+                                            item
+                                        }
+                                    />
+                                )
+                            )}
+                        </Stack>
+                    </Box>
+                </>
+            )}
 
             {/* ====================================================
                 REJECTION
@@ -2275,7 +2536,7 @@ function ProfileChangeDetails({
 }
 
 // ============================================================
-// CHANGE SUMMARY
+// COMPLETE CHANGE SUMMARY
 // ============================================================
 
 function ProfileChangeSummary({
@@ -2283,10 +2544,30 @@ function ProfileChangeSummary({
 }: {
     change: SalonProfileChange;
 }) {
-    const actualChanges =
-        getActualChanges(change);
+    const profileChanges =
+        getActualProfileChanges(change);
 
-    if (actualChanges.length === 0) {
+    const mediaChanges =
+        getActualMediaChanges(change);
+
+    const allChanges = [
+        ...profileChanges,
+        ...mediaChanges
+    ];
+
+    const backendCount =
+        Number(change.changeCount);
+
+    const totalCount =
+        Number.isFinite(
+            backendCount
+        ) &&
+        backendCount >=
+            allChanges.length
+            ? backendCount
+            : allChanges.length;
+
+    if (allChanges.length === 0) {
         return (
             <Alert severity="info">
                 <Typography
@@ -2300,12 +2581,9 @@ function ProfileChangeSummary({
                 </Typography>
 
                 <Typography variant="body2">
-                    The submitted profile is
-                    currently identical to
-                    the stored comparison
-                    values, or this request
-                    was created before change
-                    tracking was enabled.
+                    The submitted request does not
+                    contain detectable profile or
+                    media differences.
                 </Typography>
             </Alert>
         );
@@ -2340,8 +2618,14 @@ function ProfileChangeSummary({
                 }}
             >
                 <Stack
-                    direction="row"
-                    alignItems="center"
+                    direction={{
+                        xs: 'column',
+                        sm: 'row'
+                    }}
+                    alignItems={{
+                        xs: 'flex-start',
+                        sm: 'center'
+                    }}
                     justifyContent="space-between"
                     spacing={2}
                 >
@@ -2359,23 +2643,45 @@ function ProfileChangeSummary({
                             variant="body2"
                             color="text.secondary"
                         >
-                            Review exactly what
-                            the salon wants to
-                            change.
+                            Review the complete
+                            profile and media
+                            request before making
+                            your decision.
                         </Typography>
                     </Box>
 
-                    <Chip
-                        label={`${actualChanges.length} ${actualChanges.length ===
-                            1
-                            ? 'field'
-                            : 'fields'
-                            } changed`}
-                        color="warning"
-                        sx={{
-                            fontWeight: 700
-                        }}
-                    />
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        flexWrap="wrap"
+                        useFlexGap
+                    >
+                        <Chip
+                            label={`${totalCount} total`}
+                            color="warning"
+                            sx={{
+                                fontWeight: 700
+                            }}
+                        />
+
+                        {profileChanges.length >
+                            0 && (
+                            <Chip
+                                label={`${profileChanges.length} profile`}
+                                variant="outlined"
+                                color="warning"
+                            />
+                        )}
+
+                        {mediaChanges.length >
+                            0 && (
+                            <Chip
+                                label={`${mediaChanges.length} media`}
+                                variant="outlined"
+                                color="info"
+                            />
+                        )}
+                    </Stack>
                 </Stack>
             </Box>
 
@@ -2386,202 +2692,411 @@ function ProfileChangeSummary({
                     <Divider flexItem />
                 }
             >
-                {actualChanges.map(
+                {allChanges.map(
                     (
                         item,
                         index
                     ) => (
-                        <Box
+                        <ChangeSummaryItem
                             key={`${item.field}-${index}`}
+                            item={item}
+                            isMedia={mediaChanges.includes(
+                                item
+                            )}
+                        />
+                    )
+                )}
+            </Stack>
+        </Paper>
+    );
+}
+
+// ============================================================
+// CHANGE SUMMARY ITEM
+// ============================================================
+
+function ChangeSummaryItem({
+    item,
+    isMedia
+}: {
+    item: SalonProfileFieldChange;
+    isMedia: boolean;
+}) {
+    return (
+        <Box
+            sx={{
+                p: 2,
+                bgcolor: (theme) =>
+                    alpha(
+                        isMedia
+                            ? theme.palette.info.main
+                            : theme.palette.warning
+                                  .main,
+                        0.035
+                    )
+            }}
+        >
+            <Stack spacing={1}>
+                <Stack
+                    direction={{
+                        xs: 'column',
+                        sm: 'row'
+                    }}
+                    alignItems={{
+                        xs: 'flex-start',
+                        sm: 'center'
+                    }}
+                    justifyContent="space-between"
+                    spacing={1}
+                >
+                    <Box>
+                        <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                            flexWrap="wrap"
+                            useFlexGap
+                        >
+                            <Typography
+                                variant="subtitle2"
+                                sx={{
+                                    fontWeight: 700
+                                }}
+                            >
+                                {item.label ||
+                                    item.field}
+                            </Typography>
+
+                            {isMedia && (
+                                <Chip
+                                    size="small"
+                                    label="MEDIA"
+                                    color="info"
+                                    variant="outlined"
+                                />
+                            )}
+                        </Stack>
+
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                        >
+                            {item.field}
+                        </Typography>
+                    </Box>
+
+                    <Chip
+                        size="small"
+                        label={
+                            item.changeType ||
+                            'UPDATED'
+                        }
+                        color={getChangeChipColor(
+                            item.changeType
+                        )}
+                    />
+                </Stack>
+
+                {/* CURRENT VALUE */}
+
+                <Box
+                    sx={{
+                        p: 1.5,
+                        borderRadius: 1.5,
+                        bgcolor: (theme) =>
+                            alpha(
+                                theme.palette.error
+                                    .main,
+                                0.06
+                            ),
+                        border:
+                            '1px solid',
+                        borderColor:
+                            'error.light'
+                    }}
+                >
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            display:
+                                'block',
+                            fontWeight:
+                                700,
+                            color:
+                                'error.main',
+                            mb: 0.5
+                        }}
+                    >
+                        CURRENT VALUE
+                    </Typography>
+
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            wordBreak:
+                                'break-word',
+                            whiteSpace:
+                                'pre-wrap',
+                            textDecoration:
+                                item.changeType ===
+                                    'UPDATED'
+                                    ? 'line-through'
+                                    : 'none'
+                        }}
+                    >
+                        {formatChangeValue(
+                            item.oldValue
+                        )}
+                    </Typography>
+                </Box>
+
+                {/* ARROW */}
+
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent:
+                            'center'
+                    }}
+                >
+                    <Typography
+                        sx={{
+                            fontWeight: 700,
+                            color: isMedia
+                                ? 'info.main'
+                                : 'warning.main',
+                            fontSize: 18
+                        }}
+                    >
+                        ↓
+                    </Typography>
+                </Box>
+
+                {/* REQUESTED VALUE */}
+
+                <Box
+                    sx={{
+                        p: 1.5,
+                        borderRadius: 1.5,
+                        bgcolor: (theme) =>
+                            alpha(
+                                theme.palette.success
+                                    .main,
+                                0.06
+                            ),
+                        border:
+                            '1px solid',
+                        borderColor:
+                            'success.light'
+                    }}
+                >
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            display:
+                                'block',
+                            fontWeight:
+                                700,
+                            color:
+                                'success.main',
+                            mb: 0.5
+                        }}
+                    >
+                        REQUESTED VALUE
+                    </Typography>
+
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            fontWeight:
+                                700,
+                            wordBreak:
+                                'break-word',
+                            whiteSpace:
+                                'pre-wrap'
+                        }}
+                    >
+                        {formatChangeValue(
+                            item.newValue
+                        )}
+                    </Typography>
+                </Box>
+            </Stack>
+        </Box>
+    );
+}
+
+// ============================================================
+// MEDIA CHANGE ITEM
+// ============================================================
+
+function MediaChangeItem({
+    change
+}: {
+    change: SalonProfileFieldChange;
+}) {
+    return (
+        <Paper
+            variant="outlined"
+            sx={{
+                p: 2,
+                borderRadius: 2,
+                borderColor:
+                    'info.light',
+                bgcolor: (theme) =>
+                    alpha(
+                        theme.palette.info.main,
+                        0.025
+                    )
+            }}
+        >
+            <Stack spacing={1.5}>
+                <Stack
+                    direction={{
+                        xs: 'column',
+                        sm: 'row'
+                    }}
+                    justifyContent="space-between"
+                    spacing={1}
+                >
+                    <Box>
+                        <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                        >
+                            <Typography
+                                variant="subtitle2"
+                                sx={{
+                                    fontWeight: 700
+                                }}
+                            >
+                                {change.label ||
+                                    change.field}
+                            </Typography>
+
+                            <Chip
+                                size="small"
+                                label="MEDIA"
+                                color="info"
+                                variant="outlined"
+                            />
+                        </Stack>
+
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                        >
+                            {change.field}
+                        </Typography>
+                    </Box>
+
+                    <Chip
+                        size="small"
+                        label={
+                            change.changeType ||
+                            'UPDATED'
+                        }
+                        color={getChangeChipColor(
+                            change.changeType
+                        )}
+                    />
+                </Stack>
+
+                <Grid
+                    container
+                    spacing={1.5}
+                >
+                    <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                    >
+                        <Box
                             sx={{
-                                p: 2,
+                                p: 1.5,
+                                borderRadius: 1.5,
                                 bgcolor: (theme) =>
                                     alpha(
-                                        theme
-                                            .palette
-                                            .warning
+                                        theme.palette
+                                            .error
                                             .main,
-                                        0.035
+                                        0.05
                                     )
                             }}
                         >
-                            <Stack spacing={1}>
-                                <Stack
-                                    direction="row"
-                                    alignItems="center"
-                                    justifyContent="space-between"
-                                    spacing={2}
-                                >
-                                    <Box>
-                                        <Typography
-                                            variant="subtitle2"
-                                            sx={{
-                                                fontWeight: 700
-                                            }}
-                                        >
-                                            {item.label ||
-                                                item.field}
-                                        </Typography>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    fontWeight:
+                                        700,
+                                    color:
+                                        'error.main'
+                                }}
+                            >
+                                CURRENT MEDIA
+                            </Typography>
 
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                        >
-                                            {item.field}
-                                        </Typography>
-                                    </Box>
-
-                                    <Chip
-                                        size="small"
-                                        label={
-                                            item.changeType ||
-                                            'UPDATED'
-                                        }
-                                        color={
-                                            item.changeType ===
-                                                'ADDED'
-                                                ? 'success'
-                                                : item.changeType ===
-                                                    'REMOVED'
-                                                    ? 'error'
-                                                    : 'warning'
-                                        }
-                                    />
-                                </Stack>
-
-                                {/* CURRENT VALUE */}
-
-                                <Box
-                                    sx={{
-                                        p: 1.5,
-                                        borderRadius: 1.5,
-                                        bgcolor: (theme) =>
-                                            alpha(
-                                                theme
-                                                    .palette
-                                                    .error
-                                                    .main,
-                                                0.06
-                                            ),
-                                        border:
-                                            '1px solid',
-                                        borderColor:
-                                            'error.light'
-                                    }}
-                                >
-                                    <Typography
-                                        variant="caption"
-                                        sx={{
-                                            display:
-                                                'block',
-                                            fontWeight:
-                                                700,
-                                            color:
-                                                'error.main',
-                                            mb: 0.5
-                                        }}
-                                    >
-                                        CURRENT VALUE
-                                    </Typography>
-
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            wordBreak:
-                                                'break-word',
-                                            whiteSpace:
-                                                'pre-wrap',
-                                            textDecoration:
-                                                item.changeType ===
-                                                    'UPDATED'
-                                                    ? 'line-through'
-                                                    : 'none'
-                                        }}
-                                    >
-                                        {formatChangeValue(
-                                            item.oldValue
-                                        )}
-                                    </Typography>
-                                </Box>
-
-                                {/* ARROW */}
-
-                                <Box
-                                    sx={{
-                                        display:
-                                            'flex',
-                                        justifyContent:
-                                            'center'
-                                    }}
-                                >
-                                    <Typography
-                                        sx={{
-                                            fontWeight:
-                                                700,
-                                            color:
-                                                'warning.main',
-                                            fontSize: 18
-                                        }}
-                                    >
-                                        ↓
-                                    </Typography>
-                                </Box>
-
-                                {/* REQUESTED VALUE */}
-
-                                <Box
-                                    sx={{
-                                        p: 1.5,
-                                        borderRadius: 1.5,
-                                        bgcolor: (theme) =>
-                                            alpha(
-                                                theme
-                                                    .palette
-                                                    .success
-                                                    .main,
-                                                0.06
-                                            ),
-                                        border:
-                                            '1px solid',
-                                        borderColor:
-                                            'success.light'
-                                    }}
-                                >
-                                    <Typography
-                                        variant="caption"
-                                        sx={{
-                                            display:
-                                                'block',
-                                            fontWeight:
-                                                700,
-                                            color:
-                                                'success.main',
-                                            mb: 0.5
-                                        }}
-                                    >
-                                        REQUESTED VALUE
-                                    </Typography>
-
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            fontWeight:
-                                                700,
-                                            wordBreak:
-                                                'break-word',
-                                            whiteSpace:
-                                                'pre-wrap'
-                                        }}
-                                    >
-                                        {formatChangeValue(
-                                            item.newValue
-                                        )}
-                                    </Typography>
-                                </Box>
-                            </Stack>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    mt: 0.5,
+                                    wordBreak:
+                                        'break-word'
+                                }}
+                            >
+                                {formatChangeValue(
+                                    change.oldValue
+                                )}
+                            </Typography>
                         </Box>
-                    )
-                )}
+                    </Grid>
+
+                    <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                    >
+                        <Box
+                            sx={{
+                                p: 1.5,
+                                borderRadius: 1.5,
+                                bgcolor: (theme) =>
+                                    alpha(
+                                        theme.palette
+                                            .success
+                                            .main,
+                                        0.05
+                                    )
+                            }}
+                        >
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    fontWeight:
+                                        700,
+                                    color:
+                                        'success.main'
+                                }}
+                            >
+                                REQUESTED MEDIA
+                            </Typography>
+
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    mt: 0.5,
+                                    wordBreak:
+                                        'break-word'
+                                }}
+                            >
+                                {formatChangeValue(
+                                    change.newValue
+                                )}
+                            </Typography>
+                        </Box>
+                    </Grid>
+                </Grid>
             </Stack>
         </Paper>
     );
@@ -2677,15 +3192,9 @@ function HighlightedInfoItem({
                         label={
                             changed.changeType
                         }
-                        color={
-                            changed.changeType ===
-                                'ADDED'
-                                ? 'success'
-                                : changed.changeType ===
-                                    'REMOVED'
-                                    ? 'error'
-                                    : 'warning'
-                        }
+                        color={getChangeChipColor(
+                            changed.changeType
+                        )}
                         sx={{
                             height: 22,
                             fontSize: 10,
@@ -2693,8 +3202,6 @@ function HighlightedInfoItem({
                         }}
                     />
                 </Stack>
-
-                {/* CURRENT */}
 
                 <Typography
                     variant="caption"
@@ -2725,8 +3232,6 @@ function HighlightedInfoItem({
                         changed.oldValue
                     )}
                 </Typography>
-
-                {/* REQUESTED */}
 
                 <Typography
                     variant="caption"
@@ -2825,28 +3330,68 @@ function InfoItem({
 
 function ImagePreview({
     url,
-    index
+    label,
+    mediaType
 }: {
     url: string;
-    index: number;
+    label: string;
+    mediaType?: string | null;
 }) {
     const [
         imageOpen,
         setImageOpen
     ] = useState(false);
 
-    const getImageLabel = () => {
-        if (index === 0) {
-            return 'Logo';
-        }
+    if (!url) {
+        return (
+            <Paper
+                variant="outlined"
+                sx={{
+                    borderRadius: 2,
+                    overflow: 'hidden'
+                }}
+            >
+                <Box
+                    sx={{
+                        width: '100%',
+                        height: 160,
+                        bgcolor:
+                            'action.hover',
+                        display: 'flex',
+                        alignItems:
+                            'center',
+                        justifyContent:
+                            'center'
+                    }}
+                >
+                    <Stack
+                        spacing={1}
+                        alignItems="center"
+                    >
+                        <EyeOutlined />
 
-        if (index === 1) {
-            return 'Cover Image';
-        }
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                        >
+                            No image URL
+                        </Typography>
+                    </Stack>
+                </Box>
 
-        return `Gallery Image ${index - 1
-            }`;
-    };
+                <Box sx={{ p: 1.5 }}>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            fontWeight: 600
+                        }}
+                    >
+                        {label}
+                    </Typography>
+                </Box>
+            </Paper>
+        );
+    }
 
     return (
         <>
@@ -2884,9 +3429,7 @@ function ImagePreview({
                     <Box
                         component="img"
                         src={url}
-                        alt={
-                            getImageLabel()
-                        }
+                        alt={label}
                         sx={{
                             width: '100%',
                             height: '100%',
@@ -2906,14 +3449,30 @@ function ImagePreview({
                         p: 1.5
                     }}
                 >
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            fontWeight: 500
-                        }}
+                    <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        spacing={1}
+                        alignItems="center"
                     >
-                        {getImageLabel()}
-                    </Typography>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontWeight: 600
+                            }}
+                        >
+                            {label}
+                        </Typography>
+
+                        {mediaType && (
+                            <Chip
+                                size="small"
+                                label={mediaType}
+                                color="info"
+                                variant="outlined"
+                            />
+                        )}
+                    </Stack>
 
                     <Typography
                         variant="caption"
@@ -2933,6 +3492,10 @@ function ImagePreview({
                 }
                 maxWidth="lg"
             >
+                <DialogTitle>
+                    {label}
+                </DialogTitle>
+
                 <DialogContent
                     sx={{
                         p: 1,
@@ -2942,9 +3505,7 @@ function ImagePreview({
                     <Box
                         component="img"
                         src={url}
-                        alt={
-                            getImageLabel()
-                        }
+                        alt={label}
                         sx={{
                             display:
                                 'block',
@@ -2971,244 +3532,5 @@ function ImagePreview({
                 </DialogActions>
             </Dialog>
         </>
-    );
-}
-
-// ============================================================
-// MEDIA STATUS
-// ============================================================
-
-function MediaStatus({
-    label,
-    media
-}: {
-    label: string;
-    media: SalonMedia;
-}) {
-    return (
-        <Paper
-            variant="outlined"
-            sx={{
-                p: 1.5,
-                borderRadius: 1.5
-            }}
-        >
-            <Stack
-                direction={{
-                    xs: 'column',
-                    sm: 'row'
-                }}
-                spacing={2}
-                justifyContent="space-between"
-                alignItems={{
-                    xs: 'flex-start',
-                    sm: 'center'
-                }}
-            >
-                <Stack
-                    direction="row"
-                    spacing={1.5}
-                    alignItems="center"
-                >
-                    {media.objectUrl ? (
-                        <Avatar
-                            variant="rounded"
-                            src={
-                                media.objectUrl
-                            }
-                            sx={{
-                                width: 64,
-                                height: 48
-                            }}
-                        />
-                    ) : (
-                        <Avatar
-                            variant="rounded"
-                            sx={{
-                                width: 64,
-                                height: 48
-                            }}
-                        >
-                            <EyeOutlined />
-                        </Avatar>
-                    )}
-
-                    <Box>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                fontWeight: 600
-                            }}
-                        >
-                            {label}
-                        </Typography>
-
-                        <Typography
-                            variant="caption"
-                            color="text.secondary"
-                        >
-                            {media.mediaType ||
-                                '-'}
-                        </Typography>
-                    </Box>
-                </Stack>
-
-                <Chip
-                    size="small"
-                    label={
-                        media.status ||
-                        'PENDING'
-                    }
-                    color={getMediaStatusColor(
-                        media.status
-                    )}
-                />
-            </Stack>
-
-            <Divider
-                sx={{
-                    my: 1.5
-                }}
-            />
-
-            <Grid
-                container
-                spacing={1.5}
-            >
-                <Grid
-                    item
-                    xs={12}
-                    sm={6}
-                >
-                    <Typography
-                        variant="caption"
-                        color="text.secondary"
-                    >
-                        Uploaded At
-                    </Typography>
-
-                    <Typography variant="body2">
-                        {formatDate(
-                            media.uploadedAt
-                        )}
-                    </Typography>
-                </Grid>
-
-                {media.approvedBy && (
-                    <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                    >
-                        <Typography
-                            variant="caption"
-                            color="text.secondary"
-                        >
-                            Approved By
-                        </Typography>
-
-                        <Typography variant="body2">
-                            {
-                                media.approvedBy
-                            }
-                        </Typography>
-                    </Grid>
-                )}
-
-                {media.approvedAt && (
-                    <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                    >
-                        <Typography
-                            variant="caption"
-                            color="text.secondary"
-                        >
-                            Approved At
-                        </Typography>
-
-                        <Typography variant="body2">
-                            {formatDate(
-                                media.approvedAt
-                            )}
-                        </Typography>
-                    </Grid>
-                )}
-
-                {media.rejectedBy && (
-                    <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                    >
-                        <Typography
-                            variant="caption"
-                            color="text.secondary"
-                        >
-                            Rejected By
-                        </Typography>
-
-                        <Typography variant="body2">
-                            {
-                                media.rejectedBy
-                            }
-                        </Typography>
-                    </Grid>
-                )}
-
-                {media.rejectedAt && (
-                    <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                    >
-                        <Typography
-                            variant="caption"
-                            color="text.secondary"
-                        >
-                            Rejected At
-                        </Typography>
-
-                        <Typography variant="body2">
-                            {formatDate(
-                                media.rejectedAt
-                            )}
-                        </Typography>
-                    </Grid>
-                )}
-
-                {media.rejectionReason && (
-                    <Grid
-                        item
-                        xs={12}
-                    >
-                        <Alert
-                            severity="error"
-                            sx={{
-                                mt: 1
-                            }}
-                        >
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    fontWeight:
-                                        600
-                                }}
-                            >
-                                Media Rejection
-                                Reason
-                            </Typography>
-
-                            <Typography variant="body2">
-                                {
-                                    media.rejectionReason
-                                }
-                            </Typography>
-                        </Alert>
-                    </Grid>
-                )}
-            </Grid>
-        </Paper>
     );
 }
