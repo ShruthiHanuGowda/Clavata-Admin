@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-
 import {
     Alert,
     Avatar,
@@ -57,6 +56,10 @@ type ProfileChangeStatus =
     | 'APPROVED'
     | 'REJECTED';
 
+type PageView =
+    | 'REQUESTS'
+    | 'HISTORY';
+
 type ProfileChangeType =
     | 'ADDED'
     | 'UPDATED'
@@ -94,11 +97,6 @@ interface SalonMedia {
     key: string;
     objectUrl?: string | null;
 
-    /*
-     * These fields are optional because media inside
-     * SalonProfileChanges is REQUESTED media, not independently
-     * approved media.
-     */
     status?: string | null;
     uploadedAt?: string | null;
     approvedAt?: string | null;
@@ -125,23 +123,14 @@ interface SalonProfileChange {
     coverImageUrl?: string | null;
     galleryImages?: string[] | null;
 
-    /*
-     * Requested media belonging to THIS profile request.
-     */
     logoMedia?: SalonMedia | null;
     coverMedia?: SalonMedia | null;
     galleryMedia?: SalonMedia[] | null;
 
-    /*
-     * Original live media stored by the backend for audit.
-     */
     previousLogoMedia?: SalonMedia | null;
     previousCoverMedia?: SalonMedia | null;
     previousGalleryMedia?: SalonMedia[] | null;
 
-    /*
-     * Media-specific change summary.
-     */
     mediaChanges?:
         | SalonProfileFieldChange[]
         | string
@@ -348,47 +337,42 @@ const getChangeChipColor = (
 const formatChangeValue = (
     value: unknown
 ): string => {
-    // Null / undefined
     if (value === null || value === undefined) {
         return 'Not provided';
     }
 
-    // Strings
     if (typeof value === 'string') {
         const trimmed = value.trim();
 
-        // Empty string
         if (!trimmed) {
             return 'Not provided';
         }
 
-        // JSON encoded empty string: ""
-        if (trimmed === '""' || trimmed === "''") {
+        if (
+            trimmed === '""' ||
+            trimmed === "''"
+        ) {
             return 'Not provided';
         }
 
-        // Try parsing AWSJSON / JSON encoded values
         try {
             const parsed = JSON.parse(trimmed);
 
-            // JSON string
             if (typeof parsed === 'string') {
-                const parsedTrimmed = parsed.trim();
+                const parsedTrimmed =
+                    parsed.trim();
 
                 return parsedTrimmed
                     ? parsed
                     : 'Not provided';
             }
 
-            // JSON object / array / other value
             return formatChangeValue(parsed);
         } catch {
-            // Normal non-JSON string
             return value;
         }
     }
 
-    // Numbers / booleans
     if (
         typeof value === 'number' ||
         typeof value === 'boolean'
@@ -396,21 +380,25 @@ const formatChangeValue = (
         return String(value);
     }
 
-    // Arrays
     if (Array.isArray(value)) {
         if (value.length === 0) {
             return 'Not provided';
         }
 
         return value
-            .map((item) => formatChangeValue(item))
+            .map((item) =>
+                formatChangeValue(item)
+            )
             .join(', ');
     }
 
-    // Objects
     if (typeof value === 'object') {
         try {
-            return JSON.stringify(value, null, 2);
+            return JSON.stringify(
+                value,
+                null,
+                2
+            );
         } catch {
             return String(value);
         }
@@ -483,12 +471,8 @@ const buildFallbackChanges = (
         newValue: unknown
     ) => {
         if (
-            normalizeCompareValue(
-                oldValue
-            ) ===
-            normalizeCompareValue(
-                newValue
-            )
+            normalizeCompareValue(oldValue) ===
+            normalizeCompareValue(newValue)
         ) {
             return;
         }
@@ -651,136 +635,120 @@ const getAllActualChanges = (
 // MEDIA HELPERS
 // ============================================================
 
-const getRequestedMediaItems = (
+function getRequestedMediaItems(
     change: SalonProfileChange
-) => {
+): Array<{
+    media: SalonMedia;
+    label: string;
+}> {
     const items: Array<{
-        type: 'LOGO' | 'COVER' | 'GALLERY';
-        label: string;
         media: SalonMedia;
-        index?: number;
+        label: string;
     }> = [];
 
     if (change.logoMedia) {
+        const media = change.logoMedia;
+
         items.push({
-            type: 'LOGO',
-            label: 'Logo',
-            media: change.logoMedia
+            media: {
+                ...media,
+                objectUrl:
+                    media.objectUrl ||
+                    change.logoUrl ||
+                    null
+            },
+            label: 'Logo'
+        });
+    } else if (change.logoUrl) {
+        items.push({
+            media: {
+                imageId: `logo-${change.changeId}`,
+                salonId: change.salonId,
+                mediaType: 'LOGO',
+                key: '',
+                objectUrl: change.logoUrl,
+                status: change.status
+            },
+            label: 'Logo'
         });
     }
 
     if (change.coverMedia) {
+        const media = change.coverMedia;
+
         items.push({
-            type: 'COVER',
-            label: 'Cover Image',
-            media: change.coverMedia
-        });
-    }
-
-    if (
-        Array.isArray(
-            change.galleryMedia
-        )
-    ) {
-        change.galleryMedia.forEach(
-            (media, index) => {
-                if (!media) {
-                    return;
-                }
-
-                items.push({
-                    type: 'GALLERY',
-                    label: `Gallery Image ${
-                        index + 1
-                    }`,
-                    media,
-                    index
-                });
-            }
-        );
-    }
-
-    /*
-     * Fallback for older records that have URLs
-     * but don't have media objects.
-     */
-
-    if (
-        !change.logoMedia &&
-        change.logoUrl
-    ) {
-        items.push({
-            type: 'LOGO',
-            label: 'Logo',
             media: {
-                imageId:
-                    `legacy-logo-${change.changeId}`,
-                salonId:
-                    change.salonId,
-                mediaType: 'LOGO',
-                key: '',
+                ...media,
                 objectUrl:
-                    change.logoUrl
-            }
+                    media.objectUrl ||
+                    change.coverImageUrl ||
+                    null
+            },
+            label: 'Cover Image'
         });
-    }
-
-    if (
-        !change.coverMedia &&
-        change.coverImageUrl
-    ) {
+    } else if (change.coverImageUrl) {
         items.push({
-            type: 'COVER',
-            label: 'Cover Image',
             media: {
-                imageId:
-                    `legacy-cover-${change.changeId}`,
-                salonId:
-                    change.salonId,
+                imageId: `cover-${change.changeId}`,
+                salonId: change.salonId,
                 mediaType: 'COVER',
                 key: '',
                 objectUrl:
-                    change.coverImageUrl
-            }
+                    change.coverImageUrl,
+                status: change.status
+            },
+            label: 'Cover Image'
         });
     }
 
     if (
-        (!change.galleryMedia ||
-            change.galleryMedia.length === 0) &&
-        Array.isArray(
-            change.galleryImages
-        )
+        Array.isArray(change.galleryMedia) &&
+        change.galleryMedia.length > 0
+    ) {
+        change.galleryMedia.forEach(
+            (media, index) => {
+                const fallbackUrl =
+                    change.galleryImages?.[index] ||
+                    null;
+
+                items.push({
+                    media: {
+                        ...media,
+                        objectUrl:
+                            media.objectUrl ||
+                            fallbackUrl
+                    },
+                    label: `Gallery Image ${
+                        index + 1
+                    }`
+                });
+            }
+        );
+    } else if (
+        Array.isArray(change.galleryImages) &&
+        change.galleryImages.length > 0
     ) {
         change.galleryImages.forEach(
             (url, index) => {
-                if (!url) {
-                    return;
-                }
-
                 items.push({
-                    type: 'GALLERY',
+                    media: {
+                        imageId: `gallery-${change.changeId}-${index}`,
+                        salonId: change.salonId,
+                        mediaType: 'GALLERY',
+                        key: '',
+                        objectUrl: url,
+                        status: change.status
+                    },
                     label: `Gallery Image ${
                         index + 1
-                    }`,
-                    media: {
-                        imageId:
-                            `legacy-gallery-${change.changeId}-${index}`,
-                        salonId:
-                            change.salonId,
-                        mediaType:
-                            'GALLERY',
-                        key: '',
-                        objectUrl: url
-                    },
-                    index
+                    }`
                 });
             }
         );
     }
 
     return items;
-};
+}
 
 // ============================================================
 // MAIN PAGE
@@ -791,6 +759,9 @@ export default function SalonProfileChanges() {
         useState<ProfileChangeStatus>(
             'PENDING'
         );
+
+    const [pageView, setPageView] =
+        useState<PageView>('REQUESTS');
 
     const [
         selectedChange,
@@ -831,7 +802,7 @@ export default function SalonProfileChanges() {
     ] = useState<string | null>(null);
 
     // ========================================================
-    // QUERY
+    // NORMAL REQUEST QUERY
     // ========================================================
 
     const {
@@ -845,7 +816,48 @@ export default function SalonProfileChanges() {
             variables: {
                 status
             },
-            fetchPolicy: 'network-only'
+            fetchPolicy: 'network-only',
+            skip: pageView === 'HISTORY'
+        }
+    );
+
+    // ========================================================
+    // HISTORY - APPROVED
+    // ========================================================
+
+    const {
+        data: approvedHistoryData,
+        loading: approvedHistoryLoading,
+        error: approvedHistoryError,
+        refetch: refetchApprovedHistory
+    } = useQuery(
+        ADMIN_SALON_PROFILE_CHANGES,
+        {
+            variables: {
+                status: 'APPROVED'
+            },
+            fetchPolicy: 'network-only',
+            skip: pageView !== 'HISTORY'
+        }
+    );
+
+    // ========================================================
+    // HISTORY - REJECTED
+    // ========================================================
+
+    const {
+        data: rejectedHistoryData,
+        loading: rejectedHistoryLoading,
+        error: rejectedHistoryError,
+        refetch: refetchRejectedHistory
+    } = useQuery(
+        ADMIN_SALON_PROFILE_CHANGES,
+        {
+            variables: {
+                status: 'REJECTED'
+            },
+            fetchPolicy: 'network-only',
+            skip: pageView !== 'HISTORY'
         }
     );
 
@@ -879,15 +891,105 @@ export default function SalonProfileChanges() {
     // DATA
     // ========================================================
 
-    const changes: SalonProfileChange[] =
+    const requestChanges: SalonProfileChange[] =
         data
             ?.adminSalonProfileChanges
             ?.changes || [];
 
-    const totalCount =
+    const requestTotalCount =
         data
             ?.adminSalonProfileChanges
             ?.totalCount || 0;
+
+    const approvedHistory: SalonProfileChange[] =
+        approvedHistoryData
+            ?.adminSalonProfileChanges
+            ?.changes || [];
+
+    const rejectedHistory: SalonProfileChange[] =
+        rejectedHistoryData
+            ?.adminSalonProfileChanges
+            ?.changes || [];
+
+    // ========================================================
+    // COMBINED HISTORY
+    // ========================================================
+
+    const historyChanges =
+        useMemo(() => {
+            const combined = [
+                ...approvedHistory,
+                ...rejectedHistory
+            ];
+
+            /*
+             * Safety against duplicate records.
+             */
+            const unique =
+                new Map<
+                    string,
+                    SalonProfileChange
+                >();
+
+            combined.forEach((change) => {
+                unique.set(
+                    change.changeId,
+                    change
+                );
+            });
+
+            return Array.from(
+                unique.values()
+            ).sort((a, b) => {
+                const aTime =
+                    new Date(
+                        a.reviewedAt ||
+                        a.submittedAt ||
+                        0
+                    ).getTime();
+
+                const bTime =
+                    new Date(
+                        b.reviewedAt ||
+                        b.submittedAt ||
+                        0
+                    ).getTime();
+
+                return bTime - aTime;
+            });
+        }, [
+            approvedHistory,
+            rejectedHistory
+        ]);
+
+    // ========================================================
+    // ACTIVE TABLE DATA
+    // ========================================================
+
+    const changes =
+        pageView === 'HISTORY'
+            ? historyChanges
+            : requestChanges;
+
+    const totalCount =
+        pageView === 'HISTORY'
+            ? historyChanges.length
+            : requestTotalCount;
+
+    const historyLoading =
+        approvedHistoryLoading ||
+        rejectedHistoryLoading;
+
+    const activeLoading =
+        pageView === 'HISTORY'
+            ? historyLoading
+            : loading;
+
+    const activeError =
+        pageView === 'HISTORY'
+            ? approvedHistoryError ||
+              rejectedHistoryError
+            : error;
 
     // ========================================================
     // TABLE COLUMNS
@@ -913,12 +1015,49 @@ export default function SalonProfileChanges() {
     const handleStatusChange = (
         event: SelectChangeEvent
     ) => {
+        setPageView('REQUESTS');
+
         setStatus(
             event.target.value as ProfileChangeStatus
         );
 
         setActionError(null);
         setActionSuccess(null);
+    };
+
+    // ========================================================
+    // OPEN HISTORY
+    // ========================================================
+
+    const handleOpenHistory = () => {
+        setPageView('HISTORY');
+
+        setActionError(null);
+        setActionSuccess(null);
+    };
+
+    // ========================================================
+    // REFRESH
+    // ========================================================
+
+    const handleRefresh = async () => {
+        setActionError(null);
+
+        try {
+            if (pageView === 'HISTORY') {
+                await Promise.all([
+                    refetchApprovedHistory(),
+                    refetchRejectedHistory()
+                ]);
+            } else {
+                await refetch();
+            }
+        } catch (err: any) {
+            setActionError(
+                err?.message ||
+                'Unable to refresh salon profile changes.'
+            );
+        }
     };
 
     // ========================================================
@@ -1167,10 +1306,9 @@ export default function SalonProfileChanges() {
                         variant="body2"
                         color="text.secondary"
                     >
-                        Review profile information
-                        and requested media changes
-                        together before approving or
-                        rejecting the salon request.
+                        {pageView === 'HISTORY'
+                            ? 'View the complete history of approved and rejected salon profile and media changes.'
+                            : 'Review profile information and requested media changes together before approving or rejecting the salon request.'}
                     </Typography>
                 </Box>
 
@@ -1187,52 +1325,123 @@ export default function SalonProfileChanges() {
                         }
                     }}
                 >
-                    <FormControl
-                        size="small"
-                        sx={{
-                            minWidth: 160
-                        }}
-                    >
-                        <InputLabel id="profile-change-status-label">
-                            Status
-                        </InputLabel>
-
-                        <Select
-                            labelId="profile-change-status-label"
-                            value={status}
-                            label="Status"
-                            onChange={
-                                handleStatusChange
-                            }
+                    {pageView ===
+                        'REQUESTS' && (
+                        <FormControl
+                            size="small"
+                            sx={{
+                                minWidth: 160
+                            }}
                         >
-                            <MenuItem value="PENDING">
-                                Pending
-                            </MenuItem>
+                            <InputLabel id="profile-change-status-label">
+                                Status
+                            </InputLabel>
 
-                            <MenuItem value="APPROVED">
-                                Approved
-                            </MenuItem>
+                            <Select
+                                labelId="profile-change-status-label"
+                                value={status}
+                                label="Status"
+                                onChange={
+                                    handleStatusChange
+                                }
+                            >
+                                <MenuItem value="PENDING">
+                                    Pending
+                                </MenuItem>
 
-                            <MenuItem value="REJECTED">
-                                Rejected
-                            </MenuItem>
-                        </Select>
-                    </FormControl>
+                                <MenuItem value="APPROVED">
+                                    Approved
+                                </MenuItem>
+
+                                <MenuItem value="REJECTED">
+                                    Rejected
+                                </MenuItem>
+                            </Select>
+                        </FormControl>
+                    )}
+
+                    <Button
+                        variant={
+                            pageView ===
+                            'HISTORY'
+                                ? 'contained'
+                                : 'outlined'
+                        }
+                        color="primary"
+                        onClick={
+                            handleOpenHistory
+                        }
+                    >
+                        History
+                    </Button>
+
+                    {pageView ===
+                        'HISTORY' && (
+                        <Button
+                            variant="outlined"
+                            onClick={() => {
+                                setPageView(
+                                    'REQUESTS'
+                                );
+                                setStatus(
+                                    'PENDING'
+                                );
+                                setActionError(
+                                    null
+                                );
+                                setActionSuccess(
+                                    null
+                                );
+                            }}
+                        >
+                            Requests
+                        </Button>
+                    )}
 
                     <Button
                         variant="outlined"
                         startIcon={
                             <ReloadOutlined />
                         }
-                        onClick={() =>
-                            refetch()
+                        onClick={
+                            handleRefresh
                         }
-                        disabled={loading}
+                        disabled={
+                            activeLoading
+                        }
                     >
                         Refresh
                     </Button>
                 </Stack>
             </Box>
+
+            {/* ====================================================
+                HISTORY INFORMATION
+            ==================================================== */}
+
+            {pageView === 'HISTORY' && (
+                <Alert
+                    severity="info"
+                    sx={{ mb: 2 }}
+                >
+                    <Typography
+                        variant="subtitle2"
+                        sx={{
+                            fontWeight: 600
+                        }}
+                    >
+                        Salon Change History
+                    </Typography>
+
+                    <Typography variant="body2">
+                        This history contains
+                        previously reviewed
+                        requests. Approved and
+                        rejected requests are
+                        retained for audit purposes.
+                    </Typography>
+                </Alert>
+            )}
 
             {/* ====================================================
                 SUCCESS
@@ -1281,7 +1490,7 @@ export default function SalonProfileChanges() {
                     overflow: 'hidden'
                 }}
             >
-                {error && (
+                {activeError && (
                     <Alert
                         severity="error"
                         sx={{ m: 2 }}
@@ -1292,17 +1501,19 @@ export default function SalonProfileChanges() {
                                 fontWeight: 600
                             }}
                         >
-                            Unable to load profile
-                            changes
+                            Unable to load salon
+                            profile changes
                         </Typography>
 
                         <Typography variant="body2">
-                            {error.message}
+                            {
+                                activeError.message
+                            }
                         </Typography>
                     </Alert>
                 )}
 
-                {loading ? (
+                {activeLoading ? (
                     <Box
                         sx={{
                             minHeight: 350,
@@ -1322,8 +1533,10 @@ export default function SalonProfileChanges() {
                             variant="body2"
                             color="text.secondary"
                         >
-                            Loading salon profile
-                            changes...
+                            {pageView ===
+                            'HISTORY'
+                                ? 'Loading salon change history...'
+                                : 'Loading salon profile changes...'}
                         </Typography>
                     </Box>
                 ) : changes.length ===
@@ -1357,10 +1570,13 @@ export default function SalonProfileChanges() {
                                 mb: 0.5
                             }}
                         >
-                            {status ===
-                                'PENDING'
-                                ? 'No pending salon changes'
-                                : 'No salon changes found'}
+                            {pageView ===
+                            'HISTORY'
+                                ? 'No salon change history'
+                                : status ===
+                                    'PENDING'
+                                    ? 'No pending salon changes'
+                                    : 'No salon changes found'}
                         </Typography>
 
                         <Typography
@@ -1368,10 +1584,10 @@ export default function SalonProfileChanges() {
                             color="text.secondary"
                             textAlign="center"
                         >
-                            There are currently
-                            no salon profile or
-                            media change requests
-                            for this status.
+                            {pageView ===
+                            'HISTORY'
+                                ? 'There are currently no approved or rejected salon profile or media change requests.'
+                                : 'There are currently no salon profile or media change requests for this status.'}
                         </Typography>
                     </Box>
                 ) : (
@@ -1529,6 +1745,25 @@ export default function SalonProfileChanges() {
                                                             change.submittedAt
                                                         )}
                                                     </Typography>
+
+                                                    {pageView ===
+                                                        'HISTORY' &&
+                                                        change.reviewedAt && (
+                                                            <Typography
+                                                                variant="caption"
+                                                                color="text.secondary"
+                                                                sx={{
+                                                                    display:
+                                                                        'block',
+                                                                    mt: 0.5
+                                                                }}
+                                                            >
+                                                                Reviewed:{' '}
+                                                                {formatDate(
+                                                                    change.reviewedAt
+                                                                )}
+                                                            </Typography>
+                                                        )}
                                                 </TableCell>
 
                                                 {/* CHANGES */}
@@ -1597,55 +1832,62 @@ export default function SalonProfileChanges() {
                                                                     change
                                                                 )
                                                             }
-                                                            title="View complete request"
+                                                            title={
+                                                                pageView ===
+                                                                'HISTORY'
+                                                                    ? 'View change history'
+                                                                    : 'View complete request'
+                                                            }
                                                         >
                                                             <EyeOutlined />
                                                         </IconButton>
 
                                                         {change.status ===
-                                                            'PENDING' && (
-                                                            <>
-                                                                <Button
-                                                                    size="small"
-                                                                    variant="contained"
-                                                                    color="success"
-                                                                    startIcon={
-                                                                        <CheckCircleOutlined />
-                                                                    }
-                                                                    onClick={() =>
-                                                                        openApproveModal(
-                                                                            change
-                                                                        )
-                                                                    }
-                                                                    disabled={
-                                                                        approving ||
-                                                                        rejecting
-                                                                    }
-                                                                >
-                                                                    Approve
-                                                                </Button>
+                                                            'PENDING' &&
+                                                            pageView ===
+                                                                'REQUESTS' && (
+                                                                <>
+                                                                    <Button
+                                                                        size="small"
+                                                                        variant="contained"
+                                                                        color="success"
+                                                                        startIcon={
+                                                                            <CheckCircleOutlined />
+                                                                        }
+                                                                        onClick={() =>
+                                                                            openApproveModal(
+                                                                                change
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            approving ||
+                                                                            rejecting
+                                                                        }
+                                                                    >
+                                                                        Approve
+                                                                    </Button>
 
-                                                                <Button
-                                                                    size="small"
-                                                                    variant="outlined"
-                                                                    color="error"
-                                                                    startIcon={
-                                                                        <CloseCircleOutlined />
-                                                                    }
-                                                                    onClick={() =>
-                                                                        openRejectModal(
-                                                                            change
-                                                                        )
-                                                                    }
-                                                                    disabled={
-                                                                        approving ||
-                                                                        rejecting
-                                                                    }
-                                                                >
-                                                                    Reject
-                                                                </Button>
-                                                            </>
-                                                        )}
+                                                                    <Button
+                                                                        size="small"
+                                                                        variant="outlined"
+                                                                        color="error"
+                                                                        startIcon={
+                                                                            <CloseCircleOutlined />
+                                                                        }
+                                                                        onClick={() =>
+                                                                            openRejectModal(
+                                                                                change
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            approving ||
+                                                                            rejecting
+                                                                        }
+                                                                    >
+                                                                        Reject
+                                                                    </Button>
+                                                                </>
+                                                            )}
                                                     </Stack>
                                                 </TableCell>
                                             </TableRow>
@@ -1657,9 +1899,9 @@ export default function SalonProfileChanges() {
                     </TableContainer>
                 )}
 
-                {!loading &&
+                {!activeLoading &&
                     changes.length >
-                    0 && (
+                        0 && (
                         <Box
                             sx={{
                                 px: 2,
@@ -1674,20 +1916,27 @@ export default function SalonProfileChanges() {
                                 variant="body2"
                                 color="text.secondary"
                             >
-                                Total {totalCount}{' '}
-                                salon change
-                                request
-                                {totalCount ===
-                                    1
-                                    ? ''
-                                    : 's'}
+                                {pageView ===
+                                'HISTORY'
+                                    ? `Total ${totalCount} historical salon change${
+                                          totalCount ===
+                                          1
+                                              ? ''
+                                              : 's'
+                                      }`
+                                    : `Total ${totalCount} salon change request${
+                                          totalCount ===
+                                          1
+                                              ? ''
+                                              : 's'
+                                      }`}
                             </Typography>
                         </Box>
                     )}
             </Paper>
 
             {/* ====================================================
-                VIEW COMPLETE REQUEST
+                VIEW COMPLETE REQUEST / HISTORY
             ==================================================== */}
 
             <Dialog
@@ -1712,7 +1961,13 @@ export default function SalonProfileChanges() {
                                     fontWeight: 600
                                 }}
                             >
-                                Salon Change Request
+                                {selectedChange?.status ===
+                                'APPROVED'
+                                    ? 'Approved Salon Change'
+                                    : selectedChange?.status ===
+                                        'REJECTED'
+                                        ? 'Rejected Salon Change'
+                                        : 'Salon Change Request'}
                             </Typography>
 
                             {selectedChange && (
@@ -1769,45 +2024,47 @@ export default function SalonProfileChanges() {
                     </Button>
 
                     {selectedChange?.status ===
-                        'PENDING' && (
-                        <>
-                            <Button
-                                variant="outlined"
-                                color="error"
-                                startIcon={
-                                    <CloseCircleOutlined />
-                                }
-                                onClick={() =>
-                                    openRejectModal(
-                                        selectedChange
-                                    )
-                                }
-                                disabled={
-                                    rejecting
-                                }
-                            >
-                                Reject
-                            </Button>
+                        'PENDING' &&
+                        pageView ===
+                            'REQUESTS' && (
+                            <>
+                                <Button
+                                    variant="outlined"
+                                    color="error"
+                                    startIcon={
+                                        <CloseCircleOutlined />
+                                    }
+                                    onClick={() =>
+                                        openRejectModal(
+                                            selectedChange
+                                        )
+                                    }
+                                    disabled={
+                                        rejecting
+                                    }
+                                >
+                                    Reject
+                                </Button>
 
-                            <Button
-                                variant="contained"
-                                color="success"
-                                startIcon={
-                                    <CheckCircleOutlined />
-                                }
-                                onClick={() =>
-                                    openApproveModal(
-                                        selectedChange
-                                    )
-                                }
-                                disabled={
-                                    approving
-                                }
-                            >
-                                Approve Changes
-                            </Button>
-                        </>
-                    )}
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    startIcon={
+                                        <CheckCircleOutlined />
+                                    }
+                                    onClick={() =>
+                                        openApproveModal(
+                                            selectedChange
+                                        )
+                                    }
+                                    disabled={
+                                        approving
+                                    }
+                                >
+                                    Approve Changes
+                                </Button>
+                            </>
+                        )}
                 </DialogActions>
             </Dialog>
 
@@ -2433,31 +2690,44 @@ function ProfileChangeDetails({
                     >
                         {requestedMedia.map(
                             (
-                                item
-                            ) => (
-                                <Grid
-                                    item
-                                    xs={12}
-                                    sm={6}
-                                    md={4}
-                                    key={`${item.media.imageId}-${item.label}`}
-                                >
-                                    <ImagePreview
-                                        url={
-                                            item.media
-                                                .objectUrl ||
-                                            ''
+                                item,
+                                index
+                            ) => {
+                                const imageUrl =
+                                    item.media
+                                        .objectUrl ||
+                                    null;
+
+                                return (
+                                    <Grid
+                                        item
+                                        xs={12}
+                                        sm={6}
+                                        md={4}
+                                        key={
+                                            item
+                                                .media
+                                                .imageId ||
+                                            `${item.label}-${index}`
                                         }
-                                        label={
-                                            item.label
-                                        }
-                                        mediaType={
-                                            item.media
-                                                .mediaType
-                                        }
-                                    />
-                                </Grid>
-                            )
+                                    >
+                                        <ImagePreview
+                                            url={
+                                                imageUrl ||
+                                                ''
+                                            }
+                                            label={
+                                                item.label
+                                            }
+                                            mediaType={
+                                                item
+                                                    .media
+                                                    .mediaType
+                                            }
+                                        />
+                                    </Grid>
+                                );
+                            }
                         )}
                     </Grid>
                 )}
@@ -2498,6 +2768,68 @@ function ProfileChangeDetails({
                                 )
                             )}
                         </Stack>
+                    </Box>
+                </>
+            )}
+
+            {/* ====================================================
+                REVIEW INFORMATION
+            ==================================================== */}
+
+            {change.status !==
+                'PENDING' && (
+                <>
+                    <Divider />
+
+                    <Box>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 600,
+                                mb: 2
+                            }}
+                        >
+                            Review History
+                        </Typography>
+
+                        <Paper
+                            variant="outlined"
+                            sx={{
+                                borderRadius: 2,
+                                overflow:
+                                    'hidden'
+                            }}
+                        >
+                            <Grid container>
+                                <InfoItem
+                                    label="Final Status"
+                                    value={getStatusLabel(
+                                        change.status
+                                    )}
+                                    xs={12}
+                                    sm={4}
+                                />
+
+                                <InfoItem
+                                    label="Reviewed By"
+                                    value={
+                                        change.reviewedBy ||
+                                        'Not provided'
+                                    }
+                                    xs={12}
+                                    sm={4}
+                                />
+
+                                <InfoItem
+                                    label="Reviewed At"
+                                    value={formatDate(
+                                        change.reviewedAt
+                                    )}
+                                    xs={12}
+                                    sm={4}
+                                />
+                            </Grid>
+                        </Paper>
                     </Box>
                 </>
             )}
@@ -2599,8 +2931,6 @@ function ProfileChangeSummary({
                     'warning.main'
             }}
         >
-            {/* HEADER */}
-
             <Box
                 sx={{
                     px: 2,
@@ -2684,8 +3014,6 @@ function ProfileChangeSummary({
                     </Stack>
                 </Stack>
             </Box>
-
-            {/* CHANGES */}
 
             <Stack
                 divider={
@@ -2797,8 +3125,6 @@ function ChangeSummaryItem({
                     />
                 </Stack>
 
-                {/* CURRENT VALUE */}
-
                 <Box
                     sx={{
                         p: 1.5,
@@ -2850,8 +3176,6 @@ function ChangeSummaryItem({
                     </Typography>
                 </Box>
 
-                {/* ARROW */}
-
                 <Box
                     sx={{
                         display: 'flex',
@@ -2871,8 +3195,6 @@ function ChangeSummaryItem({
                         ↓
                     </Typography>
                 </Box>
-
-                {/* REQUESTED VALUE */}
 
                 <Box
                     sx={{
@@ -3337,12 +3659,18 @@ function ImagePreview({
     label: string;
     mediaType?: string | null;
 }) {
-    const [
-        imageOpen,
-        setImageOpen
-    ] = useState(false);
+    const [imageOpen, setImageOpen] =
+        useState(false);
 
-    if (!url) {
+    const [imageError, setImageError] =
+        useState(false);
+
+    const normalizedUrl =
+        typeof url === 'string'
+            ? url.trim()
+            : '';
+
+    if (!normalizedUrl || imageError) {
         return (
             <Paper
                 variant="outlined"
@@ -3354,40 +3682,69 @@ function ImagePreview({
                 <Box
                     sx={{
                         width: '100%',
-                        height: 160,
-                        bgcolor:
-                            'action.hover',
+                        height: 200,
+                        bgcolor: 'action.hover',
                         display: 'flex',
-                        alignItems:
-                            'center',
-                        justifyContent:
-                            'center'
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        gap: 1,
+                        px: 2
                     }}
                 >
-                    <Stack
-                        spacing={1}
-                        alignItems="center"
-                    >
-                        <EyeOutlined />
+                    <EyeOutlined />
 
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        align="center"
+                    >
+                        {imageError
+                            ? 'Unable to load image'
+                            : 'No image URL available'}
+                    </Typography>
+
+                    {normalizedUrl && (
                         <Typography
                             variant="caption"
                             color="text.secondary"
+                            sx={{
+                                wordBreak:
+                                    'break-all',
+                                textAlign:
+                                    'center'
+                            }}
                         >
-                            No image URL
+                            {normalizedUrl}
                         </Typography>
-                    </Stack>
+                    )}
                 </Box>
 
                 <Box sx={{ p: 1.5 }}>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            fontWeight: 600
-                        }}
+                    <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        spacing={1}
+                        alignItems="center"
                     >
-                        {label}
-                    </Typography>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontWeight: 600
+                            }}
+                        >
+                            {label}
+                        </Typography>
+
+                        {mediaType && (
+                            <Chip
+                                size="small"
+                                label={mediaType}
+                                color="info"
+                                variant="outlined"
+                            />
+                        )}
+                    </Stack>
                 </Box>
             </Paper>
         );
@@ -3416,30 +3773,40 @@ function ImagePreview({
                 <Box
                     sx={{
                         width: '100%',
-                        height: 160,
-                        bgcolor:
-                            'action.hover',
+                        height: 200,
+                        bgcolor: 'action.hover',
                         display: 'flex',
-                        alignItems:
-                            'center',
-                        justifyContent:
-                            'center'
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden'
                     }}
                 >
                     <Box
                         component="img"
-                        src={url}
+                        src={normalizedUrl}
                         alt={label}
+                        loading="lazy"
                         sx={{
+                            display: 'block',
                             width: '100%',
                             height: '100%',
                             objectFit: 'cover'
                         }}
-                        onError={(
-                            event
-                        ) => {
-                            event.currentTarget.style.display =
-                                'none';
+                        onLoad={() => {
+                            setImageError(
+                                false
+                            );
+                        }}
+                        onError={(event) => {
+                            console.error(
+                                `[SalonProfileChanges] Image failed to load: ${label}`,
+                                normalizedUrl,
+                                event
+                            );
+
+                            setImageError(
+                                true
+                            );
                         }}
                     />
                 </Box>
@@ -3486,11 +3853,10 @@ function ImagePreview({
             <Dialog
                 open={imageOpen}
                 onClose={() =>
-                    setImageOpen(
-                        false
-                    )
+                    setImageOpen(false)
                 }
                 maxWidth="lg"
+                fullWidth
             >
                 <DialogTitle>
                     {label}
@@ -3499,22 +3865,30 @@ function ImagePreview({
                 <DialogContent
                     sx={{
                         p: 1,
-                        bgcolor: 'black'
+                        bgcolor: 'black',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: 300
                     }}
                 >
                     <Box
                         component="img"
-                        src={url}
+                        src={normalizedUrl}
                         alt={label}
                         sx={{
-                            display:
-                                'block',
-                            maxWidth:
-                                '90vw',
-                            maxHeight:
-                                '85vh',
-                            objectFit:
-                                'contain'
+                            display: 'block',
+                            maxWidth: '90vw',
+                            maxHeight: '80vh',
+                            width: 'auto',
+                            height: 'auto',
+                            objectFit: 'contain'
+                        }}
+                        onError={() => {
+                            console.error(
+                                `[SalonProfileChanges] Fullscreen image failed:`,
+                                normalizedUrl
+                            );
                         }}
                     />
                 </DialogContent>
