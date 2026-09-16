@@ -1292,3 +1292,120 @@ export const ADMIN_REJECT_SALON_PROFILE_CHANGE = gql`
     }
   }
 `;
+
+// ======================================================
+// GET SUBCATEGORIES
+// ======================================================
+
+export const GET_SUBCATEGORIES = gql`
+  query GetSubcategories(
+    $categoryId: ID
+    $search: String
+    $status: SubcategoryStatus
+  ) {
+    subcategories(
+      categoryId: $categoryId
+      search: $search
+      status: $status
+    ) {
+      success
+      message
+      totalCount
+
+      subcategories {
+        subcategoryId
+        categoryId
+        name
+        description
+        servicesCount
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+// ======================================================
+// CREATE SUBCATEGORY
+// ======================================================
+
+export const CREATE_SUBCATEGORY = gql`
+  mutation CreateSubcategory(
+    $input: CreateSubcategoryInput!
+  ) {
+    createSubcategory(
+      input: $input
+    ) {
+      success
+      message
+
+      subcategory {
+        subcategoryId
+        categoryId
+        name
+        description
+        servicesCount
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+// ======================================================
+// UPDATE SUBCATEGORY
+// ======================================================
+
+export const UPDATE_SUBCATEGORY = gql`
+  mutation UpdateSubcategory(
+    $input: UpdateSubcategoryInput!
+  ) {
+    updateSubcategory(
+      input: $input
+    ) {
+      success
+      message
+
+      subcategory {
+        subcategoryId
+        categoryId
+        name
+        description
+        servicesCount
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+// ======================================================
+// DELETE SUBCATEGORY
+// ======================================================
+
+export const DELETE_SUBCATEGORY = gql`
+  mutation DeleteSubcategory(
+    $subcategoryId: ID!
+  ) {
+    deleteSubcategory(
+      subcategoryId: $subcategoryId
+    ) {
+      success
+      message
+
+      subcategory {
+        subcategoryId
+        categoryId
+        name
+        description
+        servicesCount
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;

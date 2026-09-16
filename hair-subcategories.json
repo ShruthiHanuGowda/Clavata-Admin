@@ -1,0 +1,354 @@
+{
+  "Subcategories": [
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "8a7c1f42-5e91-4d36-a8c2-1f7b93e64a20" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Haircuts & Trims" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "c3d8a721-64f2-4b95-91e6-7a2c583bd914" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Styling" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "f1b64938-2d75-46c1-b8e4-93a7d5620f81" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Coloring" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "6e4a2b97-8c13-45d6-a0f9-52b7381ce604" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Highlights & Balayage" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "b7f39214-51a8-4c63-9e27-d6a8405fb312" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Bleaching & Lightening" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "d42e8f65-73b1-49c0-a526-18c9374be801" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Toning & Glossing" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "91c6e4a7-35d2-4f80-b928-6b5731da40e9" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Smoothening & Straightening" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "e58a3d72-9f14-4b61-a8c5-27d6401fb903" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Perming & Curling" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "4b729e16-c538-43a0-9fd7-82e4516ac307" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Treatments & Repair" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "a6d31852-7e49-4c20-b951-36f8420de715" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Spa" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "f73b2814-6d95-4ea0-b137-52c8649da301" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Scalp Care" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "2e94c751-a638-4fb2-8d17-63b5094ea826" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Fall & Hair Growth Care" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "d8a46139-2c75-4e83-b607-95f3127ca428" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Extensions" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "5c813e27-94b6-4a52-bf36-71d2058ca649" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Wigs & Hair Systems" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "39f672b1-8a54-4c20-9e63-d7415b0fc928" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Bridal & Wedding Hair" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "7d25b941-63e8-4fa2-a086-51c739e4d672" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Party & Occasion Hairstyling" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "c6518f24-7e93-4d50-b286-39a7451de508" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Men's Hair Services" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "e2975a63-4c18-46b9-a701-82d5369fc415" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Kids' Hair Services" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "b4812f93-6d57-4c08-a125-73e6490dc286" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Consultation" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "6f3a8527-19d4-4c61-b807-54e9263da710" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Wash & Conditioning" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "a925d673-4e28-49b1-8c56-70f3142da839" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair & Scalp Massage" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "e1637a48-2c95-4f70-b814-63d5290ae751" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Ayurvedic & Herbal Hair Care" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "51c7e392-8a64-4d15-b706-29f4831ec625" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Correction & Rescue" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "94e56173-b208-4c39-a762-15d8372fe904" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Hair Accessories & Hair Jewellery" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "subcategoryId": { "S": "73a21865-5d94-4f07-b683-91c426e75032" },
+          "categoryId": { "S": "CAT#fe2ca7c3-0797-4e59-9242-65c673f29360" },
+          "createdAt": { "S": "2026-09-16T09:21:36.567Z" },
+          "description": { "S": "" },
+          "name": { "S": "Specialty & Creative Hair Services" },
+          "servicesCount": { "N": "0" },
+          "status": { "S": "ACTIVE" },
+          "updatedAt": { "S": "2026-09-16T09:21:36.567Z" }
+        }
+      }
+    }
+  ]
+}
