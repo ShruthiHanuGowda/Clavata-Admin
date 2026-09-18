@@ -47,24 +47,19 @@ import {
   UserOutlined,
   SafetyCertificateOutlined,
   ClockCircleOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  EnvironmentOutlined,
+  BankOutlined,
+  StarFilled,
+  CalendarOutlined
 } from '@ant-design/icons';
 
 import { gql, useMutation, useQuery } from '@apollo/client';
 
-// ============================================================
-// ADMIN SALONS QUERY
-// ============================================================
-//
-// IMPORTANT:
-// This query already contains the required `documents` field.
-// Do not replace it with another salon query.
-// ============================================================
-
 import { ADMIN_SALONS } from '../../graphql/queries';
 
 // ============================================================
-// APPROVE SALON MUTATION
+// APPROVE SALON
 // ============================================================
 
 const ADMIN_APPROVE_SALON = gql`
@@ -77,7 +72,7 @@ const ADMIN_APPROVE_SALON = gql`
 `;
 
 // ============================================================
-// REJECT SALON MUTATION
+// REJECT SALON
 // ============================================================
 
 const ADMIN_REJECT_SALON = gql`
@@ -113,6 +108,10 @@ type SalonStatus =
   | 'CLOSED'
   | 'TEMPORARILY_CLOSED';
 
+// ============================================================
+// ADDRESS
+// ============================================================
+
 interface SalonAddress {
   addressLine?: string | null;
   city?: string | null;
@@ -121,7 +120,7 @@ interface SalonAddress {
 }
 
 // ============================================================
-// KYC DOCUMENTS
+// DOCUMENTS
 // ============================================================
 
 interface SalonDocuments {
@@ -129,6 +128,17 @@ interface SalonDocuments {
   aadhaarBack?: string | null;
   panCard?: string | null;
   gstCertificate?: string | null;
+}
+
+// ============================================================
+// SERVICE SELECTION
+// ============================================================
+
+interface SalonServiceSelection {
+  categoryId: string;
+  categoryName: string;
+  subcategoryId: string;
+  subcategoryName: string;
 }
 
 // ============================================================
@@ -156,7 +166,6 @@ interface AdminSalon {
   panNumber?: string | null;
   aadhaarNumber?: string | null;
 
-  // KYC DOCUMENTS
   documents?: SalonDocuments | null;
 
   bankAccount?: string | null;
@@ -167,9 +176,23 @@ interface AdminSalon {
   coverImageUrl?: string | null;
   galleryImages?: string[];
 
+  businessHours?: Record<
+    string,
+    {
+      isOpen?: boolean | null;
+      open?: string | null;
+      close?: string | null;
+    }
+  > | null;
+
+  // ==========================================================
+  // SELECTED SERVICES
+  // ==========================================================
+
+  serviceSelections?: SalonServiceSelection[];
+
   kycStatus: KycStatus;
 
-  // Returned by GraphQL
   adminApprovalStatus?: ApprovalStatus | null;
 
   salonStatus: SalonStatus;
@@ -280,6 +303,30 @@ const formatDateTime = (
   });
 };
 
+const formatCurrency = (
+  value?: number | null
+): string => {
+  return `₹${Number(value || 0).toLocaleString(
+    'en-IN'
+  )}`;
+};
+
+const maskValue = (
+  value?: string | null
+): string => {
+  if (!value) {
+    return 'Not provided';
+  }
+
+  const clean = String(value);
+
+  if (clean.length <= 4) {
+    return clean;
+  }
+
+  return `XXXX-XXXX-${clean.slice(-4)}`;
+};
+
 // ============================================================
 // APPROVAL TYPE
 // ============================================================
@@ -315,14 +362,10 @@ const getApprovalType = (
 const getApprovalStatus = (
   salon: AdminSalon
 ): ApprovalStatus => {
-  // Prefer backend adminApprovalStatus
-  // because that is the actual approval state.
-
   if (salon.adminApprovalStatus) {
     return salon.adminApprovalStatus;
   }
 
-  // Backward-compatible fallback
   if (salon.rejectedAt) {
     return 'REJECTED';
   }
@@ -354,21 +397,6 @@ const getPriority = (
 
 // ============================================================
 // DOCUMENT COUNT
-// ============================================================
-//
-// IMPORTANT:
-// Count the actual documents object returned by GraphQL.
-//
-// GraphQL:
-//
-// documents {
-//   aadhaarFront
-//   aadhaarBack
-//   panCard
-//   gstCertificate
-// }
-//
-// Total = 4
 // ============================================================
 
 const getDocumentCount = (
@@ -410,13 +438,11 @@ const mapSalonToApproval = (
   const priority =
     getPriority(salon);
 
-  // Use actual KYC documents
   const documentsSubmitted =
     getDocumentCount(
       salon.documents
     );
 
-  // Four actual document fields
   const totalDocuments = 4;
 
   const city =
@@ -442,7 +468,7 @@ const mapSalonToApproval = (
 
   if (
     approvalType ===
-      'SALON_APPLICATION' &&
+    'SALON_APPLICATION' &&
     salon.kycStatus === 'APPROVED'
   ) {
     notes =
@@ -518,7 +544,7 @@ const mapSalonToApproval = (
 };
 
 // ============================================================
-// APPROVAL TYPE LABEL
+// LABEL HELPERS
 // ============================================================
 
 const getApprovalTypeLabel = (
@@ -539,10 +565,6 @@ const getApprovalTypeLabel = (
   }
 };
 
-// ============================================================
-// APPROVAL TYPE COLOR
-// ============================================================
-
 const getApprovalTypeColor = (
   type: ApprovalType
 ): 'primary' | 'warning' | 'info' => {
@@ -561,10 +583,6 @@ const getApprovalTypeColor = (
   }
 };
 
-// ============================================================
-// KYC COLOR
-// ============================================================
-
 const getKycColor = (
   status: KycStatus
 ): 'warning' | 'success' | 'error' => {
@@ -581,7 +599,7 @@ const getKycColor = (
 };
 
 // ============================================================
-// APPROVAL STATUS CHIP
+// APPROVAL CHIP
 // ============================================================
 
 function ApprovalStatusChip({
@@ -593,9 +611,9 @@ function ApprovalStatusChip({
     ApprovalStatus,
     {
       color:
-        | 'warning'
-        | 'success'
-        | 'error';
+      | 'warning'
+      | 'success'
+      | 'error';
       label: string;
     }
   > = {
@@ -639,8 +657,8 @@ function PriorityChip({
   priority
 }: {
   priority:
-    | 'HIGH'
-    | 'NORMAL';
+  | 'HIGH'
+  | 'NORMAL';
 }) {
   if (
     priority === 'HIGH'
@@ -671,12 +689,112 @@ function PriorityChip({
 }
 
 // ============================================================
+// SECTION HEADER
+// ============================================================
+
+function SectionHeader({
+  title,
+  subtitle
+}: {
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <Box sx={{ mb: 2 }}>
+      <Typography
+        variant="h6"
+        fontWeight={700}
+      >
+        {title}
+      </Typography>
+
+      {subtitle && (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mt: 0.25 }}
+        >
+          {subtitle}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
+// ============================================================
+// DETAIL FIELD
+// ============================================================
+
+function DetailField({
+  label,
+  value,
+  icon
+}: {
+  label: string;
+  value?: string | number | null;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <Box
+      sx={{
+        p: 1.5,
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1.5,
+        height: '100%'
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        sx={{ mb: 0.5 }}
+      >
+        {icon && (
+          <Box
+            sx={{
+              color:
+                'text.secondary',
+              display: 'flex'
+            }}
+          >
+            {icon}
+          </Box>
+        )}
+
+        <Typography
+          variant="caption"
+          color="text.secondary"
+        >
+          {label}
+        </Typography>
+      </Stack>
+
+      <Typography
+        variant="body2"
+        fontWeight={600}
+        sx={{
+          wordBreak:
+            'break-word'
+        }}
+      >
+        {value !== undefined &&
+          value !== null &&
+          String(value).trim()
+          ? String(value)
+          : '—'}
+      </Typography>
+    </Box>
+  );
+}
+
+// ============================================================
 // PAGE
 // ============================================================
 
 export default function PendingApprovals() {
   // ==========================================================
-  // GRAPHQL - ADMIN SALONS
+  // GRAPHQL
   // ==========================================================
 
   const {
@@ -686,7 +804,7 @@ export default function PendingApprovals() {
     refetch
   } = useQuery<{
     adminSalons:
-      AdminSalonListResponse;
+    AdminSalonListResponse;
   }>(
     ADMIN_SALONS,
     {
@@ -706,37 +824,37 @@ export default function PendingApprovals() {
   );
 
   // ==========================================================
-  // GRAPHQL - APPROVE
+  // APPROVE
   // ==========================================================
 
   const [
     approveSalon,
     {
       loading:
-        approving
+      approving
     }
   ] =
     useMutation<{
       adminApproveSalon:
-        MutationResponse;
+      MutationResponse;
     }>(
       ADMIN_APPROVE_SALON
     );
 
   // ==========================================================
-  // GRAPHQL - REJECT
+  // REJECT
   // ==========================================================
 
   const [
     rejectSalon,
     {
       loading:
-        rejecting
+      rejecting
     }
   ] =
     useMutation<{
       adminRejectSalon:
-        MutationResponse;
+      MutationResponse;
     }>(
       ADMIN_REJECT_SALON
     );
@@ -759,7 +877,7 @@ export default function PendingApprovals() {
     );
 
   // ==========================================================
-  // LOCAL STATE
+  // STATE
   // ==========================================================
 
   const [search, setSearch] =
@@ -779,6 +897,17 @@ export default function PendingApprovals() {
   ] =
     useState<
       PendingApproval | null
+    >(null);
+
+  // IMPORTANT:
+  // This is the COMPLETE salon object.
+  // The View popup uses this instead of PendingApproval.
+  const [
+    selectedSalon,
+    setSelectedSalon
+  ] =
+    useState<
+      AdminSalon | null
     >(null);
 
   const [
@@ -818,29 +947,29 @@ export default function PendingApprovals() {
     serverApprovals.filter(
       (item) =>
         item.status ===
-          'PENDING' &&
+        'PENDING' &&
         item.priority ===
-          'HIGH'
+        'HIGH'
     ).length;
 
   const salonApplicationsCount =
     serverApprovals.filter(
       (item) =>
         item.status ===
-          'PENDING' &&
+        'PENDING' &&
         item.type ===
-          'SALON_APPLICATION'
+        'SALON_APPLICATION'
     ).length;
 
   const kycCount =
     serverApprovals.filter(
       (item) =>
         item.status ===
-          'PENDING' &&
+        'PENDING' &&
         (
           item.type === 'KYC' ||
           item.type ===
-            'DOCUMENT_RESUBMISSION'
+          'DOCUMENT_RESUBMISSION'
         )
     ).length;
 
@@ -859,9 +988,9 @@ export default function PendingApprovals() {
         (item) => {
           const matchesType =
             typeFilter ===
-              'ALL' ||
+            'ALL' ||
             item.type ===
-              typeFilter;
+            typeFilter;
 
           const matchesSearch =
             !query ||
@@ -904,7 +1033,7 @@ export default function PendingApprovals() {
     filteredApprovals.slice(
       page * rowsPerPage,
       page * rowsPerPage +
-        rowsPerPage
+      rowsPerPage
     );
 
   // ==========================================================
@@ -919,7 +1048,7 @@ export default function PendingApprovals() {
   };
 
   // ==========================================================
-  // TYPE FILTER
+  // FILTER
   // ==========================================================
 
   const handleTypeFilter = (
@@ -927,8 +1056,8 @@ export default function PendingApprovals() {
   ) => {
     setTypeFilter(
       event.target.value as
-        | 'ALL'
-        | ApprovalType
+      | 'ALL'
+      | ApprovalType
     );
 
     setPage(0);
@@ -961,14 +1090,69 @@ export default function PendingApprovals() {
     };
 
   // ==========================================================
-  // VIEW DETAILS
+  // VIEW
   // ==========================================================
 
   const handleView = (
     approval: PendingApproval
   ) => {
+    /*
+     * IMPORTANT:
+     *
+     * PendingApproval contains only summary data.
+     *
+     * Find the original complete AdminSalon
+     * so the popup has:
+     *
+     * - address
+     * - documents
+     * - bank
+     * - services
+     * - performance
+     * - coordinates
+     * - approval information
+     * - etc.
+     */
+
+    const salon =
+      serverSalons.find(
+        item =>
+          item.salonId ===
+          approval.salonId
+      );
+    console.log('========== PENDING APPROVAL VIEW ==========');
+    console.log('Salon ID:', approval.salonId);
+    console.log('Full salon:', JSON.stringify(salon, null, 2));
+    console.log('Service selections:', salon?.serviceSelections);
+    console.log('============================================');
+    if (!salon) {
+      alert(
+        'Complete salon details could not be found.'
+      );
+
+      return;
+    }
+
+    console.log(
+      '========== PENDING APPROVAL VIEW =========='
+    );
+
+    console.log(
+      'Salon:',
+      salon.salonName
+    );
+
+    console.log(
+      'Service selections:',
+      salon.serviceSelections
+    );
+
     setSelectedApproval(
       approval
+    );
+
+    setSelectedSalon(
+      salon
     );
 
     setDetailsOpen(true);
@@ -1003,7 +1187,7 @@ export default function PendingApprovals() {
       ) {
         alert(
           response?.message ||
-            'Failed to approve salon application.'
+          'Failed to approve salon application.'
         );
 
         return;
@@ -1011,10 +1195,14 @@ export default function PendingApprovals() {
 
       alert(
         response.message ||
-          'Salon application approved successfully.'
+        'Salon application approved successfully.'
       );
 
       setSelectedApproval(
+        null
+      );
+
+      setSelectedSalon(
         null
       );
 
@@ -1086,7 +1274,7 @@ export default function PendingApprovals() {
       ) {
         alert(
           response?.message ||
-            'Failed to reject salon application.'
+          'Failed to reject salon application.'
         );
 
         return;
@@ -1094,13 +1282,14 @@ export default function PendingApprovals() {
 
       alert(
         response.message ||
-          'Salon application rejected successfully.'
+        'Salon application rejected successfully.'
       );
 
       setRejectOpen(false);
       setDetailsOpen(false);
       setRejectionReason('');
       setSelectedApproval(null);
+      setSelectedSalon(null);
 
       await refetch();
     } catch (rejectError) {
@@ -1122,7 +1311,16 @@ export default function PendingApprovals() {
   // ==========================================================
 
   const closeDetails = () => {
+    if (
+      approving ||
+      rejecting
+    ) {
+      return;
+    }
+
     setDetailsOpen(false);
+    setSelectedSalon(null);
+    setSelectedApproval(null);
   };
 
   // ==========================================================
@@ -1277,35 +1475,35 @@ export default function PendingApprovals() {
           </Alert>
         )}
 
-      {/* HIGH PRIORITY ALERT */}
+      {/* HIGH PRIORITY */}
 
       {highPriorityCount >
         0 && (
-        <Alert
-          severity="warning"
-          icon={
-            <ClockCircleOutlined />
-          }
-          sx={{ mb: 3 }}
-        >
-          <strong>
-            {highPriorityCount}
-          </strong>{' '}
-          high-priority approval
-          {highPriorityCount >
-          1
-            ? 's'
-            : ''}{' '}
-          require
-          {highPriorityCount ===
-          1
-            ? 's'
-            : ''}{' '}
-          your attention.
-        </Alert>
-      )}
+          <Alert
+            severity="warning"
+            icon={
+              <ClockCircleOutlined />
+            }
+            sx={{ mb: 3 }}
+          >
+            <strong>
+              {highPriorityCount}
+            </strong>{' '}
+            high-priority approval
+            {highPriorityCount >
+              1
+              ? 's'
+              : ''}{' '}
+            require
+            {highPriorityCount ===
+              1
+              ? 's'
+              : ''}{' '}
+            your attention.
+          </Alert>
+        )}
 
-      {/* SUMMARY CARDS */}
+      {/* SUMMARY */}
 
       <Grid
         container
@@ -1401,7 +1599,7 @@ export default function PendingApprovals() {
         </Grid>
       </Grid>
 
-      {/* TABLE CARD */}
+      {/* TABLE */}
 
       <Card
         sx={{
@@ -1413,7 +1611,7 @@ export default function PendingApprovals() {
         <CardContent
           sx={{ p: 0 }}
         >
-          {/* FILTER BAR */}
+          {/* FILTER */}
 
           <Box
             sx={{
@@ -1481,16 +1679,16 @@ export default function PendingApprovals() {
 
             {(search ||
               typeFilter !==
-                'ALL') && (
-              <Button
-                variant="text"
-                onClick={
-                  handleReset
-                }
-              >
-                Clear
-              </Button>
-            )}
+              'ALL') && (
+                <Button
+                  variant="text"
+                  onClick={
+                    handleReset
+                  }
+                >
+                  Clear
+                </Button>
+              )}
           </Box>
 
           <Divider />
@@ -1537,7 +1735,7 @@ export default function PendingApprovals() {
 
               <TableBody>
                 {paginatedApprovals.length ===
-                0 ? (
+                  0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={8}
@@ -1591,14 +1789,10 @@ export default function PendingApprovals() {
                           approval.id
                         }
                       >
-                        {/* APPROVAL */}
-
                         <TableCell>
                           <Typography
                             variant="body2"
-                            fontWeight={
-                              600
-                            }
+                            fontWeight={600}
                             color="primary.main"
                           >
                             {
@@ -1616,14 +1810,10 @@ export default function PendingApprovals() {
                           </Typography>
                         </TableCell>
 
-                        {/* SALON */}
-
                         <TableCell>
                           <Stack
                             direction="row"
-                            spacing={
-                              1.5
-                            }
+                            spacing={1.5}
                             alignItems="center"
                           >
                             <Box
@@ -1660,9 +1850,7 @@ export default function PendingApprovals() {
                             >
                               <Typography
                                 variant="body2"
-                                fontWeight={
-                                  600
-                                }
+                                fontWeight={600}
                                 noWrap
                               >
                                 {
@@ -1685,8 +1873,6 @@ export default function PendingApprovals() {
                             </Box>
                           </Stack>
                         </TableCell>
-
-                        {/* OWNER */}
 
                         <TableCell>
                           <Stack
@@ -1715,8 +1901,6 @@ export default function PendingApprovals() {
                           </Stack>
                         </TableCell>
 
-                        {/* REQUEST */}
-
                         <TableCell>
                           <Chip
                             size="small"
@@ -1732,8 +1916,6 @@ export default function PendingApprovals() {
                             }}
                           />
                         </TableCell>
-
-                        {/* KYC */}
 
                         <TableCell>
                           <Chip
@@ -1769,8 +1951,6 @@ export default function PendingApprovals() {
                           </Typography>
                         </TableCell>
 
-                        {/* PRIORITY */}
-
                         <TableCell>
                           <PriorityChip
                             priority={
@@ -1778,8 +1958,6 @@ export default function PendingApprovals() {
                             }
                           />
                         </TableCell>
-
-                        {/* DATE */}
 
                         <TableCell>
                           <Typography
@@ -1791,17 +1969,13 @@ export default function PendingApprovals() {
                           </Typography>
                         </TableCell>
 
-                        {/* ACTIONS */}
-
                         <TableCell align="right">
                           <Stack
                             direction="row"
-                            spacing={
-                              0.5
-                            }
+                            spacing={0.5}
                             justifyContent="flex-end"
                           >
-                            <Tooltip title="Review">
+                            <Tooltip title="View">
                               <IconButton
                                 size="small"
                                 color="primary"
@@ -1817,56 +1991,54 @@ export default function PendingApprovals() {
 
                             {approval.status ===
                               'PENDING' && (
-                              <>
-                                <Tooltip title="Approve">
-                                  <span>
-                                    <IconButton
-                                      size="small"
-                                      color="success"
-                                      disabled={
-                                        approving ||
-                                        rejecting
-                                      }
-                                      onClick={() =>
-                                        handleApprove(
-                                          approval
-                                        )
-                                      }
-                                    >
-                                      {approving ? (
-                                        <CircularProgress
-                                          size={
-                                            18
-                                          }
-                                        />
-                                      ) : (
-                                        <CheckCircleOutlined />
-                                      )}
-                                    </IconButton>
-                                  </span>
-                                </Tooltip>
+                                <>
+                                  <Tooltip title="Approve">
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        color="success"
+                                        disabled={
+                                          approving ||
+                                          rejecting
+                                        }
+                                        onClick={() =>
+                                          handleApprove(
+                                            approval
+                                          )
+                                        }
+                                      >
+                                        {approving ? (
+                                          <CircularProgress
+                                            size={18}
+                                          />
+                                        ) : (
+                                          <CheckCircleOutlined />
+                                        )}
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
 
-                                <Tooltip title="Reject">
-                                  <span>
-                                    <IconButton
-                                      size="small"
-                                      color="error"
-                                      disabled={
-                                        approving ||
-                                        rejecting
-                                      }
-                                      onClick={() =>
-                                        openRejectDialog(
-                                          approval
-                                        )
-                                      }
-                                    >
-                                      <CloseCircleOutlined />
-                                    </IconButton>
-                                  </span>
-                                </Tooltip>
-                              </>
-                            )}
+                                  <Tooltip title="Reject">
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        color="error"
+                                        disabled={
+                                          approving ||
+                                          rejecting
+                                        }
+                                        onClick={() =>
+                                          openRejectDialog(
+                                            approval
+                                          )
+                                        }
+                                      >
+                                        <CloseCircleOutlined />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                </>
+                              )}
                           </Stack>
                         </TableCell>
                       </TableRow>
@@ -1917,19 +2089,27 @@ export default function PendingApprovals() {
       </Card>
 
       {/* ======================================================
-          REVIEW DIALOG
+          FULL SALON VIEW DIALOG
       ====================================================== */}
 
       <Dialog
-        open={detailsOpen}
+        open={
+          detailsOpen &&
+          Boolean(selectedSalon)
+        }
         onClose={
           closeDetails
         }
-        maxWidth="md"
         fullWidth
+        maxWidth="lg"
+        scroll="paper"
       >
-        {selectedApproval && (
+        {selectedSalon && (
           <>
+            {/* ==================================================
+                TITLE
+            ================================================== */}
+
             <DialogTitle>
               <Stack
                 direction={{
@@ -1941,102 +2121,68 @@ export default function PendingApprovals() {
                   xs: 'flex-start',
                   sm: 'center'
                 }}
-                spacing={1}
+                spacing={1.5}
               >
                 <Box>
                   <Typography
                     variant="h5"
                     fontWeight={700}
                   >
-                    Review Approval
+                    {selectedSalon.salonName ||
+                      'Salon Details'}
                   </Typography>
 
                   <Typography
                     variant="body2"
                     color="text.secondary"
+                    sx={{ mt: 0.5 }}
                   >
+                    Salon ID:{' '}
                     {
-                      selectedApproval.id
-                    }{' '}
-                    ·{' '}
-                    {
-                      selectedApproval.salonName
+                      selectedSalon.salonId
                     }
                   </Typography>
                 </Box>
 
-                <ApprovalStatusChip
-                  status={
-                    selectedApproval.status
-                  }
-                />
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  flexWrap="wrap"
+                  useFlexGap
+                >
+                  <Chip
+                    size="small"
+                    color={getKycColor(
+                      selectedSalon.kycStatus
+                    )}
+                    label={`KYC ${selectedSalon.kycStatus}`}
+                  />
+
+                  <ApprovalStatusChip
+                    status={getApprovalStatus(
+                      selectedSalon
+                    )}
+                  />
+                </Stack>
               </Stack>
             </DialogTitle>
 
             <DialogContent
               dividers
             >
-              {/* REQUEST */}
+              {/* ==================================================
+                  BUSINESS INFORMATION
+              ================================================== */}
 
-              <Box sx={{ mb: 3 }}>
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={700}
-                  sx={{
-                    mb: 1.5
-                  }}
-                >
-                  Approval Request
-                </Typography>
-
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  flexWrap="wrap"
-                  useFlexGap
-                >
-                  <Chip
-                    color={getApprovalTypeColor(
-                      selectedApproval.type
-                    )}
-                    label={getApprovalTypeLabel(
-                      selectedApproval.type
-                    )}
-                  />
-
-                  <PriorityChip
-                    priority={
-                      selectedApproval.priority
-                    }
-                  />
-                </Stack>
-              </Box>
-
-              <Divider
-                sx={{
-                  mb: 3
-                }}
+              <SectionHeader
+                title="Business Information"
+                subtitle="Salon registration and business details"
               />
-
-              {/* SALON INFORMATION */}
-
-              <Typography
-                variant="subtitle1"
-                fontWeight={700}
-                sx={{
-                  mb: 2
-                }}
-              >
-                Salon Information
-              </Typography>
 
               <Grid
                 container
                 spacing={2}
-                sx={{
-                  mb: 3
-                }}
+                sx={{ mb: 3 }}
               >
                 <Grid
                   item
@@ -2046,7 +2192,7 @@ export default function PendingApprovals() {
                   <DetailField
                     label="Salon Name"
                     value={
-                      selectedApproval.salonName
+                      selectedSalon.salonName
                     }
                   />
                 </Grid>
@@ -2059,11 +2205,56 @@ export default function PendingApprovals() {
                   <DetailField
                     label="Business Type"
                     value={
-                      selectedApproval.businessType
+                      selectedSalon.businessType
                     }
                   />
                 </Grid>
 
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="Salon Status"
+                    value={
+                      selectedSalon.salonStatus
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="Application Submitted"
+                    value={formatDateTime(
+                      selectedSalon.createdAt
+                    )}
+                    icon={
+                      <CalendarOutlined />
+                    }
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ mb: 3 }} />
+
+              {/* ==================================================
+                  OWNER INFORMATION
+              ================================================== */}
+
+              <SectionHeader
+                title="Owner Information"
+              />
+
+              <Grid
+                container
+                spacing={2}
+                sx={{ mb: 3 }}
+              >
                 <Grid
                   item
                   xs={12}
@@ -2072,7 +2263,10 @@ export default function PendingApprovals() {
                   <DetailField
                     label="Owner Name"
                     value={
-                      selectedApproval.ownerName
+                      selectedSalon.ownerName
+                    }
+                    icon={
+                      <UserOutlined />
                     }
                   />
                 </Grid>
@@ -2083,9 +2277,9 @@ export default function PendingApprovals() {
                   sm={6}
                 >
                   <DetailField
-                    label="Phone Number"
+                    label="Phone"
                     value={
-                      selectedApproval.phoneNumber
+                      selectedSalon.ownerPhoneNumber
                     }
                   />
                 </Grid>
@@ -2093,11 +2287,26 @@ export default function PendingApprovals() {
                 <Grid
                   item
                   xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="Alternate Phone"
+                    value={
+                      selectedSalon.alternatePhone ||
+                      'Not provided'
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
                 >
                   <DetailField
                     label="Email"
                     value={
-                      selectedApproval.email
+                      selectedSalon.email
                     }
                   />
                 </Grid>
@@ -2105,232 +2314,874 @@ export default function PendingApprovals() {
                 <Grid
                   item
                   xs={12}
-                  sm={6}
                 >
                   <DetailField
-                    label="City"
+                    label="Owner User ID"
                     value={
-                      selectedApproval.city
-                    }
-                  />
-                </Grid>
-
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
-                  <DetailField
-                    label="State"
-                    value={
-                      selectedApproval.state
+                      selectedSalon.ownerUserId
                     }
                   />
                 </Grid>
               </Grid>
 
-              <Divider
-                sx={{
-                  mb: 3
-                }}
+              <Divider sx={{ mb: 3 }} />
+
+              {/* ==================================================
+                  BUSINESS LOCATION
+              ================================================== */}
+
+              <SectionHeader
+                title="Business Location"
+                subtitle="Registered salon address and coordinates"
               />
 
-              {/* VERIFICATION */}
-
-              <Typography
-                variant="subtitle1"
-                fontWeight={700}
-                sx={{
-                  mb: 2
-                }}
-              >
-                Verification Status
-              </Typography>
-
-              <Stack
-                direction={{
-                  xs: 'column',
-                  sm: 'row'
-                }}
+              <Grid
+                container
                 spacing={2}
+                sx={{ mb: 3 }}
+              >
+                <Grid
+                  item
+                  xs={12}
+                >
+                  <DetailField
+                    label="Address"
+                    value={
+                      selectedSalon.address
+                        ?.addressLine
+                    }
+                    icon={
+                      <EnvironmentOutlined />
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <DetailField
+                    label="City"
+                    value={
+                      selectedSalon.address
+                        ?.city
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <DetailField
+                    label="State"
+                    value={
+                      selectedSalon.address
+                        ?.state
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <DetailField
+                    label="Pincode"
+                    value={
+                      selectedSalon.address
+                        ?.pincode
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="Latitude"
+                    value={
+                      selectedSalon.latitude
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="Longitude"
+                    value={
+                      selectedSalon.longitude
+                    }
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ mb: 3 }} />
+
+              {/* ==================================================
+                  SELECTED SERVICES
+              ================================================== */}
+
+              <SectionHeader
+                title="Selected Services"
+                subtitle={
+                  Array.isArray(
+                    selectedSalon.serviceSelections
+                  )
+                    ? `${selectedSalon.serviceSelections.length} selected service${selectedSalon.serviceSelections.length ===
+                      1
+                      ? ''
+                      : 's'
+                    }`
+                    : 'Services selected during salon registration'
+                }
+              />
+
+              {Array.isArray(
+                selectedSalon.serviceSelections
+              ) &&
+                selectedSalon
+                  .serviceSelections
+                  .length > 0 ? (
+                <Box sx={{ mb: 3 }}>
+                  <Stack
+                    spacing={1.5}
+                  >
+                    {selectedSalon.serviceSelections.map(
+                      (
+                        selection,
+                        index
+                      ) => (
+                        <Paper
+                          key={`${selection.categoryId}-${selection.subcategoryId}-${index}`}
+                          variant="outlined"
+                          sx={{
+                            p: 2,
+                            borderRadius: 2
+                          }}
+                        >
+                          <Stack
+                            direction={{
+                              xs: 'column',
+                              sm: 'row'
+                            }}
+                            spacing={1.25}
+                            alignItems={{
+                              xs: 'flex-start',
+                              sm: 'center'
+                            }}
+                          >
+                            <Chip
+                              label={
+                                selection.categoryName ||
+                                'Category name unavailable'
+                              }
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                              sx={{
+                                fontWeight: 600
+                              }}
+                            />
+
+                            <Typography
+                              sx={{
+                                fontWeight: 700,
+                                color:
+                                  'text.secondary'
+                              }}
+                            >
+                              →
+                            </Typography>
+
+                            <Chip
+                              label={
+                                selection.subcategoryName ||
+                                'Subcategory name unavailable'
+                              }
+                              size="small"
+                              variant="outlined"
+                            />
+                          </Stack>
+
+                          {/* IDs are kept small for admin debugging/reference */}
+                          {(selection.categoryId ||
+                            selection.subcategoryId) && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
+                                  display:
+                                    'block',
+                                  mt: 1
+                                }}
+                              >
+                                Category ID:{' '}
+                                {
+                                  selection.categoryId
+                                }
+                                {' · '}
+                                Subcategory ID:{' '}
+                                {
+                                  selection.subcategoryId
+                                }
+                              </Typography>
+                            )}
+                        </Paper>
+                      )
+                    )}
+                  </Stack>
+                </Box>
+              ) : (
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    mb: 3,
+                    borderRadius: 2
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    No service selections
+                    found for this salon.
+                  </Typography>
+                </Paper>
+              )}
+
+              <Divider sx={{ mb: 3 }} />
+
+              {/* ==================================================
+                  KYC / BUSINESS DOCUMENTS
+              ================================================== */}
+
+              <SectionHeader
+                title="KYC / Business Documents"
+              />
+
+              <Grid
+                container
+                spacing={2}
+                sx={{ mb: 3 }}
+              >
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="GST Number"
+                    value={
+                      selectedSalon.gstNumber
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="PAN Number"
+                    value={
+                      selectedSalon.panNumber
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="Aadhaar"
+                    value={maskValue(
+                      selectedSalon.aadhaarNumber
+                    )}
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="KYC Status"
+                    value={
+                      selectedSalon.kycStatus
+                    }
+                  />
+                </Grid>
+              </Grid>
+
+              <Paper
+                variant="outlined"
                 sx={{
-                  mb: 3
+                  p: 2,
+                  mb: 3,
+                  borderRadius: 2
                 }}
               >
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    flex: 1,
-                    borderRadius: 1.5
-                  }}
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={700}
+                  sx={{ mb: 1.5 }}
                 >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    KYC Status
-                  </Typography>
+                  Submitted Documents
+                </Typography>
 
-                  <Box sx={{ mt: 1 }}>
-                    <Chip
-                      size="small"
-                      color={getKycColor(
-                        selectedApproval.kycStatus
-                      )}
-                      label={
-                        selectedApproval.kycStatus
-                      }
-                    />
-                  </Box>
-                </Paper>
-
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    flex: 1,
-                    borderRadius: 1.5
-                  }}
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  flexWrap="wrap"
+                  useFlexGap
                 >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    Documents
-                  </Typography>
-
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      mt: 0.5
-                    }}
-                  >
-                    {
-                      selectedApproval.documentsSubmitted
+                  <DocumentChip
+                    label="Aadhaar Front"
+                    value={
+                      selectedSalon.documents
+                        ?.aadhaarFront
                     }
-                    /
-                    {
-                      selectedApproval.totalDocuments
-                    }
-                  </Typography>
-
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    Aadhaar Front · Aadhaar Back ·
-                    PAN · GST
-                  </Typography>
-                </Paper>
-              </Stack>
-
-              {/* NOTES */}
-
-              {selectedApproval.notes && (
-                <Box
-                  sx={{
-                    p: 2,
-                    bgcolor:
-                      'grey.50',
-                    borderRadius: 1.5,
-                    mb: 3
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    fontWeight={700}
-                  >
-                    Internal Notes
-                  </Typography>
-
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                      mt: 0.5
-                    }}
-                  >
-                    {
-                      selectedApproval.notes
-                    }
-                  </Typography>
-                </Box>
-              )}
-
-              {/* PREVIOUS REJECTION */}
-
-              {selectedApproval.rejectionReason && (
-                <Box
-                  sx={{
-                    p: 2,
-                    bgcolor:
-                      'error.lighter',
-                    borderRadius: 1.5
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    color="error.main"
-                    fontWeight={700}
-                  >
-                    Previous Rejection
-                  </Typography>
-
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      mt: 0.5
-                    }}
-                  >
-                    {
-                      selectedApproval.rejectionReason
-                    }
-                  </Typography>
-                </Box>
-              )}
-
-              {/* REVIEW HISTORY */}
-
-              {selectedApproval.reviewedAt && (
-                <>
-                  <Divider
-                    sx={{
-                      my: 3
-                    }}
                   />
 
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                  >
-                    <HistoryOutlined />
+                  <DocumentChip
+                    label="Aadhaar Back"
+                    value={
+                      selectedSalon.documents
+                        ?.aadhaarBack
+                    }
+                  />
 
+                  <DocumentChip
+                    label="PAN"
+                    value={
+                      selectedSalon.documents
+                        ?.panCard
+                    }
+                  />
+
+                  <DocumentChip
+                    label="GST"
+                    value={
+                      selectedSalon.documents
+                        ?.gstCertificate
+                    }
+                  />
+                </Stack>
+              </Paper>
+
+              <Divider sx={{ mb: 3 }} />
+
+              {/* ==================================================
+                  VERIFICATION
+              ================================================== */}
+
+              <SectionHeader
+                title="Verification & Approval"
+              />
+
+              <Grid
+                container
+                spacing={2}
+                sx={{ mb: 3 }}
+              >
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      height: '100%'
+                    }}
+                  >
                     <Typography
-                      variant="body2"
+                      variant="caption"
                       color="text.secondary"
                     >
-                      Reviewed by{' '}
-                      <strong>
-                        {
-                          selectedApproval.reviewedBy ||
-                          'Admin'
-                        }
-                      </strong>{' '}
-                      on{' '}
-                      {
-                        formatDateTime(
-                          selectedApproval.reviewedAt
-                        )
-                      }
+                      KYC Status
                     </Typography>
-                  </Stack>
-                </>
-              )}
+
+                    <Box sx={{ mt: 1 }}>
+                      <Chip
+                        size="small"
+                        color={getKycColor(
+                          selectedSalon.kycStatus
+                        )}
+                        label={
+                          selectedSalon.kycStatus
+                        }
+                      />
+                    </Box>
+
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        display:
+                          'block',
+                        mt: 1
+                      }}
+                    >
+                      KYC is controlled by
+                      the third-party
+                      verification
+                      provider.
+                    </Typography>
+                  </Paper>
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      height: '100%'
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Admin Approval
+                    </Typography>
+
+                    <Box sx={{ mt: 1 }}>
+                      <ApprovalStatusChip
+                        status={getApprovalStatus(
+                          selectedSalon
+                        )}
+                      />
+                    </Box>
+
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        display:
+                          'block',
+                        mt: 1
+                      }}
+                    >
+                      Admin approval controls
+                      the provider approval
+                      flow.
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ mb: 3 }} />
+
+              {/* ==================================================
+                  BANK
+              ================================================== */}
+
+              <SectionHeader
+                title="Bank Information"
+              />
+
+              <Grid
+                container
+                spacing={2}
+                sx={{ mb: 3 }}
+              >
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="Account Holder"
+                    value={
+                      selectedSalon.accountHolderName
+                    }
+                    icon={
+                      <BankOutlined />
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="Bank Account"
+                    value={
+                      selectedSalon.bankAccount ||
+                      'Not provided'
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="IFSC"
+                    value={
+                      selectedSalon.ifsc ||
+                      'Not provided'
+                    }
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ mb: 3 }} />
+
+              {/* ==================================================
+                  SALON ACTIVITY
+              ================================================== */}
+
+              <SectionHeader
+                title="Salon Activity"
+              />
+
+              <Grid
+                container
+                spacing={2}
+                sx={{ mb: 3 }}
+              >
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <StatusField
+                    label="Active"
+                    value={
+                      selectedSalon.isActive
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <StatusField
+                    label="Visible"
+                    value={
+                      selectedSalon.isVisible
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <StatusField
+                    label="Deleted"
+                    value={
+                      selectedSalon.isDeleted
+                    }
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ mb: 3 }} />
+
+              {/* ==================================================
+                  RATING
+              ================================================== */}
+
+              <SectionHeader
+                title="Salon Performance"
+              />
+
+              <Grid
+                container
+                spacing={2}
+                sx={{ mb: 3 }}
+              >
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <MetricCard
+                    label="Rating"
+                    value={
+                      selectedSalon.averageRating >
+                        0
+                        ? selectedSalon.averageRating.toFixed(
+                          1
+                        )
+                        : 'No ratings'
+                    }
+                    icon={
+                      <StarFilled />
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <MetricCard
+                    label="Reviews"
+                    value={
+                      selectedSalon.totalReviews
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <MetricCard
+                    label="Total Appointments"
+                    value={
+                      selectedSalon.totalAppointments
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <MetricCard
+                    label="Completed"
+                    value={
+                      selectedSalon.totalCompletedAppointments
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <MetricCard
+                    label="Cancelled"
+                    value={
+                      selectedSalon.totalCancelledAppointments
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                >
+                  <MetricCard
+                    label="Total Revenue"
+                    value={formatCurrency(
+                      selectedSalon.totalRevenue
+                    )}
+                  />
+                </Grid>
+              </Grid>
+
+              {/* ==================================================
+                  APPROVAL HISTORY
+              ================================================== */}
+
+              {(selectedSalon.approvedAt ||
+                selectedSalon.rejectedAt ||
+                selectedSalon.rejectionReason) && (
+                  <>
+                    <Divider
+                      sx={{ mb: 3 }}
+                    />
+
+                    <SectionHeader
+                      title="Approval History"
+                    />
+
+                    <Grid
+                      container
+                      spacing={2}
+                      sx={{ mb: 2 }}
+                    >
+                      {selectedSalon.approvedAt && (
+                        <>
+                          <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                          >
+                            <DetailField
+                              label="Approved By"
+                              value={
+                                selectedSalon.approvedBy
+                              }
+                            />
+                          </Grid>
+
+                          <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                          >
+                            <DetailField
+                              label="Approved At"
+                              value={formatDateTime(
+                                selectedSalon.approvedAt
+                              )}
+                            />
+                          </Grid>
+                        </>
+                      )}
+
+                      {selectedSalon.rejectedAt && (
+                        <>
+                          <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                          >
+                            <DetailField
+                              label="Rejected By"
+                              value={
+                                selectedSalon.rejectedBy
+                              }
+                            />
+                          </Grid>
+
+                          <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                          >
+                            <DetailField
+                              label="Rejected At"
+                              value={formatDateTime(
+                                selectedSalon.rejectedAt
+                              )}
+                            />
+                          </Grid>
+                        </>
+                      )}
+                    </Grid>
+
+                    {selectedSalon.rejectionReason && (
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          borderColor:
+                            'error.main',
+                          mb: 2
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          color="error.main"
+                          fontWeight={700}
+                        >
+                          Rejection Reason
+                        </Typography>
+
+                        <Typography
+                          variant="body2"
+                          sx={{ mt: 0.5 }}
+                        >
+                          {
+                            selectedSalon.rejectionReason
+                          }
+                        </Typography>
+                      </Paper>
+                    )}
+                  </>
+                )}
+
+              {/* ==================================================
+                  AUDIT
+              ================================================== */}
+
+              <Divider sx={{ mb: 3 }} />
+
+              <SectionHeader
+                title="Audit Information"
+              />
+
+              <Grid
+                container
+                spacing={2}
+              >
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="Last Updated By"
+                    value={
+                      selectedSalon.lastUpdatedBy
+                    }
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="Created At"
+                    value={formatDateTime(
+                      selectedSalon.createdAt
+                    )}
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                >
+                  <DetailField
+                    label="Updated At"
+                    value={formatDateTime(
+                      selectedSalon.updatedAt
+                    )}
+                  />
+                </Grid>
+              </Grid>
             </DialogContent>
 
-            {/* REVIEW ACTIONS */}
+            {/* ==================================================
+                ACTIONS
+            ================================================== */}
 
             <DialogActions
               sx={{
@@ -2349,62 +3200,62 @@ export default function PendingApprovals() {
                 Close
               </Button>
 
-              {selectedApproval.status ===
+              {selectedApproval?.status ===
                 'PENDING' && (
-                <>
-                  <Button
-                    color="error"
-                    variant="outlined"
-                    startIcon={
-                      rejecting ? (
-                        <CircularProgress
-                          size={16}
-                        />
-                      ) : (
-                        <CloseCircleOutlined />
-                      )
-                    }
-                    onClick={() =>
-                      openRejectDialog(
-                        selectedApproval
-                      )
-                    }
-                    disabled={
-                      approving ||
-                      rejecting
-                    }
-                  >
-                    Reject
-                  </Button>
+                  <>
+                    <Button
+                      color="error"
+                      variant="outlined"
+                      startIcon={
+                        rejecting ? (
+                          <CircularProgress
+                            size={16}
+                          />
+                        ) : (
+                          <CloseCircleOutlined />
+                        )
+                      }
+                      onClick={() =>
+                        openRejectDialog(
+                          selectedApproval
+                        )
+                      }
+                      disabled={
+                        approving ||
+                        rejecting
+                      }
+                    >
+                      Reject
+                    </Button>
 
-                  <Button
-                    color="success"
-                    variant="contained"
-                    startIcon={
-                      approving ? (
-                        <CircularProgress
-                          size={16}
-                        />
-                      ) : (
-                        <CheckCircleOutlined />
-                      )
-                    }
-                    onClick={() =>
-                      handleApprove(
-                        selectedApproval
-                      )
-                    }
-                    disabled={
-                      approving ||
-                      rejecting
-                    }
-                  >
-                    {approving
-                      ? 'Approving...'
-                      : 'Approve'}
-                  </Button>
-                </>
-              )}
+                    <Button
+                      color="success"
+                      variant="contained"
+                      startIcon={
+                        approving ? (
+                          <CircularProgress
+                            size={16}
+                          />
+                        ) : (
+                          <CheckCircleOutlined />
+                        )
+                      }
+                      onClick={() =>
+                        handleApprove(
+                          selectedApproval
+                        )
+                      }
+                      disabled={
+                        approving ||
+                        rejecting
+                      }
+                    >
+                      {approving
+                        ? 'Approving...'
+                        : 'Approve'}
+                    </Button>
+                  </>
+                )}
             </DialogActions>
           </>
         )}
@@ -2459,11 +3310,11 @@ export default function PendingApprovals() {
             error={
               rejectOpen &&
               rejectionReason.trim() ===
-                ''
+              ''
             }
             helperText={
               rejectOpen &&
-              rejectionReason.trim() ===
+                rejectionReason.trim() ===
                 ''
                 ? 'Rejection reason is required.'
                 : ' '
@@ -2481,6 +3332,7 @@ export default function PendingApprovals() {
               setRejectOpen(
                 false
               );
+
               setRejectionReason(
                 ''
               );
@@ -2517,6 +3369,150 @@ export default function PendingApprovals() {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+// ============================================================
+// DOCUMENT CHIP
+// ============================================================
+
+function DocumentChip({
+  label,
+  value
+}: {
+  label: string;
+  value?: string | null;
+}) {
+  const submitted =
+    Boolean(
+      value &&
+      value.trim()
+    );
+
+  return (
+    <Chip
+      size="small"
+      icon={
+        submitted ? (
+          <CheckCircleOutlined />
+        ) : (
+          <ClockCircleOutlined />
+        )
+      }
+      color={
+        submitted
+          ? 'success'
+          : 'default'
+      }
+      variant="outlined"
+      label={`${label}: ${submitted
+          ? 'Submitted'
+          : 'Not provided'
+        }`}
+    />
+  );
+}
+
+// ============================================================
+// STATUS FIELD
+// ============================================================
+
+function StatusField({
+  label,
+  value
+}: {
+  label: string;
+  value: boolean;
+}) {
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2,
+        borderRadius: 2
+      }}
+    >
+      <Typography
+        variant="caption"
+        color="text.secondary"
+      >
+        {label}
+      </Typography>
+
+      <Box sx={{ mt: 1 }}>
+        <Chip
+          size="small"
+          color={
+            value
+              ? 'success'
+              : 'default'
+          }
+          label={
+            value
+              ? 'Yes'
+              : 'No'
+          }
+        />
+      </Box>
+    </Paper>
+  );
+}
+
+// ============================================================
+// METRIC CARD
+// ============================================================
+
+function MetricCard({
+  label,
+  value,
+  icon
+}: {
+  label: string;
+  value: string | number;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        height: '100%'
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+      >
+        {icon && (
+          <Box
+            sx={{
+              color:
+                'warning.main',
+              display: 'flex'
+            }}
+          >
+            {icon}
+          </Box>
+        )}
+
+        <Typography
+          variant="caption"
+          color="text.secondary"
+        >
+          {label}
+        </Typography>
+      </Stack>
+
+      <Typography
+        variant="h6"
+        fontWeight={700}
+        sx={{ mt: 0.75 }}
+      >
+        {value}
+      </Typography>
+    </Paper>
   );
 }
 
@@ -2590,53 +3586,6 @@ function SummaryCard({
         </Stack>
       </CardContent>
     </Card>
-  );
-}
-
-// ============================================================
-// DETAIL FIELD
-// ============================================================
-
-function DetailField({
-  label,
-  value
-}: {
-  label: string;
-  value?: string | null;
-}) {
-  return (
-    <Box
-      sx={{
-        p: 1.5,
-        border: '1px solid',
-        borderColor:
-          'divider',
-        borderRadius: 1.5,
-        height: '100%'
-      }}
-    >
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        display="block"
-        sx={{
-          mb: 0.5
-        }}
-      >
-        {label}
-      </Typography>
-
-      <Typography
-        variant="body2"
-        fontWeight={600}
-        sx={{
-          wordBreak:
-            'break-word'
-        }}
-      >
-        {value || '—'}
-      </Typography>
-    </Box>
   );
 }
 
