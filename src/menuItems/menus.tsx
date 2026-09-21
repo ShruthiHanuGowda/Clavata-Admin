@@ -177,7 +177,7 @@ const managementMenu: NavItemType = {
       url: '/reviews',
       icon: icons.StarOutlined
     },
-     {
+    {
       id: 'offers',
       title: (
         <FormattedMessage
@@ -340,6 +340,18 @@ const operationsMenu: NavItemType = {
       ),
       type: 'item',
       url: '/locations',
+      icon: icons.EnvironmentOutlined
+    },
+    {
+      id: 'businessType',
+      title: (
+        <FormattedMessage
+          id="BusinessType"
+          defaultMessage="BusinessType"
+        />
+      ),
+      type: 'item',
+      url: '/businessType',
       icon: icons.EnvironmentOutlined
     },
     {

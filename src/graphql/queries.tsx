@@ -1542,3 +1542,90 @@ export const DELETE_SUBCATEGORY = gql`
     }
   }
 `;
+
+export const GET_BUSINESS_TYPES = gql`
+  query BusinessTypes(
+    $search: String
+    $status: BusinessTypeStatus
+  ) {
+    businessTypes(
+      search: $search
+      status: $status
+    ) {
+      success
+      message
+      totalCount
+      businessTypes {
+        businessTypeId
+        name
+        description
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const CREATE_BUSINESS_TYPE = gql`
+  mutation CreateBusinessType(
+    $input: CreateBusinessTypeInput!
+  ) {
+    createBusinessType(
+      input: $input
+    ) {
+      success
+      message
+      businessType {
+        businessTypeId
+        name
+        description
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const UPDATE_BUSINESS_TYPE = gql`
+  mutation UpdateBusinessType(
+    $input: UpdateBusinessTypeInput!
+  ) {
+    updateBusinessType(
+      input: $input
+    ) {
+      success
+      message
+      businessType {
+        businessTypeId
+        name
+        description
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const DELETE_BUSINESS_TYPE = gql`
+  mutation DeleteBusinessType(
+    $businessTypeId: ID!
+  ) {
+    deleteBusinessType(
+      businessTypeId: $businessTypeId
+    ) {
+      success
+      message
+      businessType {
+        businessTypeId
+        name
+        description
+        status
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;

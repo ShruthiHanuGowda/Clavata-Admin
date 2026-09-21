@@ -98,7 +98,9 @@ const KycDocuments = Loadable(
 const Locations = Loadable(
   lazy(() => import('pages/locations'))
 );
-
+const BusinessType = Loadable(
+  lazy(() => import('pages/businessType'))
+);
 const PendingApprovals = Loadable(
   lazy(() => import('pages/pending-approvals'))
 );
@@ -299,7 +301,10 @@ const MainRoutes = {
           path: 'locations',
           element: <Locations />
         },
-
+{
+          path: 'businessType',
+          element: <BusinessType />
+        },
         {
           path: 'categories',
           element: <Categories />
