@@ -37,93 +37,6 @@ export const ADMIN_CUSTOMERS = gql`
     }
 `;
 
-
-// export const ADMIN_SALONS = gql`
-//   query AdminSalons(
-//     $search: String
-//     $kycStatus: KycStatus
-//     $salonStatus: SalonStatus
-//     $isActive: Boolean
-//   ) {
-//     adminSalons(
-//       search: $search
-//       kycStatus: $kycStatus
-//       salonStatus: $salonStatus
-//       isActive: $isActive
-//     ) {
-//       success
-//       message
-//       totalCount
-
-//       salons {
-//         salonId
-//         ownerUserId
-//         salonName
-//         ownerName
-//         businessType
-//         ownerPhoneNumber
-//         alternatePhone
-//         email
-
-//         address {
-//           addressLine
-//           city
-//           state
-//           pincode
-//         }
-
-//         latitude
-//         longitude
-
-//         gstNumber
-//         panNumber
-//         aadhaarNumber
-
-//         # KYC DOCUMENTS
-//         documents {
-//           aadhaarFront
-//           aadhaarBack
-//           panCard
-//           gstCertificate
-//         }
-
-//         bankAccount
-//         ifsc
-//         accountHolderName
-
-//         logoUrl
-//         coverImageUrl
-//         galleryImages
-
-//         kycStatus
-//         adminApprovalStatus
-//         salonStatus
-
-//         isActive
-//         isVisible
-//         isDeleted
-
-//         averageRating
-//         totalReviews
-//         totalAppointments
-//         totalCompletedAppointments
-//         totalCancelledAppointments
-//         totalRevenue
-
-//         approvedBy
-//         approvedAt
-//         rejectedBy
-//         rejectedAt
-//         rejectionReason
-
-//         lastUpdatedBy
-//         createdAt
-//         updatedAt
-//       }
-//     }
-//   }
-// `;
-
 export const ADMIN_SALONS = gql`
   query AdminSalons(
     $search: String
@@ -204,13 +117,15 @@ export const ADMIN_SALONS = gql`
           }
         }
 
-        # IMPORTANT
-        # This was missing from the Pending Approvals query
         serviceSelections {
           categoryId
           categoryName
           subcategoryId
           subcategoryName
+          audience
+
+          price
+          duration
         }
 
         kycStatus
@@ -1430,34 +1345,34 @@ export const ADMIN_REJECT_SALON_PROFILE_CHANGE = gql`
 // GET SUBCATEGORIES
 // ======================================================
 
-export const GET_SUBCATEGORIES = gql`
-  query GetSubcategories(
-    $categoryId: ID
-    $search: String
-    $status: SubcategoryStatus
-  ) {
-    subcategories(
-      categoryId: $categoryId
-      search: $search
-      status: $status
-    ) {
-      success
-      message
-      totalCount
+// export const GET_SUBCATEGORIES = gql`
+//   query GetSubcategories(
+//     $categoryId: ID
+//     $search: String
+//     $status: SubcategoryStatus
+//   ) {
+//     subcategories(
+//       categoryId: $categoryId
+//       search: $search
+//       status: $status
+//     ) {
+//       success
+//       message
+//       totalCount
 
-      subcategories {
-        subcategoryId
-        categoryId
-        name
-        description
-        servicesCount
-        status
-        createdAt
-        updatedAt
-      }
-    }
-  }
-`;
+//       subcategories {
+//         subcategoryId
+//         categoryId
+//         name
+//         description
+//         servicesCount
+//         status
+//         createdAt
+//         updatedAt
+//       }
+//     }
+//   }
+// `;
 
 // ======================================================
 // CREATE SUBCATEGORY
@@ -1543,29 +1458,29 @@ export const DELETE_SUBCATEGORY = gql`
   }
 `;
 
-export const GET_BUSINESS_TYPES = gql`
-  query BusinessTypes(
-    $search: String
-    $status: BusinessTypeStatus
-  ) {
-    businessTypes(
-      search: $search
-      status: $status
-    ) {
-      success
-      message
-      totalCount
-      businessTypes {
-        businessTypeId
-        name
-        description
-        status
-        createdAt
-        updatedAt
-      }
-    }
-  }
-`;
+// export const GET_BUSINESS_TYPES = gql`
+//   query BusinessTypes(
+//     $search: String
+//     $status: BusinessTypeStatus
+//   ) {
+//     businessTypes(
+//       search: $search
+//       status: $status
+//     ) {
+//       success
+//       message
+//       totalCount
+//       businessTypes {
+//         businessTypeId
+//         name
+//         description
+//         status
+//         createdAt
+//         updatedAt
+//       }
+//     }
+//   }
+// `;
 
 export const CREATE_BUSINESS_TYPE = gql`
   mutation CreateBusinessType(
@@ -1629,3 +1544,62 @@ export const DELETE_BUSINESS_TYPE = gql`
     }
   }
 `;
+
+export const GET_SUBCATEGORIES = gql`
+query GetSubcategories(
+  $search: String
+  $status: SubcategoryStatus
+) {
+  subcategories(
+    search: $search
+    status: $status
+  ) {
+    success
+    message
+    totalCount
+
+    subcategories {
+      subcategoryId
+      categoryId
+      name
+      description
+      servicesCount
+      status
+
+      audiences
+      businessTypeIds
+
+      createdAt
+      updatedAt
+    }
+  }
+}
+`
+
+export const GET_BUSINESS_TYPES = gql`
+query GetBusinessTypes(
+  $search: String
+  $status: BusinessTypeStatus
+) {
+  businessTypes(
+    search: $search
+    status: $status
+  ) {
+    success
+    message
+    totalCount
+
+    businessTypes {
+      businessTypeId
+      name
+      description
+      status
+      createdAt
+      updatedAt
+    }
+  }
+}
+`
+
+
+

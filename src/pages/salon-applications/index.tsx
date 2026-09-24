@@ -272,6 +272,9 @@ interface SalonServiceSelection {
   categoryName: string;
   subcategoryId: string;
   subcategoryName: string;
+  audience: string;
+  price: number;
+  duration: number;
 }
 
 // ============================================================
@@ -648,8 +651,8 @@ function DetailField({
         }}
       >
         {value !== undefined &&
-        value !== null &&
-        String(value).trim() !== ''
+          value !== null &&
+          String(value).trim() !== ''
           ? value
           : 'Not provided'}
       </Typography>
@@ -692,35 +695,35 @@ function BusinessHoursSection({
     key: keyof BusinessHours;
     label: string;
   }[] = [
-    {
-      key: 'MONDAY',
-      label: 'Monday'
-    },
-    {
-      key: 'TUESDAY',
-      label: 'Tuesday'
-    },
-    {
-      key: 'WEDNESDAY',
-      label: 'Wednesday'
-    },
-    {
-      key: 'THURSDAY',
-      label: 'Thursday'
-    },
-    {
-      key: 'FRIDAY',
-      label: 'Friday'
-    },
-    {
-      key: 'SATURDAY',
-      label: 'Saturday'
-    },
-    {
-      key: 'SUNDAY',
-      label: 'Sunday'
-    }
-  ];
+      {
+        key: 'MONDAY',
+        label: 'Monday'
+      },
+      {
+        key: 'TUESDAY',
+        label: 'Tuesday'
+      },
+      {
+        key: 'WEDNESDAY',
+        label: 'Wednesday'
+      },
+      {
+        key: 'THURSDAY',
+        label: 'Thursday'
+      },
+      {
+        key: 'FRIDAY',
+        label: 'Friday'
+      },
+      {
+        key: 'SATURDAY',
+        label: 'Saturday'
+      },
+      {
+        key: 'SUNDAY',
+        label: 'Sunday'
+      }
+    ];
 
   return (
     <Grid
@@ -984,7 +987,7 @@ export default function SalonApplications() {
     filteredApplications.slice(
       page * rowsPerPage,
       page * rowsPerPage +
-        rowsPerPage
+      rowsPerPage
     );
 
   // ==========================================================
@@ -1075,13 +1078,13 @@ export default function SalonApplications() {
       if (!response?.success) {
         throw new Error(
           response?.message ||
-            'Failed to approve salon application.'
+          'Failed to approve salon application.'
         );
       }
 
       window.alert(
         response.message ||
-          'Salon application approved successfully.'
+        'Salon application approved successfully.'
       );
 
       setDetailsOpen(false);
@@ -1089,7 +1092,7 @@ export default function SalonApplications() {
 
       await refetch();
     } catch (
-      mutationError
+    mutationError
     ) {
       console.error(
         'Approve salon error:',
@@ -1102,9 +1105,9 @@ export default function SalonApplications() {
       if (
         mutationError &&
         typeof mutationError ===
-          'object' &&
+        'object' &&
         'message' in
-          mutationError
+        mutationError
       ) {
         message = String(
           (
@@ -1174,13 +1177,13 @@ export default function SalonApplications() {
         if (!response?.success) {
           throw new Error(
             response?.message ||
-              'Failed to reject salon application.'
+            'Failed to reject salon application.'
           );
         }
 
         window.alert(
           response.message ||
-            'Salon application rejected successfully.'
+          'Salon application rejected successfully.'
         );
 
         setRejectOpen(false);
@@ -1190,7 +1193,7 @@ export default function SalonApplications() {
 
         await refetch();
       } catch (
-        mutationError
+      mutationError
       ) {
         console.error(
           'Reject salon error:',
@@ -1203,9 +1206,9 @@ export default function SalonApplications() {
         if (
           mutationError &&
           typeof mutationError ===
-            'object' &&
+          'object' &&
           'message' in
-            mutationError
+          mutationError
         ) {
           message = String(
             (
@@ -1229,7 +1232,7 @@ export default function SalonApplications() {
       try {
         await refetch();
       } catch (
-        refreshError
+      refreshError
       ) {
         console.error(
           'Failed to refresh salons:',
@@ -1830,34 +1833,34 @@ export default function SalonApplications() {
 
                         {salon.kycStatus ===
                           'PENDING' && (
-                          <Typography
-                            variant="caption"
-                            color="warning.main"
-                            sx={{
-                              display:
-                                'block',
-                              mt: 0.5
-                            }}
-                          >
-                            Awaiting third-party
-                            verification
-                          </Typography>
-                        )}
+                            <Typography
+                              variant="caption"
+                              color="warning.main"
+                              sx={{
+                                display:
+                                  'block',
+                                mt: 0.5
+                              }}
+                            >
+                              Awaiting third-party
+                              verification
+                            </Typography>
+                          )}
 
                         {salon.kycStatus ===
                           'REJECTED' && (
-                          <Typography
-                            variant="caption"
-                            color="error.main"
-                            sx={{
-                              display:
-                                'block',
-                              mt: 0.5
-                            }}
-                          >
-                            KYC was rejected
-                          </Typography>
-                        )}
+                            <Typography
+                              variant="caption"
+                              color="error.main"
+                              sx={{
+                                display:
+                                  'block',
+                                mt: 0.5
+                              }}
+                            >
+                              KYC was rejected
+                            </Typography>
+                          )}
                       </TableCell>
 
                       <TableCell>
@@ -1870,7 +1873,7 @@ export default function SalonApplications() {
                         {salon.kycStatus ===
                           'APPROVED' &&
                           salon.adminApprovalStatus !==
-                            'APPROVED' && (
+                          'APPROVED' && (
                             <Typography
                               variant="caption"
                               color="warning.main"
@@ -1912,7 +1915,7 @@ export default function SalonApplications() {
                           {salon.kycStatus ===
                             'APPROVED' &&
                             salon.adminApprovalStatus !==
-                              'APPROVED' && (
+                            'APPROVED' && (
                               <Tooltip title="Approve salon">
                                 <IconButton
                                   color="success"
@@ -1934,7 +1937,7 @@ export default function SalonApplications() {
                           {salon.kycStatus ===
                             'APPROVED' &&
                             salon.adminApprovalStatus !==
-                              'APPROVED' && (
+                            'APPROVED' && (
                               <Tooltip title="Reject salon">
                                 <IconButton
                                   color="error"
@@ -1960,7 +1963,7 @@ export default function SalonApplications() {
 
               {!loading &&
                 filteredApplications.length ===
-                  0 && (
+                0 && (
                   <TableRow>
                     <TableCell
                       colSpan={8}
@@ -2241,8 +2244,8 @@ export default function SalonApplications() {
               {Array.isArray(
                 selectedSalon.serviceSelections
               ) &&
-              selectedSalon.serviceSelections
-                .length > 0 ? (
+                selectedSalon.serviceSelections
+                  .length > 0 ? (
                 <Stack
                   spacing={1.5}
                   sx={{ mb: 1 }}
@@ -2284,8 +2287,7 @@ export default function SalonApplications() {
                           <Typography
                             sx={{
                               fontWeight: 700,
-                              color:
-                                'text.secondary'
+                              color: 'text.secondary'
                             }}
                           >
                             →
@@ -2299,8 +2301,80 @@ export default function SalonApplications() {
                             variant="outlined"
                             size="small"
                           />
+                          <Chip
+                            label={
+                              selection.audience ||
+                              'Audience unavailable'
+                            }
+                            color="secondary"
+                            variant="outlined"
+                            size="small"
+                          />
                         </Stack>
 
+                        {/* PRICE + DURATION */}
+                        <Stack
+                          direction={{
+                            xs: 'column',
+                            sm: 'row'
+                          }}
+                          spacing={3}
+                          sx={{
+                            mt: 2
+                          }}
+                        >
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display: 'block'
+                              }}
+                            >
+                              Price
+                            </Typography>
+
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                fontWeight: 700
+                              }}
+                            >
+                              {selection.price !== undefined &&
+                                selection.price !== null
+                                ? formatCurrency(
+                                  selection.price
+                                )
+                                : 'Not provided'}
+                            </Typography>
+                          </Box>
+
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display: 'block'
+                              }}
+                            >
+                              Duration
+                            </Typography>
+
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                fontWeight: 700
+                              }}
+                            >
+                              {selection.duration !== undefined &&
+                                selection.duration !== null
+                                ? `${selection.duration} min`
+                                : 'Not provided'}
+                            </Typography>
+                          </Box>
+                        </Stack>
+
+                        {/* IDS */}
                         <Stack
                           direction={{
                             xs: 'column',
@@ -2311,7 +2385,7 @@ export default function SalonApplications() {
                             sm: 2
                           }}
                           sx={{
-                            mt: 1
+                            mt: 1.5
                           }}
                         >
                           <Typography
@@ -2319,9 +2393,7 @@ export default function SalonApplications() {
                             color="text.secondary"
                           >
                             Category ID:{' '}
-                            {
-                              selection.categoryId
-                            }
+                            {selection.categoryId}
                           </Typography>
 
                           <Typography
@@ -2329,9 +2401,7 @@ export default function SalonApplications() {
                             color="text.secondary"
                           >
                             Subcategory ID:{' '}
-                            {
-                              selection.subcategoryId
-                            }
+                            {selection.subcategoryId}
                           </Typography>
                         </Stack>
                       </Paper>
@@ -2960,8 +3030,8 @@ export default function SalonApplications() {
                     value={
                       selectedSalon.averageRating
                         ? `⭐ ${selectedSalon.averageRating.toFixed(
-                            1
-                          )}`
+                          1
+                        )}`
                         : 'No ratings'
                     }
                   />
@@ -3188,133 +3258,133 @@ export default function SalonApplications() {
                 (selectedSalon.galleryImages &&
                   selectedSalon.galleryImages
                     .length > 0)) && (
-                <>
-                  <Divider sx={{ my: 3 }} />
+                  <>
+                    <Divider sx={{ my: 3 }} />
 
-                  <SectionTitle>
-                    Salon Images
-                  </SectionTitle>
+                    <SectionTitle>
+                      Salon Images
+                    </SectionTitle>
 
-                  <Grid
-                    container
-                    spacing={2}
-                  >
-                    {selectedSalon.logoUrl && (
-                      <Grid
-                        item
-                        xs={12}
-                        sm={4}
-                      >
+                    <Grid
+                      container
+                      spacing={2}
+                    >
+                      {selectedSalon.logoUrl && (
+                        <Grid
+                          item
+                          xs={12}
+                          sm={4}
+                        >
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            Logo
+                          </Typography>
+
+                          <Box
+                            component="img"
+                            src={
+                              selectedSalon.logoUrl
+                            }
+                            alt="Salon logo"
+                            sx={{
+                              width: '100%',
+                              height: 160,
+                              objectFit:
+                                'cover',
+                              borderRadius: 2,
+                              mt: 1
+                            }}
+                          />
+                        </Grid>
+                      )}
+
+                      {selectedSalon.coverImageUrl && (
+                        <Grid
+                          item
+                          xs={12}
+                          sm={8}
+                        >
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                          >
+                            Cover Image
+                          </Typography>
+
+                          <Box
+                            component="img"
+                            src={
+                              selectedSalon.coverImageUrl
+                            }
+                            alt="Salon cover"
+                            sx={{
+                              width: '100%',
+                              height: 160,
+                              objectFit:
+                                'cover',
+                              borderRadius: 2,
+                              mt: 1
+                            }}
+                          />
+                        </Grid>
+                      )}
+                    </Grid>
+
+                    {selectedSalon
+                      .galleryImages
+                      ?.length ? (
+                      <Box sx={{ mt: 2 }}>
                         <Typography
                           variant="caption"
                           color="text.secondary"
                         >
-                          Logo
+                          Gallery Images
                         </Typography>
 
-                        <Box
-                          component="img"
-                          src={
-                            selectedSalon.logoUrl
-                          }
-                          alt="Salon logo"
-                          sx={{
-                            width: '100%',
-                            height: 160,
-                            objectFit:
-                              'cover',
-                            borderRadius: 2,
-                            mt: 1
-                          }}
-                        />
-                      </Grid>
-                    )}
-
-                    {selectedSalon.coverImageUrl && (
-                      <Grid
-                        item
-                        xs={12}
-                        sm={8}
-                      >
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
+                        <Grid
+                          container
+                          spacing={2}
+                          sx={{ mt: 0.5 }}
                         >
-                          Cover Image
-                        </Typography>
-
-                        <Box
-                          component="img"
-                          src={
-                            selectedSalon.coverImageUrl
-                          }
-                          alt="Salon cover"
-                          sx={{
-                            width: '100%',
-                            height: 160,
-                            objectFit:
-                              'cover',
-                            borderRadius: 2,
-                            mt: 1
-                          }}
-                        />
-                      </Grid>
-                    )}
-                  </Grid>
-
-                  {selectedSalon
-                    .galleryImages
-                    ?.length ? (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                      >
-                        Gallery Images
-                      </Typography>
-
-                      <Grid
-                        container
-                        spacing={2}
-                        sx={{ mt: 0.5 }}
-                      >
-                        {selectedSalon.galleryImages.map(
-                          (
-                            image,
-                            index
-                          ) => (
-                            <Grid
-                              item
-                              xs={6}
-                              sm={4}
-                              md={3}
-                              key={`${image}-${index}`}
-                            >
-                              <Box
-                                component="img"
-                                src={image}
-                                alt={`Salon gallery ${index + 1}`}
-                                sx={{
-                                  width:
-                                    '100%',
-                                  height: 130,
-                                  objectFit:
-                                    'cover',
-                                  borderRadius: 2,
-                                  border:
-                                    '1px solid',
-                                  borderColor:
-                                    'divider'
-                                }}
-                              />
-                            </Grid>
-                          )
-                        )}
-                      </Grid>
-                    </Box>
-                  ) : null}
-                </>
-              )}
+                          {selectedSalon.galleryImages.map(
+                            (
+                              image,
+                              index
+                            ) => (
+                              <Grid
+                                item
+                                xs={6}
+                                sm={4}
+                                md={3}
+                                key={`${image}-${index}`}
+                              >
+                                <Box
+                                  component="img"
+                                  src={image}
+                                  alt={`Salon gallery ${index + 1}`}
+                                  sx={{
+                                    width:
+                                      '100%',
+                                    height: 130,
+                                    objectFit:
+                                      'cover',
+                                    borderRadius: 2,
+                                    border:
+                                      '1px solid',
+                                    borderColor:
+                                      'divider'
+                                  }}
+                                />
+                              </Grid>
+                            )
+                          )}
+                        </Grid>
+                      </Box>
+                    ) : null}
+                  </>
+                )}
 
               {/* ==================================================
                   15. CREATED / UPDATED
@@ -3395,7 +3465,7 @@ export default function SalonApplications() {
               {selectedSalon.kycStatus ===
                 'APPROVED' &&
                 selectedSalon.adminApprovalStatus !==
-                  'APPROVED' && (
+                'APPROVED' && (
                   <>
                     <Button
                       color="error"
@@ -3451,39 +3521,39 @@ export default function SalonApplications() {
 
               {selectedSalon.kycStatus ===
                 'PENDING' && (
-                <Typography
-                  variant="body2"
-                  color="warning.main"
-                  sx={{ mr: 1 }}
-                >
-                  Waiting for third-party
-                  KYC approval.
-                </Typography>
-              )}
+                  <Typography
+                    variant="body2"
+                    color="warning.main"
+                    sx={{ mr: 1 }}
+                  >
+                    Waiting for third-party
+                    KYC approval.
+                  </Typography>
+                )}
 
               {selectedSalon.kycStatus ===
                 'REJECTED' && (
-                <Typography
-                  variant="body2"
-                  color="error.main"
-                  sx={{ mr: 1 }}
-                >
-                  This application cannot
-                  be approved because KYC
-                  was rejected.
-                </Typography>
-              )}
+                  <Typography
+                    variant="body2"
+                    color="error.main"
+                    sx={{ mr: 1 }}
+                  >
+                    This application cannot
+                    be approved because KYC
+                    was rejected.
+                  </Typography>
+                )}
 
               {selectedSalon.adminApprovalStatus ===
                 'APPROVED' && (
-                <Typography
-                  variant="body2"
-                  color="success.main"
-                  sx={{ mr: 1 }}
-                >
-                  Admin approval completed.
-                </Typography>
-              )}
+                  <Typography
+                    variant="body2"
+                    color="success.main"
+                    sx={{ mr: 1 }}
+                  >
+                    Admin approval completed.
+                  </Typography>
+                )}
             </DialogActions>
           </>
         )}
@@ -3557,7 +3627,7 @@ export default function SalonApplications() {
             disabled={rejecting}
             error={
               rejectionReason.length >
-                0 &&
+              0 &&
               !rejectionReason.trim()
             }
           />
