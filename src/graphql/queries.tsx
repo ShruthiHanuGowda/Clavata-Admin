@@ -817,6 +817,7 @@ export const GET_CATEGORIES = gql`
         description
         servicesCount
         status
+        businessTypeIds
         createdAt
         updatedAt
       }
@@ -838,6 +839,7 @@ export const CREATE_CATEGORY = gql`
         description
         servicesCount
         status
+        businessTypeIds
         createdAt
         updatedAt
       }
@@ -859,6 +861,7 @@ export const UPDATE_CATEGORY = gql`
         description
         servicesCount
         status
+        businessTypeIds
         createdAt
         updatedAt
       }
@@ -1395,6 +1398,8 @@ export const CREATE_SUBCATEGORY = gql`
         description
         servicesCount
         status
+        audiences
+        businessTypeIds
         createdAt
         updatedAt
       }
@@ -1423,6 +1428,8 @@ export const UPDATE_SUBCATEGORY = gql`
         description
         servicesCount
         status
+        audiences
+        businessTypeIds
         createdAt
         updatedAt
       }
@@ -1600,6 +1607,31 @@ query GetBusinessTypes(
   }
 }
 `
-
+export const ADMIN_PROVIDERS = gql`
+    query AdminProviders(
+        $search: String
+        $providerStatus: ProviderStatus
+    ) {
+        adminProviders(
+            search: $search
+            providerStatus: $providerStatus
+        ) {
+            success
+            message
+            providers {
+                userId
+                fullName
+                phoneNumber
+                email
+                activeRole
+                providerStatus
+                salonId
+                createdAt
+                updatedAt
+            }
+            totalCount
+        }
+    }
+`;
 
 

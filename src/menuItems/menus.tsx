@@ -118,6 +118,18 @@ const managementMenu: NavItemType = {
       icon: icons.TeamOutlined
     },
     {
+      id: 'provider',
+      title: (
+        <FormattedMessage
+          id="Provider"
+          defaultMessage="Provider"
+        />
+      ),
+      type: 'item',
+      url: '/provider',
+      icon: icons.SolutionOutlined
+    },
+        {
       id: 'salons',
       title: (
         <FormattedMessage
@@ -128,18 +140,6 @@ const managementMenu: NavItemType = {
       type: 'item',
       url: '/salons',
       icon: icons.ShopOutlined
-    },
-    {
-      id: 'staff',
-      title: (
-        <FormattedMessage
-          id="Staff"
-          defaultMessage="Staff"
-        />
-      ),
-      type: 'item',
-      url: '/staff',
-      icon: icons.SolutionOutlined
     },
     {
       id: 'services',

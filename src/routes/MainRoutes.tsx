@@ -45,7 +45,9 @@ const Analytics = Loadable(
 const Customers = Loadable(
   lazy(() => import('pages/customers'))
 );
-
+const Provider = Loadable(
+  lazy(() => import('pages/provider'))
+);
 const Salons = Loadable(
   lazy(() => import('pages/salons'))
 );
@@ -221,7 +223,10 @@ const MainRoutes = {
           path: 'customers',
           element: <Customers />
         },
-
+ {
+          path: 'provider',
+          element: <Provider />
+        },
         {
           path: 'salons',
           element: <Salons />

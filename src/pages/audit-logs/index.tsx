@@ -651,8 +651,8 @@ export default function AuditHistory() {
                   Service
                 </MenuItem>
 
-                <MenuItem value="Staff">
-                  Staff
+                <MenuItem value="Provider">
+                  Provider
                 </MenuItem>
 
                 <MenuItem value="Review">
