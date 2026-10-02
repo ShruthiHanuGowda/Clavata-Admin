@@ -1,5 +1,5 @@
 // material-ui
-import logo from 'assets/images/logo/d_energy_logo_final_nft_ver 1.png';
+import logo from 'assets/images/logo/clavata.png';
 /**
  * if you want to use image instead of <svg> uncomment following.
  *
