@@ -55,19 +55,28 @@ export const ADMIN_SALONS = gql`
       totalCount
 
       salons {
+        # ============================================================
+        # BASIC SALON / OWNER INFORMATION
+        # ============================================================
+
         salonId
         ownerUserId
+
+        salonName
         ownerName
+
+        businessTypeId
+        businessTypeIds
+        businessType
+        targetAudiences
+
         ownerPhoneNumber
         alternatePhone
         email
 
-        salonName
-        businessType
-
-        logoUrl
-        coverImageUrl
-        galleryImages
+        # ============================================================
+        # ADDRESS / LOCATION
+        # ============================================================
 
         address {
           addressLine
@@ -78,6 +87,10 @@ export const ADMIN_SALONS = gql`
 
         latitude
         longitude
+
+        # ============================================================
+        # BUSINESS HOURS
+        # ============================================================
 
         businessHours {
           MONDAY {
@@ -117,39 +130,195 @@ export const ADMIN_SALONS = gql`
           }
         }
 
+        # ============================================================
+        # SERVICES SELECTED DURING REGISTRATION
+        # ============================================================
+
         serviceSelections {
+          businessTypeId
+          businessTypeName
+
           categoryId
           categoryName
+
           subcategoryId
           subcategoryName
+
+          serviceName
           audience
 
           price
           duration
         }
 
-        kycStatus
-        adminApprovalStatus
+        # ============================================================
+        # BUSINESS / KYC INFORMATION
+        # ============================================================
 
-        aadhaarNumber
-        panNumber
         gstNumber
+        panNumber
+        aadhaarNumber
+        shopEstablishmentNumber
+        udyamNumber
+
+        kycStatus
+
+        # ============================================================
+        # UPLOADED KYC DOCUMENTS
+        # ============================================================
 
         documents {
-          aadhaarFront
-          aadhaarBack
-          panCard
-          gstCertificate
+          pan {
+            documentType
+            fileName
+            contentType
+            fileSize
+            s3Key
+            uploadedAt
+          }
+
+          aadhaar {
+            documentType
+            fileName
+            contentType
+            fileSize
+            s3Key
+            uploadedAt
+          }
+
+          shopEstablishment {
+            documentType
+            fileName
+            contentType
+            fileSize
+            s3Key
+            uploadedAt
+          }
+
+          gst {
+            documentType
+            fileName
+            contentType
+            fileSize
+            s3Key
+            uploadedAt
+          }
+
+          udyam {
+            documentType
+            fileName
+            contentType
+            fileSize
+            s3Key
+            uploadedAt
+          }
         }
+
+        # ============================================================
+        # BANK INFORMATION
+        # ============================================================
 
         bankAccount
         ifsc
         accountHolderName
 
+        # ============================================================
+        # RAZORPAY INFORMATION
+        # ============================================================
+
+        razorpayAccountId
+        razorpayAccountStatus
+
+        # ============================================================
+        # SALON IMAGES
+        # ============================================================
+
+        logoUrl
+        coverImageUrl
+        galleryImages
+
+        # ============================================================
+        # LOGO MEDIA
+        # ============================================================
+
+        logoMedia {
+          imageId
+          salonId
+          mediaType
+          key
+          objectUrl
+          status
+          uploadedAt
+          approvedAt
+          approvedBy
+          rejectedAt
+          rejectedBy
+          rejectionReason
+        }
+
+        # ============================================================
+        # COVER MEDIA
+        # ============================================================
+
+        coverMedia {
+          imageId
+          salonId
+          mediaType
+          key
+          objectUrl
+          status
+          uploadedAt
+          approvedAt
+          approvedBy
+          rejectedAt
+          rejectedBy
+          rejectionReason
+        }
+
+        # ============================================================
+        # GALLERY MEDIA
+        # ============================================================
+
+        galleryMedia {
+          imageId
+          salonId
+          mediaType
+          key
+          objectUrl
+          status
+          uploadedAt
+          approvedAt
+          approvedBy
+          rejectedAt
+          rejectedBy
+          rejectionReason
+        }
+
+        # ============================================================
+        # CASHFREE / THIRD-PARTY VERIFICATION
+        # ============================================================
+
+        verificationStatus
+        verificationSubmittedAt
+        verificationCompletedAt
+        verificationProvider
+        verificationReferenceId
+        verificationRejectionReason
+
+        # ============================================================
+        # ADMIN APPROVAL / SALON STATUS
+        # ============================================================
+
+        adminApprovalStatus
         salonStatus
+
         isActive
         isVisible
         isDeleted
+
+        # ============================================================
+        # PERFORMANCE
+        # ============================================================
 
         averageRating
         totalReviews
@@ -158,12 +327,20 @@ export const ADMIN_SALONS = gql`
         totalCancelledAppointments
         totalRevenue
 
+        # ============================================================
+        # ADMIN APPROVAL AUDIT
+        # ============================================================
+
         approvedBy
         approvedAt
 
         rejectedBy
         rejectedAt
         rejectionReason
+
+        # ============================================================
+        # GENERAL AUDIT
+        # ============================================================
 
         lastUpdatedBy
         createdAt
@@ -1635,3 +1812,13 @@ export const ADMIN_PROVIDERS = gql`
 `;
 
 
+// export const SUBMIT_SALON_KYC_VERIFICATION = gql`
+//   mutation SubmitSalonKycVerification(
+//     $input: SubmitSalonKycVerificationInput!
+//   ) {
+//     submitSalonKycVerification(input: $input) {
+//       success
+//       message
+//     }
+//   }
+// `;

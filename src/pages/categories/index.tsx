@@ -5,6 +5,7 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
@@ -35,7 +36,9 @@ import {
   EditOutlined,
   PlusOutlined,
   SearchOutlined,
-  TagsOutlined
+  TagsOutlined,
+  DownOutlined,
+  RightOutlined
 } from '@ant-design/icons';
 
 import { useMutation, useQuery } from '@apollo/client';
@@ -56,9 +59,13 @@ import {
 // TYPES
 // ======================================================
 
-type CategoryStatus = 'ACTIVE' | 'INACTIVE';
+type CategoryStatus =
+  | 'ACTIVE'
+  | 'INACTIVE';
 
-type SubcategoryStatus = 'ACTIVE' | 'INACTIVE';
+type SubcategoryStatus =
+  | 'ACTIVE'
+  | 'INACTIVE';
 
 type StatusFilter =
   | 'ALL'
@@ -284,6 +291,17 @@ export default function Categories() {
   ] = useState<Category | null>(null);
 
   // ====================================================
+  // EXPANDED CATEGORIES
+  // ====================================================
+
+  const [
+    expandedCategories,
+    setExpandedCategories
+  ] = useState<Set<string>>(
+    new Set()
+  );
+
+  // ====================================================
   // SUBCATEGORY UI STATE
   // ====================================================
 
@@ -366,20 +384,20 @@ export default function Categories() {
     GET_SUBCATEGORIES,
     {
       fetchPolicy: 'network-only',
+
       notifyOnNetworkStatusChange:
         true
     }
   );
 
   // ====================================================
-  // FETCH ACTIVE BUSINESS TYPES
+  // FETCH BUSINESS TYPES
   // ====================================================
 
   const {
     data: businessTypesData,
     loading: businessTypesLoading,
-    error: businessTypesError,
-    refetch: refetchBusinessTypes
+    error: businessTypesError
   } = useQuery<GetBusinessTypesData>(
     GET_BUSINESS_TYPES,
     {
@@ -498,17 +516,22 @@ export default function Categories() {
             }
           )
         )
-        .forEach(businessType => {
-          const id =
-            String(
-              businessType.businessTypeId ??
-                ''
-            ).trim();
+        .forEach(
+          businessType => {
+            const id =
+              String(
+                businessType.businessTypeId ??
+                  ''
+              ).trim();
 
-          if (id) {
-            unique.set(id, businessType);
+            if (id) {
+              unique.set(
+                id,
+                businessType
+              );
+            }
           }
-        });
+        );
 
       return Array.from(
         unique.values()
@@ -576,13 +599,7 @@ export default function Categories() {
     };
 
   // ====================================================
-  // SUBCATEGORY BUSINESS TYPE OPTIONS
-  //
-  // IMPORTANT:
-  //
-  // A subcategory may ONLY use business
-  // types already configured on its parent
-  // category.
+  // SUBCATEGORY BUSINESS TYPES
   // ====================================================
 
   const availableSubcategoryBusinessTypes =
@@ -618,6 +635,64 @@ export default function Categories() {
       subcategoryForm.categoryId,
       activeBusinessTypes
     ]);
+
+  // ====================================================
+  // GROUP SUBCATEGORIES BY CATEGORY
+  // ====================================================
+
+  const subcategoriesByCategory =
+    useMemo(() => {
+      const grouped =
+        new Map<
+          string,
+          Subcategory[]
+        >();
+
+      subcategories.forEach(
+        subcategory => {
+          const categoryId =
+            String(
+              subcategory.categoryId ??
+                ''
+            ).trim();
+
+          if (!categoryId) {
+            return;
+          }
+
+          const existing =
+            grouped.get(
+              categoryId
+            ) ?? [];
+
+          existing.push(
+            subcategory
+          );
+
+          grouped.set(
+            categoryId,
+            existing
+          );
+        }
+      );
+
+      grouped.forEach(
+        items => {
+          items.sort((a, b) =>
+            a.name.localeCompare(
+              b.name,
+              undefined,
+              {
+                sensitivity:
+                  'base'
+              }
+            )
+          );
+        }
+      );
+
+      return grouped;
+    }, [subcategories]);
 
   // ====================================================
   // CATEGORY COUNTERS
@@ -667,6 +742,9 @@ export default function Categories() {
       [categories]
     );
 
+  const totalSubcategories =
+    subcategories.length;
+
   // ====================================================
   // PAGINATION
   // ====================================================
@@ -685,6 +763,10 @@ export default function Categories() {
         rowsPerPage
       ]
     );
+
+  // ====================================================
+  // PAGINATION SAFETY
+  // ====================================================
 
   useEffect(() => {
     const maxPage =
@@ -732,6 +814,63 @@ export default function Categories() {
       );
     }
   }, [businessTypesError]);
+
+  // ====================================================
+  // TOGGLE CATEGORY EXPANSION
+  // ====================================================
+
+  const handleToggleCategory =
+    (
+      categoryId: string
+    ) => {
+      setExpandedCategories(
+        previous => {
+          const next =
+            new Set(previous);
+
+          if (
+            next.has(categoryId)
+          ) {
+            next.delete(
+              categoryId
+            );
+          } else {
+            next.add(
+              categoryId
+            );
+          }
+
+          return next;
+        }
+      );
+    };
+
+  // ====================================================
+  // EXPAND ALL
+  // ====================================================
+
+  const handleExpandAll =
+    () => {
+      setExpandedCategories(
+        new Set(
+          paginatedCategories.map(
+            category =>
+              category.categoryId
+          )
+        )
+      );
+    };
+
+  // ====================================================
+  // COLLAPSE ALL
+  // ====================================================
+
+  const handleCollapseAll =
+    () => {
+      setExpandedCategories(
+        new Set()
+      );
+    };
 
   // ====================================================
   // CREATE CATEGORY
@@ -947,10 +1086,6 @@ export default function Categories() {
       try {
         setErrorMessage('');
 
-        // ==============================================
-        // UPDATE
-        // ==============================================
-
         if (editingCategory) {
           const response =
             await updateCategory({
@@ -983,13 +1118,7 @@ export default function Categories() {
                 'Failed to update category.'
             );
           }
-        }
-
-        // ==============================================
-        // CREATE
-        // ==============================================
-
-        else {
+        } else {
           const response =
             await createCategory({
               variables: {
@@ -1120,6 +1249,19 @@ export default function Categories() {
 
         setCategoryToDelete(null);
 
+        setExpandedCategories(
+          previous => {
+            const next =
+              new Set(previous);
+
+            next.delete(
+              categoryToDelete.categoryId
+            );
+
+            return next;
+          }
+        );
+
         setErrorMessage('');
       } catch (err) {
         console.error(
@@ -1220,6 +1362,19 @@ export default function Categories() {
           businessTypeIds:
             categoryBusinessTypeIds
         });
+
+        setExpandedCategories(
+          previous => {
+            const next =
+              new Set(previous);
+
+            next.add(
+              category.categoryId
+            );
+
+            return next;
+          }
+        );
       }
 
       setErrorMessage('');
@@ -1264,11 +1419,6 @@ export default function Categories() {
               .filter(Boolean)
           : [];
 
-      /*
-       * Only retain business types that
-       * are still valid for the parent
-       * category.
-       */
       const validBusinessTypeIds =
         existingBusinessTypeIds.filter(
           id =>
@@ -1316,6 +1466,19 @@ export default function Categories() {
         businessTypeIds:
           validBusinessTypeIds
       });
+
+      setExpandedCategories(
+        previous => {
+          const next =
+            new Set(previous);
+
+          next.add(
+            subcategory.categoryId
+          );
+
+          return next;
+        }
+      );
 
       setErrorMessage('');
 
@@ -1403,11 +1566,6 @@ export default function Categories() {
 
           categoryId,
 
-          /*
-           * Automatically synchronize
-           * business types with the
-           * selected parent category.
-           */
           businessTypeIds
         })
       );
@@ -1436,7 +1594,7 @@ export default function Categories() {
     };
 
   // ====================================================
-  // SUBCATEGORY AUDIENCE
+  // SUBCATEGORY AUDIENCES
   // ====================================================
 
   const handleSubcategoryAudiencesChange =
@@ -1558,16 +1716,15 @@ export default function Categories() {
       const audiences =
         Array.from(
           new Set(
-            subcategoryForm.audiences
-              .filter(
-                audience =>
-                  audience ===
-                    'FEMALE' ||
-                  audience ===
-                    'MALE' ||
-                  audience ===
-                    'KIDS'
-              )
+            subcategoryForm.audiences.filter(
+              audience =>
+                audience ===
+                  'FEMALE' ||
+                audience ===
+                  'MALE' ||
+                audience ===
+                  'KIDS'
+            )
           )
         );
 
@@ -1661,10 +1818,6 @@ export default function Categories() {
       try {
         setErrorMessage('');
 
-        // ==============================================
-        // UPDATE
-        // ==============================================
-
         if (editingSubcategory) {
           const response =
             await updateSubcategory({
@@ -1701,13 +1854,7 @@ export default function Categories() {
                 'Failed to update subcategory.'
             );
           }
-        }
-
-        // ==============================================
-        // CREATE
-        // ==============================================
-
-        else {
+        } else {
           const response =
             await createSubcategory({
               variables: {
@@ -1978,6 +2125,24 @@ export default function Categories() {
   );
 
   // ====================================================
+  // AUDIENCE LABEL
+  // ====================================================
+
+  const getAudienceLabel = (
+    audience: ServiceAudience
+  ) => {
+    if (audience === 'FEMALE') {
+      return 'Female';
+    }
+
+    if (audience === 'MALE') {
+      return 'Male';
+    }
+
+    return 'Kids';
+  };
+
+  // ====================================================
   // RENDER
   // ====================================================
 
@@ -2001,12 +2166,22 @@ export default function Categories() {
       >
         <Box>
           <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 700
+            }}
+          >
+            Categories & Services
+          </Typography>
+
+          <Typography
             variant="body2"
             color="text.secondary"
             sx={{ mt: 0.5 }}
           >
-            Manage service categories
-            and subcategories available
+            Manage service categories,
+            subcategories, audiences and
+            business type availability
             across Clavata.
           </Typography>
         </Box>
@@ -2014,7 +2189,35 @@ export default function Categories() {
         <Stack
           direction="row"
           spacing={1.5}
+          flexWrap="wrap"
+          useFlexGap
         >
+          <Button
+            variant="outlined"
+            onClick={
+              handleExpandAll
+            }
+            sx={{
+              borderRadius: 1.5,
+              textTransform: 'none'
+            }}
+          >
+            Expand All
+          </Button>
+
+          <Button
+            variant="outlined"
+            onClick={
+              handleCollapseAll
+            }
+            sx={{
+              borderRadius: 1.5,
+              textTransform: 'none'
+            }}
+          >
+            Collapse All
+          </Button>
+
           <Button
             variant="outlined"
             startIcon={
@@ -2064,7 +2267,9 @@ export default function Categories() {
             border: '1px solid',
             borderColor:
               'error.light',
-            borderRadius: 2
+            borderRadius: 2,
+            backgroundColor:
+              'error.lighter'
           }}
         >
           <Typography
@@ -2137,15 +2342,17 @@ export default function Categories() {
           md={3}
         >
           <SummaryCard
-            title="Services"
-            value={totalServices}
-            subtitle="Services across categories"
+            title="Subcategories"
+            value={
+              totalSubcategories
+            }
+            subtitle={`${totalServices.toLocaleString()} configured services`}
           />
         </Grid>
       </Grid>
 
       {/* ==================================================
-          CATEGORY TABLE
+          CATEGORY / SUBCATEGORY MANAGEMENT
       ================================================== */}
 
       <Paper
@@ -2158,7 +2365,9 @@ export default function Categories() {
         }}
       >
 
-        {/* FILTERS */}
+        {/* ==================================================
+            FILTERS
+        ================================================== */}
 
         <Box sx={{ p: 2.5 }}>
           <Stack
@@ -2223,15 +2432,24 @@ export default function Categories() {
 
         <Divider />
 
+        {/* ==================================================
+            CATEGORY TABLE
+        ================================================== */}
+
         <TableContainer>
-          <Table>
+          <Table
+            sx={{
+              minWidth: 1100
+            }}
+          >
 
             <TableHead>
               <TableRow>
 
                 <TableCell
                   sx={{
-                    fontWeight: 700
+                    fontWeight: 700,
+                    width: 360
                   }}
                 >
                   Category
@@ -2292,6 +2510,10 @@ export default function Categories() {
 
             <TableBody>
 
+              {/* ==================================================
+                  LOADING
+              ================================================== */}
+
               {loading && (
                 <TableRow>
                   <TableCell
@@ -2320,247 +2542,86 @@ export default function Categories() {
                 </TableRow>
               )}
 
+              {/* ==================================================
+                  CATEGORY ROWS
+              ================================================== */}
+
               {!loading &&
                 paginatedCategories.map(
                   category => {
-
                     const categoryBusinessTypeIds =
                       getCategoryBusinessTypeIds(
                         category
                       );
 
+                    const categorySubcategories =
+                      subcategoriesByCategory.get(
+                        category.categoryId
+                      ) ?? [];
+
+                    const isExpanded =
+                      expandedCategories.has(
+                        category.categoryId
+                      );
+
                     return (
-                      <TableRow
+                      <CategoryGroup
                         key={
                           category.categoryId
                         }
-                        hover
-                      >
-
-                        {/* CATEGORY */}
-
-                        <TableCell>
-                          <Stack
-                            direction="row"
-                            spacing={1.5}
-                            alignItems="center"
-                          >
-                            <Box
-                              sx={{
-                                width: 38,
-                                height: 38,
-                                borderRadius: 1.5,
-                                display:
-                                  'flex',
-                                alignItems:
-                                  'center',
-                                justifyContent:
-                                  'center',
-                                backgroundColor:
-                                  'primary.lighter',
-                                color:
-                                  'primary.main'
-                              }}
-                            >
-                              <TagsOutlined
-                                style={{
-                                  fontSize: 19
-                                }}
-                              />
-                            </Box>
-
-                            <Box>
-                              <Typography
-                                variant="subtitle2"
-                                sx={{
-                                  fontWeight: 600
-                                }}
-                              >
-                                {
-                                  category.name
-                                }
-                              </Typography>
-
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {
-                                  category.categoryId
-                                }
-                              </Typography>
-                            </Box>
-                          </Stack>
-                        </TableCell>
-
-                        {/* BUSINESS TYPES */}
-
-                        <TableCell>
-                          {categoryBusinessTypeIds.length >
-                          0 ? (
-                            <Stack
-                              direction="row"
-                              spacing={0.5}
-                              flexWrap="wrap"
-                              useFlexGap
-                            >
-                              {categoryBusinessTypeIds.map(
-                                businessTypeId => (
-                                  <Chip
-                                    key={`${category.categoryId}-${businessTypeId}`}
-                                    label={getBusinessTypeName(
-                                      businessTypeId
-                                    )}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                )
-                              )}
-                            </Stack>
-                          ) : (
-                            <Typography
-                              variant="body2"
-                              color="error"
-                            >
-                              No business type
-                            </Typography>
-                          )}
-                        </TableCell>
-
-                        {/* DESCRIPTION */}
-
-                        <TableCell>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{
-                              maxWidth: 300
-                            }}
-                          >
-                            {
-                              category.description ||
-                              '—'
-                            }
-                          </Typography>
-                        </TableCell>
-
-                        {/* SERVICES */}
-
-                        <TableCell align="center">
-                          <Chip
-                            label={Number(
-                              category.servicesCount ??
-                                0
-                            )}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </TableCell>
-
-                        {/* STATUS */}
-
-                        <TableCell>
-                          <Tooltip
-                            title={
-                              category.status ===
-                              'ACTIVE'
-                                ? 'Click to deactivate'
-                                : 'Click to activate'
-                            }
-                          >
-                            <Chip
-                              label={
-                                category.status
-                              }
-                              size="small"
-                              color={
-                                category.status ===
-                                'ACTIVE'
-                                  ? 'success'
-                                  : 'default'
-                              }
-                              variant="outlined"
-                              onClick={() =>
-                                handleToggleCategoryStatus(
-                                  category
-                                )
-                              }
-                              sx={{
-                                cursor:
-                                  'pointer',
-                                fontWeight:
-                                  600
-                              }}
-                            />
-                          </Tooltip>
-                        </TableCell>
-
-                        {/* CREATED */}
-
-                        <TableCell>
-                          <Typography
-                            variant="body2"
-                          >
-                            {formatDate(
-                              category.createdAt
-                            )}
-                          </Typography>
-                        </TableCell>
-
-                        {/* ACTIONS */}
-
-                        <TableCell align="right">
-                          <Stack
-                            direction="row"
-                            spacing={0.5}
-                            justifyContent="flex-end"
-                          >
-                            <Tooltip title="Add Subcategory">
-                              <IconButton
-                                size="small"
-                                onClick={() =>
-                                  handleOpenCreateSubcategory(
-                                    category
-                                  )
-                                }
-                              >
-                                <PlusOutlined />
-                              </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Edit">
-                              <IconButton
-                                size="small"
-                                onClick={() =>
-                                  handleOpenEditCategory(
-                                    category
-                                  )
-                                }
-                              >
-                                <EditOutlined />
-                              </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Delete">
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() =>
-                                  handleOpenDeleteCategory(
-                                    category
-                                  )
-                                }
-                              >
-                                <DeleteOutlined />
-                              </IconButton>
-                            </Tooltip>
-                          </Stack>
-                        </TableCell>
-
-                      </TableRow>
+                        category={
+                          category
+                        }
+                        categoryBusinessTypeIds={
+                          categoryBusinessTypeIds
+                        }
+                        categorySubcategories={
+                          categorySubcategories
+                        }
+                        isExpanded={
+                          isExpanded
+                        }
+                        subcategoriesLoading={
+                          subcategoriesLoading
+                        }
+                        getBusinessTypeName={
+                          getBusinessTypeName
+                        }
+                        getAudienceLabel={
+                          getAudienceLabel
+                        }
+                        formatDate={
+                          formatDate
+                        }
+                        onToggleCategory={
+                          handleToggleCategory
+                        }
+                        onAddSubcategory={
+                          handleOpenCreateSubcategory
+                        }
+                        onEditCategory={
+                          handleOpenEditCategory
+                        }
+                        onDeleteCategory={
+                          handleOpenDeleteCategory
+                        }
+                        onToggleCategoryStatus={
+                          handleToggleCategoryStatus
+                        }
+                        onEditSubcategory={
+                          handleOpenEditSubcategory
+                        }
+                        onDeleteSubcategory={
+                          handleOpenDeleteSubcategory
+                        }
+                      />
                     );
                   }
                 )}
+
+              {/* ==================================================
+                  EMPTY
+              ================================================== */}
 
               {!loading &&
                 paginatedCategories.length ===
@@ -2604,6 +2665,10 @@ export default function Categories() {
           </Table>
         </TableContainer>
 
+        {/* ==================================================
+            PAGINATION
+        ================================================== */}
+
         <TablePagination
           component="div"
           count={
@@ -2635,378 +2700,6 @@ export default function Categories() {
             25
           ]}
         />
-      </Paper>
-
-      {/* ==================================================
-          SUBCATEGORY TABLE
-      ================================================== */}
-
-      <Paper
-        elevation={0}
-        sx={{
-          mt: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          overflow: 'hidden'
-        }}
-      >
-        <Box sx={{ p: 2.5 }}>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700
-            }}
-          >
-            Subcategories
-          </Typography>
-
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mt: 0.5 }}
-          >
-            Manage services under each
-            category.
-          </Typography>
-        </Box>
-
-        <Divider />
-
-        <TableContainer>
-          <Table>
-
-            <TableHead>
-              <TableRow>
-
-                <TableCell
-                  sx={{
-                    fontWeight: 700
-                  }}
-                >
-                  Subcategory
-                </TableCell>
-
-                <TableCell
-                  sx={{
-                    fontWeight: 700
-                  }}
-                >
-                  Category
-                </TableCell>
-
-                <TableCell
-                  sx={{
-                    fontWeight: 700
-                  }}
-                >
-                  Audiences
-                </TableCell>
-
-                <TableCell
-                  sx={{
-                    fontWeight: 700
-                  }}
-                >
-                  Business Types
-                </TableCell>
-
-                <TableCell
-                  align="center"
-                  sx={{
-                    fontWeight: 700
-                  }}
-                >
-                  Services
-                </TableCell>
-
-                <TableCell
-                  sx={{
-                    fontWeight: 700
-                  }}
-                >
-                  Status
-                </TableCell>
-
-                <TableCell
-                  align="right"
-                  sx={{
-                    fontWeight: 700
-                  }}
-                >
-                  Actions
-                </TableCell>
-
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-
-              {subcategoriesLoading && (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    align="center"
-                    sx={{
-                      py: 6
-                    }}
-                  >
-                    <CircularProgress
-                      size={28}
-                    />
-
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        mt: 1
-                      }}
-                    >
-                      Loading subcategories...
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-
-              {!subcategoriesLoading &&
-                subcategories.map(
-                  subcategory => {
-
-                    const parentCategory =
-                      categories.find(
-                        category =>
-                          category.categoryId ===
-                          subcategory.categoryId
-                      );
-
-                    const subcategoryBusinessTypeIds =
-                      Array.isArray(
-                        subcategory.businessTypeIds
-                      )
-                        ? subcategory.businessTypeIds
-                        : [];
-
-                    return (
-                      <TableRow
-                        key={
-                          subcategory.subcategoryId
-                        }
-                        hover
-                      >
-
-                        {/* SUBCATEGORY */}
-
-                        <TableCell>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              fontWeight: 600
-                            }}
-                          >
-                            {
-                              subcategory.name
-                            }
-                          </Typography>
-
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            {
-                              subcategory.subcategoryId
-                            }
-                          </Typography>
-
-                          {subcategory.description && (
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              sx={{
-                                mt: 0.5
-                              }}
-                            >
-                              {
-                                subcategory.description
-                              }
-                            </Typography>
-                          )}
-                        </TableCell>
-
-                        {/* CATEGORY */}
-
-                        <TableCell>
-                          <Typography
-                            variant="body2"
-                          >
-                            {parentCategory?.name ||
-                              subcategory.categoryId}
-                          </Typography>
-                        </TableCell>
-
-                        {/* AUDIENCES */}
-
-                        <TableCell>
-                          <Stack
-                            direction="row"
-                            spacing={0.5}
-                            flexWrap="wrap"
-                            useFlexGap
-                          >
-                            {(
-                              subcategory.audiences ??
-                              []
-                            ).map(
-                              audience => (
-                                <Chip
-                                  key={`${subcategory.subcategoryId}-${audience}`}
-                                  label={
-                                    audience ===
-                                    'FEMALE'
-                                      ? 'Female'
-                                      : audience ===
-                                        'MALE'
-                                      ? 'Male'
-                                      : 'Kids'
-                                  }
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              )
-                            )}
-                          </Stack>
-                        </TableCell>
-
-                        {/* BUSINESS TYPES */}
-
-                        <TableCell>
-                          <Stack
-                            direction="row"
-                            spacing={0.5}
-                            flexWrap="wrap"
-                            useFlexGap
-                          >
-                            {subcategoryBusinessTypeIds.map(
-                              businessTypeId => (
-                                <Chip
-                                  key={`${subcategory.subcategoryId}-${businessTypeId}`}
-                                  label={getBusinessTypeName(
-                                    businessTypeId
-                                  )}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              )
-                            )}
-
-                            {subcategoryBusinessTypeIds.length ===
-                              0 && (
-                              <Typography
-                                variant="body2"
-                                color="error"
-                              >
-                                No business type
-                              </Typography>
-                            )}
-                          </Stack>
-                        </TableCell>
-
-                        {/* SERVICES */}
-
-                        <TableCell align="center">
-                          <Chip
-                            label={Number(
-                              subcategory.servicesCount ??
-                                0
-                            )}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </TableCell>
-
-                        {/* STATUS */}
-
-                        <TableCell>
-                          <Chip
-                            label={
-                              subcategory.status
-                            }
-                            size="small"
-                            color={
-                              subcategory.status ===
-                              'ACTIVE'
-                                ? 'success'
-                                : 'default'
-                            }
-                            variant="outlined"
-                          />
-                        </TableCell>
-
-                        {/* ACTIONS */}
-
-                        <TableCell align="right">
-                          <Stack
-                            direction="row"
-                            spacing={0.5}
-                            justifyContent="flex-end"
-                          >
-                            <Tooltip title="Edit">
-                              <IconButton
-                                size="small"
-                                onClick={() =>
-                                  handleOpenEditSubcategory(
-                                    subcategory
-                                  )
-                                }
-                              >
-                                <EditOutlined />
-                              </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Delete">
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() =>
-                                  handleOpenDeleteSubcategory(
-                                    subcategory
-                                  )
-                                }
-                              >
-                                <DeleteOutlined />
-                              </IconButton>
-                            </Tooltip>
-                          </Stack>
-                        </TableCell>
-
-                      </TableRow>
-                    );
-                  }
-                )}
-
-              {!subcategoriesLoading &&
-                subcategories.length ===
-                  0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      align="center"
-                      sx={{
-                        py: 6
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                      >
-                        No subcategories found.
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-
-            </TableBody>
-          </Table>
-        </TableContainer>
       </Paper>
 
       {/* ==================================================
@@ -3044,8 +2737,6 @@ export default function Categories() {
               </Typography>
             )}
 
-            {/* NAME */}
-
             <TextField
               label="Category Name"
               fullWidth
@@ -3065,8 +2756,6 @@ export default function Categories() {
                 updatingCategory
               }
             />
-
-            {/* DESCRIPTION */}
 
             <TextField
               label="Description"
@@ -3234,7 +2923,6 @@ export default function Categories() {
             pb: 2.5
           }}
         >
-
           <Button
             onClick={
               handleCloseCategoryDialog
@@ -3277,7 +2965,6 @@ export default function Categories() {
               ? 'Save Changes'
               : 'Create Category'}
           </Button>
-
         </DialogActions>
       </Dialog>
 
@@ -3488,13 +3175,9 @@ export default function Categories() {
                           <Chip
                             key={audience}
                             label={
-                              audience ===
-                              'FEMALE'
-                                ? 'Female'
-                                : audience ===
-                                  'MALE'
-                                ? 'Male'
-                                : 'Kids'
+                              getAudienceLabel(
+                                audience
+                              )
                             }
                             size="small"
                           />
@@ -3697,7 +3380,6 @@ export default function Categories() {
             pb: 2.5
           }}
         >
-
           <Button
             onClick={
               handleCloseSubcategoryDialog
@@ -3743,7 +3425,6 @@ export default function Categories() {
               ? 'Save Changes'
               : 'Create Subcategory'}
           </Button>
-
         </DialogActions>
       </Dialog>
 
@@ -3766,7 +3447,6 @@ export default function Categories() {
         </DialogTitle>
 
         <DialogContent>
-
           {errorMessage && (
             <Typography
               variant="body2"
@@ -3812,7 +3492,6 @@ export default function Categories() {
                 instead of deleting it.
               </Typography>
             )}
-
         </DialogContent>
 
         <DialogActions
@@ -3821,7 +3500,6 @@ export default function Categories() {
             pb: 2.5
           }}
         >
-
           <Button
             onClick={
               handleCloseDeleteCategory
@@ -3858,7 +3536,6 @@ export default function Categories() {
               ? 'Deleting...'
               : 'Delete'}
           </Button>
-
         </DialogActions>
       </Dialog>
 
@@ -3881,7 +3558,6 @@ export default function Categories() {
         </DialogTitle>
 
         <DialogContent>
-
           {errorMessage && (
             <Typography
               variant="body2"
@@ -3927,7 +3603,6 @@ export default function Categories() {
                 deleting it.
               </Typography>
             )}
-
         </DialogContent>
 
         <DialogActions
@@ -3936,7 +3611,6 @@ export default function Categories() {
             pb: 2.5
           }}
         >
-
           <Button
             onClick={
               handleCloseDeleteSubcategory
@@ -3973,10 +3647,962 @@ export default function Categories() {
               ? 'Deleting...'
               : 'Delete'}
           </Button>
-
         </DialogActions>
       </Dialog>
 
     </Box>
+  );
+}
+
+// ======================================================
+// CATEGORY GROUP
+// ======================================================
+
+interface CategoryGroupProps {
+  category: Category;
+  categoryBusinessTypeIds: string[];
+  categorySubcategories: Subcategory[];
+  isExpanded: boolean;
+  subcategoriesLoading: boolean;
+  getBusinessTypeName: (
+    id: string
+  ) => string;
+  getAudienceLabel: (
+    audience: ServiceAudience
+  ) => string;
+  formatDate: (
+    date?: string
+  ) => string;
+  onToggleCategory: (
+    categoryId: string
+  ) => void;
+  onAddSubcategory: (
+    category: Category
+  ) => void;
+  onEditCategory: (
+    category: Category
+  ) => void;
+  onDeleteCategory: (
+    category: Category
+  ) => void;
+  onToggleCategoryStatus: (
+    category: Category
+  ) => void;
+  onEditSubcategory: (
+    subcategory: Subcategory
+  ) => void;
+  onDeleteSubcategory: (
+    subcategory: Subcategory
+  ) => void;
+}
+
+// ======================================================
+// CATEGORY GROUP COMPONENT
+// ======================================================
+
+function CategoryGroup({
+  category,
+  categoryBusinessTypeIds,
+  categorySubcategories,
+  isExpanded,
+  subcategoriesLoading,
+  getBusinessTypeName,
+  getAudienceLabel,
+  formatDate,
+  onToggleCategory,
+  onAddSubcategory,
+  onEditCategory,
+  onDeleteCategory,
+  onToggleCategoryStatus,
+  onEditSubcategory,
+  onDeleteSubcategory
+}: CategoryGroupProps) {
+  return (
+    <>
+      {/* ==================================================
+          CATEGORY HEADER ROW
+      ================================================== */}
+
+      <TableRow
+        hover
+        sx={{
+          cursor: 'pointer',
+          backgroundColor:
+            isExpanded
+              ? 'action.hover'
+              : 'background.paper',
+
+          '& > td': {
+            borderBottom:
+              isExpanded
+                ? 'none'
+                : undefined
+          }
+        }}
+        onClick={() =>
+          onToggleCategory(
+            category.categoryId
+          )
+        }
+      >
+
+        {/* CATEGORY */}
+
+        <TableCell>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+          >
+
+            <IconButton
+              size="small"
+              onClick={event => {
+                event.stopPropagation();
+
+                onToggleCategory(
+                  category.categoryId
+                );
+              }}
+              sx={{
+                width: 32,
+                height: 32
+              }}
+            >
+              {isExpanded ? (
+                <DownOutlined />
+              ) : (
+                <RightOutlined />
+              )}
+            </IconButton>
+
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 1.5,
+                display: 'flex',
+                alignItems:
+                  'center',
+                justifyContent:
+                  'center',
+                backgroundColor:
+                  'primary.lighter',
+                color:
+                  'primary.main',
+                flexShrink: 0
+              }}
+            >
+              <TagsOutlined
+                style={{
+                  fontSize: 19
+                }}
+              />
+            </Box>
+
+            <Box
+              sx={{
+                minWidth: 0
+              }}
+            >
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                flexWrap="wrap"
+                useFlexGap
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: 700
+                  }}
+                >
+                  {category.name}
+                </Typography>
+
+                <Chip
+                  label={`${categorySubcategories.length} subcategor${
+                    categorySubcategories.length ===
+                    1
+                      ? 'y'
+                      : 'ies'
+                  }`}
+                  size="small"
+                  variant="outlined"
+                />
+              </Stack>
+
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  display:
+                    'block',
+                  mt: 0.25
+                }}
+              >
+                {category.categoryId}
+              </Typography>
+            </Box>
+
+          </Stack>
+        </TableCell>
+
+        {/* BUSINESS TYPES */}
+
+        <TableCell>
+          {categoryBusinessTypeIds.length >
+          0 ? (
+            <Stack
+              direction="row"
+              spacing={0.5}
+              flexWrap="wrap"
+              useFlexGap
+            >
+              {categoryBusinessTypeIds.map(
+                businessTypeId => (
+                  <Chip
+                    key={`${category.categoryId}-${businessTypeId}`}
+                    label={getBusinessTypeName(
+                      businessTypeId
+                    )}
+                    size="small"
+                    variant="outlined"
+                  />
+                )
+              )}
+            </Stack>
+          ) : (
+            <Typography
+              variant="body2"
+              color="error"
+            >
+              No business type
+            </Typography>
+          )}
+        </TableCell>
+
+        {/* DESCRIPTION */}
+
+        <TableCell>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              maxWidth: 300,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient:
+                'vertical',
+              overflow: 'hidden'
+            }}
+          >
+            {category.description ||
+              '—'}
+          </Typography>
+        </TableCell>
+
+        {/* SERVICES */}
+
+        <TableCell align="center">
+          <Chip
+            label={Number(
+              category.servicesCount ??
+                0
+            )}
+            size="small"
+            variant="outlined"
+          />
+        </TableCell>
+
+        {/* STATUS */}
+
+        <TableCell
+          onClick={event =>
+            event.stopPropagation()
+          }
+        >
+          <Tooltip
+            title={
+              category.status ===
+              'ACTIVE'
+                ? 'Click to deactivate'
+                : 'Click to activate'
+            }
+          >
+            <Chip
+              label={
+                category.status
+              }
+              size="small"
+              color={
+                category.status ===
+                'ACTIVE'
+                  ? 'success'
+                  : 'default'
+              }
+              variant="outlined"
+              onClick={() =>
+                onToggleCategoryStatus(
+                  category
+                )
+              }
+              sx={{
+                cursor:
+                  'pointer',
+                fontWeight:
+                  600
+              }}
+            />
+          </Tooltip>
+        </TableCell>
+
+        {/* CREATED */}
+
+        <TableCell>
+          <Box>
+            <Typography
+              variant="body2"
+            >
+              {formatDate(
+                category.createdAt
+              )}
+            </Typography>
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+            >
+              Updated{' '}
+              {formatDate(
+                category.updatedAt
+              )}
+            </Typography>
+          </Box>
+        </TableCell>
+
+        {/* ACTIONS */}
+
+        <TableCell
+          align="right"
+          onClick={event =>
+            event.stopPropagation()
+          }
+        >
+          <Stack
+            direction="row"
+            spacing={0.5}
+            justifyContent="flex-end"
+          >
+
+            <Tooltip title="Add Subcategory">
+              <IconButton
+                size="small"
+                onClick={() =>
+                  onAddSubcategory(
+                    category
+                  )
+                }
+              >
+                <PlusOutlined />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Edit Category">
+              <IconButton
+                size="small"
+                onClick={() =>
+                  onEditCategory(
+                    category
+                  )
+                }
+              >
+                <EditOutlined />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Delete Category">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() =>
+                  onDeleteCategory(
+                    category
+                  )
+                }
+              >
+                <DeleteOutlined />
+              </IconButton>
+            </Tooltip>
+
+          </Stack>
+        </TableCell>
+
+      </TableRow>
+
+      {/* ==================================================
+          EXPANDED SUBCATEGORY AREA
+      ================================================== */}
+
+      <TableRow
+        sx={{
+          '& > td': {
+            p: 0,
+            borderBottom: isExpanded
+              ? undefined
+              : 'none'
+          }
+        }}
+      >
+        <TableCell
+          colSpan={7}
+        >
+          <Collapse
+            in={isExpanded}
+            timeout="auto"
+            unmountOnExit
+          >
+            <Box
+              sx={{
+                px: 4,
+                py: 2.5,
+                backgroundColor:
+                  'grey.50',
+                borderTop:
+                  '1px solid',
+                borderColor:
+                  'divider'
+              }}
+            >
+
+              {/* ==================================================
+                  SUBCATEGORY HEADER
+              ================================================== */}
+
+              <Stack
+                direction={{
+                  xs: 'column',
+                  sm: 'row'
+                }}
+                alignItems={{
+                  xs: 'flex-start',
+                  sm: 'center'
+                }}
+                justifyContent="space-between"
+                spacing={1.5}
+                sx={{
+                  mb: 2
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      fontWeight: 700
+                    }}
+                  >
+                    Subcategories
+                  </Typography>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    Services configured
+                    under{' '}
+                    <strong>
+                      {category.name}
+                    </strong>
+                  </Typography>
+                </Box>
+
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={
+                    <PlusOutlined />
+                  }
+                  onClick={() =>
+                    onAddSubcategory(
+                      category
+                    )
+                  }
+                  sx={{
+                    textTransform:
+                      'none'
+                  }}
+                >
+                  Add Subcategory
+                </Button>
+              </Stack>
+
+              {/* ==================================================
+                  SUBCATEGORY LOADING
+              ================================================== */}
+
+              {subcategoriesLoading && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    textAlign:
+                      'center',
+                    border:
+                      '1px solid',
+                    borderColor:
+                      'divider',
+                    borderRadius: 1.5
+                  }}
+                >
+                  <CircularProgress
+                    size={26}
+                  />
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      mt: 1
+                    }}
+                  >
+                    Loading subcategories...
+                  </Typography>
+                </Paper>
+              )}
+
+              {/* ==================================================
+                  NO SUBCATEGORIES
+              ================================================== */}
+
+              {!subcategoriesLoading &&
+                categorySubcategories.length ===
+                  0 && (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      textAlign:
+                        'center',
+                      border:
+                        '1px dashed',
+                      borderColor:
+                        'divider',
+                      borderRadius: 1.5
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                    >
+                      No subcategories
+                      configured for this
+                      category.
+                    </Typography>
+
+                    <Button
+                      size="small"
+                      startIcon={
+                        <PlusOutlined />
+                      }
+                      onClick={() =>
+                        onAddSubcategory(
+                          category
+                        )
+                      }
+                      sx={{
+                        mt: 1,
+                        textTransform:
+                          'none'
+                      }}
+                    >
+                      Add first subcategory
+                    </Button>
+                  </Paper>
+                )}
+
+              {/* ==================================================
+                  SUBCATEGORY TABLE
+              ================================================== */}
+
+              {!subcategoriesLoading &&
+                categorySubcategories.length >
+                  0 && (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      border:
+                        '1px solid',
+                      borderColor:
+                        'divider',
+                      borderRadius: 1.5,
+                      overflow:
+                        'hidden'
+                    }}
+                  >
+                    <TableContainer>
+                      <Table
+                        size="small"
+                        sx={{
+                          minWidth: 1050
+                        }}
+                      >
+
+                        <TableHead>
+                          <TableRow
+                            sx={{
+                              backgroundColor:
+                                'background.paper'
+                            }}
+                          >
+
+                            <TableCell
+                              sx={{
+                                fontWeight:
+                                  700,
+                                width: 260
+                              }}
+                            >
+                              Subcategory
+                            </TableCell>
+
+                            <TableCell
+                              sx={{
+                                fontWeight:
+                                  700
+                              }}
+                            >
+                              Audiences
+                            </TableCell>
+
+                            <TableCell
+                              sx={{
+                                fontWeight:
+                                  700
+                              }}
+                            >
+                              Business Types
+                            </TableCell>
+
+                            <TableCell
+                              sx={{
+                                fontWeight:
+                                  700
+                              }}
+                            >
+                              Description
+                            </TableCell>
+
+                            <TableCell
+                              align="center"
+                              sx={{
+                                fontWeight:
+                                  700
+                              }}
+                            >
+                              Services
+                            </TableCell>
+
+                            <TableCell
+                              sx={{
+                                fontWeight:
+                                  700
+                              }}
+                            >
+                              Status
+                            </TableCell>
+
+                            <TableCell
+                              sx={{
+                                fontWeight:
+                                  700
+                              }}
+                            >
+                              Dates
+                            </TableCell>
+
+                            <TableCell
+                              align="right"
+                              sx={{
+                                fontWeight:
+                                  700
+                              }}
+                            >
+                              Actions
+                            </TableCell>
+
+                          </TableRow>
+                        </TableHead>
+
+                        <TableBody>
+
+                          {categorySubcategories.map(
+                            subcategory => {
+
+                              const businessTypeIds =
+                                Array.isArray(
+                                  subcategory.businessTypeIds
+                                )
+                                  ? subcategory.businessTypeIds
+                                  : [];
+
+                              const audiences =
+                                Array.isArray(
+                                  subcategory.audiences
+                                )
+                                  ? subcategory.audiences
+                                  : [];
+
+                              return (
+                                <TableRow
+                                  key={
+                                    subcategory.subcategoryId
+                                  }
+                                  hover
+                                >
+
+                                  {/* SUBCATEGORY */}
+
+                                  <TableCell>
+                                    <Box>
+                                      <Typography
+                                        variant="subtitle2"
+                                        sx={{
+                                          fontWeight:
+                                            600
+                                        }}
+                                      >
+                                        {
+                                          subcategory.name
+                                        }
+                                      </Typography>
+
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{
+                                          display:
+                                            'block',
+                                          mt: 0.25,
+                                          wordBreak:
+                                            'break-all'
+                                        }}
+                                      >
+                                        {
+                                          subcategory.subcategoryId
+                                        }
+                                      </Typography>
+                                    </Box>
+                                  </TableCell>
+
+                                  {/* AUDIENCES */}
+
+                                  <TableCell>
+                                    {audiences.length >
+                                    0 ? (
+                                      <Stack
+                                        direction="row"
+                                        spacing={
+                                          0.5
+                                        }
+                                        flexWrap="wrap"
+                                        useFlexGap
+                                      >
+                                        {audiences.map(
+                                          audience => (
+                                            <Chip
+                                              key={`${subcategory.subcategoryId}-${audience}`}
+                                              label={getAudienceLabel(
+                                                audience
+                                              )}
+                                              size="small"
+                                              variant="outlined"
+                                            />
+                                          )
+                                        )}
+                                      </Stack>
+                                    ) : (
+                                      <Typography
+                                        variant="body2"
+                                        color="error"
+                                      >
+                                        No audience
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+
+                                  {/* BUSINESS TYPES */}
+
+                                  <TableCell>
+                                    {businessTypeIds.length >
+                                    0 ? (
+                                      <Stack
+                                        direction="row"
+                                        spacing={
+                                          0.5
+                                        }
+                                        flexWrap="wrap"
+                                        useFlexGap
+                                      >
+                                        {businessTypeIds.map(
+                                          businessTypeId => (
+                                            <Chip
+                                              key={`${subcategory.subcategoryId}-${businessTypeId}`}
+                                              label={getBusinessTypeName(
+                                                businessTypeId
+                                              )}
+                                              size="small"
+                                              variant="outlined"
+                                            />
+                                          )
+                                        )}
+                                      </Stack>
+                                    ) : (
+                                      <Typography
+                                        variant="body2"
+                                        color="error"
+                                      >
+                                        No business type
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+
+                                  {/* DESCRIPTION */}
+
+                                  <TableCell>
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                      sx={{
+                                        maxWidth: 260,
+                                        display:
+                                          '-webkit-box',
+                                        WebkitLineClamp: 3,
+                                        WebkitBoxOrient:
+                                          'vertical',
+                                        overflow:
+                                          'hidden'
+                                      }}
+                                    >
+                                      {
+                                        subcategory.description ||
+                                        '—'
+                                      }
+                                    </Typography>
+                                  </TableCell>
+
+                                  {/* SERVICES */}
+
+                                  <TableCell align="center">
+                                    <Chip
+                                      label={Number(
+                                        subcategory.servicesCount ??
+                                          0
+                                      )}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  </TableCell>
+
+                                  {/* STATUS */}
+
+                                  <TableCell>
+                                    <Chip
+                                      label={
+                                        subcategory.status
+                                      }
+                                      size="small"
+                                      color={
+                                        subcategory.status ===
+                                        'ACTIVE'
+                                          ? 'success'
+                                          : 'default'
+                                      }
+                                      variant="outlined"
+                                    />
+                                  </TableCell>
+
+                                  {/* DATES */}
+
+                                  <TableCell>
+                                    <Box>
+                                      <Typography
+                                        variant="body2"
+                                      >
+                                        Created{' '}
+                                        {formatDate(
+                                          subcategory.createdAt
+                                        )}
+                                      </Typography>
+
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Updated{' '}
+                                        {formatDate(
+                                          subcategory.updatedAt
+                                        )}
+                                      </Typography>
+                                    </Box>
+                                  </TableCell>
+
+                                  {/* ACTIONS */}
+
+                                  <TableCell align="right">
+                                    <Stack
+                                      direction="row"
+                                      spacing={
+                                        0.5
+                                      }
+                                      justifyContent="flex-end"
+                                    >
+
+                                      <Tooltip title="Edit Subcategory">
+                                        <IconButton
+                                          size="small"
+                                          onClick={() =>
+                                            onEditSubcategory(
+                                              subcategory
+                                            )
+                                          }
+                                        >
+                                          <EditOutlined />
+                                        </IconButton>
+                                      </Tooltip>
+
+                                      <Tooltip title="Delete Subcategory">
+                                        <IconButton
+                                          size="small"
+                                          color="error"
+                                          onClick={() =>
+                                            onDeleteSubcategory(
+                                              subcategory
+                                            )
+                                          }
+                                        >
+                                          <DeleteOutlined />
+                                        </IconButton>
+                                      </Tooltip>
+
+                                    </Stack>
+                                  </TableCell>
+
+                                </TableRow>
+                              );
+                            }
+                          )}
+
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Paper>
+                )}
+
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
   );
 }

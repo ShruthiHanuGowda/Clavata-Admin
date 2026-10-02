@@ -85,7 +85,8 @@
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
     "lint:fix": "eslint --fix \"src/**/*.{js,jsx,ts,tsx}\"",
-    "prettier": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\""
+    "prettier": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
+    "seed:catalog": "tsx seedClavataCatalog.ts"
   },
   "eslintConfig": {
     "extends": [
@@ -130,6 +131,7 @@
     "@types/webpack-env": "^1.18.5",
     "@typescript-eslint/eslint-plugin": "^8.40.0",
     "@typescript-eslint/parser": "^8.40.0",
+    "dotenv": "^18.0.5",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-config-react-app": "^7.0.1",
@@ -145,6 +147,7 @@
     "prettier": "^3.3.3",
     "prettier-eslint-cli": "^8.0.1",
     "react-error-overlay": "6.0.11",
+    "tsx": "^4.23.15",
     "typescript": "^5.2.2"
   },
   "packageManager": "yarn@4.4.1"

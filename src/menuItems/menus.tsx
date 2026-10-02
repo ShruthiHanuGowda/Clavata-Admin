@@ -117,7 +117,19 @@ const managementMenu: NavItemType = {
       url: '/customers',
       icon: icons.TeamOutlined
     },
-    {
+    // {
+    //   id: 'provider',
+    //   title: (
+    //     <FormattedMessage
+    //       id="Provider"
+    //       defaultMessage="Provider"
+    //     />
+    //   ),
+    //   type: 'item',
+    //   url: '/provider',
+    //   icon: icons.SolutionOutlined
+    // },
+        {
       id: 'provider',
       title: (
         <FormattedMessage
@@ -127,18 +139,6 @@ const managementMenu: NavItemType = {
       ),
       type: 'item',
       url: '/provider',
-      icon: icons.SolutionOutlined
-    },
-        {
-      id: 'salons',
-      title: (
-        <FormattedMessage
-          id="Salons"
-          defaultMessage="Salons"
-        />
-      ),
-      type: 'item',
-      url: '/salons',
       icon: icons.ShopOutlined
     },
     {
@@ -279,30 +279,30 @@ const verificationMenu: NavItemType = {
       url: '/salon-applications',
       icon: icons.FileProtectOutlined
     },
-    {
-      id: 'kyc-documents',
-      title: (
-        <FormattedMessage
-          id="KYC / Documents"
-          defaultMessage="KYC / Documents"
-        />
-      ),
-      type: 'item',
-      url: '/kyc-documents',
-      icon: icons.SafetyCertificateOutlined
-    },
-    {
-      id: 'pending-approvals',
-      title: (
-        <FormattedMessage
-          id="Pending Approvals"
-          defaultMessage="Pending Approvals"
-        />
-      ),
-      type: 'item',
-      url: '/pending-approvals',
-      icon: icons.CheckCircleOutlined
-    },
+    // {
+    //   id: 'kyc-documents',
+    //   title: (
+    //     <FormattedMessage
+    //       id="KYC / Documents"
+    //       defaultMessage="KYC / Documents"
+    //     />
+    //   ),
+    //   type: 'item',
+    //   url: '/kyc-documents',
+    //   icon: icons.SafetyCertificateOutlined
+    // },
+    // {
+    //   id: 'pending-approvals',
+    //   title: (
+    //     <FormattedMessage
+    //       id="Pending Approvals"
+    //       defaultMessage="Pending Approvals"
+    //     />
+    //   ),
+    //   type: 'item',
+    //   url: '/pending-approvals',
+    //   icon: icons.CheckCircleOutlined
+    // },
     {
       id: 'salon-profile-changes',
       title: (

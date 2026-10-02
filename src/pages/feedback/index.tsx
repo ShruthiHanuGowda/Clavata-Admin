@@ -629,7 +629,7 @@ export default function FeedbackPage() {
                 <MenuItem value="ALL">All Types</MenuItem>
                 <MenuItem value="CUSTOMER">Customer</MenuItem>
                 <MenuItem value="SALON">Salon</MenuItem>
-                <MenuItem value="PROVIDER">Provider</MenuItem>
+                {/* <MenuItem value="PROVIDER">Provider</MenuItem> */}
                 <MenuItem value="GENERAL">General</MenuItem>
               </Select>
             </FormControl>
