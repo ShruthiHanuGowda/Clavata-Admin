@@ -9,7 +9,6 @@ import {
 } from '@apollo/client';
 
 import {
-  GET_BUSINESS_TYPES,
   CREATE_CATEGORY,
   CREATE_SUBCATEGORY,
 } from './src/graphql/queries';
@@ -23,35 +22,15 @@ type Audience =
   | 'MALE'
   | 'KIDS';
 
-type BusinessTypeKey =
-  | 'BEAUTY_SALON'
-  | 'BARBER'
-  | 'SPA_WELLNESS';
-
-type BusinessType = {
-  businessTypeId: string;
-  name: string;
-  description?: string | null;
-  status: string;
-};
-
-type BusinessTypeMap = {
-  BEAUTY_SALON: string;
-  BARBER: string;
-  SPA_WELLNESS: string;
-};
-
 type SeedSubcategory = {
   name: string;
-  description?: string;
+  description: string;
   audiences: Audience[];
-  businessTypes: BusinessTypeKey[];
 };
 
 type SeedCategory = {
   name: string;
-  description?: string;
-  businessTypes: BusinessTypeKey[];
+  description: string;
   subcategories: SeedSubcategory[];
 };
 
@@ -96,1894 +75,686 @@ const client =
   });
 
 // ============================================================
-// HELPERS
+// AUDIENCE HELPERS
 // ============================================================
 
-function normalizeName(
-  value: unknown
-): string {
-  return String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ');
-}
+const FEMALE: Audience[] = [
+  'FEMALE',
+];
+
+const MALE: Audience[] = [
+  'MALE',
+];
+
+const FEMALE_MALE: Audience[] = [
+  'FEMALE',
+  'MALE',
+];
+
+const ALL_AUDIENCES: Audience[] = [
+  'FEMALE',
+  'MALE',
+  'KIDS',
+];
+
+const KIDS: Audience[] = [
+  'KIDS',
+];
 
 // ============================================================
-// BUSINESS TYPE RESOLUTION
+// SUBCATEGORY HELPER
 // ============================================================
 
-function resolveBusinessTypeIds(
-  businessTypes: BusinessType[]
-): BusinessTypeMap {
-
-  const beautySalon =
-    businessTypes.find(
-      (item) =>
-        normalizeName(item.name) ===
-        'salon'
-    );
-
-  const barber =
-    businessTypes.find(
-      (item) =>
-        normalizeName(item.name) ===
-        'barber'
-    );
-
-  const spaWellness =
-    businessTypes.find(
-      (item) =>
-        normalizeName(item.name) ===
-        'spa & wellness'
-    );
-
-  if (!beautySalon) {
-    throw new Error(
-      'Business type "Beauty Salon" was not found.'
-    );
-  }
-
-  if (!barber) {
-    throw new Error(
-      'Business type "Barber" was not found.'
-    );
-  }
-
-  if (!spaWellness) {
-    throw new Error(
-      'Business type "Spa & Wellness" was not found.'
-    );
-  }
-
+function sub(
+  name: string,
+  audiences: Audience[],
+  description: string
+): SeedSubcategory {
   return {
-    BEAUTY_SALON:
-      beautySalon.businessTypeId,
-
-    BARBER:
-      barber.businessTypeId,
-
-    SPA_WELLNESS:
-      spaWellness.businessTypeId,
+    name,
+    audiences,
+    description,
   };
 }
 
 // ============================================================
-// CATALOG
+// MASTER CATALOG
+// ============================================================
+//
+// Category
+//      ↓
+// Subcategory
+//      ↓
+// Provider-created Service
+//
+// IMPORTANT:
+//
+// 1. Business type is NOT part of the catalog.
+//
+// 2. Category/subcategory are standardized by Clavata.
+//
+// 3. Provider creates the actual service.
+//
+// 4. Provider enters:
+//      - Service Name
+//      - Price
+//      - Duration
+//      - Audience
+//      - Popular
+//      - Active
+//
+// Example:
+//
+// Facial & Skin Care
+//      ↓
+// Facial
+//      ↓
+// Service Name: Gold Facial
+// Price: ₹800
+// Duration: 60 minutes
+// Audience: FEMALE
+//
+// Another salon can create:
+//
+// Facial & Skin Care
+//      ↓
+// Facial
+//      ↓
+// Service Name: Premium Hydrating Facial
+// Price: ₹1,200
+// Duration: 75 minutes
+// Audience: FEMALE
+//
 // ============================================================
 
 const CATALOG: SeedCategory[] = [
 
   // ==========================================================
-  // HAIR
+  // 1. HAIR
   // ==========================================================
 
   {
     name: 'Hair',
+
     description:
       'Hair cutting, styling, coloring, treatment and hair care services.',
-    businessTypes: [
-      'BEAUTY_SALON',
-      'BARBER',
-    ],
 
     subcategories: [
 
-      {
-        name: 'Hair Cut',
-        audiences: [
-          'FEMALE',
-          'MALE',
-          'KIDS',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
+      sub(
+        'Hair Cut',
+        ALL_AUDIENCES,
+        'Hair cutting services tailored to the customer’s preferred length, shape and style.'
+      ),
 
-      {
-        name: 'Hair Trim',
-        audiences: [
-          'FEMALE',
-          'MALE',
-          'KIDS',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
+      sub(
+        'Hair Styling',
+        ALL_AUDIENCES,
+        'Professional hair styling services for everyday looks, occasions and special events.'
+      ),
 
-      {
-        name: 'Hair Styling',
-        audiences: [
-          'FEMALE',
-          'MALE',
-          'KIDS',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
+      sub(
+        'Hair Wash',
+        ALL_AUDIENCES,
+        'Professional hair washing and cleansing services.'
+      ),
 
-      {
-        name: 'Hair Wash',
-        audiences: [
-          'FEMALE',
-          'MALE',
-          'KIDS',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
+      sub(
+        'Hair Color',
+        FEMALE_MALE,
+        'Professional hair coloring services for full or partial hair coloring and color changes.'
+      ),
 
-      {
-        name: 'Hair Color',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
+      sub(
+        'Hair Treatment',
+        FEMALE_MALE,
+        'Professional hair treatments designed to improve hair condition, texture, appearance and manageability.'
+      ),
 
-      {
-        name: 'Highlights',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Balayage',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Hair Treatment',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Hair Smoothening',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Hair Straightening',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Hair Spa',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Scalp Treatment',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Hair Extensions',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Hair Consultation',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
+      sub(
+        'Hair Care',
+        FEMALE_MALE,
+        'General hair and scalp care services focused on maintaining healthy-looking hair.'
+      ),
     ],
   },
 
   // ==========================================================
-  // BEARD & SHAVING
+  // 2. BEARD & GROOMING
   // ==========================================================
 
   {
-    name: 'Beard & Shaving',
+    name: 'Beard & Grooming',
+
     description:
-      'Beard grooming, shaving and moustache services.',
-    businessTypes: [
-      'BEAUTY_SALON',
-      'BARBER',
-    ],
+      'Beard grooming, shaving, moustache styling and men’s grooming services.',
 
     subcategories: [
 
-      {
-        name: 'Beard Trim',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
+      sub(
+        'Beard Grooming',
+        MALE,
+        'Beard trimming, shaping, styling and general beard grooming services.'
+      ),
 
-      {
-        name: 'Beard Styling',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
+      sub(
+        'Shaving',
+        MALE,
+        'Professional facial and head shaving services for a clean and groomed appearance.'
+      ),
 
-      {
-        name: 'Beard Coloring',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
+      sub(
+        'Moustache',
+        MALE,
+        'Moustache trimming, shaping and styling services.'
+      ),
 
-      {
-        name: 'Beard Treatment',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-
-      {
-        name: 'Shaving',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-
-      {
-        name: 'Head Shave',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-
-      {
-        name: 'Moustache',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
+      sub(
+        'Men’s Grooming',
+        MALE,
+        'General grooming services for men including hair, beard and personal grooming.'
+      ),
     ],
   },
 
   // ==========================================================
-  // FACIAL
+  // 3. FACIAL & SKIN CARE
   // ==========================================================
 
   {
-    name: 'Facial',
+    name: 'Facial & Skin Care',
+
     description:
-      'Facial treatments for cleansing, hydration, brightening and skin care.',
-    businessTypes: [
-      'BEAUTY_SALON',
-      'SPA_WELLNESS',
-    ],
+      'Facial treatments, skin cleansing, hydration, brightening and specialized skin care services.',
 
     subcategories: [
 
-      {
-        name: 'Basic Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'Facial',
+        FEMALE_MALE,
+        'Professional facial treatments for cleansing, exfoliation, hydration and overall skin care.'
+      ),
 
-      {
-        name: 'Fruit Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'Skin Care',
+        FEMALE_MALE,
+        'Professional skin care services tailored to different skin needs and concerns.'
+      ),
 
-      {
-        name: 'Herbal Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'Cleanup',
+        FEMALE_MALE,
+        'Basic skin cleansing services designed to remove impurities and refresh the skin.'
+      ),
 
-      {
-        name: 'Gold Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Diamond Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Pearl Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Brightening Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Hydrating Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Anti-Aging Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Acne Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'De-Tan Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Bridal Facial',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Premium Facial',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'De-Tan',
+        FEMALE_MALE,
+        'Skin care services focused on reducing the appearance of tanning and uneven skin tone.'
+      ),
     ],
   },
 
   // ==========================================================
-  // SKIN CARE
+  // 4. MAKEUP & BRIDAL
   // ==========================================================
 
   {
-    name: 'Skin Care',
+    name: 'Makeup & Bridal',
+
     description:
-      'Skin cleansing, hydration, brightening and specialized skin care services.',
-    businessTypes: [
-      'BEAUTY_SALON',
-      'SPA_WELLNESS',
-    ],
+      'Professional makeup, bridal beauty, wedding hair and pre-wedding preparation services.',
 
     subcategories: [
 
-      {
-        name: 'Cleanup',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'Makeup',
+        FEMALE,
+        'Professional makeup services for celebrations, events, photography and special occasions.'
+      ),
 
-      {
-        name: 'De-Tan',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'Bridal',
+        FEMALE,
+        'Bridal beauty services including makeup, hair and wedding-day preparation.'
+      ),
 
-      {
-        name: 'Skin Polishing',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Skin Brightening',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Skin Hydration',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Acne Care',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Anti-Aging',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Skin Consultation',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'Pre-Bridal',
+        FEMALE,
+        'Beauty and grooming services designed for preparation before the wedding.'
+      ),
     ],
   },
 
   // ==========================================================
-  // MAKEUP
+  // 5. THREADING & HAIR REMOVAL
   // ==========================================================
 
   {
-    name: 'Makeup',
+    name: 'Threading & Hair Removal',
+
     description:
-      'Professional makeup services for events, weddings and special occasions.',
-    businessTypes: [
-      'BEAUTY_SALON',
-    ],
+      'Threading, waxing and other facial and body hair removal services.',
 
     subcategories: [
 
-      {
-        name: 'Party Makeup',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Threading',
+        FEMALE_MALE,
+        'Threading services for facial hair grooming and shaping.'
+      ),
 
-      {
-        name: 'Bridal Makeup',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Waxing',
+        FEMALE_MALE,
+        'Professional waxing services for facial and body hair removal.'
+      ),
 
-      {
-        name: 'Engagement Makeup',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Reception Makeup',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'HD Makeup',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Airbrush Makeup',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Eye Makeup',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Makeup Consultation',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Hair Removal',
+        FEMALE_MALE,
+        'Facial and body hair removal services using suitable professional techniques.'
+      ),
     ],
   },
 
   // ==========================================================
-  // THREADING
+  // 6. NAILS
   // ==========================================================
 
   {
-    name: 'Threading',
+    name: 'Nails',
+
     description:
-      'Threading services for facial hair and eyebrow shaping.',
-    businessTypes: [
-      'BEAUTY_SALON',
-    ],
+      'Manicure, pedicure, nail enhancement, nail art and nail care services.',
 
     subcategories: [
 
-      {
-        name: 'Eyebrow',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Manicure',
+        FEMALE_MALE,
+        'Hand and nail grooming services including nail shaping, cleaning and care.'
+      ),
 
-      {
-        name: 'Upper Lip',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Pedicure',
+        FEMALE_MALE,
+        'Foot and nail grooming services including cleaning, shaping and foot care.'
+      ),
 
-      {
-        name: 'Lower Lip',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Nail Extensions',
+        FEMALE_MALE,
+        'Professional nail enhancement and extension services for length, shape and appearance.'
+      ),
 
-      {
-        name: 'Chin',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Nail Art',
+        FEMALE_MALE,
+        'Decorative nail styling services using professional nail art techniques and designs.'
+      ),
 
-      {
-        name: 'Forehead',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Full Face',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Nail Care',
+        FEMALE_MALE,
+        'General nail care, maintenance, repair and enhancement services.'
+      ),
     ],
   },
 
   // ==========================================================
-  // WAXING
-  // ==========================================================
-
-  {
-    name: 'Waxing',
-    description:
-      'Body waxing and hair removal services.',
-    businessTypes: [
-      'BEAUTY_SALON',
-      'SPA_WELLNESS',
-    ],
-
-    subcategories: [
-
-      {
-        name: 'Face Waxing',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Underarm Waxing',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Hand Waxing',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Leg Waxing',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Back Waxing',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Chest Waxing',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Stomach Waxing',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Full Body Waxing',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Bikini Waxing',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Premium Waxing',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-    ],
-  },
-
-  // ==========================================================
-  // MANICURE
-  // ==========================================================
-
-  {
-    name: 'Manicure',
-    description:
-      'Hand and nail care services.',
-    businessTypes: [
-      'BEAUTY_SALON',
-      'SPA_WELLNESS',
-    ],
-
-    subcategories: [
-
-      {
-        name: 'Basic Manicure',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Spa Manicure',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Gel Manicure',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'French Manicure',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Premium Manicure',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Nail Art',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-    ],
-  },
-
-  // ==========================================================
-  // PEDICURE
-  // ==========================================================
-
-  {
-    name: 'Pedicure',
-    description:
-      'Foot and nail care services.',
-    businessTypes: [
-      'BEAUTY_SALON',
-      'SPA_WELLNESS',
-    ],
-
-    subcategories: [
-
-      {
-        name: 'Basic Pedicure',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Spa Pedicure',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Gel Pedicure',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'French Pedicure',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Foot Spa',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Premium Pedicure',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-    ],
-  },
-
-  // ==========================================================
-  // NAIL EXTENSIONS
-  // ==========================================================
-
-  {
-    name: 'Nail Extensions',
-    description:
-      'Nail extension, repair and nail art services.',
-    businessTypes: [
-      'BEAUTY_SALON',
-    ],
-
-    subcategories: [
-
-      {
-        name: 'Acrylic Nails',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Gel Nails',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Polygel Nails',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Nail Tips',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Nail Art',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Nail Removal',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Nail Repair',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-    ],
-  },
-
-  // ==========================================================
-  // SPA & MASSAGE
+  // 7. SPA & MASSAGE
   // ==========================================================
 
   {
     name: 'Spa & Massage',
+
     description:
-      'Massage, relaxation and wellness services.',
-    businessTypes: [
-      'SPA_WELLNESS',
-    ],
+      'Massage, relaxation and wellness services for physical comfort and relaxation.',
 
     subcategories: [
 
-      {
-        name: 'Full Body Massage',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'Massage',
+        FEMALE_MALE,
+        'Professional massage services using different techniques based on customer needs.'
+      ),
 
-      {
-        name: 'Swedish Massage',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Deep Tissue Massage',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Thai Massage',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Aromatherapy',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Hot Stone Massage',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Head Massage',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Back Massage',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Foot Massage',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Couple Massage',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Relaxation Massage',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'Spa',
+        FEMALE_MALE,
+        'Relaxation and wellness treatments provided in a spa environment.'
+      ),
     ],
   },
 
   // ==========================================================
-  // BODY CARE
+  // 8. BODY CARE & WELLNESS
   // ==========================================================
 
   {
-    name: 'Body Care',
+    name: 'Body Care & Wellness',
+
     description:
-      'Body exfoliation, hydration and wellness services.',
-    businessTypes: [
-      'SPA_WELLNESS',
-    ],
+      'Body exfoliation, hydration, heat-based relaxation and wellness services.',
 
     subcategories: [
 
-      {
-        name: 'Body Scrub',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'Body Care',
+        FEMALE_MALE,
+        'Professional body care services focused on cleansing, exfoliation, hydration and skin care.'
+      ),
 
-      {
-        name: 'Body Polish',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'Body Treatment',
+        FEMALE_MALE,
+        'Specialized body treatments designed to improve skin appearance, hydration and overall care.'
+      ),
 
-      {
-        name: 'Body Wrap',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Body De-Tan',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Body Hydration',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Steam',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Sauna',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Jacuzzi',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'SPA_WELLNESS',
-        ],
-      },
+      sub(
+        'Wellness',
+        FEMALE_MALE,
+        'Relaxation and wellness services designed to support comfort and overall well-being.'
+      ),
     ],
   },
 
   // ==========================================================
-  // HAIR REMOVAL
-  // ==========================================================
-
-  {
-    name: 'Hair Removal',
-    description:
-      'Hair removal services including waxing and advanced hair removal.',
-    businessTypes: [
-      'BEAUTY_SALON',
-      'SPA_WELLNESS',
-    ],
-
-    subcategories: [
-
-      {
-        name: 'Face Hair Removal',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Underarm Hair Removal',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Hand Hair Removal',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Leg Hair Removal',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Back Hair Removal',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Chest Hair Removal',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Full Body Hair Removal',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-
-      {
-        name: 'Laser Hair Removal',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'SPA_WELLNESS',
-        ],
-      },
-    ],
-  },
-
-  // ==========================================================
-  // BRIDAL
-  // ==========================================================
-
-  {
-    name: 'Bridal',
-    description:
-      'Bridal beauty, makeup, hair and pre-bridal services.',
-    businessTypes: [
-      'BEAUTY_SALON',
-    ],
-
-    subcategories: [
-
-      {
-        name: 'Bridal Makeup',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Bridal Hair',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Pre-Bridal',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Bridal Facial',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Bridal Waxing',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Bridal Package',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Bridal Consultation',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-    ],
-  },
-
-  // ==========================================================
-  // GROOM
-  // ==========================================================
-
-  {
-    name: 'Groom',
-    description:
-      'Grooming, styling and pre-groom services for men.',
-    businessTypes: [
-      'BEAUTY_SALON',
-      'BARBER',
-    ],
-
-    subcategories: [
-
-      {
-        name: 'Groom Hair',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-
-      {
-        name: 'Groom Facial',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-
-      {
-        name: 'Groom Beard',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-
-      {
-        name: 'Pre-Groom',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-
-      {
-        name: 'Groom Package',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-
-      {
-        name: 'Groom Consultation',
-        audiences: ['MALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-    ],
-  },
-
-  // ==========================================================
-  // KIDS
-  // ==========================================================
-
-  {
-    name: 'Kids',
-    description:
-      'Beauty and grooming services designed for children.',
-    businessTypes: [
-      'BEAUTY_SALON',
-      'BARBER',
-    ],
-
-    subcategories: [
-
-      {
-        name: 'Kids Hair Cut',
-        audiences: ['KIDS'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-
-      {
-        name: 'Kids Hair Styling',
-        audiences: ['KIDS'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-
-      {
-        name: 'Kids Hair Wash',
-        audiences: ['KIDS'],
-        businessTypes: [
-          'BEAUTY_SALON',
-          'BARBER',
-        ],
-      },
-
-      {
-        name: 'Kids Manicure',
-        audiences: ['KIDS'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Kids Pedicure',
-        audiences: ['KIDS'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Kids Basic Facial',
-        audiences: ['KIDS'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-    ],
-  },
-
-  // ==========================================================
-  // LASHES & BROWS
+  // 9. LASHES & BROWS
   // ==========================================================
 
   {
     name: 'Lashes & Brows',
+
     description:
-      'Eyelash and eyebrow styling services.',
-    businessTypes: [
-      'BEAUTY_SALON',
-    ],
+      'Eyelash and eyebrow styling, enhancement and grooming services.',
 
     subcategories: [
 
-      {
-        name: 'Eyelash Extensions',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Lashes',
+        FEMALE,
+        'Eyelash grooming, enhancement and styling services.'
+      ),
 
-      {
-        name: 'Lash Lift',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Lash Tint',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Brow Shaping',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Brow Tint',
-        audiences: [
-          'FEMALE',
-          'MALE',
-        ],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Brow Lamination',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Brows',
+        FEMALE_MALE,
+        'Eyebrow shaping, grooming, tinting and enhancement services.'
+      ),
     ],
   },
 
   // ==========================================================
-  // PERMANENT BEAUTY
+  // 10. KIDS
   // ==========================================================
 
   {
-    name: 'Permanent Beauty',
+    name: 'Kids',
+
     description:
-      'Semi-permanent and permanent beauty enhancement services.',
-    businessTypes: [
-      'BEAUTY_SALON',
-    ],
+      'Beauty and grooming services designed specifically for children.',
 
     subcategories: [
 
-      {
-        name: 'Microblading',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Kids Hair',
+        KIDS,
+        'Hair cutting, washing and styling services designed specifically for children.'
+      ),
 
-      {
-        name: 'Powder Brows',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Kids Nails',
+        KIDS,
+        'Gentle manicure and pedicure services designed specifically for children.'
+      ),
 
-      {
-        name: 'Lip Blush',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Permanent Eyeliner',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
-
-      {
-        name: 'Permanent Makeup Consultation',
-        audiences: ['FEMALE'],
-        businessTypes: [
-          'BEAUTY_SALON',
-        ],
-      },
+      sub(
+        'Kids Skin Care',
+        KIDS,
+        'Gentle basic skin care and facial services designed specifically for children.'
+      ),
     ],
   },
 ];
 
 // ============================================================
-// RESOLVE BUSINESS TYPE IDs
+// CATALOG VALIDATION
 // ============================================================
 
-function mapBusinessTypes(
-  businessTypes: BusinessType[],
-  keys: BusinessTypeKey[]
-): string[] {
+function validateCatalog(): void {
 
-  const map =
-    resolveBusinessTypeIds(
-      businessTypes
+  console.log('');
+  console.log(
+    '============================================================'
+  );
+  console.log(
+    'CATALOG VALIDATION'
+  );
+  console.log(
+    '============================================================'
+  );
+
+  // ----------------------------------------------------------
+  // Category count
+  // ----------------------------------------------------------
+
+  if (CATALOG.length !== 10) {
+    throw new Error(
+      `Expected 10 categories, found ${CATALOG.length}.`
+    );
+  }
+
+  // ----------------------------------------------------------
+  // Category duplicate validation
+  // ----------------------------------------------------------
+
+  const categoryNames =
+    CATALOG.map(
+      category =>
+        category.name.trim().toLowerCase()
     );
 
-  return Array.from(
-    new Set(
-      keys.map(
-        (key) => map[key]
+  const duplicateCategories =
+    categoryNames.filter(
+      (name, index) =>
+        categoryNames.indexOf(name) !== index
+    );
+
+  if (
+    duplicateCategories.length > 0
+  ) {
+    throw new Error(
+      `Duplicate categories found: ${[
+        ...new Set(duplicateCategories),
+      ].join(', ')}`
+    );
+  }
+
+  // ----------------------------------------------------------
+  // Forbidden old categories
+  // ----------------------------------------------------------
+
+  const forbiddenCategories = [
+    'Permanent Beauty',
+    'Tattoo & Piercing',
+  ];
+
+  for (
+    const category of CATALOG
+  ) {
+
+    if (
+      forbiddenCategories.some(
+        forbidden =>
+          category.name
+            .trim()
+            .toLowerCase() ===
+          forbidden.toLowerCase()
       )
-    )
+    ) {
+      throw new Error(
+        `Forbidden category found: ${category.name}`
+      );
+    }
+  }
+
+  // ----------------------------------------------------------
+  // Subcategory validation
+  // ----------------------------------------------------------
+
+  let totalSubcategories = 0;
+
+  for (
+    const category of CATALOG
+  ) {
+
+    if (
+      !category.name.trim()
+    ) {
+      throw new Error(
+        'A category contains an empty name.'
+      );
+    }
+
+    if (
+      !category.description.trim()
+    ) {
+      throw new Error(
+        `Category "${category.name}" has no description.`
+      );
+    }
+
+    if (
+      category.subcategories.length === 0
+    ) {
+      throw new Error(
+        `Category "${category.name}" has no subcategories.`
+      );
+    }
+
+    const names =
+      category.subcategories.map(
+        item =>
+          item.name.trim().toLowerCase()
+      );
+
+    const duplicates =
+      names.filter(
+        (name, index) =>
+          names.indexOf(name) !== index
+      );
+
+    if (
+      duplicates.length > 0
+    ) {
+      throw new Error(
+        `Duplicate subcategories in "${category.name}": ${[
+          ...new Set(duplicates),
+        ].join(', ')}`
+      );
+    }
+
+    for (
+      const subcategory of
+      category.subcategories
+    ) {
+
+      totalSubcategories++;
+
+      if (
+        !subcategory.name.trim()
+      ) {
+        throw new Error(
+          `Empty subcategory in "${category.name}".`
+        );
+      }
+
+      if (
+        !subcategory.description.trim()
+      ) {
+        throw new Error(
+          `Missing description for "${category.name} > ${subcategory.name}".`
+        );
+      }
+
+      if (
+        subcategory.audiences.length === 0
+      ) {
+        throw new Error(
+          `No audience configured for "${category.name} > ${subcategory.name}".`
+        );
+      }
+
+      const uniqueAudiences =
+        new Set(
+          subcategory.audiences
+        );
+
+      if (
+        uniqueAudiences.size !==
+        subcategory.audiences.length
+      ) {
+        throw new Error(
+          `Duplicate audiences found for "${category.name} > ${subcategory.name}".`
+        );
+      }
+    }
+  }
+
+  // ----------------------------------------------------------
+  // Expected simplified catalog
+  // ----------------------------------------------------------
+
+  const EXPECTED_SUBCATEGORY_COUNT = 35;
+
+  if (
+    totalSubcategories !==
+    EXPECTED_SUBCATEGORY_COUNT
+  ) {
+    throw new Error(
+      `Expected ${EXPECTED_SUBCATEGORY_COUNT} subcategories, found ${totalSubcategories}.`
+    );
+  }
+
+  console.log('');
+  console.log(
+    '✓ Category count: 10'
+  );
+
+  console.log(
+    `✓ Subcategory count: ${totalSubcategories}`
+  );
+
+  console.log(
+    '✓ Duplicate category validation passed'
+  );
+
+  console.log(
+    '✓ Duplicate subcategory validation passed'
+  );
+
+  console.log(
+    '✓ Description validation passed'
+  );
+
+  console.log(
+    '✓ Audience validation passed'
+  );
+
+  console.log(
+    '✓ Old catalog validation passed'
+  );
+
+  console.log('');
+  console.log(
+    '✓ CATALOG VALIDATION PASSED'
+  );
+
+  console.log(
+    '============================================================'
   );
 }
 
@@ -1992,20 +763,20 @@ function mapBusinessTypes(
 // ============================================================
 
 async function createCategory(
-  category: SeedCategory,
-  businessTypes: BusinessType[]
-): Promise<string> {
+  category: SeedCategory
+): Promise<{
+  categoryId: string;
+  existed: boolean;
+}> {
 
   console.log('');
   console.log(
-    `📁 Category: ${category.name}`
+    '------------------------------------------------------------'
   );
 
-  const businessTypeIds =
-    mapBusinessTypes(
-      businessTypes,
-      category.businessTypes
-    );
+  console.log(
+    `CATEGORY: ${category.name}`
+  );
 
   try {
 
@@ -2020,13 +791,10 @@ async function createCategory(
               category.name,
 
             description:
-              category.description ||
-              '',
+              category.description,
 
             status:
               'ACTIVE',
-
-            businessTypeIds,
           },
         },
 
@@ -2039,51 +807,71 @@ async function createCategory(
 
     if (!result) {
       throw new Error(
-        'No response received from createCategory'
+        'No response received from createCategory.'
       );
     }
 
+    // --------------------------------------------------------
+    // Created
+    // --------------------------------------------------------
+
     if (
-      result.success &&
+      result.success === true &&
       result.category
     ) {
 
       console.log(
-        `   ✅ Created category: ${category.name}`
+        '   ✓ Category created'
       );
 
       console.log(
         `   ID: ${result.category.categoryId}`
       );
 
-      return result.category.categoryId;
+      return {
+        categoryId:
+          result.category.categoryId,
+
+        existed:
+          false,
+      };
     }
 
+    // --------------------------------------------------------
+    // Existing
+    // --------------------------------------------------------
+
     if (
-      !result.success &&
+      result.success === false &&
       result.category
     ) {
 
       console.log(
-        `   ℹ️ Category already exists: ${category.name}`
+        '   ℹ Category already exists'
       );
 
       console.log(
         `   ID: ${result.category.categoryId}`
       );
 
-      return result.category.categoryId;
+      return {
+        categoryId:
+          result.category.categoryId,
+
+        existed:
+          true,
+      };
     }
 
     throw new Error(
       result.message ||
-      `Failed to create category "${category.name}"`
+      `Failed to create category "${category.name}".`
     );
 
   } catch (error: any) {
 
     console.error(
-      `   ❌ Category failed: ${category.name}`
+      `   ✗ Category failed: ${category.name}`
     );
 
     console.error(
@@ -2099,17 +887,11 @@ async function createCategory(
 // ============================================================
 
 async function createSubcategory(
-  category: SeedCategory,
   subcategory: SeedSubcategory,
-  categoryId: string,
-  businessTypes: BusinessType[]
-): Promise<void> {
-
-  const businessTypeIds =
-    mapBusinessTypes(
-      businessTypes,
-      subcategory.businessTypes
-    );
+  categoryId: string
+): Promise<{
+  existed: boolean;
+}> {
 
   try {
 
@@ -2127,16 +909,13 @@ async function createSubcategory(
               subcategory.name,
 
             description:
-              subcategory.description ||
-              '',
+              subcategory.description,
 
             status:
               'ACTIVE',
 
             audiences:
               subcategory.audiences,
-
-            businessTypeIds,
           },
         },
 
@@ -2149,169 +928,64 @@ async function createSubcategory(
 
     if (!result) {
       throw new Error(
-        'No response received from createSubcategory'
+        'No response received from createSubcategory.'
       );
     }
 
+    // --------------------------------------------------------
+    // Created
+    // --------------------------------------------------------
+
     if (
-      result.success &&
+      result.success === true &&
       result.subcategory
     ) {
 
       console.log(
-        `      ✅ ${subcategory.name}`
+        `   ✓ ${subcategory.name}`
       );
 
-      return;
+      return {
+        existed:
+          false,
+      };
     }
 
+    // --------------------------------------------------------
+    // Existing
+    // --------------------------------------------------------
+
     if (
-      !result.success &&
+      result.success === false &&
       result.subcategory
     ) {
 
       console.log(
-        `      ℹ️ ${subcategory.name} already exists`
+        `   ℹ ${subcategory.name} already exists`
       );
 
-      return;
+      return {
+        existed:
+          true,
+      };
     }
 
     throw new Error(
       result.message ||
-      `Failed to create subcategory "${subcategory.name}"`
+      `Failed to create subcategory "${subcategory.name}".`
     );
 
   } catch (error: any) {
 
     console.error(
-      `      ❌ ${subcategory.name}`
+      `   ✗ ${subcategory.name}`
     );
 
     console.error(
-      `         ${error?.message || error}`
+      `      ${error?.message || error}`
     );
 
     throw error;
-  }
-}
-
-// ============================================================
-// FETCH ACTIVE BUSINESS TYPES
-// ============================================================
-
-async function getActiveBusinessTypes(): Promise<
-  BusinessType[]
-> {
-
-  console.log('');
-  console.log(
-    '=============================================='
-  );
-  console.log(
-    'FETCHING ACTIVE BUSINESS TYPES'
-  );
-  console.log(
-    '=============================================='
-  );
-
-  const response =
-    await client.query({
-      query:
-        GET_BUSINESS_TYPES,
-
-      variables: {
-        status:
-          'ACTIVE',
-      },
-
-      fetchPolicy:
-        'network-only',
-    });
-
-  const result =
-    response.data?.businessTypes;
-
-  if (!result) {
-
-    throw new Error(
-      'No response received from businessTypes query'
-    );
-  }
-
-  if (!result.success) {
-
-    throw new Error(
-      result.message ||
-      'Failed to fetch business types'
-    );
-  }
-
-  const businessTypes =
-    Array.isArray(
-      result.businessTypes
-    )
-      ? result.businessTypes
-      : [];
-
-  if (
-    businessTypes.length === 0
-  ) {
-
-    throw new Error(
-      'No ACTIVE business types were found'
-    );
-  }
-
-  console.log('');
-
-  businessTypes.forEach(
-    (businessType: BusinessType) => {
-
-      console.log(
-        `   ${businessType.name}`
-      );
-
-      console.log(
-        `      ID: ${businessType.businessTypeId}`
-      );
-    }
-  );
-
-  return businessTypes;
-}
-
-// ============================================================
-// VALIDATE REQUIRED BUSINESS TYPES
-// ============================================================
-
-function validateRequiredBusinessTypes(
-  businessTypes: BusinessType[]
-): void {
-
-  const required = [
-    'salon',
-    'barber',
-    'spa & wellness',
-  ];
-
-  const available =
-    businessTypes.map(
-      (item) =>
-        normalizeName(item.name)
-    );
-
-  const missing =
-    required.filter(
-      (name) =>
-        !available.includes(name)
-    );
-
-  if (missing.length > 0) {
-
-    throw new Error(
-      `Required business types are missing: ${missing.join(', ')}`
-    );
   }
 }
 
@@ -2321,328 +995,193 @@ function validateRequiredBusinessTypes(
 
 async function seedClavataCatalog(): Promise<void> {
 
+  // ----------------------------------------------------------
+  // Validate everything BEFORE making mutations
+  // ----------------------------------------------------------
+
+  validateCatalog();
+
+  console.log('');
   console.log('');
   console.log(
     '============================================================'
   );
+
   console.log(
-    '              CLAVATA CATALOG SEED'
+    '             CLAVATA MASTER CATALOG SEED'
   );
+
   console.log(
     '============================================================'
   );
 
   console.log('');
+
   console.log(
     `GraphQL URL: ${GRAPHQL_URL}`
   );
 
-  // ----------------------------------------------------------
-  // BUSINESS TYPES
-  // ----------------------------------------------------------
+  console.log('');
 
-  const businessTypes =
-    await getActiveBusinessTypes();
-
-  validateRequiredBusinessTypes(
-    businessTypes
+  console.log(
+    'Catalog structure:'
   );
 
-  // Force resolution now so the script fails early
-  // if one of the required business types is missing.
-  const businessTypeIds =
-    resolveBusinessTypeIds(
-      businessTypes
-    );
+  console.log(
+    '   Category'
+  );
+
+  console.log(
+    '      ↓'
+  );
+
+  console.log(
+    '   Subcategory'
+  );
+
+  console.log(
+    '      ↓'
+  );
+
+  console.log(
+    '   Provider-created Service'
+  );
 
   console.log('');
+
   console.log(
-    '=============================================='
-  );
-  console.log(
-    'BUSINESS TYPE IDS'
-  );
-  console.log(
-    '=============================================='
+    'Business types: NOT USED'
   );
 
   console.log(
-    `Beauty Salon: ${businessTypeIds.BEAUTY_SALON}`
+    'Service names: NOT SEEDED'
   );
 
   console.log(
-    `Barber: ${businessTypeIds.BARBER}`
+    'Prices: NOT SEEDED'
   );
 
   console.log(
-    `Spa & Wellness: ${businessTypeIds.SPA_WELLNESS}`
+    'Durations: NOT SEEDED'
   );
+
+  console.log('');
 
   // ----------------------------------------------------------
-  // COUNTERS
+  // Counters
   // ----------------------------------------------------------
 
   let categoriesCreated = 0;
   let categoriesExisting = 0;
+  let categoriesFailed = 0;
 
   let subcategoriesCreated = 0;
   let subcategoriesExisting = 0;
-
-  let failedCategories = 0;
-  let failedSubcategories = 0;
+  let subcategoriesFailed = 0;
 
   // ----------------------------------------------------------
-  // CATEGORY LOOP
+  // Seed categories
   // ----------------------------------------------------------
 
   for (
     const category of CATALOG
   ) {
 
-    let categoryId: string;
+    let categoryResult: {
+      categoryId: string;
+      existed: boolean;
+    };
 
     try {
 
-      // Determine whether this category already exists
-      // based on the response from createCategory.
-
-      const businessTypeIdsForCategory =
-        mapBusinessTypes(
-          businessTypes,
-          category.businessTypes
+      categoryResult =
+        await createCategory(
+          category
         );
-
-      console.log('');
-      console.log(
-        '----------------------------------------------'
-      );
-
-      console.log(
-        `CATEGORY: ${category.name}`
-      );
-
-      console.log(
-        `Business Types: ${category.businessTypes.join(', ')}`
-      );
-
-      console.log(
-        `Business Type IDs: ${businessTypeIdsForCategory.join(', ')}`
-      );
-
-      const categoryResponse =
-        await client.mutate({
-          mutation:
-            CREATE_CATEGORY,
-
-          variables: {
-            input: {
-
-              name:
-                category.name,
-
-              description:
-                category.description ||
-                '',
-
-              status:
-                'ACTIVE',
-
-              businessTypeIds:
-                businessTypeIdsForCategory,
-            },
-          },
-
-          fetchPolicy:
-            'no-cache',
-        });
-
-      const result =
-        categoryResponse.data?.createCategory;
-
-      if (!result) {
-
-        throw new Error(
-          'No response received from createCategory'
-        );
-      }
 
       if (
-        result.success &&
-        result.category
-      ) {
-
-        categoriesCreated++;
-
-        categoryId =
-          result.category.categoryId;
-
-        console.log(
-          `✅ Category created`
-        );
-
-        console.log(
-          `   ID: ${categoryId}`
-        );
-
-      } else if (
-        !result.success &&
-        result.category
+        categoryResult.existed
       ) {
 
         categoriesExisting++;
 
-        categoryId =
-          result.category.categoryId;
-
-        console.log(
-          `ℹ️ Category already exists`
-        );
-
-        console.log(
-          `   ID: ${categoryId}`
-        );
-
       } else {
 
-        throw new Error(
-          result.message ||
-          `Failed to create category "${category.name}"`
-        );
+        categoriesCreated++;
       }
 
-    } catch (error: any) {
+    } catch {
 
-      failedCategories++;
+      categoriesFailed++;
 
-      console.error('');
-      console.error(
-        `❌ CATEGORY FAILED: ${category.name}`
-      );
-
-      console.error(
-        error?.message || error
-      );
-
-      // Continue with the next category
-      // instead of terminating the entire seed.
+      /*
+       * Cannot safely create subcategories without
+       * a valid category ID.
+       */
       continue;
     }
 
-    // --------------------------------------------------------
-    // SUBCATEGORIES
-    // --------------------------------------------------------
+    console.log('');
 
     console.log(
       `   Subcategories: ${category.subcategories.length}`
     );
 
+    // --------------------------------------------------------
+    // Seed subcategories
+    // --------------------------------------------------------
+
     for (
-      const subcategory of category.subcategories
+      const subcategory of
+      category.subcategories
     ) {
 
       try {
 
-        const businessTypeIdsForSubcategory =
-          mapBusinessTypes(
-            businessTypes,
-            subcategory.businessTypes
-          );
-
-        const response =
-          await client.mutate({
-            mutation:
-              CREATE_SUBCATEGORY,
-
-            variables: {
-              input: {
-
-                categoryId,
-
-                name:
-                  subcategory.name,
-
-                description:
-                  subcategory.description ||
-                  '',
-
-                status:
-                  'ACTIVE',
-
-                audiences:
-                  subcategory.audiences,
-
-                businessTypeIds:
-                  businessTypeIdsForSubcategory,
-              },
-            },
-
-            fetchPolicy:
-              'no-cache',
-          });
-
         const result =
-          response.data?.createSubcategory;
-
-        if (!result) {
-
-          throw new Error(
-            'No response received from createSubcategory'
+          await createSubcategory(
+            subcategory,
+            categoryResult.categoryId
           );
-        }
 
         if (
-          result.success &&
-          result.subcategory
-        ) {
-
-          subcategoriesCreated++;
-
-          console.log(
-            `   ✅ ${subcategory.name}`
-          );
-
-        } else if (
-          !result.success &&
-          result.subcategory
+          result.existed
         ) {
 
           subcategoriesExisting++;
 
-          console.log(
-            `   ℹ️ ${subcategory.name} already exists`
-          );
-
         } else {
 
-          throw new Error(
-            result.message ||
-            `Failed to create subcategory "${subcategory.name}"`
-          );
+          subcategoriesCreated++;
         }
 
-      } catch (error: any) {
+      } catch {
 
-        failedSubcategories++;
+        subcategoriesFailed++;
 
-        console.error(
-          `   ❌ ${subcategory.name}`
-        );
-
-        console.error(
-          `      ${error?.message || error}`
-        );
-
-        // Continue to next subcategory
-        // rather than stopping the entire seed.
+        /*
+         * Continue with next subcategory.
+         */
         continue;
       }
     }
   }
 
   // ----------------------------------------------------------
-  // SUMMARY
+  // Summary
   // ----------------------------------------------------------
 
+  const totalSubcategories =
+    CATALOG.reduce(
+      (
+        total,
+        category
+      ) =>
+        total +
+        category.subcategories.length,
+      0
+    );
+
   console.log('');
   console.log('');
   console.log(
@@ -2650,7 +1189,7 @@ async function seedClavataCatalog(): Promise<void> {
   );
 
   console.log(
-    '                 SEED COMPLETED'
+    '                  SEED SUMMARY'
   );
 
   console.log(
@@ -2660,71 +1199,85 @@ async function seedClavataCatalog(): Promise<void> {
   console.log('');
 
   console.log(
-    `Categories created:       ${categoriesCreated}`
+    'CATEGORIES'
   );
 
   console.log(
-    `Categories already exist: ${categoriesExisting}`
+    `   Expected : ${CATALOG.length}`
   );
 
   console.log(
-    `Categories failed:        ${failedCategories}`
-  );
-
-  console.log('');
-
-  console.log(
-    `Subcategories created:       ${subcategoriesCreated}`
+    `   Created  : ${categoriesCreated}`
   );
 
   console.log(
-    `Subcategories already exist: ${subcategoriesExisting}`
+    `   Existing : ${categoriesExisting}`
   );
 
   console.log(
-    `Subcategories failed:        ${failedSubcategories}`
+    `   Failed   : ${categoriesFailed}`
   );
 
   console.log('');
 
   console.log(
-    `Total categories: ${CATALOG.length}`
+    'SUBCATEGORIES'
   );
 
   console.log(
-    `Total subcategories: ${
-      CATALOG.reduce(
-        (total, category) =>
-          total +
-          category.subcategories.length,
-        0
-      )
-    }`
+    `   Expected : ${totalSubcategories}`
+  );
+
+  console.log(
+    `   Created  : ${subcategoriesCreated}`
+  );
+
+  console.log(
+    `   Existing : ${subcategoriesExisting}`
+  );
+
+  console.log(
+    `   Failed   : ${subcategoriesFailed}`
+  );
+
+  console.log('');
+
+  console.log(
+    'SERVICE CREATION'
+  );
+
+  console.log(
+    '   Services created by provider during onboarding/configuration.'
+  );
+
+  console.log(
+    '   This seed does NOT create service records.'
   );
 
   console.log('');
 
   if (
-    failedCategories === 0 &&
-    failedSubcategories === 0
+    categoriesFailed === 0 &&
+    subcategoriesFailed === 0
   ) {
 
     console.log(
-      '🎉 All catalog records processed successfully.'
+      '✓ CLAVATA CATALOG SEED COMPLETED SUCCESSFULLY'
     );
 
   } else {
 
     console.log(
-      '⚠️ Seed completed with some errors.'
+      '⚠ CLAVATA CATALOG SEED COMPLETED WITH ERRORS'
     );
 
     console.log(
-      'Review the errors printed above.'
+      'Review the errors above.'
     );
   }
 
   console.log('');
+
   console.log(
     '============================================================'
   );
@@ -2738,12 +1291,14 @@ seedClavataCatalog()
   .then(() => {
 
     console.log('');
+
     console.log(
       'Catalog seed process finished.'
     );
 
     process.exit(0);
   })
+
   .catch((error: any) => {
 
     console.error('');

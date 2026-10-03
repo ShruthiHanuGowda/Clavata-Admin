@@ -53,45 +53,23 @@ export const ADMIN_SALONS = gql`
       success
       message
       totalCount
-
       salons {
-        # ============================================================
-        # BASIC SALON / OWNER INFORMATION
-        # ============================================================
-
         salonId
         ownerUserId
-
         salonName
         ownerName
-
-        businessTypeId
-        businessTypeIds
-        businessType
         targetAudiences
-
         ownerPhoneNumber
         alternatePhone
         email
-
-        # ============================================================
-        # ADDRESS / LOCATION
-        # ============================================================
-
         address {
           addressLine
           city
           state
           pincode
         }
-
         latitude
         longitude
-
-        # ============================================================
-        # BUSINESS HOURS
-        # ============================================================
-
         businessHours {
           MONDAY {
             isOpen
@@ -129,44 +107,22 @@ export const ADMIN_SALONS = gql`
             close
           }
         }
-
-        # ============================================================
-        # SERVICES SELECTED DURING REGISTRATION
-        # ============================================================
-
         serviceSelections {
-          businessTypeId
-          businessTypeName
-
           categoryId
           categoryName
-
           subcategoryId
           subcategoryName
-
           serviceName
           audience
-
           price
           duration
         }
-
-        # ============================================================
-        # BUSINESS / KYC INFORMATION
-        # ============================================================
-
         gstNumber
         panNumber
         aadhaarNumber
         shopEstablishmentNumber
         udyamNumber
-
         kycStatus
-
-        # ============================================================
-        # UPLOADED KYC DOCUMENTS
-        # ============================================================
-
         documents {
           pan {
             documentType
@@ -176,7 +132,6 @@ export const ADMIN_SALONS = gql`
             s3Key
             uploadedAt
           }
-
           aadhaar {
             documentType
             fileName
@@ -185,7 +140,6 @@ export const ADMIN_SALONS = gql`
             s3Key
             uploadedAt
           }
-
           shopEstablishment {
             documentType
             fileName
@@ -194,7 +148,6 @@ export const ADMIN_SALONS = gql`
             s3Key
             uploadedAt
           }
-
           gst {
             documentType
             fileName
@@ -203,7 +156,6 @@ export const ADMIN_SALONS = gql`
             s3Key
             uploadedAt
           }
-
           udyam {
             documentType
             fileName
@@ -360,7 +312,6 @@ export const APPROVE_SALON = gql`
         ownerUserId
         salonName
         ownerName
-        businessType
         ownerPhoneNumber
         alternatePhone
         email
@@ -416,7 +367,6 @@ export const REJECT_SALON = gql`
         ownerUserId
         salonName
         ownerName
-        businessType
         ownerPhoneNumber
         alternatePhone
         email
@@ -994,7 +944,6 @@ export const GET_CATEGORIES = gql`
         description
         servicesCount
         status
-        businessTypeIds
         createdAt
         updatedAt
       }
@@ -1016,7 +965,6 @@ export const CREATE_CATEGORY = gql`
         description
         servicesCount
         status
-        businessTypeIds
         createdAt
         updatedAt
       }
@@ -1038,7 +986,6 @@ export const UPDATE_CATEGORY = gql`
         description
         servicesCount
         status
-        businessTypeIds
         createdAt
         updatedAt
       }
@@ -1207,7 +1154,6 @@ export const GET_SALON = gql`
             ownerUserId
             salonName
             ownerName
-            businessType
             ownerPhoneNumber
             alternatePhone
             email
@@ -1266,7 +1212,6 @@ export const UPDATE_SALON_PROFILE = gql`
                 ownerUserId
                 salonName
                 ownerName
-                businessType
                 ownerPhoneNumber
                 alternatePhone
                 email
@@ -1364,7 +1309,6 @@ export const ADMIN_SALON_PROFILE_CHANGES = gql`
         salonId
         salonName
         ownerName
-        businessType
         email
         ownerPhoneNumber
         alternatePhone
@@ -1435,7 +1379,6 @@ export const ADMIN_SALON_PROFILE_CHANGES = gql`
         previousProfile {
           salonName
           ownerName
-          businessType
           email
           ownerPhoneNumber
           alternatePhone
@@ -1451,7 +1394,6 @@ export const ADMIN_SALON_PROFILE_CHANGES = gql`
         requestedProfile {
           salonName
           ownerName
-          businessType
           email
           ownerPhoneNumber
           alternatePhone
@@ -1521,43 +1463,6 @@ export const ADMIN_REJECT_SALON_PROFILE_CHANGE = gql`
   }
 `;
 
-// ======================================================
-// GET SUBCATEGORIES
-// ======================================================
-
-// export const GET_SUBCATEGORIES = gql`
-//   query GetSubcategories(
-//     $categoryId: ID
-//     $search: String
-//     $status: SubcategoryStatus
-//   ) {
-//     subcategories(
-//       categoryId: $categoryId
-//       search: $search
-//       status: $status
-//     ) {
-//       success
-//       message
-//       totalCount
-
-//       subcategories {
-//         subcategoryId
-//         categoryId
-//         name
-//         description
-//         servicesCount
-//         status
-//         createdAt
-//         updatedAt
-//       }
-//     }
-//   }
-// `;
-
-// ======================================================
-// CREATE SUBCATEGORY
-// ======================================================
-
 export const CREATE_SUBCATEGORY = gql`
   mutation CreateSubcategory(
     $input: CreateSubcategoryInput!
@@ -1576,7 +1481,6 @@ export const CREATE_SUBCATEGORY = gql`
         servicesCount
         status
         audiences
-        businessTypeIds
         createdAt
         updatedAt
       }
@@ -1606,7 +1510,6 @@ export const UPDATE_SUBCATEGORY = gql`
         servicesCount
         status
         audiences
-        businessTypeIds
         createdAt
         updatedAt
       }
@@ -1641,94 +1544,6 @@ export const DELETE_SUBCATEGORY = gql`
     }
   }
 `;
-
-// export const GET_BUSINESS_TYPES = gql`
-//   query BusinessTypes(
-//     $search: String
-//     $status: BusinessTypeStatus
-//   ) {
-//     businessTypes(
-//       search: $search
-//       status: $status
-//     ) {
-//       success
-//       message
-//       totalCount
-//       businessTypes {
-//         businessTypeId
-//         name
-//         description
-//         status
-//         createdAt
-//         updatedAt
-//       }
-//     }
-//   }
-// `;
-
-export const CREATE_BUSINESS_TYPE = gql`
-  mutation CreateBusinessType(
-    $input: CreateBusinessTypeInput!
-  ) {
-    createBusinessType(
-      input: $input
-    ) {
-      success
-      message
-      businessType {
-        businessTypeId
-        name
-        description
-        status
-        createdAt
-        updatedAt
-      }
-    }
-  }
-`;
-
-export const UPDATE_BUSINESS_TYPE = gql`
-  mutation UpdateBusinessType(
-    $input: UpdateBusinessTypeInput!
-  ) {
-    updateBusinessType(
-      input: $input
-    ) {
-      success
-      message
-      businessType {
-        businessTypeId
-        name
-        description
-        status
-        createdAt
-        updatedAt
-      }
-    }
-  }
-`;
-
-export const DELETE_BUSINESS_TYPE = gql`
-  mutation DeleteBusinessType(
-    $businessTypeId: ID!
-  ) {
-    deleteBusinessType(
-      businessTypeId: $businessTypeId
-    ) {
-      success
-      message
-      businessType {
-        businessTypeId
-        name
-        description
-        status
-        createdAt
-        updatedAt
-      }
-    }
-  }
-`;
-
 export const GET_SUBCATEGORIES = gql`
 query GetSubcategories(
   $search: String
@@ -1751,33 +1566,7 @@ query GetSubcategories(
       status
 
       audiences
-      businessTypeIds
 
-      createdAt
-      updatedAt
-    }
-  }
-}
-`
-
-export const GET_BUSINESS_TYPES = gql`
-query GetBusinessTypes(
-  $search: String
-  $status: BusinessTypeStatus
-) {
-  businessTypes(
-    search: $search
-    status: $status
-  ) {
-    success
-    message
-    totalCount
-
-    businessTypes {
-      businessTypeId
-      name
-      description
-      status
       createdAt
       updatedAt
     }
@@ -1811,14 +1600,3 @@ export const ADMIN_PROVIDERS = gql`
     }
 `;
 
-
-// export const SUBMIT_SALON_KYC_VERIFICATION = gql`
-//   mutation SubmitSalonKycVerification(
-//     $input: SubmitSalonKycVerificationInput!
-//   ) {
-//     submitSalonKycVerification(input: $input) {
-//       success
-//       message
-//     }
-//   }
-// `;
