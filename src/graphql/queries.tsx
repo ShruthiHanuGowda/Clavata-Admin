@@ -37,271 +37,6 @@ export const ADMIN_CUSTOMERS = gql`
     }
 `;
 
-export const ADMIN_SALONS = gql`
-  query AdminSalons(
-    $search: String
-    $kycStatus: KycStatus
-    $salonStatus: SalonStatus
-    $isActive: Boolean
-  ) {
-    adminSalons(
-      search: $search
-      kycStatus: $kycStatus
-      salonStatus: $salonStatus
-      isActive: $isActive
-    ) {
-      success
-      message
-      totalCount
-      salons {
-        salonId
-        ownerUserId
-        salonName
-        ownerName
-        targetAudiences
-        ownerPhoneNumber
-        alternatePhone
-        email
-        address {
-          addressLine
-          city
-          state
-          pincode
-        }
-        latitude
-        longitude
-        businessHours {
-          MONDAY {
-            isOpen
-            open
-            close
-          }
-          TUESDAY {
-            isOpen
-            open
-            close
-          }
-          WEDNESDAY {
-            isOpen
-            open
-            close
-          }
-          THURSDAY {
-            isOpen
-            open
-            close
-          }
-          FRIDAY {
-            isOpen
-            open
-            close
-          }
-          SATURDAY {
-            isOpen
-            open
-            close
-          }
-          SUNDAY {
-            isOpen
-            open
-            close
-          }
-        }
-        serviceSelections {
-          categoryId
-          categoryName
-          subcategoryId
-          subcategoryName
-          serviceName
-          audience
-          price
-          duration
-        }
-        gstNumber
-        panNumber
-        aadhaarNumber
-        shopEstablishmentNumber
-        udyamNumber
-        kycStatus
-        documents {
-          pan {
-            documentType
-            fileName
-            contentType
-            fileSize
-            s3Key
-            uploadedAt
-          }
-          aadhaar {
-            documentType
-            fileName
-            contentType
-            fileSize
-            s3Key
-            uploadedAt
-          }
-          shopEstablishment {
-            documentType
-            fileName
-            contentType
-            fileSize
-            s3Key
-            uploadedAt
-          }
-          gst {
-            documentType
-            fileName
-            contentType
-            fileSize
-            s3Key
-            uploadedAt
-          }
-          udyam {
-            documentType
-            fileName
-            contentType
-            fileSize
-            s3Key
-            uploadedAt
-          }
-        }
-
-        # ============================================================
-        # BANK INFORMATION
-        # ============================================================
-
-        bankAccount
-        ifsc
-        accountHolderName
-
-        # ============================================================
-        # RAZORPAY INFORMATION
-        # ============================================================
-
-        razorpayAccountId
-        razorpayAccountStatus
-
-        # ============================================================
-        # SALON IMAGES
-        # ============================================================
-
-        logoUrl
-        coverImageUrl
-        galleryImages
-
-        # ============================================================
-        # LOGO MEDIA
-        # ============================================================
-
-        logoMedia {
-          imageId
-          salonId
-          mediaType
-          key
-          objectUrl
-          status
-          uploadedAt
-          approvedAt
-          approvedBy
-          rejectedAt
-          rejectedBy
-          rejectionReason
-        }
-
-        # ============================================================
-        # COVER MEDIA
-        # ============================================================
-
-        coverMedia {
-          imageId
-          salonId
-          mediaType
-          key
-          objectUrl
-          status
-          uploadedAt
-          approvedAt
-          approvedBy
-          rejectedAt
-          rejectedBy
-          rejectionReason
-        }
-
-        # ============================================================
-        # GALLERY MEDIA
-        # ============================================================
-
-        galleryMedia {
-          imageId
-          salonId
-          mediaType
-          key
-          objectUrl
-          status
-          uploadedAt
-          approvedAt
-          approvedBy
-          rejectedAt
-          rejectedBy
-          rejectionReason
-        }
-
-        # ============================================================
-        # CASHFREE / THIRD-PARTY VERIFICATION
-        # ============================================================
-
-        verificationStatus
-        verificationSubmittedAt
-        verificationCompletedAt
-        verificationProvider
-        verificationReferenceId
-        verificationRejectionReason
-
-        # ============================================================
-        # ADMIN APPROVAL / SALON STATUS
-        # ============================================================
-
-        adminApprovalStatus
-        salonStatus
-
-        isActive
-        isVisible
-        isDeleted
-
-        # ============================================================
-        # PERFORMANCE
-        # ============================================================
-
-        averageRating
-        totalReviews
-        totalAppointments
-        totalCompletedAppointments
-        totalCancelledAppointments
-        totalRevenue
-
-        # ============================================================
-        # ADMIN APPROVAL AUDIT
-        # ============================================================
-
-        approvedBy
-        approvedAt
-
-        rejectedBy
-        rejectedAt
-        rejectionReason
-
-        # ============================================================
-        # GENERAL AUDIT
-        # ============================================================
-
-        lastUpdatedBy
-        createdAt
-        updatedAt
-      }
-    }
-  }
-`;
-
 export const APPROVE_SALON = gql`
   mutation AdminApproveSalon($input: AdminApproveSalonInput!) {
     adminApproveSalon(input: $input) {
@@ -1600,3 +1335,346 @@ export const ADMIN_PROVIDERS = gql`
     }
 `;
 
+
+/* ============================================================
+ * SUBMIT SALON FOR THIRD-PARTY VERIFICATION
+ * ============================================================ */
+
+export const SUBMIT_SALON_FOR_VERIFICATION = gql`
+  mutation SubmitSalonForVerification(
+    $input: SubmitSalonForVerificationInput!
+  ) {
+    submitSalonForVerification(input: $input) {
+      success
+      message
+
+      salon {
+        salonId
+        verificationStatus
+        verificationSubmittedAt
+        verificationCompletedAt
+        verificationProvider
+        verificationReferenceId
+        verificationRejectionReason
+      }
+    }
+  }
+`;
+
+/* ============================================================
+ * ADMIN APPROVE BUSINESS
+ *
+ * IMPORTANT:
+ * verificationStatus = VERIFIED
+ * adminApprovalStatus = APPROVED
+ *
+ * These are intentionally separate.
+ * ============================================================ */
+
+export const APPROVE_SALON_LOCAL = gql`
+  mutation AdminApproveSalon(
+    $input: AdminApproveSalonInput!
+  ) {
+    adminApproveSalon(input: $input) {
+      success
+      message
+    }
+  }
+`;
+
+/* ============================================================
+ * ADMIN REJECT BUSINESS
+ * ============================================================ */
+
+export const REJECT_SALON_LOCAL = gql`
+  mutation AdminRejectSalon(
+    $input: AdminRejectSalonInput!
+  ) {
+    adminRejectSalon(input: $input) {
+      success
+      message
+    }
+  }
+`;
+
+/* ============================================================
+ * GENERATE SECURE KYC DOCUMENT VIEW URL
+ * ============================================================ */
+
+export const GENERATE_KYC_DOCUMENT_VIEW_URL = gql`
+  mutation GenerateKycDocumentViewUrl(
+    $input: GenerateKycDocumentViewUrlInput!
+  ) {
+    generateKycDocumentViewUrl(input: $input) {
+      success
+      message
+      viewUrl
+      fileName
+      contentType
+      expiresIn
+    }
+  }
+`;
+
+/* ============================================================
+ * ADMIN SALONS
+ *
+ * Current GraphQL arguments:
+ *
+ * search
+ * verificationStatus
+ * adminApprovalStatus
+ * salonStatus
+ * isActive
+ *
+ * DO NOT use legacy kycStatus here.
+ * ============================================================ */
+export const ADMIN_SALONS = gql`
+  query AdminSalons(
+    $search: String
+    $verificationStatus: SalonVerificationStatus
+    $adminApprovalStatus: ProviderApprovalStatus
+    $salonStatus: SalonStatus
+    $isActive: Boolean
+  ) {
+    adminSalons(
+      search: $search
+      verificationStatus: $verificationStatus
+      adminApprovalStatus: $adminApprovalStatus
+      salonStatus: $salonStatus
+      isActive: $isActive
+    ) {
+      success
+      message
+      totalCount
+
+      salons {
+        salonId
+        ownerUserId
+
+        salonName
+        ownerName
+
+        targetAudiences
+
+        ownerPhoneNumber
+        alternatePhone
+        email
+
+        address {
+          addressLine
+          city
+          state
+          pincode
+        }
+
+        latitude
+        longitude
+
+        businessHours {
+          MONDAY {
+            isOpen
+            open
+            close
+          }
+          TUESDAY {
+            isOpen
+            open
+            close
+          }
+          WEDNESDAY {
+            isOpen
+            open
+            close
+          }
+          THURSDAY {
+            isOpen
+            open
+            close
+          }
+          FRIDAY {
+            isOpen
+            open
+            close
+          }
+          SATURDAY {
+            isOpen
+            open
+            close
+          }
+          SUNDAY {
+            isOpen
+            open
+            close
+          }
+        }
+
+        serviceSelections {
+          categoryId
+          categoryName
+          subcategoryId
+          subcategoryName
+          serviceName
+          audience
+          price
+          duration
+        }
+
+        gstNumber
+        panNumber
+        aadhaarNumber
+        shopEstablishmentNumber
+        udyamNumber
+
+        kycStatus
+
+        documents {
+          pan {
+            documentType
+            fileName
+            contentType
+            fileSize
+            s3Key
+            uploadedAt
+          }
+
+          aadhaar {
+            documentType
+            fileName
+            contentType
+            fileSize
+            s3Key
+            uploadedAt
+          }
+
+          shopEstablishment {
+            documentType
+            fileName
+            contentType
+            fileSize
+            s3Key
+            uploadedAt
+          }
+
+          gst {
+            documentType
+            fileName
+            contentType
+            fileSize
+            s3Key
+            uploadedAt
+          }
+
+          udyam {
+            documentType
+            fileName
+            contentType
+            fileSize
+            s3Key
+            uploadedAt
+          }
+        }
+
+        razorpayAccountId
+        razorpayAccountStatus
+
+        logoUrl
+        coverImageUrl
+        galleryImages
+
+        logoMedia {
+          imageId
+          salonId
+          mediaType
+          key
+          objectUrl
+          status
+          uploadedAt
+          approvedAt
+          approvedBy
+          rejectedAt
+          rejectedBy
+          rejectionReason
+        }
+
+        coverMedia {
+          imageId
+          salonId
+          mediaType
+          key
+          objectUrl
+          status
+          uploadedAt
+          approvedAt
+          approvedBy
+          rejectedAt
+          rejectedBy
+          rejectionReason
+        }
+
+        galleryMedia {
+          imageId
+          salonId
+          mediaType
+          key
+          objectUrl
+          status
+          uploadedAt
+          approvedAt
+          approvedBy
+          rejectedAt
+          rejectedBy
+          rejectionReason
+        }
+
+        verificationStatus
+        verificationSubmittedAt
+        verificationCompletedAt
+        verificationProvider
+        verificationReferenceId
+        verificationRejectionReason
+
+        panVerification {
+          status
+          referenceId
+          completedAt
+          message
+        }
+
+        aadhaarVerification {
+          status
+          referenceId
+          completedAt
+          message
+        }
+
+        adminApprovalStatus
+
+        salonStatus
+
+        isActive
+        isVisible
+        isDeleted
+
+        averageRating
+        totalReviews
+        totalAppointments
+        totalCompletedAppointments
+        totalCancelledAppointments
+        totalRevenue
+
+        approvedBy
+        approvedAt
+
+        rejectedBy
+        rejectedAt
+        rejectionReason
+
+        lastUpdatedBy
+
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;

@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react';
-import { gql, useMutation, useQuery } from '@apollo/client';
-
-// material-ui
+import { useMutation, useQuery } from '@apollo/client';
 import {
   Avatar,
   Box,
@@ -14,7 +12,6 @@ import {
   Divider,
   Grid,
   IconButton,
-  InputAdornment,
   Paper,
   Stack,
   Tab,
@@ -30,109 +27,25 @@ import {
   Tooltip,
   Typography
 } from '@mui/material';
-
-// icons
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   EyeOutlined,
   FileTextOutlined,
-  SearchOutlined,
-  ShopOutlined,
-  UserOutlined,
-  ClockCircleOutlined,
-  EnvironmentOutlined,
-  ReloadOutlined,
   SendOutlined
 } from '@ant-design/icons';
 
-import { ADMIN_SALONS } from '../../graphql/queries';
+import {
+  ADMIN_SALONS,
+  GENERATE_KYC_DOCUMENT_VIEW_URL,
+  REJECT_SALON_LOCAL,
+  APPROVE_SALON_LOCAL,
+  SUBMIT_SALON_FOR_VERIFICATION
+} from '../../graphql/queries';
 
-// ============================================================
-// GRAPHQL
-// ============================================================
-
-// ------------------------------------------------------------
-// SUBMIT SALON FOR CASHFREE / THIRD-PARTY VERIFICATION
-// ------------------------------------------------------------
-
-const SUBMIT_SALON_FOR_VERIFICATION = gql`
-  mutation SubmitSalonForVerification(
-    $input: SubmitSalonForVerificationInput!
-  ) {
-    submitSalonForVerification(input: $input) {
-      success
-      message
-
-      salon {
-        salonId
-        verificationStatus
-        verificationSubmittedAt
-        verificationProvider
-        verificationReferenceId
-        verificationRejectionReason
-      }
-    }
-  }
-`;
-
-// ------------------------------------------------------------
-// APPROVE SALON
-// ------------------------------------------------------------
-
-const APPROVE_SALON_LOCAL = gql`
-  mutation AdminApproveSalon(
-    $input: AdminApproveSalonInput!
-  ) {
-    adminApproveSalon(input: $input) {
-      success
-      message
-    }
-  }
-`;
-
-// ------------------------------------------------------------
-// REJECT SALON
-// ------------------------------------------------------------
-
-const REJECT_SALON_LOCAL = gql`
-  mutation AdminRejectSalon(
-    $input: AdminRejectSalonInput!
-  ) {
-    adminRejectSalon(input: $input) {
-      success
-      message
-    }
-  }
-`;
-
-// ------------------------------------------------------------
-// VIEW KYC DOCUMENT
-// ------------------------------------------------------------
-
-const GENERATE_KYC_DOCUMENT_VIEW_URL = gql`
-  mutation GenerateKycDocumentViewUrl(
-    $input: GenerateKycDocumentViewUrlInput!
-  ) {
-    generateKycDocumentViewUrl(input: $input) {
-      success
-      message
-      viewUrl
-      fileName
-      contentType
-      expiresIn
-    }
-  }
-`;
-
-// ============================================================
-// TYPES
-// ============================================================
-
-type KycStatus =
-  | 'PENDING'
-  | 'APPROVED'
-  | 'REJECTED';
+/* ============================================================
+ * TYPES
+ * ============================================================ */
 
 type AdminApprovalStatus =
   | 'PENDING'
@@ -153,7 +66,8 @@ type SalonVerificationStatus =
   | 'NOT_SUBMITTED'
   | 'SUBMITTED'
   | 'IN_REVIEW'
-  | 'APPROVED'
+  | 'VERIFIED'
+  | 'FAILED'
   | 'REJECTED';
 
 type KycDocumentType =
@@ -163,20 +77,12 @@ type KycDocumentType =
   | 'GST'
   | 'UDYAM';
 
-// ============================================================
-// ADDRESS
-// ============================================================
-
 interface SalonAddress {
   addressLine?: string | null;
   city?: string | null;
   state?: string | null;
   pincode?: string | null;
 }
-
-// ============================================================
-// BUSINESS HOURS
-// ============================================================
 
 interface BusinessHour {
   isOpen?: boolean | null;
@@ -194,31 +100,16 @@ interface BusinessHours {
   SUNDAY?: BusinessHour | null;
 }
 
-// ============================================================
-// SERVICE SELECTION
-// ============================================================
-
 interface SalonServiceSelection {
-  businessTypeId: string;
-  businessTypeName: string;
-
   categoryId: string;
   categoryName: string;
-
   subcategoryId: string;
   subcategoryName: string;
-
   serviceName: string;
-
   audience: ServiceAudience;
-
   price: number;
   duration: number;
 }
-
-// ============================================================
-// KYC DOCUMENT
-// ============================================================
 
 interface KycDocument {
   documentType: KycDocumentType;
@@ -229,10 +120,6 @@ interface KycDocument {
   uploadedAt: string;
 }
 
-// ============================================================
-// DOCUMENTS
-// ============================================================
-
 interface SalonDocuments {
   pan?: KycDocument | null;
   aadhaar?: KycDocument | null;
@@ -240,10 +127,6 @@ interface SalonDocuments {
   gst?: KycDocument | null;
   udyam?: KycDocument | null;
 }
-
-// ============================================================
-// MEDIA
-// ============================================================
 
 interface SalonMedia {
   imageId: string;
@@ -260,21 +143,12 @@ interface SalonMedia {
   rejectionReason?: string | null;
 }
 
-// ============================================================
-// SALON
-// ============================================================
-
 interface Salon {
   salonId: string;
 
   ownerUserId?: string | null;
-
   salonName?: string | null;
   ownerName?: string | null;
-
-  businessTypeId?: string | null;
-  businessTypeIds?: string[] | null;
-  businessType?: string | null;
 
   targetAudiences?: ServiceAudience[] | null;
 
@@ -297,13 +171,7 @@ interface Salon {
   shopEstablishmentNumber?: string | null;
   udyamNumber?: string | null;
 
-  kycStatus: KycStatus;
-
   documents?: SalonDocuments | null;
-
-  bankAccount?: string | null;
-  ifsc?: string | null;
-  accountHolderName: string;
 
   razorpayAccountId?: string | null;
   razorpayAccountStatus?: string | null;
@@ -317,6 +185,7 @@ interface Salon {
   galleryMedia?: SalonMedia[] | null;
 
   verificationStatus: SalonVerificationStatus;
+
   verificationSubmittedAt?: string | null;
   verificationCompletedAt?: string | null;
   verificationProvider?: string | null;
@@ -324,6 +193,7 @@ interface Salon {
   verificationRejectionReason?: string | null;
 
   adminApprovalStatus: AdminApprovalStatus;
+
   salonStatus: SalonStatus;
 
   isActive: boolean;
@@ -350,9 +220,9 @@ interface Salon {
   updatedAt: string;
 }
 
-// ============================================================
-// RESPONSE
-// ============================================================
+/* ============================================================
+ * GRAPHQL RESPONSE TYPES
+ * ============================================================ */
 
 interface AdminSalonsResponse {
   adminSalons: {
@@ -363,20 +233,13 @@ interface AdminSalonsResponse {
   };
 }
 
-// ============================================================
-// VARIABLES
-// ============================================================
-
 interface AdminSalonsVariables {
   search?: string;
-  kycStatus?: KycStatus;
+  verificationStatus?: SalonVerificationStatus;
+  adminApprovalStatus?: AdminApprovalStatus;
   salonStatus?: SalonStatus;
   isActive?: boolean;
 }
-
-// ============================================================
-// MUTATION RESPONSE TYPES
-// ============================================================
 
 interface SalonMutationResponse {
   success: boolean;
@@ -412,6 +275,7 @@ interface SubmitVerificationResponse {
       salonId: string;
       verificationStatus: SalonVerificationStatus;
       verificationSubmittedAt?: string | null;
+      verificationCompletedAt?: string | null;
       verificationProvider?: string | null;
       verificationReferenceId?: string | null;
       verificationRejectionReason?: string | null;
@@ -443,11 +307,32 @@ interface DocumentViewVariables {
   };
 }
 
-// ============================================================
-// HELPERS
-// ============================================================
+/* ============================================================
+ * CONSTANTS
+ * ============================================================ */
 
-const getInitials = (name?: string | null) => {
+const AUDIENCE_ORDER: ServiceAudience[] = [
+  'FEMALE',
+  'MALE',
+  'KIDS'
+];
+
+const AUDIENCE_LABELS: Record<
+  ServiceAudience,
+  string
+> = {
+  FEMALE: 'Female',
+  MALE: 'Male',
+  KIDS: 'Kids'
+};
+
+/* ============================================================
+ * HELPERS
+ * ============================================================ */
+
+const getInitials = (
+  name?: string | null
+) => {
   if (!name) return 'S';
 
   return name
@@ -459,7 +344,9 @@ const getInitials = (name?: string | null) => {
     .toUpperCase();
 };
 
-const formatCurrency = (value?: number | null) => {
+const formatCurrency = (
+  value?: number | null
+) => {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -467,23 +354,9 @@ const formatCurrency = (value?: number | null) => {
   }).format(value || 0);
 };
 
-const formatDate = (date?: string | null) => {
-  if (!date) return '—';
-
-  const parsedDate = new Date(date);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return date;
-  }
-
-  return new Intl.DateTimeFormat('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  }).format(parsedDate);
-};
-
-const formatDateTime = (date?: string | null) => {
+const formatDateTime = (
+  date?: string | null
+) => {
   if (!date) return '—';
 
   const parsedDate = new Date(date);
@@ -501,7 +374,9 @@ const formatDateTime = (date?: string | null) => {
   }).format(parsedDate);
 };
 
-const maskAadhaar = (value?: string | null) => {
+const maskAadhaar = (
+  value?: string | null
+) => {
   if (!value) return 'Not provided';
 
   const digits = value.replace(/\D/g, '');
@@ -513,232 +388,112 @@ const maskAadhaar = (value?: string | null) => {
   return value;
 };
 
-const maskBankAccount = (value?: string | null) => {
-  if (!value) return 'Not provided';
+/* ============================================================
+ * STATUS CHIPS
+ * ============================================================ */
 
-  if (value.length <= 4) {
-    return value;
-  }
-
-  return `${'*'.repeat(
-    Math.max(0, value.length - 4)
-  )}${value.slice(-4)}`;
-};
-
-const getVerificationLabel = (
-  status: SalonVerificationStatus
-) => {
-  switch (status) {
-    case 'NOT_SUBMITTED':
-      return 'Not Submitted';
-
-    case 'SUBMITTED':
-      return 'Submitted';
-
-    case 'IN_REVIEW':
-      return 'In Review';
-
-    case 'APPROVED':
-      return 'Verification Approved';
-
-    case 'REJECTED':
-      return 'Verification Rejected';
-
-    default:
-      return status;
-  }
-};
-
-// ============================================================
-// STATUS CHIP
-// ============================================================
-
-function StatusChip({
-  status
-}: {
-  status: KycStatus;
-}) {
-  if (status === 'APPROVED') {
-    return (
-      <Chip
-        icon={<CheckCircleOutlined />}
-        label="KYC Approved"
-        size="small"
-        color="success"
-        variant="outlined"
-      />
-    );
-  }
-
-  if (status === 'REJECTED') {
-    return (
-      <Chip
-        icon={<CloseCircleOutlined />}
-        label="KYC Rejected"
-        size="small"
-        color="error"
-        variant="outlined"
-      />
-    );
-  }
-
-  return (
-    <Chip
-      icon={<ClockCircleOutlined />}
-      label="KYC Pending"
-      size="small"
-      color="warning"
-      variant="outlined"
-    />
-  );
-}
-
-// ============================================================
-// VERIFICATION CHIP
-// ============================================================
-
-function VerificationStatusChip({
+const VerificationStatusChip = ({
   status
 }: {
   status: SalonVerificationStatus;
-}) {
-  if (status === 'APPROVED') {
-    return (
-      <Chip
-        icon={<CheckCircleOutlined />}
-        label="Verification Approved"
-        size="small"
-        color="success"
-      />
-    );
-  }
+}) => {
+  let color:
+    | 'success'
+    | 'error'
+    | 'warning'
+    | 'default'
+    | 'info' = 'default';
 
-  if (status === 'REJECTED') {
-    return (
-      <Chip
-        icon={<CloseCircleOutlined />}
-        label="Verification Rejected"
-        size="small"
-        color="error"
-      />
-    );
-  }
+  switch (status) {
+    case 'VERIFIED':
+      color = 'success';
+      break;
 
-  if (
-    status === 'SUBMITTED' ||
-    status === 'IN_REVIEW'
-  ) {
-    return (
-      <Chip
-        icon={<ClockCircleOutlined />}
-        label={getVerificationLabel(status)}
-        size="small"
-        color="warning"
-        variant="outlined"
-      />
-    );
+    case 'REJECTED':
+    case 'FAILED':
+      color = 'error';
+      break;
+
+    case 'SUBMITTED':
+    case 'IN_REVIEW':
+      color = 'warning';
+      break;
+
+    case 'NOT_SUBMITTED':
+    default:
+      color = 'default';
+      break;
   }
 
   return (
     <Chip
-      label="Not Submitted"
+      label={status.replace(/_/g, ' ')}
+      color={color}
       size="small"
       variant="outlined"
     />
   );
-}
+};
 
-// ============================================================
-// ADMIN APPROVAL CHIP
-// ============================================================
-
-function AdminApprovalStatusChip({
+const AdminApprovalStatusChip = ({
   status
 }: {
-  status?: AdminApprovalStatus | null;
-}) {
-  if (status === 'APPROVED') {
-    return (
-      <Chip
-        icon={<CheckCircleOutlined />}
-        label="Admin Approved"
-        size="small"
-        color="success"
-      />
-    );
-  }
-
-  if (status === 'REJECTED') {
-    return (
-      <Chip
-        icon={<CloseCircleOutlined />}
-        label="Admin Rejected"
-        size="small"
-        color="error"
-      />
-    );
-  }
+  status: AdminApprovalStatus;
+}) => {
+  const color =
+    status === 'APPROVED'
+      ? 'success'
+      : status === 'REJECTED'
+        ? 'error'
+        : 'warning';
 
   return (
     <Chip
-      icon={<ClockCircleOutlined />}
-      label="Awaiting Admin Approval"
+      label={status}
+      color={color}
       size="small"
-      color="warning"
       variant="outlined"
     />
   );
-}
+};
 
-// ============================================================
-// SALON STATUS CHIP
-// ============================================================
-
-function SalonStatusChip({
+const SalonStatusChip = ({
   status
 }: {
   status: SalonStatus;
-}) {
-  if (status === 'OPEN') {
-    return (
-      <Chip
-        label="Open"
-        size="small"
-        color="success"
-      />
-    );
-  }
-
-  if (status === 'TEMPORARILY_CLOSED') {
-    return (
-      <Chip
-        label="Temporarily Closed"
-        size="small"
-        color="warning"
-      />
-    );
-  }
-
+}) => {
   return (
     <Chip
-      label="Closed"
+      label={status.replace(/_/g, ' ')}
+      color={
+        status === 'OPEN'
+          ? 'success'
+          : 'default'
+      }
       size="small"
-      color="default"
+      variant="outlined"
     />
   );
-}
+};
 
-// ============================================================
-// DETAIL FIELD
-// ============================================================
+/* ============================================================
+ * DETAIL FIELD
+ * ============================================================ */
 
-function DetailField({
+const DetailField = ({
   label,
   value
 }: {
   label: string;
-  value?: string | number | null;
-}) {
+  value?: React.ReactNode;
+}) => {
+  const displayValue =
+    value === undefined ||
+    value === null ||
+    value === ''
+      ? 'Not provided'
+      : value;
+
   return (
     <Box>
       <Typography
@@ -755,62 +510,75 @@ function DetailField({
       <Typography
         variant="body2"
         sx={{
-          fontWeight: 500,
+          fontWeight: 600,
           wordBreak: 'break-word'
         }}
       >
-        {value !== undefined &&
-        value !== null &&
-        String(value).trim() !== ''
-          ? value
-          : 'Not provided'}
+        {displayValue}
       </Typography>
     </Box>
   );
-}
+};
 
-// ============================================================
-// SECTION TITLE
-// ============================================================
+/* ============================================================
+ * SECTION TITLE
+ * ============================================================ */
 
-function SectionTitle({
+const SectionTitle = ({
   children
 }: {
   children: React.ReactNode;
-}) {
-  return (
-    <Typography
-      variant="h6"
-      sx={{
-        mb: 2,
-        fontWeight: 700
-      }}
-    >
-      {children}
-    </Typography>
-  );
-}
+}) => (
+  <Typography
+    variant="h6"
+    fontWeight={700}
+    sx={{ mb: 2 }}
+  >
+    {children}
+  </Typography>
+);
 
-// ============================================================
-// BUSINESS HOURS
-// ============================================================
+/* ============================================================
+ * BUSINESS HOURS
+ * ============================================================ */
 
-function BusinessHoursSection({
+const BusinessHoursSection = ({
   businessHours
 }: {
   businessHours?: BusinessHours | null;
-}) {
-  const days: {
+}) => {
+  const days: Array<{
     key: keyof BusinessHours;
     label: string;
-  }[] = [
-    { key: 'MONDAY', label: 'Monday' },
-    { key: 'TUESDAY', label: 'Tuesday' },
-    { key: 'WEDNESDAY', label: 'Wednesday' },
-    { key: 'THURSDAY', label: 'Thursday' },
-    { key: 'FRIDAY', label: 'Friday' },
-    { key: 'SATURDAY', label: 'Saturday' },
-    { key: 'SUNDAY', label: 'Sunday' }
+  }> = [
+    {
+      key: 'MONDAY',
+      label: 'Monday'
+    },
+    {
+      key: 'TUESDAY',
+      label: 'Tuesday'
+    },
+    {
+      key: 'WEDNESDAY',
+      label: 'Wednesday'
+    },
+    {
+      key: 'THURSDAY',
+      label: 'Thursday'
+    },
+    {
+      key: 'FRIDAY',
+      label: 'Friday'
+    },
+    {
+      key: 'SATURDAY',
+      label: 'Saturday'
+    },
+    {
+      key: 'SUNDAY',
+      label: 'Sunday'
+    }
   ];
 
   return (
@@ -818,9 +586,6 @@ function BusinessHoursSection({
       {days.map((day) => {
         const hours =
           businessHours?.[day.key];
-
-        const isOpen =
-          hours?.isOpen === true;
 
         return (
           <Grid
@@ -837,70 +602,37 @@ function BusinessHoursSection({
                 borderRadius: 2
               }}
             >
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                spacing={1}
+              <Typography
+                variant="subtitle2"
+                fontWeight={700}
               >
-                <Typography
-                  variant="body2"
-                  fontWeight={600}
-                >
-                  {day.label}
-                </Typography>
+                {day.label}
+              </Typography>
 
-                <Chip
-                  size="small"
-                  label={
-                    isOpen
-                      ? 'Open'
-                      : 'Closed'
-                  }
-                  color={
-                    isOpen
-                      ? 'success'
-                      : 'default'
-                  }
-                  variant={
-                    isOpen
-                      ? 'filled'
-                      : 'outlined'
-                  }
-                />
-              </Stack>
-
-              {isOpen ? (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 1 }}
-                >
-                  {hours?.open || '—'} —{' '}
-                  {hours?.close || '—'}
-                </Typography>
-              ) : (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 1 }}
-                >
-                  Closed
-                </Typography>
-              )}
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.5 }}
+              >
+                {hours?.isOpen
+                  ? `${hours.open || '—'} - ${
+                      hours.close || '—'
+                    }`
+                  : 'Closed'}
+              </Typography>
             </Paper>
           </Grid>
         );
       })}
     </Grid>
   );
-}
+};
 
-// ============================================================
-// DOCUMENT VIEW BUTTON
-// ============================================================
+/* ============================================================
+ * DOCUMENT VIEW
+ * ============================================================ */
 
-function DocumentViewButton({
+const DocumentViewButton = ({
   salonId,
   document,
   documentType,
@@ -915,14 +647,14 @@ function DocumentViewButton({
     salonId: string,
     documentType: KycDocumentType
   ) => void;
-}) {
+}) => {
   if (!document) {
     return (
       <Typography
         variant="body2"
         color="text.secondary"
       >
-        Not uploaded
+        Document not uploaded
       </Typography>
     );
   }
@@ -931,8 +663,8 @@ function DocumentViewButton({
     <Stack spacing={1}>
       <Typography
         variant="body2"
-        fontWeight={600}
         sx={{
+          fontWeight: 600,
           wordBreak: 'break-word'
         }}
       >
@@ -943,26 +675,22 @@ function DocumentViewButton({
         variant="caption"
         color="text.secondary"
       >
-        Uploaded:{' '}
-        {formatDateTime(
-          document.uploadedAt
-        )}
+        {document.contentType}
+
+        {document.fileSize
+          ? ` • ${(
+              document.fileSize / 1024
+            ).toFixed(1)} KB`
+          : ''}
       </Typography>
 
       <Button
         size="small"
         variant="outlined"
-        startIcon={<EyeOutlined />}
-        disabled={loading}
         onClick={() =>
-          onView(
-            salonId,
-            documentType
-          )
+          onView(salonId, documentType)
         }
-        sx={{
-          alignSelf: 'flex-start'
-        }}
+        disabled={loading}
       >
         {loading
           ? 'Opening...'
@@ -970,45 +698,75 @@ function DocumentViewButton({
       </Button>
     </Stack>
   );
-}
+};
 
-// ============================================================
-// PAGE
-// ============================================================
+/* ============================================================
+ * MAIN COMPONENT
+ * ============================================================ */
 
 export default function SalonApplications() {
-  const [tab, setTab] =
-    useState<'ALL' | KycStatus>('ALL');
+  /*
+   * The application list is now driven by
+   * verificationStatus rather than legacy kycStatus.
+   *
+   * ALL
+   * NOT_SUBMITTED
+   * SUBMITTED
+   * IN_REVIEW
+   * VERIFIED
+   * FAILED
+   * REJECTED
+   */
+  const [
+    tab,
+    setTab
+  ] = useState<
+    'ALL' | SalonVerificationStatus
+  >('ALL');
 
-  const [search, setSearch] =
-    useState('');
+  const [
+    search,
+    setSearch
+  ] = useState('');
 
-  const [page, setPage] =
-    useState(0);
+  const [
+    page,
+    setPage
+  ] = useState(0);
 
-  const [rowsPerPage, setRowsPerPage] =
-    useState(10);
+  const [
+    rowsPerPage,
+    setRowsPerPage
+  ] = useState(10);
 
-  const [selectedSalon, setSelectedSalon] =
-    useState<Salon | null>(null);
+  const [
+    selectedSalon,
+    setSelectedSalon
+  ] = useState<Salon | null>(null);
 
-  const [detailsOpen, setDetailsOpen] =
-    useState(false);
+  const [
+    detailsOpen,
+    setDetailsOpen
+  ] = useState(false);
 
-  const [rejectOpen, setRejectOpen] =
-    useState(false);
+  const [
+    rejectOpen,
+    setRejectOpen
+  ] = useState(false);
 
-  const [rejectionReason, setRejectionReason] =
-    useState('');
+  const [
+    rejectionReason,
+    setRejectionReason
+  ] = useState('');
 
   const [
     viewingDocument,
     setViewingDocument
   ] = useState<string | null>(null);
 
-  // ==========================================================
-  // QUERY
-  // ==========================================================
+  /* ==========================================================
+   * QUERY
+   * ========================================================== */
 
   const {
     data,
@@ -1018,22 +776,14 @@ export default function SalonApplications() {
   } = useQuery<
     AdminSalonsResponse,
     AdminSalonsVariables
-  >(
-    ADMIN_SALONS,
-    {
-      variables: {
-        search: undefined,
-        kycStatus: undefined,
-        salonStatus: undefined,
-        isActive: undefined
-      },
-      fetchPolicy: 'network-only'
-    }
-  );
+  >(ADMIN_SALONS, {
+    variables: {},
+    fetchPolicy: 'network-only'
+  });
 
-  // ==========================================================
-  // SUBMIT FOR VERIFICATION
-  // ==========================================================
+  /* ==========================================================
+   * MUTATIONS
+   * ========================================================== */
 
   const [
     submitSalonForVerification,
@@ -1044,13 +794,7 @@ export default function SalonApplications() {
   ] = useMutation<
     SubmitVerificationResponse,
     SubmitVerificationVariables
-  >(
-    SUBMIT_SALON_FOR_VERIFICATION
-  );
-
-  // ==========================================================
-  // APPROVE
-  // ==========================================================
+  >(SUBMIT_SALON_FOR_VERIFICATION);
 
   const [
     approveSalon,
@@ -1062,10 +806,6 @@ export default function SalonApplications() {
     ApproveSalonVariables
   >(APPROVE_SALON_LOCAL);
 
-  // ==========================================================
-  // REJECT
-  // ==========================================================
-
   const [
     rejectSalon,
     {
@@ -1076,10 +816,6 @@ export default function SalonApplications() {
     RejectSalonVariables
   >(REJECT_SALON_LOCAL);
 
-  // ==========================================================
-  // DOCUMENT VIEW
-  // ==========================================================
-
   const [
     generateDocumentViewUrl,
     {
@@ -1089,97 +825,66 @@ export default function SalonApplications() {
   ] = useMutation<
     DocumentViewResponse,
     DocumentViewVariables
-  >(
-    GENERATE_KYC_DOCUMENT_VIEW_URL
-  );
+  >(GENERATE_KYC_DOCUMENT_VIEW_URL);
 
-  // ==========================================================
-  // SALONS
-  // ==========================================================
+  /* ==========================================================
+   * SALONS
+   * ========================================================== */
 
   const salons =
     data?.adminSalons?.salons || [];
 
-  // ==========================================================
-  // COUNTS
-  // ==========================================================
-
-  const counts = useMemo(() => {
-    return {
-      all: salons.length,
-
-      pending: salons.filter(
-        (item) =>
-          item.kycStatus ===
-          'PENDING'
-      ).length,
-
-      approved: salons.filter(
-        (item) =>
-          item.kycStatus ===
-          'APPROVED'
-      ).length,
-
-      rejected: salons.filter(
-        (item) =>
-          item.kycStatus ===
-          'REJECTED'
-      ).length
-    };
-  }, [salons]);
-
-  // ==========================================================
-  // FILTER
-  // ==========================================================
+  /* ==========================================================
+   * SEARCH + TABS
+   * ========================================================== */
 
   const filteredApplications =
     useMemo(() => {
-      const query =
-        search.toLowerCase().trim();
+      const normalizedSearch =
+        search.trim().toLowerCase();
 
       return salons.filter((salon) => {
         const matchesTab =
           tab === 'ALL' ||
-          salon.kycStatus === tab;
+          salon.verificationStatus ===
+            tab;
 
-        const matchesSearch =
-          !query ||
-          (salon.salonName || '')
-            .toLowerCase()
-            .includes(query) ||
-          (salon.ownerName || '')
-            .toLowerCase()
-            .includes(query) ||
-          (salon.ownerPhoneNumber || '')
-            .toLowerCase()
-            .includes(query) ||
-          (salon.email || '')
-            .toLowerCase()
-            .includes(query) ||
-          (salon.address?.city || '')
-            .toLowerCase()
-            .includes(query) ||
-          (salon.address?.state || '')
-            .toLowerCase()
-            .includes(query) ||
-          salon.salonId
-            .toLowerCase()
-            .includes(query);
+        if (!matchesTab) {
+          return false;
+        }
 
-        return (
-          matchesTab &&
-          matchesSearch
-        );
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        return [
+          salon.salonName,
+          salon.ownerName,
+          salon.email,
+          salon.ownerPhoneNumber,
+          salon.salonId,
+          salon.address?.city,
+          salon.address?.state,
+          salon.address?.pincode
+        ]
+          .filter(Boolean)
+          .some((value) =>
+            String(value)
+              .toLowerCase()
+              .includes(
+                normalizedSearch
+              )
+          );
       });
     }, [
       salons,
-      search,
-      tab
+      tab,
+      search
     ]);
 
-  // ==========================================================
-  // PAGINATION
-  // ==========================================================
+  /* ==========================================================
+   * PAGINATION
+   * ========================================================== */
 
   const paginatedApplications =
     filteredApplications.slice(
@@ -1188,164 +893,233 @@ export default function SalonApplications() {
         rowsPerPage
     );
 
-  // ==========================================================
-  // VIEW
-  // ==========================================================
+  /* ==========================================================
+   * VERIFICATION STATS
+   * ========================================================== */
+
+  const stats = useMemo(() => {
+    return {
+      total: salons.length,
+
+      notSubmitted: salons.filter(
+        (salon) =>
+          salon.verificationStatus ===
+          'NOT_SUBMITTED'
+      ).length,
+
+      submitted: salons.filter(
+        (salon) =>
+          salon.verificationStatus ===
+          'SUBMITTED'
+      ).length,
+
+      inReview: salons.filter(
+        (salon) =>
+          salon.verificationStatus ===
+          'IN_REVIEW'
+      ).length,
+
+      verified: salons.filter(
+        (salon) =>
+          salon.verificationStatus ===
+          'VERIFIED'
+      ).length,
+
+      failed: salons.filter(
+        (salon) =>
+          salon.verificationStatus ===
+          'FAILED'
+      ).length,
+
+      rejected: salons.filter(
+        (salon) =>
+          salon.verificationStatus ===
+          'REJECTED'
+      ).length,
+
+      readyForApproval: salons.filter(
+        (salon) =>
+          salon.verificationStatus ===
+            'VERIFIED' &&
+          salon.adminApprovalStatus !==
+            'APPROVED'
+      ).length,
+
+      businessApproved: salons.filter(
+        (salon) =>
+          salon.adminApprovalStatus ===
+          'APPROVED'
+      ).length
+    };
+  }, [salons]);
+
+  /* ==========================================================
+   * GROUP SERVICES
+   * ========================================================== */
+
+  const groupedServices =
+    useMemo(() => {
+      const services =
+        selectedSalon?.serviceSelections ||
+        [];
+
+      const grouped: Record<
+        ServiceAudience,
+        SalonServiceSelection[]
+      > = {
+        FEMALE: [],
+        MALE: [],
+        KIDS: []
+      };
+
+      services.forEach((service) => {
+        if (
+          grouped[service.audience]
+        ) {
+          grouped[
+            service.audience
+          ].push(service);
+        }
+      });
+
+      return AUDIENCE_ORDER
+        .filter(
+          (audience) =>
+            grouped[audience].length > 0
+        )
+        .map((audience) => ({
+          audience,
+          label:
+            AUDIENCE_LABELS[
+              audience
+            ],
+          services:
+            grouped[audience]
+        }));
+    }, [
+      selectedSalon?.serviceSelections
+    ]);
+
+  /* ==========================================================
+   * REVIEW / VIEW
+   * ========================================================== */
 
   const handleView = (
     salon: Salon
   ) => {
-    console.log(
-      '========== VIEW SALON =========='
-    );
-
-    console.log(
-      'Salon:',
-      salon.salonName
-    );
-
-    console.log(
-      'Service selections:',
-      salon.serviceSelections
-    );
-
-    console.log(
-      'Verification status:',
-      salon.verificationStatus
-    );
-
     setSelectedSalon(salon);
     setDetailsOpen(true);
   };
 
-  // ==========================================================
-  // SEND TO CASHFREE / VERIFICATION
-  // ==========================================================
+  const handleReview = (
+    salon: Salon
+  ) => {
+    setSelectedSalon(salon);
+    setDetailsOpen(true);
+  };
+
+  /* ==========================================================
+   * SUBMIT FOR THIRD-PARTY VERIFICATION
+   * ========================================================== */
 
   const handleSubmitForVerification =
-    async (
-      salon: Salon
-    ) => {
-      if (
-        submittingVerification ||
-        approving ||
-        rejecting
-      ) {
-        return;
-      }
-
+    async (salon: Salon) => {
       if (
         salon.verificationStatus !==
         'NOT_SUBMITTED'
       ) {
-        window.alert(
-          `This salon is already in verification status: ${getVerificationLabel(
-            salon.verificationStatus
-          )}.`
-        );
-
-        return;
-      }
-
-      const confirmed =
-        window.confirm(
-          `Send "${salon.salonName || 'this salon'}" for third-party verification?`
-        );
-
-      if (!confirmed) {
         return;
       }
 
       try {
         const result =
-          await submitSalonForVerification({
-            variables: {
-              input: {
-                salonId:
-                  salon.salonId
+          await submitSalonForVerification(
+            {
+              variables: {
+                input: {
+                  salonId:
+                    salon.salonId
+                }
               }
             }
-          });
+          );
 
         const response =
           result.data
             ?.submitSalonForVerification;
 
         if (!response?.success) {
-          throw new Error(
+          window.alert(
             response?.message ||
-              'Failed to submit salon for verification.'
+              'Unable to submit salon for verification.'
+          );
+
+          return;
+        }
+
+        /*
+         * Refresh the complete salon list so
+         * verification status, timestamps,
+         * provider and reference ID are all
+         * synchronized with DynamoDB.
+         */
+        const refreshed =
+          await refetch();
+
+        const refreshedSalon =
+          refreshed.data
+            ?.adminSalons?.salons.find(
+              (item) =>
+                item.salonId ===
+                salon.salonId
+            );
+
+        if (refreshedSalon) {
+          setSelectedSalon(
+            refreshedSalon
           );
         }
 
         window.alert(
           response.message ||
-            'Salon submitted for third-party verification successfully.'
+            'Salon submitted for verification successfully.'
         );
-
-        await refetch();
-
-        if (
-          selectedSalon?.salonId ===
-          salon.salonId
-        ) {
-          setDetailsOpen(false);
-          setSelectedSalon(null);
-        }
       } catch (
-        mutationError
+        submissionError
       ) {
         console.error(
-          'Submit salon verification error:',
-          mutationError
+          'Submit verification error:',
+          submissionError
         );
 
-        let message =
-          'Failed to submit salon for verification.';
-
-        if (
-          mutationError &&
-          typeof mutationError ===
-            'object' &&
-          'message' in
-            mutationError
-        ) {
-          message = String(
-            (
-              mutationError as {
-                message: string;
-              }
-            ).message
-          );
-        }
-
-        window.alert(message);
+        window.alert(
+          submissionError instanceof
+            Error
+            ? submissionError.message
+            : 'Unable to submit salon for verification.'
+        );
       }
     };
 
-  // ==========================================================
-  // APPROVE
-  // ==========================================================
+  /* ==========================================================
+   * APPROVE BUSINESS
+   *
+   * IMPORTANT:
+   *
+   * verificationStatus === VERIFIED
+   * does NOT mean the business is approved.
+   *
+   * VERIFIED = third-party verification passed.
+   * APPROVED = Clavata admin approved the business.
+   * ========================================================== */
 
   const handleApprove = async (
     salon: Salon
   ) => {
     if (
-      approving ||
-      rejecting ||
-      submittingVerification
-    ) {
-      return;
-    }
-
-    if (
       salon.verificationStatus !==
-      'APPROVED'
+      'VERIFIED'
     ) {
-      window.alert(
-        'This salon cannot be approved until third-party verification is approved.'
-      );
-
       return;
     }
 
@@ -1353,19 +1127,6 @@ export default function SalonApplications() {
       salon.adminApprovalStatus ===
       'APPROVED'
     ) {
-      window.alert(
-        'This salon has already been approved by admin.'
-      );
-
-      return;
-    }
-
-    const confirmed =
-      window.confirm(
-        `Are you sure you want to approve "${salon.salonName || 'this salon'}"?`
-      );
-
-    if (!confirmed) {
       return;
     }
 
@@ -1380,113 +1141,67 @@ export default function SalonApplications() {
           }
         });
 
-      const response =
-        result.data
-          ?.adminApproveSalon;
-
-      if (!response?.success) {
-        throw new Error(
-          response?.message ||
-            'Failed to approve salon application.'
+      if (
+        !result.data
+          ?.adminApproveSalon
+          .success
+      ) {
+        window.alert(
+          result.data
+            ?.adminApproveSalon
+            .message ||
+            'Unable to approve salon.'
         );
+
+        return;
       }
 
-      window.alert(
-        response.message ||
-          'Salon application approved successfully.'
-      );
+      await refetch();
 
       setDetailsOpen(false);
       setSelectedSalon(null);
 
-      await refetch();
+      window.alert(
+        result.data
+          .adminApproveSalon
+          .message ||
+          'Salon approved successfully.'
+      );
     } catch (
-      mutationError
+      approveError
     ) {
       console.error(
         'Approve salon error:',
-        mutationError
+        approveError
       );
 
-      let message =
-        'Failed to approve salon application.';
-
-      if (
-        mutationError &&
-        typeof mutationError ===
-          'object' &&
-        'message' in
-          mutationError
-      ) {
-        message = String(
-          (
-            mutationError as {
-              message: string;
-            }
-          ).message
-        );
-      }
-
-      window.alert(message);
+      window.alert(
+        approveError instanceof
+          Error
+          ? approveError.message
+          : 'Unable to approve salon.'
+      );
     }
   };
 
-  // ==========================================================
-  // OPEN REJECT
-  // ==========================================================
+  /* ==========================================================
+   * REJECT
+   * ========================================================== */
 
   const handleOpenReject = (
     salon: Salon
   ) => {
-    if (
-      salon.verificationStatus !==
-      'APPROVED'
-    ) {
-      window.alert(
-        'This salon cannot be rejected from the admin approval stage until third-party verification is approved.'
-      );
-
-      return;
-    }
-
     setSelectedSalon(salon);
     setRejectionReason('');
     setRejectOpen(true);
   };
 
-  // ==========================================================
-  // REJECT
-  // ==========================================================
-
   const handleReject =
     async () => {
-      if (!selectedSalon) {
-        return;
-      }
-
-      const reason =
-        rejectionReason.trim();
-
-      if (!reason) {
-        return;
-      }
-
       if (
-        rejecting ||
-        approving ||
-        submittingVerification
+        !selectedSalon ||
+        !rejectionReason.trim()
       ) {
-        return;
-      }
-
-      if (
-        selectedSalon.verificationStatus !==
-        'APPROVED'
-      ) {
-        window.alert(
-          'Third-party verification must be approved before admin rejection.'
-        );
-
         return;
       }
 
@@ -1498,108 +1213,162 @@ export default function SalonApplications() {
                 salonId:
                   selectedSalon.salonId,
                 rejectionReason:
-                  reason
+                  rejectionReason.trim()
               }
             }
           });
 
-        const response =
-          result.data
-            ?.adminRejectSalon;
-
-        if (!response?.success) {
-          throw new Error(
-            response?.message ||
-              'Failed to reject salon application.'
+        if (
+          !result.data
+            ?.adminRejectSalon
+            .success
+        ) {
+          window.alert(
+            result.data
+              ?.adminRejectSalon
+              .message ||
+              'Unable to reject salon.'
           );
+
+          return;
         }
 
-        window.alert(
-          response.message ||
-            'Salon application rejected successfully.'
-        );
+        await refetch();
 
         setRejectOpen(false);
         setDetailsOpen(false);
-        setRejectionReason('');
         setSelectedSalon(null);
+        setRejectionReason('');
 
-        await refetch();
+        window.alert(
+          result.data
+            .adminRejectSalon
+            .message ||
+            'Salon rejected successfully.'
+        );
       } catch (
-        mutationError
+        rejectError
       ) {
         console.error(
           'Reject salon error:',
-          mutationError
+          rejectError
         );
 
-        let message =
-          'Failed to reject salon application.';
-
-        if (
-          mutationError &&
-          typeof mutationError ===
-            'object' &&
-          'message' in
-            mutationError
-        ) {
-          message = String(
-            (
-              mutationError as {
-                message: string;
-              }
-            ).message
-          );
-        }
-
-        window.alert(message);
+        window.alert(
+          rejectError instanceof
+            Error
+            ? rejectError.message
+            : 'Unable to reject salon.'
+        );
       }
     };
 
-  // ==========================================================
-  // VIEW DOCUMENT
-  // ==========================================================
+  /* ==========================================================
+   * DOCUMENT VIEW
+   * ========================================================== */
 
   const handleViewDocument =
     async (
       salonId: string,
       documentType: KycDocumentType
     ) => {
-      const key =
-        `${salonId}-${documentType}`;
+      const key = `${salonId}-${documentType}`;
 
-      setViewingDocument(key);
+      /*
+       * Open the tab synchronously from the
+       * click event so the browser does not
+       * block it as a popup.
+       */
+      const documentWindow =
+        window.open(
+          '',
+          '_blank'
+        );
+
+      if (!documentWindow) {
+        window.alert(
+          'The document could not be opened because the browser blocked the new tab. Please allow pop-ups for the admin panel and try again.'
+        );
+
+        return;
+      }
 
       try {
+        setViewingDocument(key);
+
+        documentWindow.document.title =
+          'Opening Document...';
+
+        documentWindow.document.body.innerHTML = `
+          <div style="
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #555;
+            background: #fff;
+          ">
+            <div style="text-align:center;">
+              <div style="
+                font-size: 16px;
+                font-weight: 600;
+                margin-bottom: 8px;
+              ">
+                Opening document...
+              </div>
+
+              <div style="
+                font-size: 13px;
+                color: #888;
+              ">
+                Please wait.
+              </div>
+            </div>
+          </div>
+        `;
+
         const result =
-          await generateDocumentViewUrl({
-            variables: {
-              input: {
-                salonId,
-                documentType
+          await generateDocumentViewUrl(
+            {
+              variables: {
+                input: {
+                  salonId,
+                  documentType
+                }
               }
             }
-          });
+          );
 
         const response =
           result.data
             ?.generateKycDocumentViewUrl;
 
-        if (
-          !response?.success ||
-          !response.viewUrl
-        ) {
-          throw new Error(
+        if (!response?.success) {
+          documentWindow.close();
+
+          window.alert(
             response?.message ||
-              'Unable to generate document view URL.'
+              'Unable to open document.'
           );
+
+          return;
         }
 
-        window.open(
-          response.viewUrl,
-          '_blank',
-          'noopener,noreferrer'
-        );
+        if (!response.viewUrl) {
+          documentWindow.close();
+
+          window.alert(
+            response.message ||
+              'Document URL was not generated.'
+          );
+
+          return;
+        }
+
+        documentWindow.location.href =
+          response.viewUrl;
       } catch (
         documentError
       ) {
@@ -1608,156 +1377,124 @@ export default function SalonApplications() {
           documentError
         );
 
-        let message =
-          'Failed to open document.';
+        documentWindow.close();
 
-        if (
-          documentError &&
-          typeof documentError ===
-            'object' &&
-          'message' in
-            documentError
-        ) {
-          message = String(
-            (
-              documentError as {
-                message: string;
-              }
-            ).message
-          );
-        }
-
-        window.alert(message);
+        window.alert(
+          documentError instanceof
+            Error
+            ? documentError.message
+            : 'Unable to open document.'
+        );
       } finally {
         setViewingDocument(null);
       }
     };
 
-  // ==========================================================
-  // REFRESH
-  // ==========================================================
+  /* ==========================================================
+   * REFRESH
+   * ========================================================== */
 
   const handleRefresh =
     async () => {
-      try {
-        await refetch();
-      } catch (
-        refreshError
-      ) {
-        console.error(
-          'Failed to refresh salons:',
-          refreshError
-        );
-      }
+      await refetch();
     };
 
-  // ==========================================================
-  // TAB CHANGE
-  // ==========================================================
+  /* ==========================================================
+   * TAB CHANGE
+   * ========================================================== */
 
   const handleTabChange = (
     _: React.SyntheticEvent,
-    value: 'ALL' | KycStatus
+    value:
+      | 'ALL'
+      | SalonVerificationStatus
   ) => {
     setTab(value);
     setPage(0);
   };
 
-  // ==========================================================
-  // RENDER
-  // ==========================================================
+  /* ==========================================================
+   * RENDER
+   * ========================================================== */
 
   return (
     <Box>
-      {/* ====================================================
+      {/* ======================================================
           HEADER
-      ==================================================== */}
+          ====================================================== */}
 
-      <Grid
-        container
-        alignItems="center"
+      <Stack
+        direction={{
+          xs: 'column',
+          sm: 'row'
+        }}
         justifyContent="space-between"
+        alignItems={{
+          xs: 'flex-start',
+          sm: 'center'
+        }}
+        spacing={2}
         sx={{ mb: 3 }}
       >
-        <Grid item>
-          <Stack
-            direction="row"
-            spacing={1.5}
-            alignItems="center"
-          >
-            <Box />
-          </Stack>
-        </Grid>
-
-        <Grid item>
-          <Button
-            variant="outlined"
-            startIcon={
-              <ReloadOutlined />
-            }
-            onClick={
-              handleRefresh
-            }
-            disabled={
-              loading ||
-              approving ||
-              rejecting ||
-              submittingVerification
-            }
-          >
-            Refresh
-          </Button>
-        </Grid>
-      </Grid>
-
-      {/* ====================================================
-          ERROR
-      ==================================================== */}
-
-      {error && (
-        <Paper
-          sx={{
-            p: 2,
-            mb: 3,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor:
-              'error.main',
-            bgcolor:
-              'error.lighter'
-          }}
-        >
+        <Box>
           <Typography
-            color="error"
-            fontWeight={600}
+            variant="h4"
+            fontWeight={700}
           >
-            Failed to load salon
-            applications
+            Salon Applications
           </Typography>
 
           <Typography
             variant="body2"
-            color="error"
+            color="text.secondary"
             sx={{ mt: 0.5 }}
+          >
+            Review salon applications,
+            documents, third-party
+            verification and business
+            approval status.
+          </Typography>
+        </Box>
+
+        <Button
+          variant="outlined"
+          onClick={handleRefresh}
+          disabled={
+            loading ||
+            submittingVerification ||
+            approving ||
+            rejecting
+          }
+        >
+          Refresh
+        </Button>
+      </Stack>
+
+      {/* ======================================================
+          ERROR
+          ====================================================== */}
+
+      {error && (
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            mb: 3,
+            borderColor: 'error.main'
+          }}
+        >
+          <Typography
+            color="error"
+            variant="body2"
           >
             {error.message}
           </Typography>
-
-          <Button
-            size="small"
-            sx={{ mt: 1 }}
-            onClick={
-              handleRefresh
-            }
-          >
-            Try Again
-          </Button>
         </Paper>
       )}
 
-      {/* ====================================================
-          STAT CARDS
-      ==================================================== */}
+      {/* ======================================================
+          STATS
+          ====================================================== */}
 
       <Grid
         container
@@ -1771,47 +1508,23 @@ export default function SalonApplications() {
           md={3}
         >
           <Paper
-            sx={{
-              p: 2.5,
-              border: '1px solid',
-              borderColor:
-                'divider',
-              borderRadius: 2
-            }}
+            variant="outlined"
+            sx={{ p: 2.5 }}
           >
-            <Stack
-              direction="row"
-              justifyContent="space-between"
+            <Typography
+              variant="body2"
+              color="text.secondary"
             >
-              <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  Total Applications
-                </Typography>
+              Total Applications
+            </Typography>
 
-                <Typography
-                  variant="h3"
-                  sx={{ mt: 1 }}
-                >
-                  {loading
-                    ? '—'
-                    : counts.all}
-                </Typography>
-              </Box>
-
-              <Avatar
-                sx={{
-                  bgcolor:
-                    'primary.lighter',
-                  color:
-                    'primary.main'
-                }}
-              >
-                <FileTextOutlined />
-              </Avatar>
-            </Stack>
+            <Typography
+              variant="h4"
+              fontWeight={700}
+              sx={{ mt: 0.5 }}
+            >
+              {stats.total}
+            </Typography>
           </Paper>
         </Grid>
 
@@ -1822,48 +1535,23 @@ export default function SalonApplications() {
           md={3}
         >
           <Paper
-            sx={{
-              p: 2.5,
-              border: '1px solid',
-              borderColor:
-                'divider',
-              borderRadius: 2
-            }}
+            variant="outlined"
+            sx={{ p: 2.5 }}
           >
-            <Stack
-              direction="row"
-              justifyContent="space-between"
+            <Typography
+              variant="body2"
+              color="text.secondary"
             >
-              <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  Pending KYC
-                </Typography>
+              Awaiting Verification
+            </Typography>
 
-                <Typography
-                  variant="h3"
-                  sx={{ mt: 1 }}
-                  color="warning.main"
-                >
-                  {loading
-                    ? '—'
-                    : counts.pending}
-                </Typography>
-              </Box>
-
-              <Avatar
-                sx={{
-                  bgcolor:
-                    'warning.lighter',
-                  color:
-                    'warning.main'
-                }}
-              >
-                <ClockCircleOutlined />
-              </Avatar>
-            </Stack>
+            <Typography
+              variant="h4"
+              fontWeight={700}
+              sx={{ mt: 0.5 }}
+            >
+              {stats.notSubmitted}
+            </Typography>
           </Paper>
         </Grid>
 
@@ -1874,48 +1562,24 @@ export default function SalonApplications() {
           md={3}
         >
           <Paper
-            sx={{
-              p: 2.5,
-              border: '1px solid',
-              borderColor:
-                'divider',
-              borderRadius: 2
-            }}
+            variant="outlined"
+            sx={{ p: 2.5 }}
           >
-            <Stack
-              direction="row"
-              justifyContent="space-between"
+            <Typography
+              variant="body2"
+              color="text.secondary"
             >
-              <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  KYC Approved
-                </Typography>
+              In Verification
+            </Typography>
 
-                <Typography
-                  variant="h3"
-                  sx={{ mt: 1 }}
-                  color="success.main"
-                >
-                  {loading
-                    ? '—'
-                    : counts.approved}
-                </Typography>
-              </Box>
-
-              <Avatar
-                sx={{
-                  bgcolor:
-                    'success.lighter',
-                  color:
-                    'success.main'
-                }}
-              >
-                <CheckCircleOutlined />
-              </Avatar>
-            </Stack>
+            <Typography
+              variant="h4"
+              fontWeight={700}
+              sx={{ mt: 0.5 }}
+            >
+              {stats.submitted +
+                stats.inReview}
+            </Typography>
           </Paper>
         </Grid>
 
@@ -1926,96 +1590,76 @@ export default function SalonApplications() {
           md={3}
         >
           <Paper
-            sx={{
-              p: 2.5,
-              border: '1px solid',
-              borderColor:
-                'divider',
-              borderRadius: 2
-            }}
+            variant="outlined"
+            sx={{ p: 2.5 }}
           >
-            <Stack
-              direction="row"
-              justifyContent="space-between"
+            <Typography
+              variant="body2"
+              color="text.secondary"
             >
-              <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  KYC Rejected
-                </Typography>
+              Ready for Approval
+            </Typography>
 
-                <Typography
-                  variant="h3"
-                  sx={{ mt: 1 }}
-                  color="error.main"
-                >
-                  {loading
-                    ? '—'
-                    : counts.rejected}
-                </Typography>
-              </Box>
-
-              <Avatar
-                sx={{
-                  bgcolor:
-                    'error.lighter',
-                  color:
-                    'error.main'
-                }}
-              >
-                <CloseCircleOutlined />
-              </Avatar>
-            </Stack>
+            <Typography
+              variant="h4"
+              fontWeight={700}
+              sx={{
+                mt: 0.5,
+                color:
+                  'success.main'
+              }}
+            >
+              {stats.readyForApproval}
+            </Typography>
           </Paper>
         </Grid>
       </Grid>
 
-      {/* ====================================================
-          TABLE
-      ==================================================== */}
+      {/* ======================================================
+          APPLICATION TABLE
+          ====================================================== */}
 
-      <Paper
-        sx={{
-          border: '1px solid',
-          borderColor:
-            'divider',
-          borderRadius: 2,
-          overflow: 'hidden'
-        }}
-      >
+      <Paper variant="outlined">
         <Tabs
           value={tab}
-          onChange={
-            handleTabChange
-          }
-          sx={{
-            px: 2,
-            borderBottom:
-              '1px solid',
-            borderColor:
-              'divider'
-          }}
+          onChange={handleTabChange}
+          sx={{ px: 2 }}
+          variant="scrollable"
+          scrollButtons="auto"
         >
           <Tab
             value="ALL"
-            label={`All (${counts.all})`}
+            label={`All (${stats.total})`}
           />
 
           <Tab
-            value="PENDING"
-            label={`Pending KYC (${counts.pending})`}
+            value="NOT_SUBMITTED"
+            label={`Not Submitted (${stats.notSubmitted})`}
           />
 
           <Tab
-            value="APPROVED"
-            label={`KYC Approved (${counts.approved})`}
+            value="SUBMITTED"
+            label={`Submitted (${stats.submitted})`}
+          />
+
+          <Tab
+            value="IN_REVIEW"
+            label={`In Review (${stats.inReview})`}
+          />
+
+          <Tab
+            value="VERIFIED"
+            label={`Verified (${stats.verified})`}
+          />
+
+          <Tab
+            value="FAILED"
+            label={`Failed (${stats.failed})`}
           />
 
           <Tab
             value="REJECTED"
-            label={`KYC Rejected (${counts.rejected})`}
+            label={`Rejected (${stats.rejected})`}
           />
         </Tabs>
 
@@ -2023,7 +1667,7 @@ export default function SalonApplications() {
           <TextField
             fullWidth
             size="small"
-            placeholder="Search by salon, owner, phone, email, city or salon ID..."
+            placeholder="Search salon, owner, phone, email, city or salon ID..."
             value={search}
             onChange={(event) => {
               setSearch(
@@ -2031,17 +1675,8 @@ export default function SalonApplications() {
               );
               setPage(0);
             }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchOutlined />
-                </InputAdornment>
-              )
-            }}
           />
         </Box>
-
-        <Divider />
 
         <TableContainer>
           <Table>
@@ -2082,59 +1717,60 @@ export default function SalonApplications() {
             </TableHead>
 
             <TableBody>
-              {loading &&
-                Array.from({
-                  length: 4
-                }).map(
-                  (_, index) => (
-                    <TableRow
-                      key={index}
-                    >
-                      <TableCell
-                        colSpan={8}
-                      >
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            py: 1
-                          }}
-                        >
-                          Loading salon
-                          applications...
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  )
-                )}
-
-              {!loading &&
+              {loading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    align="center"
+                    sx={{ py: 8 }}
+                  >
+                    <Typography color="text.secondary">
+                      Loading applications...
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
                 paginatedApplications.map(
                   (salon) => (
                     <TableRow
-                      hover
                       key={
                         salon.salonId
                       }
+                      hover
                     >
+                      {/* ==================================================
+                          APPLICATION
+                          ================================================== */}
+
                       <TableCell>
                         <Typography
-                          variant="subtitle2"
-                          fontWeight={600}
+                          variant="body2"
+                          fontWeight={700}
                         >
-                          {
-                            salon.salonId
-                          }
+                          #{salon.salonId}
                         </Typography>
 
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          {salon.businessType ||
-                            'Business'}
-                        </Typography>
+                        {salon.verificationStatus ===
+                          'VERIFIED' &&
+                          salon.adminApprovalStatus !==
+                            'APPROVED' && (
+                            <Typography
+                              variant="caption"
+                              color="success.main"
+                              sx={{
+                                display:
+                                  'block',
+                                mt: 0.5
+                              }}
+                            >
+                              Ready for admin approval
+                            </Typography>
+                          )}
                       </TableCell>
+
+                      {/* ==================================================
+                          SALON
+                          ================================================== */}
 
                       <TableCell>
                         <Stack
@@ -2147,24 +1783,16 @@ export default function SalonApplications() {
                               salon.logoUrl ||
                               undefined
                             }
-                            sx={{
-                              bgcolor:
-                                'primary.lighter',
-                              color:
-                                'primary.main'
-                            }}
                           >
                             {getInitials(
                               salon.salonName
-                            ) || (
-                              <ShopOutlined />
                             )}
                           </Avatar>
 
                           <Box>
                             <Typography
-                              variant="subtitle2"
-                              fontWeight={600}
+                              variant="body2"
+                              fontWeight={700}
                             >
                               {salon.salonName ||
                                 'Unnamed Salon'}
@@ -2181,63 +1809,63 @@ export default function SalonApplications() {
                         </Stack>
                       </TableCell>
 
-                      <TableCell>
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          alignItems="center"
-                        >
-                          <UserOutlined />
-
-                          <Box>
-                            <Typography variant="body2">
-                              {salon.ownerName ||
-                                'Unknown Owner'}
-                            </Typography>
-
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {salon.ownerPhoneNumber ||
-                                'No phone'}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </TableCell>
+                      {/* ==================================================
+                          OWNER
+                          ================================================== */}
 
                       <TableCell>
-                        <Stack
-                          direction="row"
-                          spacing={0.75}
-                          alignItems="center"
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
                         >
-                          <EnvironmentOutlined />
+                          {salon.ownerName ||
+                            '—'}
+                        </Typography>
 
-                          <Box>
-                            <Typography variant="body2">
-                              {salon.address?.city ||
-                                '—'}
-                            </Typography>
-
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {salon.address?.state ||
-                                '—'}
-                            </Typography>
-                          </Box>
-                        </Stack>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          {salon.ownerPhoneNumber ||
+                            'No phone'}
+                        </Typography>
                       </TableCell>
+
+                      {/* ==================================================
+                          LOCATION
+                          ================================================== */}
 
                       <TableCell>
                         <Typography variant="body2">
-                          {formatDate(
-                            salon.createdAt
+                          {salon.address?.city ||
+                            '—'}
+                        </Typography>
+
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          {salon.address?.state ||
+                            '—'}
+                        </Typography>
+                      </TableCell>
+
+                      {/* ==================================================
+                          SUBMITTED
+                          ================================================== */}
+
+                      <TableCell>
+                        <Typography variant="body2">
+                          {formatDateTime(
+                            salon.verificationSubmittedAt ||
+                              salon.createdAt
                           )}
                         </Typography>
                       </TableCell>
+
+                      {/* ==================================================
+                          VERIFICATION
+                          ================================================== */}
 
                       <TableCell>
                         <VerificationStatusChip
@@ -2245,39 +1873,11 @@ export default function SalonApplications() {
                             salon.verificationStatus
                           }
                         />
-
-                        {salon.verificationStatus ===
-                          'NOT_SUBMITTED' && (
-                          <Typography
-                            variant="caption"
-                            color="warning.main"
-                            sx={{
-                              display:
-                                'block',
-                              mt: 0.5
-                            }}
-                          >
-                            Ready to send
-                            for verification
-                          </Typography>
-                        )}
-
-                        {salon.verificationStatus ===
-                          'IN_REVIEW' && (
-                          <Typography
-                            variant="caption"
-                            color="warning.main"
-                            sx={{
-                              display:
-                                'block',
-                              mt: 0.5
-                            }}
-                          >
-                            Verification in
-                            progress
-                          </Typography>
-                        )}
                       </TableCell>
+
+                      {/* ==================================================
+                          ADMIN APPROVAL
+                          ================================================== */}
 
                       <TableCell>
                         <AdminApprovalStatusChip
@@ -2285,25 +1885,11 @@ export default function SalonApplications() {
                             salon.adminApprovalStatus
                           }
                         />
-
-                        {salon.verificationStatus ===
-                          'APPROVED' &&
-                          salon.adminApprovalStatus !==
-                            'APPROVED' && (
-                            <Typography
-                              variant="caption"
-                              color="success.main"
-                              sx={{
-                                display:
-                                  'block',
-                                mt: 0.5
-                              }}
-                            >
-                              Ready for admin
-                              approval
-                            </Typography>
-                          )}
                       </TableCell>
+
+                      {/* ==================================================
+                          ACTIONS
+                          ================================================== */}
 
                       <TableCell align="right">
                         <Stack
@@ -2311,11 +1897,15 @@ export default function SalonApplications() {
                           spacing={0.5}
                           justifyContent="flex-end"
                         >
-                          <Tooltip title="View application">
-                            <IconButton
-                              color="primary"
+                          <Tooltip title="Review application">
+                            <Button
+                              size="small"
+                              variant="contained"
+                              startIcon={
+                                <EyeOutlined />
+                              }
                               onClick={() =>
-                                handleView(
+                                handleReview(
                                   salon
                                 )
                               }
@@ -2325,9 +1915,13 @@ export default function SalonApplications() {
                                 submittingVerification
                               }
                             >
-                              <EyeOutlined />
-                            </IconButton>
+                              Review
+                            </Button>
                           </Tooltip>
+
+                          {/* ----------------------------------------------
+                              SEND FOR VERIFICATION
+                              ---------------------------------------------- */}
 
                           {salon.verificationStatus ===
                             'NOT_SUBMITTED' && (
@@ -2350,56 +1944,58 @@ export default function SalonApplications() {
                             </Tooltip>
                           )}
 
-                          {salon.verificationStatus ===
-                            'APPROVED' &&
-                            salon.adminApprovalStatus !==
-                              'APPROVED' && (
-                              <Tooltip title="Approve salon">
-                                <IconButton
-                                  color="success"
-                                  onClick={() =>
-                                    handleApprove(
-                                      salon
-                                    )
-                                  }
-                                  disabled={
-                                    approving ||
-                                    rejecting ||
-                                    submittingVerification
-                                  }
-                                >
-                                  <CheckCircleOutlined />
-                                </IconButton>
-                              </Tooltip>
-                            )}
+                          {/* ----------------------------------------------
+                              APPROVE / REJECT BUSINESS
+                              ---------------------------------------------- */}
 
                           {salon.verificationStatus ===
-                            'APPROVED' &&
+                            'VERIFIED' &&
                             salon.adminApprovalStatus !==
                               'APPROVED' && (
-                              <Tooltip title="Reject salon">
-                                <IconButton
-                                  color="error"
-                                  onClick={() =>
-                                    handleOpenReject(
-                                      salon
-                                    )
-                                  }
-                                  disabled={
-                                    approving ||
-                                    rejecting ||
-                                    submittingVerification
-                                  }
-                                >
-                                  <CloseCircleOutlined />
-                                </IconButton>
-                              </Tooltip>
+                              <>
+                                <Tooltip title="Approve salon business">
+                                  <IconButton
+                                    color="success"
+                                    onClick={() =>
+                                      handleApprove(
+                                        salon
+                                      )
+                                    }
+                                    disabled={
+                                      approving ||
+                                      rejecting ||
+                                      submittingVerification
+                                    }
+                                  >
+                                    <CheckCircleOutlined />
+                                  </IconButton>
+                                </Tooltip>
+
+                                <Tooltip title="Reject salon application">
+                                  <IconButton
+                                    color="error"
+                                    onClick={() =>
+                                      handleOpenReject(
+                                        salon
+                                      )
+                                    }
+                                    disabled={
+                                      approving ||
+                                      rejecting ||
+                                      submittingVerification
+                                    }
+                                  >
+                                    <CloseCircleOutlined />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
                             )}
                         </Stack>
                       </TableCell>
                     </TableRow>
                   )
-                )}
+                )
+              )}
 
               {!loading &&
                 filteredApplications.length ===
@@ -2408,7 +2004,7 @@ export default function SalonApplications() {
                     <TableCell
                       colSpan={8}
                       align="center"
-                      sx={{ py: 8 }}
+                      sx={{ py: 6 }}
                     >
                       <FileTextOutlined
                         style={{
@@ -2418,7 +2014,7 @@ export default function SalonApplications() {
 
                       <Typography
                         variant="h6"
-                        sx={{ mt: 2 }}
+                        sx={{ mt: 1 }}
                       >
                         No applications found
                       </Typography>
@@ -2427,8 +2023,8 @@ export default function SalonApplications() {
                         variant="body2"
                         color="text.secondary"
                       >
-                        Try changing your
-                        search or filter.
+                        Try changing your search
+                        or verification filter.
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -2443,12 +2039,11 @@ export default function SalonApplications() {
             filteredApplications.length
           }
           page={page}
-          onPageChange={(_, newPage) =>
-            setPage(newPage)
-          }
-          rowsPerPage={
-            rowsPerPage
-          }
+          onPageChange={(
+            _,
+            newPage
+          ) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
           onRowsPerPageChange={(
             event
           ) => {
@@ -2469,9 +2064,9 @@ export default function SalonApplications() {
         />
       </Paper>
 
-      {/* ====================================================
-          VIEW / APPLICATION DETAILS
-      ==================================================== */}
+      {/* ==========================================================
+          DETAILS DIALOG
+          ========================================================== */}
 
       <Dialog
         open={detailsOpen}
@@ -2490,10 +2085,6 @@ export default function SalonApplications() {
       >
         {selectedSalon && (
           <>
-            {/* ==================================================
-                DIALOG HEADER
-            ================================================== */}
-
             <DialogTitle>
               <Stack
                 direction={{
@@ -2543,9 +2134,6 @@ export default function SalonApplications() {
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{
-                        mt: 0.5
-                      }}
                     >
                       Salon ID:{' '}
                       {
@@ -2582,18 +2170,15 @@ export default function SalonApplications() {
             </DialogTitle>
 
             <DialogContent dividers>
-              {/* ==================================================
-                  1. BUSINESS INFORMATION
-              ================================================== */}
+              {/* ======================================================
+                  SALON INFORMATION
+                  ====================================================== */}
 
               <SectionTitle>
-                Business Information
+                Salon Information
               </SectionTitle>
 
-              <Grid
-                container
-                spacing={2}
-              >
+              <Grid container spacing={2}>
                 <Grid
                   item
                   xs={12}
@@ -2615,20 +2200,6 @@ export default function SalonApplications() {
                   md={4}
                 >
                   <DetailField
-                    label="Business Type"
-                    value={
-                      selectedSalon.businessType
-                    }
-                  />
-                </Grid>
-
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                  md={4}
-                >
-                  <DetailField
                     label="Salon Status"
                     value={
                       selectedSalon.salonStatus
@@ -2639,14 +2210,13 @@ export default function SalonApplications() {
                 <Grid
                   item
                   xs={12}
+                  md={4}
                 >
                   <DetailField
                     label="Target Audiences"
-                    value={
-                      selectedSalon.targetAudiences?.join(
-                        ', '
-                      )
-                    }
+                    value={selectedSalon.targetAudiences?.join(
+                      ', '
+                    )}
                   />
                 </Grid>
 
@@ -2657,9 +2227,23 @@ export default function SalonApplications() {
                   md={4}
                 >
                   <DetailField
-                    label="Application Submitted"
+                    label="Application Created"
                     value={formatDateTime(
                       selectedSalon.createdAt
+                    )}
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                  md={4}
+                >
+                  <DetailField
+                    label="Verification Submitted"
+                    value={formatDateTime(
+                      selectedSalon.verificationSubmittedAt
                     )}
                   />
                 </Grid>
@@ -2695,190 +2279,115 @@ export default function SalonApplications() {
 
               <Divider sx={{ my: 3 }} />
 
-              {/* ==================================================
-                  2. SELECTED SERVICES
-              ================================================== */}
+              {/* ======================================================
+                  SERVICES
+                  ====================================================== */}
 
               <SectionTitle>
                 Selected Services
               </SectionTitle>
 
-              {Array.isArray(
-                selectedSalon.serviceSelections
-              ) &&
-              selectedSalon.serviceSelections
-                .length > 0 ? (
-                <Stack
-                  spacing={1.5}
-                  sx={{ mb: 1 }}
-                >
-                  {selectedSalon.serviceSelections.map(
-                    (
-                      selection,
-                      index
-                    ) => (
+              {groupedServices.length >
+              0 ? (
+                <Stack spacing={2}>
+                  {groupedServices.map(
+                    ({
+                      audience,
+                      label,
+                      services
+                    }) => (
                       <Paper
-                        key={`${selection.businessTypeId}-${selection.categoryId}-${selection.subcategoryId}-${selection.audience}-${index}`}
+                        key={audience}
                         variant="outlined"
                         sx={{
-                          p: 2,
-                          borderRadius: 2
+                          borderRadius: 2,
+                          overflow: 'hidden'
                         }}
                       >
-                        <Stack
-                          direction={{
-                            xs: 'column',
-                            sm: 'row'
-                          }}
-                          spacing={1}
-                          alignItems={{
-                            xs: 'flex-start',
-                            sm: 'center'
-                          }}
-                        >
-                          <Chip
-                            label={
-                              selection.businessTypeName ||
-                              'Business type unavailable'
-                            }
-                            color="primary"
-                            variant="outlined"
-                            size="small"
-                          />
-
-                          <Chip
-                            label={
-                              selection.categoryName ||
-                              'Category unavailable'
-                            }
-                            color="primary"
-                            variant="outlined"
-                            size="small"
-                          />
-
-                          <Typography
-                            sx={{
-                              fontWeight: 700,
-                              color: 'text.secondary'
-                            }}
-                          >
-                            →
-                          </Typography>
-
-                          <Chip
-                            label={
-                              selection.subcategoryName ||
-                              'Subcategory unavailable'
-                            }
-                            variant="outlined"
-                            size="small"
-                          />
-
-                          <Chip
-                            label={
-                              selection.serviceName ||
-                              'Service unavailable'
-                            }
-                            variant="outlined"
-                            size="small"
-                          />
-
-                          <Chip
-                            label={
-                              selection.audience
-                            }
-                            color="secondary"
-                            variant="outlined"
-                            size="small"
-                          />
-                        </Stack>
-
-                        <Stack
-                          direction={{
-                            xs: 'column',
-                            sm: 'row'
-                          }}
-                          spacing={3}
+                        <Box
                           sx={{
-                            mt: 2
+                            width: '25%',
+                            px: 2,
+                            py: 1.25,
+                            bgcolor:
+                              'primary.main',
+                            color:
+                              'primary.contrastText'
                           }}
                         >
-                          <Box>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{
-                                display: 'block'
-                              }}
-                            >
-                              Price
-                            </Typography>
-
-                            <Typography
-                              variant="body1"
-                              sx={{
-                                fontWeight: 700
-                              }}
-                            >
-                              {formatCurrency(
-                                selection.price
-                              )}
-                            </Typography>
-                          </Box>
-
-                          <Box>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{
-                                display: 'block'
-                              }}
-                            >
-                              Duration
-                            </Typography>
-
-                            <Typography
-                              variant="body1"
-                              sx={{
-                                fontWeight: 700
-                              }}
-                            >
-                              {selection.duration}{' '}
-                              min
-                            </Typography>
-                          </Box>
-                        </Stack>
+                          <Typography
+                            variant="subtitle1"
+                            fontWeight={700}
+                          >
+                            {label}
+                          </Typography>
+                        </Box>
 
                         <Stack
-                          direction={{
-                            xs: 'column',
-                            sm: 'row'
-                          }}
-                          spacing={{
-                            xs: 0.5,
-                            sm: 2
-                          }}
-                          sx={{
-                            mt: 1.5
-                          }}
+                          spacing={1.5}
+                          sx={{ p: 2 }}
                         >
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            Category ID:{' '}
-                            {selection.categoryId}
-                          </Typography>
+                          {services.map(
+                            (
+                              selection,
+                              index
+                            ) => (
+                              <Paper
+                                key={`${selection.categoryId}-${selection.subcategoryId}-${selection.serviceName}-${index}`}
+                                variant="outlined"
+                                sx={{
+                                  p: 2,
+                                  borderRadius: 2
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  fontWeight={600}
+                                >
+                                  {
+                                    selection.categoryName
+                                  }
+                                  {' → '}
+                                  {
+                                    selection.subcategoryName
+                                  }
+                                </Typography>
 
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            Subcategory ID:{' '}
-                            {
-                              selection.subcategoryId
-                            }
-                          </Typography>
+                                <Typography
+                                  variant="body1"
+                                  fontWeight={700}
+                                  sx={{
+                                    mt: 0.75
+                                  }}
+                                >
+                                  {
+                                    selection.serviceName
+                                  }
+                                </Typography>
+
+                                <Stack
+                                  direction="row"
+                                  spacing={4}
+                                  sx={{
+                                    mt: 1.5
+                                  }}
+                                >
+                                  <DetailField
+                                    label="Price"
+                                    value={formatCurrency(
+                                      selection.price
+                                    )}
+                                  />
+
+                                  <DetailField
+                                    label="Duration"
+                                    value={`${selection.duration} min`}
+                                  />
+                                </Stack>
+                              </Paper>
+                            )
+                          )}
                         </Stack>
                       </Paper>
                     )
@@ -2897,25 +2406,22 @@ export default function SalonApplications() {
                     color="text.secondary"
                   >
                     No service selections
-                    found for this salon.
+                    found.
                   </Typography>
                 </Paper>
               )}
 
               <Divider sx={{ my: 3 }} />
 
-              {/* ==================================================
-                  3. OWNER INFORMATION
-              ================================================== */}
+              {/* ======================================================
+                  OWNER
+                  ====================================================== */}
 
               <SectionTitle>
                 Owner Information
               </SectionTitle>
 
-              <Grid
-                container
-                spacing={2}
-              >
+              <Grid container spacing={2}>
                 <Grid
                   item
                   xs={12}
@@ -2987,22 +2493,16 @@ export default function SalonApplications() {
 
               <Divider sx={{ my: 3 }} />
 
-              {/* ==================================================
-                  4. BUSINESS LOCATION
-              ================================================== */}
+              {/* ======================================================
+                  LOCATION
+                  ====================================================== */}
 
               <SectionTitle>
                 Business Location
               </SectionTitle>
 
-              <Grid
-                container
-                spacing={2}
-              >
-                <Grid
-                  item
-                  xs={12}
-                >
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
                   <DetailField
                     label="Address"
                     value={
@@ -3083,9 +2583,9 @@ export default function SalonApplications() {
 
               <Divider sx={{ my: 3 }} />
 
-              {/* ==================================================
-                  5. BUSINESS HOURS
-              ================================================== */}
+              {/* ======================================================
+                  BUSINESS HOURS
+                  ====================================================== */}
 
               <SectionTitle>
                 Business Hours
@@ -3099,18 +2599,15 @@ export default function SalonApplications() {
 
               <Divider sx={{ my: 3 }} />
 
-              {/* ==================================================
-                  6. KYC / BUSINESS INFORMATION
-              ================================================== */}
+              {/* ======================================================
+                  KYC / BUSINESS INFORMATION
+                  ====================================================== */}
 
               <SectionTitle>
                 KYC / Business Information
               </SectionTitle>
 
-              <Grid
-                container
-                spacing={2}
-              >
+              <Grid container spacing={2}>
                 <Grid
                   item
                   xs={12}
@@ -3188,9 +2685,9 @@ export default function SalonApplications() {
                   md={4}
                 >
                   <DetailField
-                    label="KYC Status"
+                    label="Admin Approval Status"
                     value={
-                      selectedSalon.kycStatus
+                      selectedSalon.adminApprovalStatus
                     }
                   />
                 </Grid>
@@ -3198,18 +2695,121 @@ export default function SalonApplications() {
 
               <Divider sx={{ my: 3 }} />
 
-              {/* ==================================================
-                  7. VERIFICATION
-              ================================================== */}
+              {/* ======================================================
+                  DOCUMENTS
+                  ====================================================== */}
+
+              <SectionTitle>
+                Uploaded Documents
+              </SectionTitle>
+
+              <Grid container spacing={2}>
+                {(
+                  [
+                    [
+                      'PAN',
+                      'PAN',
+                      selectedSalon
+                        .documents?.pan
+                    ],
+                    [
+                      'Aadhaar',
+                      'AADHAAR',
+                      selectedSalon
+                        .documents?.aadhaar
+                    ],
+                    [
+                      'Shop Establishment',
+                      'SHOP_ESTABLISHMENT',
+                      selectedSalon
+                        .documents
+                        ?.shopEstablishment
+                    ],
+                    [
+                      'GST',
+                      'GST',
+                      selectedSalon
+                        .documents?.gst
+                    ],
+                    [
+                      'Udyam',
+                      'UDYAM',
+                      selectedSalon
+                        .documents?.udyam
+                    ]
+                  ] as Array<
+                    [
+                      string,
+                      KycDocumentType,
+                      KycDocument |
+                        null |
+                        undefined
+                    ]
+                  >
+                ).map(
+                  ([
+                    label,
+                    documentType,
+                    document
+                  ]) => (
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                      key={documentType}
+                    >
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          height: '100%'
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          fontWeight={700}
+                          sx={{ mb: 1 }}
+                        >
+                          {label}
+                        </Typography>
+
+                        <DocumentViewButton
+                          salonId={
+                            selectedSalon.salonId
+                          }
+                          document={
+                            document
+                          }
+                          documentType={
+                            documentType
+                          }
+                          loading={
+                            viewingDocument ===
+                              `${selectedSalon.salonId}-${documentType}` ||
+                            generatingDocumentUrl
+                          }
+                          onView={
+                            handleViewDocument
+                          }
+                        />
+                      </Paper>
+                    </Grid>
+                  )
+                )}
+              </Grid>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* ======================================================
+                  THIRD-PARTY VERIFICATION
+                  ====================================================== */}
 
               <SectionTitle>
                 Third-Party Verification
               </SectionTitle>
 
-              <Grid
-                container
-                spacing={2}
-              >
+              <Grid container spacing={2}>
                 <Grid
                   item
                   xs={12}
@@ -3222,20 +2822,16 @@ export default function SalonApplications() {
                       borderRadius: 2
                     }}
                   >
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                    >
-                      Verification Status
-                    </Typography>
-
-                    <Box sx={{ mt: 1 }}>
-                      <VerificationStatusChip
-                        status={
-                          selectedSalon.verificationStatus
-                        }
-                      />
-                    </Box>
+                    <DetailField
+                      label="Verification Status"
+                      value={
+                        <VerificationStatusChip
+                          status={
+                            selectedSalon.verificationStatus
+                          }
+                        />
+                      }
+                    />
 
                     <Box sx={{ mt: 2 }}>
                       <DetailField
@@ -3301,318 +2897,151 @@ export default function SalonApplications() {
 
               <Divider sx={{ my: 3 }} />
 
-              {/* ==================================================
-                  8. DOCUMENT FILES
-              ================================================== */}
+              {/* ======================================================
+                  SALON IMAGES
+                  ====================================================== */}
 
               <SectionTitle>
-                Uploaded Documents
+                Salon Images
               </SectionTitle>
 
-              <Grid
-                container
-                spacing={2}
-              >
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      borderRadius: 2
-                    }}
+              {selectedSalon.logoUrl ||
+              selectedSalon.coverImageUrl ||
+              selectedSalon.galleryImages
+                ?.length ? (
+                <>
+                  <Grid
+                    container
+                    spacing={2}
                   >
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={700}
-                      sx={{ mb: 1 }}
-                    >
-                      PAN
-                    </Typography>
+                    {selectedSalon.logoUrl && (
+                      <Grid
+                        item
+                        xs={12}
+                        sm={4}
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          Logo
+                        </Typography>
 
-                    <DocumentViewButton
-                      salonId={
-                        selectedSalon.salonId
-                      }
-                      document={
-                        selectedSalon.documents
-                          ?.pan
-                      }
-                      documentType="PAN"
-                      loading={
-                        viewingDocument ===
-                        `${selectedSalon.salonId}-PAN` ||
-                        generatingDocumentUrl
-                      }
-                      onView={
-                        handleViewDocument
-                      }
-                    />
-                  </Paper>
-                </Grid>
-
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      borderRadius: 2
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={700}
-                      sx={{ mb: 1 }}
-                    >
-                      Aadhaar
-                    </Typography>
-
-                    <DocumentViewButton
-                      salonId={
-                        selectedSalon.salonId
-                      }
-                      document={
-                        selectedSalon.documents
-                          ?.aadhaar
-                      }
-                      documentType="AADHAAR"
-                      loading={
-                        viewingDocument ===
-                        `${selectedSalon.salonId}-AADHAAR` ||
-                        generatingDocumentUrl
-                      }
-                      onView={
-                        handleViewDocument
-                      }
-                    />
-                  </Paper>
-                </Grid>
-
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      borderRadius: 2
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={700}
-                      sx={{ mb: 1 }}
-                    >
-                      Shop Establishment
-                    </Typography>
-
-                    <DocumentViewButton
-                      salonId={
-                        selectedSalon.salonId
-                      }
-                      document={
-                        selectedSalon.documents
-                          ?.shopEstablishment
-                      }
-                      documentType="SHOP_ESTABLISHMENT"
-                      loading={
-                        viewingDocument ===
-                        `${selectedSalon.salonId}-SHOP_ESTABLISHMENT` ||
-                        generatingDocumentUrl
-                      }
-                      onView={
-                        handleViewDocument
-                      }
-                    />
-                  </Paper>
-                </Grid>
-
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      borderRadius: 2
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={700}
-                      sx={{ mb: 1 }}
-                    >
-                      GST
-                    </Typography>
-
-                    <DocumentViewButton
-                      salonId={
-                        selectedSalon.salonId
-                      }
-                      document={
-                        selectedSalon.documents
-                          ?.gst
-                      }
-                      documentType="GST"
-                      loading={
-                        viewingDocument ===
-                        `${selectedSalon.salonId}-GST` ||
-                        generatingDocumentUrl
-                      }
-                      onView={
-                        handleViewDocument
-                      }
-                    />
-                  </Paper>
-                </Grid>
-
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      borderRadius: 2
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={700}
-                      sx={{ mb: 1 }}
-                    >
-                      Udyam
-                    </Typography>
-
-                    <DocumentViewButton
-                      salonId={
-                        selectedSalon.salonId
-                      }
-                      document={
-                        selectedSalon.documents
-                          ?.udyam
-                      }
-                      documentType="UDYAM"
-                      loading={
-                        viewingDocument ===
-                        `${selectedSalon.salonId}-UDYAM` ||
-                        generatingDocumentUrl
-                      }
-                      onView={
-                        handleViewDocument
-                      }
-                    />
-                  </Paper>
-                </Grid>
-              </Grid>
-
-              <Divider sx={{ my: 3 }} />
-
-              {/* ==================================================
-                  9. BANK
-              ================================================== */}
-
-              <SectionTitle>
-                Bank Information
-              </SectionTitle>
-
-              <Grid
-                container
-                spacing={2}
-              >
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
-                  <DetailField
-                    label="Account Holder"
-                    value={
-                      selectedSalon.accountHolderName
-                    }
-                  />
-                </Grid>
-
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
-                  <DetailField
-                    label="Bank Account"
-                    value={maskBankAccount(
-                      selectedSalon.bankAccount
+                        <Box
+                          component="img"
+                          src={
+                            selectedSalon.logoUrl
+                          }
+                          alt="Salon logo"
+                          sx={{
+                            width: '100%',
+                            height: 160,
+                            objectFit:
+                              'cover',
+                            borderRadius: 2,
+                            mt: 0.5
+                          }}
+                        />
+                      </Grid>
                     )}
-                  />
-                </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={4}
-                >
-                  <DetailField
-                    label="IFSC"
-                    value={
-                      selectedSalon.ifsc
-                    }
-                  />
-                </Grid>
+                    {selectedSalon.coverImageUrl && (
+                      <Grid
+                        item
+                        xs={12}
+                        sm={8}
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          Cover Image
+                        </Typography>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                >
-                  <DetailField
-                    label="Razorpay Account ID"
-                    value={
-                      selectedSalon.razorpayAccountId
-                    }
-                  />
-                </Grid>
+                        <Box
+                          component="img"
+                          src={
+                            selectedSalon.coverImageUrl
+                          }
+                          alt="Salon cover"
+                          sx={{
+                            width: '100%',
+                            height: 160,
+                            objectFit:
+                              'cover',
+                            borderRadius: 2,
+                            mt: 0.5
+                          }}
+                        />
+                      </Grid>
+                    )}
+                  </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
+                  {selectedSalon.galleryImages
+                    ?.length ? (
+                    <Grid
+                      container
+                      spacing={2}
+                      sx={{ mt: 0.5 }}
+                    >
+                      {selectedSalon.galleryImages.map(
+                        (
+                          image,
+                          index
+                        ) => (
+                          <Grid
+                            item
+                            xs={6}
+                            sm={4}
+                            md={3}
+                            key={`${image}-${index}`}
+                          >
+                            <Box
+                              component="img"
+                              src={image}
+                              alt={`Salon gallery ${
+                                index + 1
+                              }`}
+                              sx={{
+                                width:
+                                  '100%',
+                                height: 130,
+                                objectFit:
+                                  'cover',
+                                borderRadius: 2,
+                                border:
+                                  '1px solid',
+                                borderColor:
+                                  'divider'
+                              }}
+                            />
+                          </Grid>
+                        )
+                      )}
+                    </Grid>
+                  ) : null}
+                </>
+              ) : (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
                 >
-                  <DetailField
-                    label="Razorpay Account Status"
-                    value={
-                      selectedSalon.razorpayAccountStatus
-                    }
-                  />
-                </Grid>
-              </Grid>
+                  No salon images
+                  uploaded.
+                </Typography>
+              )}
 
               <Divider sx={{ my: 3 }} />
 
-              {/* ==================================================
-                  10. SALON ACTIVITY
-              ================================================== */}
+              {/* ======================================================
+                  SALON ACTIVITY
+                  ====================================================== */}
 
               <SectionTitle>
                 Salon Activity
               </SectionTitle>
 
-              <Grid
-                container
-                spacing={2}
-              >
+              <Grid container spacing={2}>
                 <Grid
                   item
                   xs={12}
@@ -3704,18 +3133,15 @@ export default function SalonApplications() {
 
               <Divider sx={{ my: 3 }} />
 
-              {/* ==================================================
-                  11. BUSINESS PERFORMANCE
-              ================================================== */}
+              {/* ======================================================
+                  BUSINESS PERFORMANCE
+                  ====================================================== */}
 
               <SectionTitle>
                 Business Performance
               </SectionTitle>
 
-              <Grid
-                container
-                spacing={2}
-              >
+              <Grid container spacing={2}>
                 <Grid
                   item
                   xs={12}
@@ -3782,9 +3208,9 @@ export default function SalonApplications() {
                 </Grid>
               </Grid>
 
-              {/* ==================================================
-                  12. APPROVAL INFORMATION
-              ================================================== */}
+              {/* ======================================================
+                  APPROVAL INFORMATION
+                  ====================================================== */}
 
               {selectedSalon.approvedAt && (
                 <>
@@ -3801,7 +3227,7 @@ export default function SalonApplications() {
                     <Grid
                       item
                       xs={12}
-                      sm={6}
+                      sm={4}
                     >
                       <DetailField
                         label="Approved At"
@@ -3814,7 +3240,7 @@ export default function SalonApplications() {
                     <Grid
                       item
                       xs={12}
-                      sm={6}
+                      sm={4}
                     >
                       <DetailField
                         label="Approved By"
@@ -3827,7 +3253,7 @@ export default function SalonApplications() {
                     <Grid
                       item
                       xs={12}
-                      sm={6}
+                      sm={4}
                     >
                       <DetailField
                         label="Admin Approval Status"
@@ -3840,9 +3266,9 @@ export default function SalonApplications() {
                 </>
               )}
 
-              {/* ==================================================
-                  13. REJECTION INFORMATION
-              ================================================== */}
+              {/* ======================================================
+                  ADMIN REJECTION
+                  ====================================================== */}
 
               {selectedSalon.rejectionReason && (
                 <>
@@ -3887,176 +3313,9 @@ export default function SalonApplications() {
                 </>
               )}
 
-              {/* ==================================================
-                  14. VERIFICATION REJECTION
-              ================================================== */}
-
-              {selectedSalon.verificationRejectionReason && (
-                <>
-                  <Divider sx={{ my: 3 }} />
-
-                  <SectionTitle>
-                    Third-Party Verification Rejection
-                  </SectionTitle>
-
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      borderRadius: 2
-                    }}
-                  >
-                    <DetailField
-                      label="Reason"
-                      value={
-                        selectedSalon.verificationRejectionReason
-                      }
-                    />
-                  </Paper>
-                </>
-              )}
-
-              {/* ==================================================
-                  15. SALON IMAGES
-              ================================================== */}
-
-              {(selectedSalon.logoUrl ||
-                selectedSalon.coverImageUrl ||
-                (selectedSalon.galleryImages &&
-                  selectedSalon.galleryImages
-                    .length > 0)) && (
-                <>
-                  <Divider sx={{ my: 3 }} />
-
-                  <SectionTitle>
-                    Salon Images
-                  </SectionTitle>
-
-                  <Grid
-                    container
-                    spacing={2}
-                  >
-                    {selectedSalon.logoUrl && (
-                      <Grid
-                        item
-                        xs={12}
-                        sm={4}
-                      >
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          Logo
-                        </Typography>
-
-                        <Box
-                          component="img"
-                          src={
-                            selectedSalon.logoUrl
-                          }
-                          alt="Salon logo"
-                          sx={{
-                            width: '100%',
-                            height: 160,
-                            objectFit:
-                              'cover',
-                            borderRadius: 2,
-                            mt: 1
-                          }}
-                        />
-                      </Grid>
-                    )}
-
-                    {selectedSalon.coverImageUrl && (
-                      <Grid
-                        item
-                        xs={12}
-                        sm={8}
-                      >
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          Cover Image
-                        </Typography>
-
-                        <Box
-                          component="img"
-                          src={
-                            selectedSalon.coverImageUrl
-                          }
-                          alt="Salon cover"
-                          sx={{
-                            width: '100%',
-                            height: 160,
-                            objectFit:
-                              'cover',
-                            borderRadius: 2,
-                            mt: 1
-                          }}
-                        />
-                      </Grid>
-                    )}
-                  </Grid>
-
-                  {selectedSalon.galleryImages
-                    ?.length ? (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                      >
-                        Gallery Images
-                      </Typography>
-
-                      <Grid
-                        container
-                        spacing={2}
-                        sx={{ mt: 0.5 }}
-                      >
-                        {selectedSalon.galleryImages.map(
-                          (
-                            image,
-                            index
-                          ) => (
-                            <Grid
-                              item
-                              xs={6}
-                              sm={4}
-                              md={3}
-                              key={`${image}-${index}`}
-                            >
-                              <Box
-                                component="img"
-                                src={image}
-                                alt={`Salon gallery ${
-                                  index + 1
-                                }`}
-                                sx={{
-                                  width:
-                                    '100%',
-                                  height: 130,
-                                  objectFit:
-                                    'cover',
-                                  borderRadius: 2,
-                                  border:
-                                    '1px solid',
-                                  borderColor:
-                                    'divider'
-                                }}
-                              />
-                            </Grid>
-                          )
-                        )}
-                      </Grid>
-                    </Box>
-                  ) : null}
-                </>
-              )}
-
-              {/* ==================================================
-                  16. APPLICATION AUDIT
-              ================================================== */}
+              {/* ======================================================
+                  AUDIT
+                  ====================================================== */}
 
               <Divider sx={{ my: 3 }} />
 
@@ -4064,10 +3323,7 @@ export default function SalonApplications() {
                 Application Audit
               </SectionTitle>
 
-              <Grid
-                container
-                spacing={2}
-              >
+              <Grid container spacing={2}>
                 <Grid
                   item
                   xs={12}
@@ -4094,10 +3350,7 @@ export default function SalonApplications() {
                   />
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                >
+                <Grid item xs={12}>
                   <DetailField
                     label="Last Updated By"
                     value={
@@ -4108,9 +3361,9 @@ export default function SalonApplications() {
               </Grid>
             </DialogContent>
 
-            {/* ==================================================
-                ACTIONS
-            ================================================== */}
+            {/* ========================================================
+                DIALOG ACTIONS
+                ======================================================== */}
 
             <DialogActions
               sx={{
@@ -4131,6 +3384,10 @@ export default function SalonApplications() {
               >
                 Close
               </Button>
+
+              {/* ------------------------------------------------------
+                  NOT SUBMITTED
+                  ------------------------------------------------------ */}
 
               {selectedSalon.verificationStatus ===
                 'NOT_SUBMITTED' && (
@@ -4157,8 +3414,12 @@ export default function SalonApplications() {
                 </Button>
               )}
 
+              {/* ------------------------------------------------------
+                  VERIFIED → ADMIN APPROVAL
+                  ------------------------------------------------------ */}
+
               {selectedSalon.verificationStatus ===
-                'APPROVED' &&
+                'VERIFIED' &&
                 selectedSalon.adminApprovalStatus !==
                   'APPROVED' && (
                   <>
@@ -4166,9 +3427,11 @@ export default function SalonApplications() {
                       color="error"
                       variant="outlined"
                       startIcon={
-                        rejecting ? undefined : (
-                          <CloseCircleOutlined />
-                        )
+                        rejecting
+                          ? undefined
+                          : (
+                              <CloseCircleOutlined />
+                            )
                       }
                       onClick={() =>
                         handleOpenReject(
@@ -4181,18 +3444,18 @@ export default function SalonApplications() {
                         submittingVerification
                       }
                     >
-                      {rejecting
-                        ? 'Rejecting...'
-                        : 'Reject'}
+                      Reject
                     </Button>
 
                     <Button
                       color="success"
                       variant="contained"
                       startIcon={
-                        approving ? undefined : (
-                          <CheckCircleOutlined />
-                        )
+                        approving
+                          ? undefined
+                          : (
+                              <CheckCircleOutlined />
+                            )
                       }
                       onClick={() =>
                         handleApprove(
@@ -4207,17 +3470,20 @@ export default function SalonApplications() {
                     >
                       {approving
                         ? 'Approving...'
-                        : 'Approve Application'}
+                        : 'Approve Business'}
                     </Button>
                   </>
                 )}
+
+              {/* ------------------------------------------------------
+                  SUBMITTED
+                  ------------------------------------------------------ */}
 
               {selectedSalon.verificationStatus ===
                 'SUBMITTED' && (
                 <Typography
                   variant="body2"
                   color="warning.main"
-                  sx={{ mr: 1 }}
                 >
                   Submitted to third-party
                   verification. Waiting for
@@ -4225,39 +3491,64 @@ export default function SalonApplications() {
                 </Typography>
               )}
 
+              {/* ------------------------------------------------------
+                  IN REVIEW
+                  ------------------------------------------------------ */}
+
               {selectedSalon.verificationStatus ===
                 'IN_REVIEW' && (
                 <Typography
                   variant="body2"
                   color="warning.main"
-                  sx={{ mr: 1 }}
                 >
                   Third-party verification is
                   currently in progress.
                 </Typography>
               )}
 
+              {/* ------------------------------------------------------
+                  FAILED
+                  ------------------------------------------------------ */}
+
+              {selectedSalon.verificationStatus ===
+                'FAILED' && (
+                <Typography
+                  variant="body2"
+                  color="error.main"
+                >
+                  Third-party verification
+                  failed. Please review the
+                  verification details.
+                </Typography>
+              )}
+
+              {/* ------------------------------------------------------
+                  REJECTED
+                  ------------------------------------------------------ */}
+
               {selectedSalon.verificationStatus ===
                 'REJECTED' && (
                 <Typography
                   variant="body2"
                   color="error.main"
-                  sx={{ mr: 1 }}
                 >
                   Third-party verification was
-                  rejected. Admin approval is
-                  unavailable.
+                  rejected. Admin business
+                  approval is unavailable.
                 </Typography>
               )}
+
+              {/* ------------------------------------------------------
+                  ADMIN APPROVED
+                  ------------------------------------------------------ */}
 
               {selectedSalon.adminApprovalStatus ===
                 'APPROVED' && (
                 <Typography
                   variant="body2"
                   color="success.main"
-                  sx={{ mr: 1 }}
                 >
-                  Admin approval completed.
+                  Business approval completed.
                 </Typography>
               )}
             </DialogActions>
@@ -4265,9 +3556,9 @@ export default function SalonApplications() {
         )}
       </Dialog>
 
-      {/* ====================================================
-          REJECT DIALOG
-      ==================================================== */}
+      {/* ============================================================
+          REJECTION DIALOG
+          ============================================================ */}
 
       <Dialog
         open={rejectOpen}
@@ -4290,9 +3581,7 @@ export default function SalonApplications() {
                 variant="subtitle1"
                 fontWeight={600}
               >
-                {
-                  selectedSalon.salonName
-                }
+                {selectedSalon.salonName}
               </Typography>
 
               <Typography
@@ -4300,9 +3589,7 @@ export default function SalonApplications() {
                 color="text.secondary"
               >
                 Salon ID:{' '}
-                {
-                  selectedSalon.salonId
-                }
+                {selectedSalon.salonId}
               </Typography>
             </Box>
           )}
@@ -4312,9 +3599,8 @@ export default function SalonApplications() {
             color="text.secondary"
             sx={{ mb: 2 }}
           >
-            Please provide a reason
-            for rejecting this
-            application.
+            Please provide a reason for
+            rejecting this application.
           </Typography>
 
           <TextField
@@ -4322,9 +3608,7 @@ export default function SalonApplications() {
             multiline
             rows={4}
             placeholder="Enter rejection reason..."
-            value={
-              rejectionReason
-            }
+            value={rejectionReason}
             onChange={(event) =>
               setRejectionReason(
                 event.target.value
@@ -4332,16 +3616,13 @@ export default function SalonApplications() {
             }
             disabled={rejecting}
             error={
-              rejectionReason.length >
-                0 &&
+              rejectionReason.length > 0 &&
               !rejectionReason.trim()
             }
           />
         </DialogContent>
 
-        <DialogActions
-          sx={{ p: 2 }}
-        >
+        <DialogActions sx={{ p: 2 }}>
           <Button
             onClick={() =>
               setRejectOpen(false)
@@ -4359,9 +3640,7 @@ export default function SalonApplications() {
               rejecting ||
               approving
             }
-            onClick={
-              handleReject
-            }
+            onClick={handleReject}
           >
             {rejecting
               ? 'Rejecting...'
@@ -4372,4 +3651,3 @@ export default function SalonApplications() {
     </Box>
   );
 }
-
