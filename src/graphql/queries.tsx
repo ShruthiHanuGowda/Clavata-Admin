@@ -1678,3 +1678,78 @@ export const ADMIN_SALONS = gql`
     }
   }
 `;
+
+
+export const SALON_DASHBOARD_QUERY = gql`
+  query SalonDashboard($salonId: ID!) {
+    salonBookings(salonId: $salonId) {
+      bookingId
+      salonId
+      customerUserId
+      salonName
+      customerName
+      customerPhone
+      bookingDate
+      startTime
+      endTime
+
+      services {
+        serviceId
+        name
+        audience
+        category
+        subcategory
+        categoryId
+        subcategoryId
+        duration
+        price
+      }
+
+      totalDuration
+      subtotal
+      discount
+      totalAmount
+
+      paymentMethod
+      paymentStatus
+      bookingStatus
+
+      notes
+      salonNote
+
+      bookingFee
+      bookingFeeStatus
+      bookingFeePaidAt
+      remainingAmount
+
+      razorpayOrderId
+      razorpayPaymentId
+      paymentGateway
+
+      reviewSubmitted
+      rating
+      review
+      reviewedAt
+
+      # ========================================================
+      # SALON RESPONSE WINDOW
+      # ========================================================
+
+      salonResponseStatus
+      salonResponseDeadline
+      salonResponseWindowMinutes
+
+      # ========================================================
+      # CUSTOMER ₹9 PAYMENT WINDOW
+      # ========================================================
+
+      bookingFeePaymentDeadline
+      bookingFeePaymentWindowMinutes
+
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+
