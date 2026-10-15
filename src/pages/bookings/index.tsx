@@ -165,9 +165,6 @@ const ADMIN_BOOKINGS = gql`
         startTime
         endTime
 
-        staffId
-        staffName
-
         services {
           serviceId
           name

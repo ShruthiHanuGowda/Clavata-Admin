@@ -1,1839 +1,1839 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+// import React, {
+//   useEffect,
+//   useMemo,
+//   useState,
+// } from 'react';
 
-import {
-  Alert,
-  Avatar,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  FormControl,
-  Grid,
-  IconButton,
-  InputAdornment,
-  InputLabel,
-  MenuItem,
-  Pagination,
-  Select,
-  SelectChangeEvent,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+// import {
+//   Alert,
+//   Avatar,
+//   Box,
+//   Button,
+//   Card,
+//   CardContent,
+//   Chip,
+//   CircularProgress,
+//   Dialog,
+//   DialogActions,
+//   DialogContent,
+//   DialogTitle,
+//   Divider,
+//   FormControl,
+//   Grid,
+//   IconButton,
+//   InputAdornment,
+//   InputLabel,
+//   MenuItem,
+//   Pagination,
+//   Select,
+//   SelectChangeEvent,
+//   Stack,
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableContainer,
+//   TableHead,
+//   TableRow,
+//   TextField,
+//   Tooltip,
+//   Typography,
+// } from '@mui/material';
 
-import {
-  CloseOutlined,
-  EyeOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  UserOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  StopOutlined,
-} from '@ant-design/icons';
+// import {
+//   CloseOutlined,
+//   EyeOutlined,
+//   ReloadOutlined,
+//   SearchOutlined,
+//   UserOutlined,
+//   CheckCircleOutlined,
+//   ClockCircleOutlined,
+//   StopOutlined,
+// } from '@ant-design/icons';
 
-import { gql, useQuery } from '@apollo/client';
+// import { gql, useQuery } from '@apollo/client';
 
 
-// ============================================================
-// TYPES
-// ============================================================
+// // ============================================================
+// // TYPES
+// // ============================================================
 
-export type ProviderStatus =
-  | 'NOT_REGISTERED'
-  | 'PENDING'
-  | 'APPROVED'
-  | 'REJECTED';
+// export type ProviderStatus =
+//   | 'NOT_REGISTERED'
+//   | 'PENDING'
+//   | 'APPROVED'
+//   | 'REJECTED';
 
 
-export interface Provider {
+// export interface Provider {
 
-  userId: string;
+//   userId: string;
 
-  fullName: string;
+//   fullName: string;
 
-  phoneNumber: string;
+//   phoneNumber: string;
 
-  email?: string | null;
+//   email?: string | null;
 
-  activeRole: 'PROVIDER';
+//   activeRole: 'PROVIDER';
 
-  providerStatus: ProviderStatus;
+//   providerStatus: ProviderStatus;
 
-  salonId?: string | null;
+//   salonId?: string | null;
 
-  createdAt: string;
+//   createdAt: string;
 
-  updatedAt: string;
+//   updatedAt: string;
 
-}
+// }
 
 
-interface AdminProvidersResponse {
+// interface AdminProvidersResponse {
 
-  adminProviders: {
+//   adminProviders: {
 
-    success: boolean;
+//     success: boolean;
 
-    message: string;
+//     message: string;
 
-    providers: Provider[];
+//     providers: Provider[];
 
-    totalCount: number;
+//     totalCount: number;
 
-  };
+//   };
 
-}
+// }
 
 
-// ============================================================
-// GRAPHQL
-// ============================================================
+// // ============================================================
+// // GRAPHQL
+// // ============================================================
 
-export const ADMIN_PROVIDERS = gql`
+// export const ADMIN_PROVIDERS = gql`
 
-  query AdminProviders(
-    $search: String
-    $providerStatus: ProviderStatus
-  ) {
+//   query AdminProviders(
+//     $search: String
+//     $providerStatus: ProviderStatus
+//   ) {
 
-    adminProviders(
-      search: $search
-      providerStatus: $providerStatus
-    ) {
+//     adminProviders(
+//       search: $search
+//       providerStatus: $providerStatus
+//     ) {
 
-      success
+//       success
 
-      message
+//       message
 
-      providers {
+//       providers {
 
-        userId
+//         userId
 
-        fullName
+//         fullName
 
-        phoneNumber
+//         phoneNumber
 
-        email
+//         email
 
-        activeRole
+//         activeRole
 
-        providerStatus
+//         providerStatus
 
-        salonId
+//         salonId
 
-        createdAt
+//         createdAt
 
-        updatedAt
+//         updatedAt
 
-      }
+//       }
 
-      totalCount
+//       totalCount
 
-    }
+//     }
 
-  }
+//   }
 
-`;
+// `;
 
 
-// ============================================================
-// CONSTANTS
-// ============================================================
+// // ============================================================
+// // CONSTANTS
+// // ============================================================
 
-const ROWS_PER_PAGE_OPTIONS = [
-  10,
-  25,
-  50,
-  100,
-];
+// const ROWS_PER_PAGE_OPTIONS = [
+//   10,
+//   25,
+//   50,
+//   100,
+// ];
 
 
-// ============================================================
-// HELPERS
-// ============================================================
+// // ============================================================
+// // HELPERS
+// // ============================================================
 
-const formatDate = (
-  value?: string | null
-): string => {
+// const formatDate = (
+//   value?: string | null
+// ): string => {
 
-  if (!value) {
-    return '-';
-  }
+//   if (!value) {
+//     return '-';
+//   }
 
-  const date =
-    new Date(value);
+//   const date =
+//     new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return '-';
-  }
+//   if (
+//     Number.isNaN(
+//       date.getTime()
+//     )
+//   ) {
+//     return '-';
+//   }
 
-  return date.toLocaleDateString(
-    'en-IN',
-    {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }
-  );
+//   return date.toLocaleDateString(
+//     'en-IN',
+//     {
+//       day: '2-digit',
+//       month: 'short',
+//       year: 'numeric',
+//     }
+//   );
 
-};
+// };
 
 
-const formatDateTime = (
-  value?: string | null
-): string => {
+// const formatDateTime = (
+//   value?: string | null
+// ): string => {
 
-  if (!value) {
-    return '-';
-  }
+//   if (!value) {
+//     return '-';
+//   }
 
-  const date =
-    new Date(value);
+//   const date =
+//     new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return '-';
-  }
+//   if (
+//     Number.isNaN(
+//       date.getTime()
+//     )
+//   ) {
+//     return '-';
+//   }
 
-  return date.toLocaleString(
-    'en-IN',
-    {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }
-  );
+//   return date.toLocaleString(
+//     'en-IN',
+//     {
+//       day: '2-digit',
+//       month: 'short',
+//       year: 'numeric',
+//       hour: '2-digit',
+//       minute: '2-digit',
+//     }
+//   );
 
-};
+// };
 
 
-const getInitials = (
-  name?: string
-): string => {
+// const getInitials = (
+//   name?: string
+// ): string => {
 
-  if (!name?.trim()) {
-    return 'P';
-  }
+//   if (!name?.trim()) {
+//     return 'P';
+//   }
 
-  const parts =
-    name
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
+//   const parts =
+//     name
+//       .trim()
+//       .split(/\s+/)
+//       .filter(Boolean);
 
-  if (parts.length === 1) {
-    return parts[0]
-      .substring(0, 2)
-      .toUpperCase();
-  }
+//   if (parts.length === 1) {
+//     return parts[0]
+//       .substring(0, 2)
+//       .toUpperCase();
+//   }
 
-  return (
-    parts[0][0] +
-    parts[parts.length - 1][0]
-  ).toUpperCase();
+//   return (
+//     parts[0][0] +
+//     parts[parts.length - 1][0]
+//   ).toUpperCase();
 
-};
+// };
 
 
-// ============================================================
-// STATUS LABEL
-// ============================================================
+// // ============================================================
+// // STATUS LABEL
+// // ============================================================
 
-const getProviderStatusLabel = (
-  status: ProviderStatus
-): string => {
+// const getProviderStatusLabel = (
+//   status: ProviderStatus
+// ): string => {
 
-  switch (status) {
+//   switch (status) {
 
-    case 'NOT_REGISTERED':
-      return 'Not Registered';
+//     case 'NOT_REGISTERED':
+//       return 'Not Registered';
 
-    case 'PENDING':
-      return 'Pending';
+//     case 'PENDING':
+//       return 'Pending';
 
-    case 'APPROVED':
-      return 'Approved';
+//     case 'APPROVED':
+//       return 'Approved';
 
-    case 'REJECTED':
-      return 'Rejected';
+//     case 'REJECTED':
+//       return 'Rejected';
 
-    default:
-      return status;
+//     default:
+//       return status;
 
-  }
+//   }
 
-};
+// };
 
 
-// ============================================================
-// STATUS CHIP
-// ============================================================
+// // ============================================================
+// // STATUS CHIP
+// // ============================================================
 
-const ProviderStatusChip = ({
-  status,
-}: {
-  status: ProviderStatus;
-}) => {
+// const ProviderStatusChip = ({
+//   status,
+// }: {
+//   status: ProviderStatus;
+// }) => {
 
-  switch (status) {
+//   switch (status) {
 
-    case 'APPROVED':
+//     case 'APPROVED':
 
-      return (
-        <Chip
-          icon={
-            <CheckCircleOutlined />
-          }
-          label="Approved"
-          size="small"
-          variant="outlined"
-          sx={{
-            fontWeight: 600,
-          }}
-        />
-      );
+//       return (
+//         <Chip
+//           icon={
+//             <CheckCircleOutlined />
+//           }
+//           label="Approved"
+//           size="small"
+//           variant="outlined"
+//           sx={{
+//             fontWeight: 600,
+//           }}
+//         />
+//       );
 
 
-    case 'PENDING':
+//     case 'PENDING':
 
-      return (
-        <Chip
-          icon={
-            <ClockCircleOutlined />
-          }
-          label="Pending"
-          size="small"
-          variant="outlined"
-          sx={{
-            fontWeight: 600,
-          }}
-        />
-      );
+//       return (
+//         <Chip
+//           icon={
+//             <ClockCircleOutlined />
+//           }
+//           label="Pending"
+//           size="small"
+//           variant="outlined"
+//           sx={{
+//             fontWeight: 600,
+//           }}
+//         />
+//       );
 
 
-    case 'REJECTED':
+//     case 'REJECTED':
 
-      return (
-        <Chip
-          icon={
-            <StopOutlined />
-          }
-          label="Rejected"
-          size="small"
-          variant="outlined"
-          sx={{
-            fontWeight: 600,
-          }}
-        />
-      );
+//       return (
+//         <Chip
+//           icon={
+//             <StopOutlined />
+//           }
+//           label="Rejected"
+//           size="small"
+//           variant="outlined"
+//           sx={{
+//             fontWeight: 600,
+//           }}
+//         />
+//       );
 
 
-    case 'NOT_REGISTERED':
+//     case 'NOT_REGISTERED':
 
-      return (
-        <Chip
-          icon={
-            <UserOutlined />
-          }
-          label="Not Registered"
-          size="small"
-          variant="outlined"
-          sx={{
-            fontWeight: 600,
-          }}
-        />
-      );
+//       return (
+//         <Chip
+//           icon={
+//             <UserOutlined />
+//           }
+//           label="Not Registered"
+//           size="small"
+//           variant="outlined"
+//           sx={{
+//             fontWeight: 600,
+//           }}
+//         />
+//       );
 
 
-    default:
+//     default:
 
-      return (
-        <Chip
-          label={
-            getProviderStatusLabel(
-              status
-            )
-          }
-          size="small"
-          variant="outlined"
-        />
-      );
+//       return (
+//         <Chip
+//           label={
+//             getProviderStatusLabel(
+//               status
+//             )
+//           }
+//           size="small"
+//           variant="outlined"
+//         />
+//       );
 
-  }
+//   }
 
-};
+// };
 
 
-// ============================================================
-// PROVIDER DETAILS
-// ============================================================
+// // ============================================================
+// // PROVIDER DETAILS
+// // ============================================================
 
-interface ProviderDetailsProps {
-  provider: Provider;
-  onClose: () => void;
-}
+// interface ProviderDetailsProps {
+//   provider: Provider;
+//   onClose: () => void;
+// }
 
 
-const ProviderDetails = ({
-  provider,
-  onClose,
-}: ProviderDetailsProps) => {
+// const ProviderDetails = ({
+//   provider,
+//   onClose,
+// }: ProviderDetailsProps) => {
 
-  return (
-    <Dialog
-      open
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-    >
+//   return (
+//     <Dialog
+//       open
+//       onClose={onClose}
+//       maxWidth="sm"
+//       fullWidth
+//     >
 
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
+//       <DialogTitle
+//         sx={{
+//           display: 'flex',
+//           alignItems: 'center',
+//           justifyContent: 'space-between',
+//         }}
+//       >
 
-        <Typography
-          variant="h6"
-          fontWeight={700}
-        >
-          Provider Details
-        </Typography>
+//         <Typography
+//           variant="h6"
+//           fontWeight={700}
+//         >
+//           Provider Details
+//         </Typography>
 
-        <IconButton
-          onClick={onClose}
-          size="small"
-        >
-          <CloseOutlined />
-        </IconButton>
+//         <IconButton
+//           onClick={onClose}
+//           size="small"
+//         >
+//           <CloseOutlined />
+//         </IconButton>
 
-      </DialogTitle>
+//       </DialogTitle>
 
 
-      <DialogContent>
+//       <DialogContent>
 
-        <Stack
-          spacing={3}
-          sx={{
-            pt: 1,
-          }}
-        >
+//         <Stack
+//           spacing={3}
+//           sx={{
+//             pt: 1,
+//           }}
+//         >
 
-          {/* Provider header */}
+//           {/* Provider header */}
 
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-            }}
-          >
+//           <Box
+//             sx={{
+//               display: 'flex',
+//               alignItems: 'center',
+//               gap: 2,
+//             }}
+//           >
 
-            <Avatar
-              sx={{
-                width: 64,
-                height: 64,
-              }}
-            >
-              {getInitials(
-                provider.fullName
-              )}
-            </Avatar>
+//             <Avatar
+//               sx={{
+//                 width: 64,
+//                 height: 64,
+//               }}
+//             >
+//               {getInitials(
+//                 provider.fullName
+//               )}
+//             </Avatar>
 
 
-            <Box>
+//             <Box>
 
-              <Typography
-                variant="h6"
-                fontWeight={700}
-              >
-                {provider.fullName || '-'}
-              </Typography>
+//               <Typography
+//                 variant="h6"
+//                 fontWeight={700}
+//               >
+//                 {provider.fullName || '-'}
+//               </Typography>
 
-              <Typography
-                variant="body2"
-                color="text.secondary"
-              >
-                {provider.userId}
-              </Typography>
+//               <Typography
+//                 variant="body2"
+//                 color="text.secondary"
+//               >
+//                 {provider.userId}
+//               </Typography>
 
-            </Box>
+//             </Box>
 
-          </Box>
+//           </Box>
 
 
-          <Divider />
+//           <Divider />
 
 
-          {/* Status */}
+//           {/* Status */}
 
-          <Box>
+//           <Box>
 
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              display="block"
-              mb={0.5}
-            >
-              Provider Status
-            </Typography>
+//             <Typography
+//               variant="caption"
+//               color="text.secondary"
+//               display="block"
+//               mb={0.5}
+//             >
+//               Provider Status
+//             </Typography>
 
-            <ProviderStatusChip
-              status={
-                provider.providerStatus
-              }
-            />
+//             <ProviderStatusChip
+//               status={
+//                 provider.providerStatus
+//               }
+//             />
 
-          </Box>
+//           </Box>
 
 
-          {/* Details */}
+//           {/* Details */}
 
-          <Grid
-            container
-            spacing={2}
-          >
+//           <Grid
+//             container
+//             spacing={2}
+//           >
 
-            <Grid
-              item
-              xs={12}
-              sm={6}
-            >
+//             <Grid
+//               item
+//               xs={12}
+//               sm={6}
+//             >
 
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                Full Name
-              </Typography>
+//               <Typography
+//                 variant="caption"
+//                 color="text.secondary"
+//               >
+//                 Full Name
+//               </Typography>
 
-              <Typography
-                variant="body1"
-                fontWeight={600}
-              >
-                {provider.fullName || '-'}
-              </Typography>
+//               <Typography
+//                 variant="body1"
+//                 fontWeight={600}
+//               >
+//                 {provider.fullName || '-'}
+//               </Typography>
 
-            </Grid>
+//             </Grid>
 
 
-            <Grid
-              item
-              xs={12}
-              sm={6}
-            >
+//             <Grid
+//               item
+//               xs={12}
+//               sm={6}
+//             >
 
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                Phone Number
-              </Typography>
+//               <Typography
+//                 variant="caption"
+//                 color="text.secondary"
+//               >
+//                 Phone Number
+//               </Typography>
 
-              <Typography
-                variant="body1"
-                fontWeight={600}
-              >
-                {provider.phoneNumber || '-'}
-              </Typography>
+//               <Typography
+//                 variant="body1"
+//                 fontWeight={600}
+//               >
+//                 {provider.phoneNumber || '-'}
+//               </Typography>
 
-            </Grid>
+//             </Grid>
 
 
-            <Grid
-              item
-              xs={12}
-            >
+//             <Grid
+//               item
+//               xs={12}
+//             >
 
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                Email
-              </Typography>
+//               <Typography
+//                 variant="caption"
+//                 color="text.secondary"
+//               >
+//                 Email
+//               </Typography>
 
-              <Typography
-                variant="body1"
-                fontWeight={600}
-              >
-                {provider.email || '-'}
-              </Typography>
+//               <Typography
+//                 variant="body1"
+//                 fontWeight={600}
+//               >
+//                 {provider.email || '-'}
+//               </Typography>
 
-            </Grid>
+//             </Grid>
 
 
-            <Grid
-              item
-              xs={12}
-            >
+//             <Grid
+//               item
+//               xs={12}
+//             >
 
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                User ID
-              </Typography>
-
-              <Typography
-                variant="body2"
-                sx={{
-                  wordBreak: 'break-all',
-                }}
-              >
-                {provider.userId}
-              </Typography>
+//               <Typography
+//                 variant="caption"
+//                 color="text.secondary"
+//               >
+//                 User ID
+//               </Typography>
+
+//               <Typography
+//                 variant="body2"
+//                 sx={{
+//                   wordBreak: 'break-all',
+//                 }}
+//               >
+//                 {provider.userId}
+//               </Typography>
 
-            </Grid>
+//             </Grid>
 
 
-            <Grid
-              item
-              xs={12}
-              sm={6}
-            >
+//             <Grid
+//               item
+//               xs={12}
+//               sm={6}
+//             >
 
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                Salon ID
-              </Typography>
+//               <Typography
+//                 variant="caption"
+//                 color="text.secondary"
+//               >
+//                 Salon ID
+//               </Typography>
 
-              <Typography
-                variant="body1"
-                fontWeight={600}
-              >
-                {provider.salonId || '-'}
-              </Typography>
+//               <Typography
+//                 variant="body1"
+//                 fontWeight={600}
+//               >
+//                 {provider.salonId || '-'}
+//               </Typography>
 
-            </Grid>
+//             </Grid>
 
 
-            <Grid
-              item
-              xs={12}
-              sm={6}
-            >
+//             <Grid
+//               item
+//               xs={12}
+//               sm={6}
+//             >
 
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                Active Role
-              </Typography>
+//               <Typography
+//                 variant="caption"
+//                 color="text.secondary"
+//               >
+//                 Active Role
+//               </Typography>
 
-              <Typography
-                variant="body1"
-                fontWeight={600}
-              >
-                {provider.activeRole}
-              </Typography>
+//               <Typography
+//                 variant="body1"
+//                 fontWeight={600}
+//               >
+//                 {provider.activeRole}
+//               </Typography>
 
-            </Grid>
+//             </Grid>
 
 
-            <Grid
-              item
-              xs={12}
-              sm={6}
-            >
+//             <Grid
+//               item
+//               xs={12}
+//               sm={6}
+//             >
 
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                Created
-              </Typography>
+//               <Typography
+//                 variant="caption"
+//                 color="text.secondary"
+//               >
+//                 Created
+//               </Typography>
 
-              <Typography
-                variant="body1"
-              >
-                {formatDateTime(
-                  provider.createdAt
-                )}
-              </Typography>
+//               <Typography
+//                 variant="body1"
+//               >
+//                 {formatDateTime(
+//                   provider.createdAt
+//                 )}
+//               </Typography>
 
-            </Grid>
+//             </Grid>
 
 
-            <Grid
-              item
-              xs={12}
-              sm={6}
-            >
+//             <Grid
+//               item
+//               xs={12}
+//               sm={6}
+//             >
 
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                Last Updated
-              </Typography>
+//               <Typography
+//                 variant="caption"
+//                 color="text.secondary"
+//               >
+//                 Last Updated
+//               </Typography>
 
-              <Typography
-                variant="body1"
-              >
-                {formatDateTime(
-                  provider.updatedAt
-                )}
-              </Typography>
+//               <Typography
+//                 variant="body1"
+//               >
+//                 {formatDateTime(
+//                   provider.updatedAt
+//                 )}
+//               </Typography>
 
-            </Grid>
+//             </Grid>
 
-          </Grid>
+//           </Grid>
 
-        </Stack>
+//         </Stack>
 
-      </DialogContent>
+//       </DialogContent>
 
 
-      <DialogActions>
+//       <DialogActions>
 
-        <Button
-          onClick={onClose}
-        >
-          Close
-        </Button>
+//         <Button
+//           onClick={onClose}
+//         >
+//           Close
+//         </Button>
 
-      </DialogActions>
+//       </DialogActions>
 
-    </Dialog>
-  );
+//     </Dialog>
+//   );
 
-};
+// };
 
 
-// ============================================================
-// MAIN PAGE
-// ============================================================
+// // ============================================================
+// // MAIN PAGE
+// // ============================================================
 
-const Providers = () => {
+// const Providers = () => {
 
-  // ==========================================================
-  // STATE
-  // ==========================================================
+//   // ==========================================================
+//   // STATE
+//   // ==========================================================
 
-  const [
-    searchInput,
-    setSearchInput,
-  ] = useState('');
+//   const [
+//     searchInput,
+//     setSearchInput,
+//   ] = useState('');
 
-  const [
-    search,
-    setSearch,
-  ] = useState('');
+//   const [
+//     search,
+//     setSearch,
+//   ] = useState('');
 
-  const [
-    statusFilter,
-    setStatusFilter,
-  ] = useState<
-    'ALL' | ProviderStatus
-  >('ALL');
+//   const [
+//     statusFilter,
+//     setStatusFilter,
+//   ] = useState<
+//     'ALL' | ProviderStatus
+//   >('ALL');
 
-  const [
-    page,
-    setPage,
-  ] = useState(1);
+//   const [
+//     page,
+//     setPage,
+//   ] = useState(1);
 
-  const [
-    rowsPerPage,
-    setRowsPerPage,
-  ] = useState(10);
+//   const [
+//     rowsPerPage,
+//     setRowsPerPage,
+//   ] = useState(10);
 
-  const [
-    selectedProvider,
-    setSelectedProvider,
-  ] = useState<Provider | null>(
-    null
-  );
+//   const [
+//     selectedProvider,
+//     setSelectedProvider,
+//   ] = useState<Provider | null>(
+//     null
+//   );
 
 
-  // ==========================================================
-  // DEBOUNCED SEARCH
-  // ==========================================================
+//   // ==========================================================
+//   // DEBOUNCED SEARCH
+//   // ==========================================================
 
-  useEffect(() => {
+//   useEffect(() => {
 
-    const timer =
-      window.setTimeout(
-        () => {
+//     const timer =
+//       window.setTimeout(
+//         () => {
 
-          setSearch(
-            searchInput.trim()
-          );
+//           setSearch(
+//             searchInput.trim()
+//           );
 
-          setPage(1);
+//           setPage(1);
 
-        },
-        400
-      );
+//         },
+//         400
+//       );
 
 
-    return () => {
+//     return () => {
 
-      window.clearTimeout(
-        timer
-      );
+//       window.clearTimeout(
+//         timer
+//       );
 
-    };
+//     };
 
-  }, [searchInput]);
+//   }, [searchInput]);
 
 
-  // ==========================================================
-  // QUERY
-  // ==========================================================
+//   // ==========================================================
+//   // QUERY
+//   // ==========================================================
 
-  const {
-    data,
-    loading,
-    error,
-    refetch,
-  } =
-    useQuery<AdminProvidersResponse>(
-      ADMIN_PROVIDERS,
-      {
-        variables: {
+//   const {
+//     data,
+//     loading,
+//     error,
+//     refetch,
+//   } =
+//     useQuery<AdminProvidersResponse>(
+//       ADMIN_PROVIDERS,
+//       {
+//         variables: {
 
-          search:
-            search || undefined,
+//           search:
+//             search || undefined,
 
-          providerStatus:
-            statusFilter === 'ALL'
-              ? undefined
-              : statusFilter,
+//           providerStatus:
+//             statusFilter === 'ALL'
+//               ? undefined
+//               : statusFilter,
 
-        },
+//         },
 
-        fetchPolicy:
-          'network-only',
+//         fetchPolicy:
+//           'network-only',
 
-        notifyOnNetworkStatusChange:
-          true,
+//         notifyOnNetworkStatusChange:
+//           true,
 
-      }
-    );
+//       }
+//     );
 
 
-  // ==========================================================
-  // DATA
-  // ==========================================================
+//   // ==========================================================
+//   // DATA
+//   // ==========================================================
 
-  const providers =
-    data?.adminProviders
-      ?.providers || [];
+//   const providers =
+//     data?.adminProviders
+//       ?.providers || [];
 
 
-  const totalCount =
-    data?.adminProviders
-      ?.totalCount ||
-    0;
+//   const totalCount =
+//     data?.adminProviders
+//       ?.totalCount ||
+//     0;
 
 
-  // ==========================================================
-  // STATISTICS
-  //
-  // These are based on the currently returned provider
-  // dataset.
-  //
-  // Since the backend applies filters, when a status filter
-  // is active the statistics represent that filtered result.
-  // ==========================================================
+//   // ==========================================================
+//   // STATISTICS
+//   //
+//   // These are based on the currently returned provider
+//   // dataset.
+//   //
+//   // Since the backend applies filters, when a status filter
+//   // is active the statistics represent that filtered result.
+//   // ==========================================================
 
-  const statistics =
-    useMemo(() => {
+//   const statistics =
+//     useMemo(() => {
 
-      const total =
-        providers.length;
+//       const total =
+//         providers.length;
 
-      const notRegistered =
-        providers.filter(
-          provider =>
-            provider.providerStatus ===
-            'NOT_REGISTERED'
-        ).length;
+//       const notRegistered =
+//         providers.filter(
+//           provider =>
+//             provider.providerStatus ===
+//             'NOT_REGISTERED'
+//         ).length;
 
-      const pending =
-        providers.filter(
-          provider =>
-            provider.providerStatus ===
-            'PENDING'
-        ).length;
+//       const pending =
+//         providers.filter(
+//           provider =>
+//             provider.providerStatus ===
+//             'PENDING'
+//         ).length;
 
-      const approved =
-        providers.filter(
-          provider =>
-            provider.providerStatus ===
-            'APPROVED'
-        ).length;
+//       const approved =
+//         providers.filter(
+//           provider =>
+//             provider.providerStatus ===
+//             'APPROVED'
+//         ).length;
 
-      const rejected =
-        providers.filter(
-          provider =>
-            provider.providerStatus ===
-            'REJECTED'
-        ).length;
+//       const rejected =
+//         providers.filter(
+//           provider =>
+//             provider.providerStatus ===
+//             'REJECTED'
+//         ).length;
 
 
-      return {
-        total,
-        notRegistered,
-        pending,
-        approved,
-        rejected,
-      };
+//       return {
+//         total,
+//         notRegistered,
+//         pending,
+//         approved,
+//         rejected,
+//       };
 
-    }, [providers]);
+//     }, [providers]);
 
 
-  // ==========================================================
-  // PAGINATION
-  // ==========================================================
+//   // ==========================================================
+//   // PAGINATION
+//   // ==========================================================
 
-  const paginatedProviders =
-    useMemo(() => {
+//   const paginatedProviders =
+//     useMemo(() => {
 
-      const start =
-        (page - 1) *
-        rowsPerPage;
+//       const start =
+//         (page - 1) *
+//         rowsPerPage;
 
-      const end =
-        start +
-        rowsPerPage;
+//       const end =
+//         start +
+//         rowsPerPage;
 
-      return providers.slice(
-        start,
-        end
-      );
+//       return providers.slice(
+//         start,
+//         end
+//       );
 
-    }, [
-      providers,
-      page,
-      rowsPerPage,
-    ]);
+//     }, [
+//       providers,
+//       page,
+//       rowsPerPage,
+//     ]);
 
 
-  const totalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        providers.length /
-        rowsPerPage
-      )
-    );
+//   const totalPages =
+//     Math.max(
+//       1,
+//       Math.ceil(
+//         providers.length /
+//         rowsPerPage
+//       )
+//     );
 
 
-  // ==========================================================
-  // HANDLERS
-  // ==========================================================
+//   // ==========================================================
+//   // HANDLERS
+//   // ==========================================================
 
-  const handleStatusChange = (
-    event: SelectChangeEvent
-  ) => {
+//   const handleStatusChange = (
+//     event: SelectChangeEvent
+//   ) => {
 
-    setStatusFilter(
-      event.target.value as
-        | 'ALL'
-        | ProviderStatus
-    );
+//     setStatusFilter(
+//       event.target.value as
+//         | 'ALL'
+//         | ProviderStatus
+//     );
 
-    setPage(1);
+//     setPage(1);
 
-  };
+//   };
 
 
-  const handleRowsPerPageChange = (
-    event: SelectChangeEvent
-  ) => {
+//   const handleRowsPerPageChange = (
+//     event: SelectChangeEvent
+//   ) => {
 
-    setRowsPerPage(
-      Number(
-        event.target.value
-      )
-    );
+//     setRowsPerPage(
+//       Number(
+//         event.target.value
+//       )
+//     );
 
-    setPage(1);
+//     setPage(1);
 
-  };
+//   };
 
 
-  const handlePageChange = (
-    _event: React.ChangeEvent<unknown>,
-    value: number
-  ) => {
+//   const handlePageChange = (
+//     _event: React.ChangeEvent<unknown>,
+//     value: number
+//   ) => {
 
-    setPage(value);
+//     setPage(value);
 
-  };
+//   };
 
 
-  const handleClearSearch = () => {
+//   const handleClearSearch = () => {
 
-    setSearchInput('');
+//     setSearchInput('');
 
-    setSearch('');
+//     setSearch('');
 
-    setPage(1);
+//     setPage(1);
 
-  };
+//   };
 
 
-  // ==========================================================
-  // ERROR
-  // ==========================================================
+//   // ==========================================================
+//   // ERROR
+//   // ==========================================================
 
-  if (
-    error &&
-    !data
-  ) {
+//   if (
+//     error &&
+//     !data
+//   ) {
 
-    return (
+//     return (
 
-      <Box
-        sx={{
-          p: 3,
-        }}
-      >
+//       <Box
+//         sx={{
+//           p: 3,
+//         }}
+//       >
 
-        <Alert
-          severity="error"
-          action={
+//         <Alert
+//           severity="error"
+//           action={
 
-            <Button
-              color="inherit"
-              size="small"
-              startIcon={
-                <ReloadOutlined />
-              }
-              onClick={() =>
-                refetch()
-              }
-            >
-              Retry
-            </Button>
+//             <Button
+//               color="inherit"
+//               size="small"
+//               startIcon={
+//                 <ReloadOutlined />
+//               }
+//               onClick={() =>
+//                 refetch()
+//               }
+//             >
+//               Retry
+//             </Button>
 
-          }
-        >
-          {error.message ||
-            'Failed to load providers'}
-        </Alert>
+//           }
+//         >
+//           {error.message ||
+//             'Failed to load providers'}
+//         </Alert>
 
-      </Box>
+//       </Box>
 
-    );
+//     );
 
-  }
+//   }
 
 
-  // ==========================================================
-  // RENDER
-  // ==========================================================
+//   // ==========================================================
+//   // RENDER
+//   // ==========================================================
 
-  return (
+//   return (
 
-    <Box
-      sx={{
-        p: {
-          xs: 2,
-          sm: 3,
-        },
-      }}
-    >
+//     <Box
+//       sx={{
+//         p: {
+//           xs: 2,
+//           sm: 3,
+//         },
+//       }}
+//     >
 
-      {/* ================================================== */}
-      {/* HEADER */}
-      {/* ================================================== */}
+//       {/* ================================================== */}
+//       {/* HEADER */}
+//       {/* ================================================== */}
 
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: {
-            xs: 'flex-start',
-            sm: 'center',
-          },
-          justifyContent:
-            'space-between',
-          gap: 2,
-          mb: 3,
-          flexDirection: {
-            xs: 'column',
-            sm: 'row',
-          },
-        }}
-      >
+//       <Box
+//         sx={{
+//           display: 'flex',
+//           alignItems: {
+//             xs: 'flex-start',
+//             sm: 'center',
+//           },
+//           justifyContent:
+//             'space-between',
+//           gap: 2,
+//           mb: 3,
+//           flexDirection: {
+//             xs: 'column',
+//             sm: 'row',
+//           },
+//         }}
+//       >
 
-        <Box>
+//         <Box>
 
-          <Typography
-            variant="h4"
-            fontWeight={700}
-          >
-            Providers
-          </Typography>
+//           <Typography
+//             variant="h4"
+//             fontWeight={700}
+//           >
+//             Providers
+//           </Typography>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              mt: 0.5,
-            }}
-          >
-            Manage users who have selected
-            the provider role and track their
-            salon registration status.
-          </Typography>
+//           <Typography
+//             variant="body2"
+//             color="text.secondary"
+//             sx={{
+//               mt: 0.5,
+//             }}
+//           >
+//             Manage users who have selected
+//             the provider role and track their
+//             salon registration status.
+//           </Typography>
 
-        </Box>
+//         </Box>
 
 
-        <Button
-          variant="outlined"
-          startIcon={
-            <ReloadOutlined />
-          }
-          onClick={() =>
-            refetch()
-          }
-          disabled={loading}
-        >
-          Refresh
-        </Button>
+//         <Button
+//           variant="outlined"
+//           startIcon={
+//             <ReloadOutlined />
+//           }
+//           onClick={() =>
+//             refetch()
+//           }
+//           disabled={loading}
+//         >
+//           Refresh
+//         </Button>
 
-      </Box>
+//       </Box>
 
 
-      {/* ================================================== */}
-      {/* STATISTICS */}
-      {/* ================================================== */}
+//       {/* ================================================== */}
+//       {/* STATISTICS */}
+//       {/* ================================================== */}
 
-      <Grid
-        container
-        spacing={2}
-        sx={{
-          mb: 3,
-        }}
-      >
+//       <Grid
+//         container
+//         spacing={2}
+//         sx={{
+//           mb: 3,
+//         }}
+//       >
 
-        {/* Total */}
+//         {/* Total */}
 
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          md={3}
-        >
+//         <Grid
+//           item
+//           xs={12}
+//           sm={6}
+//           md={3}
+//         >
 
-          <Card>
+//           <Card>
 
-            <CardContent>
+//             <CardContent>
 
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Total Providers
-              </Typography>
+//               <Typography
+//                 variant="body2"
+//                 color="text.secondary"
+//                 gutterBottom
+//               >
+//                 Total Providers
+//               </Typography>
 
-              <Typography
-                variant="h4"
-                fontWeight={700}
-              >
-                {statusFilter === 'ALL'
-                  ? totalCount
-                  : statistics.total}
-              </Typography>
+//               <Typography
+//                 variant="h4"
+//                 fontWeight={700}
+//               >
+//                 {statusFilter === 'ALL'
+//                   ? totalCount
+//                   : statistics.total}
+//               </Typography>
 
-            </CardContent>
+//             </CardContent>
 
-          </Card>
+//           </Card>
 
-        </Grid>
+//         </Grid>
 
 
-        {/* Not Registered */}
+//         {/* Not Registered */}
 
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          md={3}
-        >
+//         <Grid
+//           item
+//           xs={12}
+//           sm={6}
+//           md={3}
+//         >
 
-          <Card>
+//           <Card>
 
-            <CardContent>
+//             <CardContent>
 
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Not Registered
-              </Typography>
+//               <Typography
+//                 variant="body2"
+//                 color="text.secondary"
+//                 gutterBottom
+//               >
+//                 Not Registered
+//               </Typography>
 
-              <Typography
-                variant="h4"
-                fontWeight={700}
-              >
-                {statistics.notRegistered}
-              </Typography>
+//               <Typography
+//                 variant="h4"
+//                 fontWeight={700}
+//               >
+//                 {statistics.notRegistered}
+//               </Typography>
 
-            </CardContent>
+//             </CardContent>
 
-          </Card>
+//           </Card>
 
-        </Grid>
+//         </Grid>
 
 
-        {/* Pending */}
+//         {/* Pending */}
 
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          md={3}
-        >
+//         <Grid
+//           item
+//           xs={12}
+//           sm={6}
+//           md={3}
+//         >
 
-          <Card>
+//           <Card>
 
-            <CardContent>
+//             <CardContent>
 
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Pending
-              </Typography>
+//               <Typography
+//                 variant="body2"
+//                 color="text.secondary"
+//                 gutterBottom
+//               >
+//                 Pending
+//               </Typography>
 
-              <Typography
-                variant="h4"
-                fontWeight={700}
-              >
-                {statistics.pending}
-              </Typography>
+//               <Typography
+//                 variant="h4"
+//                 fontWeight={700}
+//               >
+//                 {statistics.pending}
+//               </Typography>
 
-            </CardContent>
+//             </CardContent>
 
-          </Card>
+//           </Card>
 
-        </Grid>
+//         </Grid>
 
 
-        {/* Approved */}
+//         {/* Approved */}
 
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          md={3}
-        >
+//         <Grid
+//           item
+//           xs={12}
+//           sm={6}
+//           md={3}
+//         >
 
-          <Card>
+//           <Card>
 
-            <CardContent>
+//             <CardContent>
 
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Approved
-              </Typography>
+//               <Typography
+//                 variant="body2"
+//                 color="text.secondary"
+//                 gutterBottom
+//               >
+//                 Approved
+//               </Typography>
 
-              <Typography
-                variant="h4"
-                fontWeight={700}
-              >
-                {statistics.approved}
-              </Typography>
+//               <Typography
+//                 variant="h4"
+//                 fontWeight={700}
+//               >
+//                 {statistics.approved}
+//               </Typography>
 
-            </CardContent>
+//             </CardContent>
 
-          </Card>
+//           </Card>
 
-        </Grid>
+//         </Grid>
 
-      </Grid>
+//       </Grid>
 
 
-      {/* ================================================== */}
-      {/* SEARCH + FILTER */}
-      {/* ================================================== */}
+//       {/* ================================================== */}
+//       {/* SEARCH + FILTER */}
+//       {/* ================================================== */}
 
-      <Card
-        sx={{
-          mb: 3,
-        }}
-      >
+//       <Card
+//         sx={{
+//           mb: 3,
+//         }}
+//       >
 
-        <CardContent>
+//         <CardContent>
 
-          <Grid
-            container
-            spacing={2}
-            alignItems="center"
-          >
+//           <Grid
+//             container
+//             spacing={2}
+//             alignItems="center"
+//           >
 
-            {/* Search */}
+//             {/* Search */}
 
-            <Grid
-              item
-              xs={12}
-              md={7}
-            >
+//             <Grid
+//               item
+//               xs={12}
+//               md={7}
+//             >
 
-              <TextField
-                fullWidth
-                value={searchInput}
-                onChange={event =>
-                  setSearchInput(
-                    event.target.value
-                  )
-                }
-                placeholder="Search by name, phone, email, user ID or salon ID"
-                InputProps={{
-                  startAdornment: (
+//               <TextField
+//                 fullWidth
+//                 value={searchInput}
+//                 onChange={event =>
+//                   setSearchInput(
+//                     event.target.value
+//                   )
+//                 }
+//                 placeholder="Search by name, phone, email, user ID or salon ID"
+//                 InputProps={{
+//                   startAdornment: (
 
-                    <InputAdornment
-                      position="start"
-                    >
-                      <SearchOutlined />
-                    </InputAdornment>
+//                     <InputAdornment
+//                       position="start"
+//                     >
+//                       <SearchOutlined />
+//                     </InputAdornment>
 
-                  ),
-                  endAdornment:
-                    searchInput ? (
+//                   ),
+//                   endAdornment:
+//                     searchInput ? (
 
-                      <InputAdornment
-                        position="end"
-                      >
+//                       <InputAdornment
+//                         position="end"
+//                       >
 
-                        <IconButton
-                          size="small"
-                          onClick={
-                            handleClearSearch
-                          }
-                        >
-                          <CloseOutlined />
-                        </IconButton>
+//                         <IconButton
+//                           size="small"
+//                           onClick={
+//                             handleClearSearch
+//                           }
+//                         >
+//                           <CloseOutlined />
+//                         </IconButton>
 
-                      </InputAdornment>
+//                       </InputAdornment>
 
-                    ) : null,
-                }}
-              />
+//                     ) : null,
+//                 }}
+//               />
 
-            </Grid>
+//             </Grid>
 
 
-            {/* Status */}
+//             {/* Status */}
 
-            <Grid
-              item
-              xs={12}
-              md={5}
-            >
+//             <Grid
+//               item
+//               xs={12}
+//               md={5}
+//             >
 
-              <FormControl
-                fullWidth
-              >
+//               <FormControl
+//                 fullWidth
+//               >
 
-                <InputLabel>
-                  Provider Status
-                </InputLabel>
+//                 <InputLabel>
+//                   Provider Status
+//                 </InputLabel>
 
-                <Select
-                  value={
-                    statusFilter
-                  }
-                  label="Provider Status"
-                  onChange={
-                    handleStatusChange
-                  }
-                >
+//                 <Select
+//                   value={
+//                     statusFilter
+//                   }
+//                   label="Provider Status"
+//                   onChange={
+//                     handleStatusChange
+//                   }
+//                 >
 
-                  <MenuItem value="ALL">
-                    All
-                  </MenuItem>
+//                   <MenuItem value="ALL">
+//                     All
+//                   </MenuItem>
 
-                  <MenuItem value="NOT_REGISTERED">
-                    Not Registered
-                  </MenuItem>
+//                   <MenuItem value="NOT_REGISTERED">
+//                     Not Registered
+//                   </MenuItem>
 
-                  <MenuItem value="PENDING">
-                    Pending
-                  </MenuItem>
+//                   <MenuItem value="PENDING">
+//                     Pending
+//                   </MenuItem>
 
-                  <MenuItem value="APPROVED">
-                    Approved
-                  </MenuItem>
+//                   <MenuItem value="APPROVED">
+//                     Approved
+//                   </MenuItem>
 
-                  <MenuItem value="REJECTED">
-                    Rejected
-                  </MenuItem>
+//                   <MenuItem value="REJECTED">
+//                     Rejected
+//                   </MenuItem>
 
-                </Select>
+//                 </Select>
 
-              </FormControl>
+//               </FormControl>
 
-            </Grid>
+//             </Grid>
 
-          </Grid>
+//           </Grid>
 
-        </CardContent>
+//         </CardContent>
 
-      </Card>
+//       </Card>
 
 
-      {/* ================================================== */}
-      {/* ERROR WITH DATA */}
-      {/* ================================================== */}
+//       {/* ================================================== */}
+//       {/* ERROR WITH DATA */}
+//       {/* ================================================== */}
 
-      {error && data && (
+//       {error && data && (
 
-        <Alert
-          severity="error"
-          sx={{
-            mb: 2,
-          }}
-          action={
+//         <Alert
+//           severity="error"
+//           sx={{
+//             mb: 2,
+//           }}
+//           action={
 
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() =>
-                refetch()
-              }
-            >
-              Retry
-            </Button>
+//             <Button
+//               color="inherit"
+//               size="small"
+//               onClick={() =>
+//                 refetch()
+//               }
+//             >
+//               Retry
+//             </Button>
 
-          }
-        >
-          {error.message}
-        </Alert>
+//           }
+//         >
+//           {error.message}
+//         </Alert>
 
-      )}
+//       )}
 
 
-      {/* ================================================== */}
-      {/* TABLE */}
-      {/* ================================================== */}
+//       {/* ================================================== */}
+//       {/* TABLE */}
+//       {/* ================================================== */}
 
-      <Card>
+//       <Card>
 
-        <TableContainer>
+//         <TableContainer>
 
-          <Table>
+//           <Table>
 
-            <TableHead>
+//             <TableHead>
 
-              <TableRow>
+//               <TableRow>
 
-                <TableCell>
-                  Provider
-                </TableCell>
+//                 <TableCell>
+//                   Provider
+//                 </TableCell>
 
-                <TableCell>
-                  Phone
-                </TableCell>
+//                 <TableCell>
+//                   Phone
+//                 </TableCell>
 
-                <TableCell>
-                  Status
-                </TableCell>
+//                 <TableCell>
+//                   Status
+//                 </TableCell>
 
-                <TableCell>
-                  Salon ID
-                </TableCell>
+//                 <TableCell>
+//                   Salon ID
+//                 </TableCell>
 
-                <TableCell>
-                  Created
-                </TableCell>
+//                 <TableCell>
+//                   Created
+//                 </TableCell>
 
-                <TableCell
-                  align="center"
-                >
-                  Action
-                </TableCell>
+//                 <TableCell
+//                   align="center"
+//                 >
+//                   Action
+//                 </TableCell>
 
-              </TableRow>
+//               </TableRow>
 
-            </TableHead>
+//             </TableHead>
 
 
-            <TableBody>
+//             <TableBody>
 
-              {loading && !data ? (
+//               {loading && !data ? (
 
-                <TableRow>
+//                 <TableRow>
 
-                  <TableCell
-                    colSpan={6}
-                    align="center"
-                    sx={{
-                      py: 6,
-                    }}
-                  >
+//                   <TableCell
+//                     colSpan={6}
+//                     align="center"
+//                     sx={{
+//                       py: 6,
+//                     }}
+//                   >
 
-                    <CircularProgress />
+//                     <CircularProgress />
 
-                  </TableCell>
+//                   </TableCell>
 
-                </TableRow>
+//                 </TableRow>
 
-              ) : paginatedProviders.length === 0 ? (
+//               ) : paginatedProviders.length === 0 ? (
 
-                <TableRow>
+//                 <TableRow>
 
-                  <TableCell
-                    colSpan={6}
-                    align="center"
-                    sx={{
-                      py: 6,
-                    }}
-                  >
+//                   <TableCell
+//                     colSpan={6}
+//                     align="center"
+//                     sx={{
+//                       py: 6,
+//                     }}
+//                   >
 
-                    <Typography
-                      color="text.secondary"
-                    >
-                      No providers found.
-                    </Typography>
+//                     <Typography
+//                       color="text.secondary"
+//                     >
+//                       No providers found.
+//                     </Typography>
 
-                  </TableCell>
+//                   </TableCell>
 
-                </TableRow>
+//                 </TableRow>
 
-              ) : (
+//               ) : (
 
-                paginatedProviders.map(
-                  provider => (
+//                 paginatedProviders.map(
+//                   provider => (
 
-                    <TableRow
-                      key={
-                        provider.userId
-                      }
-                      hover
-                    >
+//                     <TableRow
+//                       key={
+//                         provider.userId
+//                       }
+//                       hover
+//                     >
 
-                      {/* Provider */}
+//                       {/* Provider */}
 
-                      <TableCell>
+//                       <TableCell>
 
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1.5,
-                          }}
-                        >
+//                         <Box
+//                           sx={{
+//                             display: 'flex',
+//                             alignItems: 'center',
+//                             gap: 1.5,
+//                           }}
+//                         >
 
-                          <Avatar>
-                            {getInitials(
-                              provider.fullName
-                            )}
-                          </Avatar>
+//                           <Avatar>
+//                             {getInitials(
+//                               provider.fullName
+//                             )}
+//                           </Avatar>
 
 
-                          <Box
-                            sx={{
-                              minWidth: 0,
-                            }}
-                          >
+//                           <Box
+//                             sx={{
+//                               minWidth: 0,
+//                             }}
+//                           >
 
-                            <Typography
-                              variant="body2"
-                              fontWeight={600}
-                              noWrap
-                            >
-                              {provider.fullName ||
-                                '-'}
-                            </Typography>
+//                             <Typography
+//                               variant="body2"
+//                               fontWeight={600}
+//                               noWrap
+//                             >
+//                               {provider.fullName ||
+//                                 '-'}
+//                             </Typography>
 
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{
-                                display:
-                                  'block',
-                                maxWidth: 220,
-                                overflow:
-                                  'hidden',
-                                textOverflow:
-                                  'ellipsis',
-                              }}
-                            >
-                              {provider.userId}
-                            </Typography>
+//                             <Typography
+//                               variant="caption"
+//                               color="text.secondary"
+//                               sx={{
+//                                 display:
+//                                   'block',
+//                                 maxWidth: 220,
+//                                 overflow:
+//                                   'hidden',
+//                                 textOverflow:
+//                                   'ellipsis',
+//                               }}
+//                             >
+//                               {provider.userId}
+//                             </Typography>
 
-                          </Box>
+//                           </Box>
 
-                        </Box>
+//                         </Box>
 
-                      </TableCell>
+//                       </TableCell>
 
 
-                      {/* Phone */}
+//                       {/* Phone */}
 
-                      <TableCell>
+//                       <TableCell>
 
-                        <Typography
-                          variant="body2"
-                        >
-                          {provider.phoneNumber ||
-                            '-'}
-                        </Typography>
+//                         <Typography
+//                           variant="body2"
+//                         >
+//                           {provider.phoneNumber ||
+//                             '-'}
+//                         </Typography>
 
-                      </TableCell>
+//                       </TableCell>
 
 
-                      {/* Status */}
+//                       {/* Status */}
 
-                      <TableCell>
+//                       <TableCell>
 
-                        <ProviderStatusChip
-                          status={
-                            provider.providerStatus
-                          }
-                        />
+//                         <ProviderStatusChip
+//                           status={
+//                             provider.providerStatus
+//                           }
+//                         />
 
-                      </TableCell>
+//                       </TableCell>
 
 
-                      {/* Salon ID */}
+//                       {/* Salon ID */}
 
-                      <TableCell>
+//                       <TableCell>
 
-                        {provider.salonId ? (
+//                         {provider.salonId ? (
 
-                          <Tooltip
-                            title={
-                              provider.salonId
-                            }
-                          >
+//                           <Tooltip
+//                             title={
+//                               provider.salonId
+//                             }
+//                           >
 
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                maxWidth: 180,
-                                overflow:
-                                  'hidden',
-                                textOverflow:
-                                  'ellipsis',
-                                whiteSpace:
-                                  'nowrap',
-                              }}
-                            >
-                              {provider.salonId}
-                            </Typography>
+//                             <Typography
+//                               variant="body2"
+//                               sx={{
+//                                 maxWidth: 180,
+//                                 overflow:
+//                                   'hidden',
+//                                 textOverflow:
+//                                   'ellipsis',
+//                                 whiteSpace:
+//                                   'nowrap',
+//                               }}
+//                             >
+//                               {provider.salonId}
+//                             </Typography>
 
-                          </Tooltip>
+//                           </Tooltip>
 
-                        ) : (
+//                         ) : (
 
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                          >
-                            Not registered
-                          </Typography>
+//                           <Typography
+//                             variant="body2"
+//                             color="text.secondary"
+//                           >
+//                             Not registered
+//                           </Typography>
 
-                        )}
+//                         )}
 
-                      </TableCell>
+//                       </TableCell>
 
 
-                      {/* Created */}
+//                       {/* Created */}
 
-                      <TableCell>
+//                       <TableCell>
 
-                        <Typography
-                          variant="body2"
-                        >
-                          {formatDate(
-                            provider.createdAt
-                          )}
-                        </Typography>
+//                         <Typography
+//                           variant="body2"
+//                         >
+//                           {formatDate(
+//                             provider.createdAt
+//                           )}
+//                         </Typography>
 
-                      </TableCell>
+//                       </TableCell>
 
 
-                      {/* Action */}
+//                       {/* Action */}
 
-                      <TableCell
-                        align="center"
-                      >
+//                       <TableCell
+//                         align="center"
+//                       >
 
-                        <Tooltip
-                          title="View provider"
-                        >
+//                         <Tooltip
+//                           title="View provider"
+//                         >
 
-                          <IconButton
-                            onClick={() =>
-                              setSelectedProvider(
-                                provider
-                              )
-                            }
-                          >
+//                           <IconButton
+//                             onClick={() =>
+//                               setSelectedProvider(
+//                                 provider
+//                               )
+//                             }
+//                           >
 
-                            <EyeOutlined />
+//                             <EyeOutlined />
 
-                          </IconButton>
+//                           </IconButton>
 
-                        </Tooltip>
+//                         </Tooltip>
 
-                      </TableCell>
+//                       </TableCell>
 
-                    </TableRow>
+//                     </TableRow>
 
-                  )
-                )
+//                   )
+//                 )
 
-              )}
+//               )}
 
-            </TableBody>
+//             </TableBody>
 
-          </Table>
+//           </Table>
 
-        </TableContainer>
+//         </TableContainer>
 
 
-        {/* ================================================= */}
-        {/* TABLE FOOTER */}
-        {/* ================================================= */}
+//         {/* ================================================= */}
+//         {/* TABLE FOOTER */}
+//         {/* ================================================= */}
 
-        <Divider />
+//         <Divider />
 
 
-        <Box
-          sx={{
-            p: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent:
-              'space-between',
-            gap: 2,
-            flexWrap: 'wrap',
-          }}
-        >
+//         <Box
+//           sx={{
+//             p: 2,
+//             display: 'flex',
+//             alignItems: 'center',
+//             justifyContent:
+//               'space-between',
+//             gap: 2,
+//             flexWrap: 'wrap',
+//           }}
+//         >
 
-          {/* Rows per page */}
+//           {/* Rows per page */}
 
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 130,
-            }}
-          >
+//           <FormControl
+//             size="small"
+//             sx={{
+//               minWidth: 130,
+//             }}
+//           >
 
-            <InputLabel>
-              Rows
-            </InputLabel>
+//             <InputLabel>
+//               Rows
+//             </InputLabel>
 
-            <Select
-              value={
-                String(rowsPerPage)
-              }
-              label="Rows"
-              onChange={
-                handleRowsPerPageChange
-              }
-            >
+//             <Select
+//               value={
+//                 String(rowsPerPage)
+//               }
+//               label="Rows"
+//               onChange={
+//                 handleRowsPerPageChange
+//               }
+//             >
 
-              {ROWS_PER_PAGE_OPTIONS.map(
-                option => (
+//               {ROWS_PER_PAGE_OPTIONS.map(
+//                 option => (
 
-                  <MenuItem
-                    key={option}
-                    value={option}
-                  >
-                    {option} rows
-                  </MenuItem>
+//                   <MenuItem
+//                     key={option}
+//                     value={option}
+//                   >
+//                     {option} rows
+//                   </MenuItem>
 
-                )
-              )}
+//                 )
+//               )}
 
-            </Select>
+//             </Select>
 
-          </FormControl>
+//           </FormControl>
 
 
-          {/* Pagination */}
+//           {/* Pagination */}
 
-          {totalPages > 1 && (
+//           {totalPages > 1 && (
 
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={
-                handlePageChange
-              }
-              color="primary"
-              showFirstButton
-              showLastButton
-            />
+//             <Pagination
+//               count={totalPages}
+//               page={page}
+//               onChange={
+//                 handlePageChange
+//               }
+//               color="primary"
+//               showFirstButton
+//               showLastButton
+//             />
 
-          )}
+//           )}
 
-        </Box>
+//         </Box>
 
-      </Card>
+//       </Card>
 
 
-      {/* ================================================== */}
-      {/* PROVIDER DETAILS */}
-      {/* ================================================== */}
+//       {/* ================================================== */}
+//       {/* PROVIDER DETAILS */}
+//       {/* ================================================== */}
 
-      {selectedProvider && (
+//       {selectedProvider && (
 
-        <ProviderDetails
-          provider={
-            selectedProvider
-          }
-          onClose={() =>
-            setSelectedProvider(
-              null
-            )
-          }
-        />
+//         <ProviderDetails
+//           provider={
+//             selectedProvider
+//           }
+//           onClose={() =>
+//             setSelectedProvider(
+//               null
+//             )
+//           }
+//         />
 
-      )}
+//       )}
 
-    </Box>
+//     </Box>
 
-  );
+//   );
 
-};
+// };
 
 
-export default Providers;
+// export default Providers;

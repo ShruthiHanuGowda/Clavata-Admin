@@ -1,5 +1,7 @@
+
 import { useMemo, useState } from 'react';
-// material-ui
+import type { ReactNode } from 'react';
+
 import {
   Box,
   Card,
@@ -10,12 +12,10 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  SelectChangeEvent,
   Stack,
   Typography
 } from '@mui/material';
 
-// ant design icons
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -30,21 +30,15 @@ import {
   ShoppingCartOutlined
 } from '@ant-design/icons';
 
-// project imports
 import MainCard from 'components/MainCard';
-
-// dashboard hook
 import useDashboardData from '../dashboard/useDashboardData';
 
-// dashboard types
-import {
+import type {
   Booking,
-  BookingStatus,
   DashboardPeriod,
   Salon
 } from '../dashboard/dashboardApi';
 
-// charts
 import {
   Area,
   AreaChart,
@@ -67,18 +61,14 @@ import {
 // TYPES
 // =========================================================
 
-type Period =
-  | '7days'
-  | '30days'
-  | '3months'
-  | '12months';
+type Period = '7days' | '30days' | '3months' | '12months';
 
 interface StatCardProps {
   title: string;
   value: string;
   change?: string;
   positive?: boolean;
-  icon: React.ReactNode;
+  icon: ReactNode;
   subtitle?: string;
 }
 
@@ -94,12 +84,14 @@ interface BookingStatusItem {
 }
 
 interface ServicePerformanceItem {
+  id: string;
   name: string;
   bookings: number;
   revenue: number;
 }
 
 interface SalonPerformanceItem {
+  id: string;
   salon: string;
   bookings: number;
   revenue: number;
@@ -111,25 +103,31 @@ interface CustomerGrowthItem {
   customers: number;
 }
 
+interface DateRange {
+  start: Date;
+  end: Date;
+}
+
 // =========================================================
 // CONSTANTS
 // =========================================================
 
-const COLORS: string[] = [
-  '#1677ff',
-  '#52c41a',
-  '#faad14',
-  '#ff4d4f',
-  '#722ed1'
+const BOOKING_FEE = 9;
+
+const COLORS = [
+  '#7C3AED',
+  '#2563EB',
+  '#F59E0B',
+  '#EF4444',
+  '#0891B2'
 ];
 
 // =========================================================
-// HELPERS
+// FORMATTERS
 // =========================================================
 
-const formatCurrency = (value: number): string => {
-  return `₹${value.toLocaleString('en-IN')}`;
-};
+const formatCurrency = (value: number): string =>
+  `₹${Math.round(value).toLocaleString('en-IN')}`;
 
 const formatCompactCurrency = (value: number): string => {
   if (value >= 10000000) {
@@ -144,42 +142,57 @@ const formatCompactCurrency = (value: number): string => {
     return `₹${(value / 1000).toFixed(1)}K`;
   }
 
-  return `₹${value.toLocaleString('en-IN')}`;
+  return formatCurrency(value);
 };
 
-const parseDate = (
-  value?: string | null
-): Date | null => {
-  if (!value) {
-    return null;
-  }
+const parseDate = (value?: string | null): Date | null => {
+  if (!value) return null;
 
   const date = new Date(value);
 
-  return Number.isNaN(date.getTime())
-    ? null
-    : date;
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 
-const getBookingDate = (
-  booking: Booking
-): Date | null => {
-  if (
-    booking.bookingDate &&
-    booking.startTime
-  ) {
-    const combined = `${booking.bookingDate} ${booking.startTime}`;
+const getBookingDate = (booking: Booking): Date | null => {
+  const bookingDate = booking.bookingDate;
 
-    const date = new Date(combined);
+  if (!bookingDate) return null;
 
-    if (!Number.isNaN(date.getTime())) {
-      return date;
+  if (booking.startTime) {
+    const combined = new Date(
+      `${bookingDate}T${booking.startTime}`
+    );
+
+    if (!Number.isNaN(combined.getTime())) {
+      return combined;
     }
   }
 
-  return parseDate(
-    booking.bookingDate
-  );
+  return parseDate(bookingDate);
+};
+
+const startOfDay = (date: Date): Date => {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+};
+
+const endOfDay = (date: Date): Date => {
+  const result = new Date(date);
+  result.setHours(23, 59, 59, 999);
+  return result;
+};
+
+const addDays = (date: Date, amount: number): Date => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + amount);
+  return result;
+};
+
+const addMonths = (date: Date, amount: number): Date => {
+  const result = new Date(date);
+  result.setMonth(result.getMonth() + amount);
+  return result;
 };
 
 // =========================================================
@@ -187,80 +200,57 @@ const getBookingDate = (
 // =========================================================
 
 const getPeriodDates = (
-  period: Period
-): {
-  start: Date;
-  end: Date;
-} => {
-  const end = new Date();
+  period: Period,
+  now = new Date()
+): DateRange => {
+  const end = endOfDay(now);
+  let start: Date;
 
-  const start = new Date();
+  switch (period) {
+    case '7days':
+      start = startOfDay(addDays(now, -6));
+      break;
 
-  if (period === '7days') {
-    start.setDate(
-      end.getDate() - 6
-    );
+    case '30days':
+      start = startOfDay(addDays(now, -29));
+      break;
+
+    case '3months':
+      start = startOfDay(addMonths(now, -3));
+      break;
+
+    case '12months':
+      start = startOfDay(addMonths(now, -12));
+      break;
+
+    default:
+      start = startOfDay(addDays(now, -29));
   }
 
-  if (period === '30days') {
-    start.setDate(
-      end.getDate() - 29
-    );
-  }
-
-  if (period === '3months') {
-    start.setMonth(
-      end.getMonth() - 3
-    );
-  }
-
-  if (period === '12months') {
-    start.setFullYear(
-      end.getFullYear() - 1
-    );
-  }
-
-  start.setHours(
-    0,
-    0,
-    0,
-    0
-  );
-
-  end.setHours(
-    23,
-    59,
-    59,
-    999
-  );
-
-  return {
-    start,
-    end
-  };
+  return { start, end };
 };
 
-const isBookingInPeriod = (
+const isDateInRange = (
+  date: Date | null,
+  range: DateRange
+): boolean =>
+  date !== null &&
+  date.getTime() >= range.start.getTime() &&
+  date.getTime() <= range.end.getTime();
+
+const isBookingInRange = (
   booking: Booking,
-  period: Period
-): boolean => {
-  const bookingDate =
-    getBookingDate(booking);
+  range: DateRange
+): boolean =>
+  isDateInRange(getBookingDate(booking), range);
 
-  if (!bookingDate) {
-    return false;
-  }
+// Only successful booking-fee payments count as Clavata revenue.
+// Do not count the service amount as platform revenue.
+const isPaidBookingFee = (booking: Booking): boolean =>
+  booking.bookingFeeStatus === 'PAID';
 
-  const {
-    start,
-    end
-  } = getPeriodDates(period);
-
-  return (
-    bookingDate >= start &&
-    bookingDate <= end
-  );
-};
+const getPlatformRevenue = (booking: Booking): number =>
+  isPaidBookingFee(booking) ? BOOKING_FEE : 0;
 
 // =========================================================
 // STAT CARD
@@ -281,8 +271,7 @@ function StatCard({
         borderRadius: 3,
         border: '1px solid',
         borderColor: 'divider',
-        boxShadow:
-          '0 2px 8px rgba(0,0,0,0.04)'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
       }}
     >
       <CardContent sx={{ p: 2.5 }}>
@@ -292,7 +281,7 @@ function StatCard({
           justifyContent="space-between"
           spacing={2}
         >
-          <Box>
+          <Box sx={{ minWidth: 0 }}>
             <Typography
               variant="body2"
               color="text.secondary"
@@ -303,47 +292,41 @@ function StatCard({
 
             <Typography
               variant="h4"
-              sx={{
-                fontWeight: 700,
-                mb: 1
-              }}
+              sx={{ fontWeight: 700, mb: 1 }}
             >
               {value}
             </Typography>
 
-            {change && (
+            {(change || subtitle) && (
               <Stack
                 direction="row"
                 spacing={0.75}
                 alignItems="center"
+                flexWrap="wrap"
               >
-                {positive ? (
-                  <ArrowUpOutlined
-                    style={{
-                      color: '#52c41a',
-                      fontSize: 12
-                    }}
-                  />
-                ) : (
-                  <ArrowDownOutlined
-                    style={{
-                      color: '#ff4d4f',
-                      fontSize: 12
-                    }}
-                  />
-                )}
+                {change && (
+                  <>
+                    {positive ? (
+                      <ArrowUpOutlined
+                        style={{ color: '#16A34A', fontSize: 12 }}
+                      />
+                    ) : (
+                      <ArrowDownOutlined
+                        style={{ color: '#DC2626', fontSize: 12 }}
+                      />
+                    )}
 
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: positive
-                      ? 'success.main'
-                      : 'error.main',
-                    fontWeight: 600
-                  }}
-                >
-                  {change}
-                </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: positive ? 'success.main' : 'error.main',
+                        fontWeight: 600
+                      }}
+                    >
+                      {change}
+                    </Typography>
+                  </>
+                )}
 
                 {subtitle && (
                   <Typography
@@ -361,6 +344,7 @@ function StatCard({
             sx={{
               width: 48,
               height: 48,
+              flexShrink: 0,
               borderRadius: 2,
               display: 'flex',
               alignItems: 'center',
@@ -383,694 +367,382 @@ function StatCard({
 // =========================================================
 
 export default function Analytics() {
-  const [
-    period,
-    setPeriod
-  ] = useState<Period>('30days');
+  const [period, setPeriod] = useState<Period>('30days');
 
   /*
-   * Convert Analytics period into
-   * Dashboard API period.
+   * The hook currently accepts week/month/year.
+   * The selected period is filtered locally as well.
+   *
+   * IMPORTANT:
+   * For 3-month and 12-month analytics, useDashboardData
+   * must return enough historical data. A month-only API
+   * response cannot produce accurate 3-month statistics.
    */
   const dashboardPeriod: DashboardPeriod =
     period === '7days'
       ? 'week'
-      : period === '30days'
-        ? 'month'
-        : period === '3months'
-          ? 'month'
-          : 'year';
+      : period === '12months'
+        ? 'year'
+        : 'month';
 
-  const {
-    data,
-    loading,
-    error,
-    refetch
-  } = useDashboardData(
-    dashboardPeriod
+  const { data, loading, error, refetch } =
+    useDashboardData(dashboardPeriod);
+
+  const customers = data?.customers ?? [];
+  const salons = data?.salons ?? [];
+  const bookings = data?.bookings ?? [];
+  const reviews = data?.reviews ?? [];
+
+  const periodRange = useMemo(
+    () => getPeriodDates(period),
+    [period]
+  );
+
+  const periodBookings = useMemo(
+    () =>
+      bookings.filter((booking: Booking) =>
+        isBookingInRange(booking, periodRange)
+      ),
+    [bookings, periodRange]
   );
 
   // =======================================================
-  // RAW DATA
+  // REVENUE & BOOKINGS CHART
   // =======================================================
 
-  const customers =
-    data?.customers ?? [];
+  const revenueData = useMemo<RevenueChartItem[]>(() => {
+    const now = new Date();
+    const result: RevenueChartItem[] = [];
 
-  const salons =
-    data?.salons ?? [];
+    if (period === '7days' || period === '30days') {
+      const numberOfDays = period === '7days' ? 7 : 30;
 
-  const bookings =
-    data?.bookings ?? [];
+      for (let i = numberOfDays - 1; i >= 0; i--) {
+        const date = startOfDay(addDays(now, -i));
+        const nextDay = endOfDay(date);
 
-  const reviews =
-    data?.reviews ?? [];
+        const dayBookings = bookings.filter((booking: Booking) => {
+          const bookingDate = getBookingDate(booking);
 
-  // =======================================================
-  // PERIOD BOOKINGS
-  // =======================================================
-
-  const periodBookings =
-    useMemo<Booking[]>(
-      () =>
-        bookings.filter(
-          (booking: Booking) =>
-            isBookingInPeriod(
-              booking,
-              period
-            )
-        ),
-      [
-        bookings,
-        period
-      ]
-    );
-
-  // =======================================================
-  // REVENUE CHART
-  // =======================================================
-
-  const revenueData =
-    useMemo<RevenueChartItem[]>(() => {
-      if (
-        period === '7days'
-      ) {
-        const result: RevenueChartItem[] =
-          [];
-
-        for (
-          let i = 6;
-          i >= 0;
-          i--
-        ) {
-          const date =
-            new Date();
-
-          date.setDate(
-            date.getDate() - i
+          return (
+            bookingDate !== null &&
+            bookingDate >= date &&
+            bookingDate <= nextDay
           );
-
-          const dayBookings =
-            bookings.filter(
-              (
-                booking: Booking
-              ) => {
-                const bookingDate =
-                  getBookingDate(
-                    booking
-                  );
-
-                if (!bookingDate) {
-                  return false;
-                }
-
-                return (
-                  bookingDate.getFullYear() ===
-                  date.getFullYear() &&
-                  bookingDate.getMonth() ===
-                  date.getMonth() &&
-                  bookingDate.getDate() ===
-                  date.getDate()
-                );
-              }
-            );
-
-          const revenue =
-            dayBookings
-              .filter(
-                (
-                  booking: Booking
-                ) =>
-                  booking.bookingStatus !==
-                  'CANCELLED'
-              )
-              .reduce(
-                (
-                  sum: number,
-                  booking: Booking
-                ) =>
-                  sum +
-                  Number(
-                    booking.totalAmount ||
-                    0
-                  ),
-                0
-              );
-
-          result.push({
-            name:
-              date.toLocaleDateString(
-                'en-IN',
-                {
-                  weekday: 'short'
-                }
-              ),
-            revenue,
-            bookings:
-              dayBookings.length
-          });
-        }
-
-        return result;
-      }
-
-      const result: RevenueChartItem[] =
-        [];
-
-      const months =
-        period === '12months'
-          ? 12
-          : period === '3months'
-            ? 3
-            : 1;
-
-      for (
-        let i = months - 1;
-        i >= 0;
-        i--
-      ) {
-        const date =
-          new Date();
-
-        date.setMonth(
-          date.getMonth() - i
-        );
-
-        const year =
-          date.getFullYear();
-
-        const month =
-          date.getMonth();
-
-        const monthBookings =
-          bookings.filter(
-            (
-              booking: Booking
-            ) => {
-              const bookingDate =
-                getBookingDate(
-                  booking
-                );
-
-              if (!bookingDate) {
-                return false;
-              }
-
-              return (
-                bookingDate.getFullYear() ===
-                year &&
-                bookingDate.getMonth() ===
-                month
-              );
-            }
-          );
-
-        const revenue =
-          monthBookings
-            .filter(
-              (
-                booking: Booking
-              ) =>
-                booking.bookingStatus !==
-                'CANCELLED'
-            )
-            .reduce(
-              (
-                sum: number,
-                booking: Booking
-              ) =>
-                sum +
-                Number(
-                  booking.totalAmount ||
-                  0
-                ),
-              0
-            );
+        });
 
         result.push({
           name:
-            date.toLocaleString(
-              'en-IN',
-              {
-                month: 'short'
-              }
-            ),
-          revenue,
-          bookings:
-            monthBookings.length
+            period === '7days'
+              ? date.toLocaleDateString('en-IN', {
+                  weekday: 'short'
+                })
+              : date.toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short'
+                }),
+          revenue: dayBookings.reduce(
+            (sum, booking) => sum + getPlatformRevenue(booking),
+            0
+          ),
+          bookings: dayBookings.length
         });
       }
 
       return result;
-    }, [
-      bookings,
-      period
-    ]);
+    }
+
+    const numberOfMonths = period === '3months' ? 3 : 12;
+
+    for (let i = numberOfMonths - 1; i >= 0; i--) {
+      const date = addMonths(now, -i);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+
+      const monthBookings = bookings.filter((booking: Booking) => {
+        const bookingDate = getBookingDate(booking);
+
+        return (
+          bookingDate !== null &&
+          bookingDate.getFullYear() === year &&
+          bookingDate.getMonth() === month
+        );
+      });
+
+      result.push({
+        name: date.toLocaleString('en-IN', {
+          month: 'short',
+          year: period === '12months' ? '2-digit' : undefined
+        }),
+        revenue: monthBookings.reduce(
+          (sum, booking) => sum + getPlatformRevenue(booking),
+          0
+        ),
+        bookings: monthBookings.length
+      });
+    }
+
+    return result;
+  }, [bookings, period]);
 
   // =======================================================
   // BOOKING STATUS
   // =======================================================
 
-  const bookingStatusData =
-    useMemo<BookingStatusItem[]>(
-      () => [
-        {
-          name: 'Completed',
-          value:
-            periodBookings.filter(
-              (
-                booking: Booking
-              ) =>
-                booking.bookingStatus ===
-                'COMPLETED'
-            ).length
-        },
-        {
-          name: 'Confirmed',
-          value:
-            periodBookings.filter(
-              (
-                booking: Booking
-              ) =>
-                booking.bookingStatus ===
-                'CONFIRMED'
-            ).length
-        },
-        {
-          name: 'Pending',
-          value:
-            periodBookings.filter(
-              (
-                booking: Booking
-              ) =>
-                booking.bookingStatus ===
-                'PENDING'
-            ).length
-        },
-        {
-          name: 'Cancelled',
-          value:
-            periodBookings.filter(
-              (
-                booking: Booking
-              ) =>
-                booking.bookingStatus ===
-                'CANCELLED'
-            ).length
-        },
-        {
-          name: 'No Show',
-          value:
-            periodBookings.filter(
-              (
-                booking: Booking
-              ) =>
-                booking.bookingStatus ===
-                'NO_SHOW'
-            ).length
-        }
-      ],
-      [
-        periodBookings
-      ]
-    );
+  const bookingStatusData = useMemo<BookingStatusItem[]>(
+    () => [
+      {
+        name: 'Completed',
+        value: periodBookings.filter(
+          booking => booking.bookingStatus === 'COMPLETED'
+        ).length
+      },
+      {
+        name: 'Confirmed',
+        value: periodBookings.filter(
+          booking => booking.bookingStatus === 'CONFIRMED'
+        ).length
+      },
+      {
+        name: 'Pending',
+        value: periodBookings.filter(
+          booking => booking.bookingStatus === 'PENDING'
+        ).length
+      },
+      {
+        name: 'Cancelled',
+        value: periodBookings.filter(
+          booking => booking.bookingStatus === 'CANCELLED'
+        ).length
+      },
+      {
+        name: 'No Show',
+        value: periodBookings.filter(
+          booking => booking.bookingStatus === 'NO_SHOW'
+        ).length
+      }
+    ],
+    [periodBookings]
+  );
 
   // =======================================================
   // CUSTOMER GROWTH
   // =======================================================
 
-  const customerGrowth =
-    useMemo<CustomerGrowthItem[]>(
-      () => {
-        const result: CustomerGrowthItem[] =
-          [];
+  const customerGrowth = useMemo<CustomerGrowthItem[]>(() => {
+    const now = new Date();
 
-        const months =
-          period === '12months'
-            ? 12
-            : period === '3months'
-              ? 3
-              : 1;
+    if (period === '7days' || period === '30days') {
+      const days = period === '7days' ? 7 : 30;
+      const result: CustomerGrowthItem[] = [];
 
-        for (
-          let i = months - 1;
-          i >= 0;
-          i--
-        ) {
-          const date =
-            new Date();
+      for (let i = days - 1; i >= 0; i--) {
+        const date = startOfDay(addDays(now, -i));
+        const end = endOfDay(date);
 
-          date.setMonth(
-            date.getMonth() - i
+        const count = customers.filter(customer => {
+          const created = parseDate(customer.createdAt);
+
+          return (
+            created !== null &&
+            created >= date &&
+            created <= end
           );
+        }).length;
 
-          const year =
-            date.getFullYear();
-
-          const month =
-            date.getMonth();
-
-          const count =
-            customers.filter(
-              (customer) => {
-                const created =
-                  parseDate(
-                    customer.createdAt
-                  );
-
-                if (!created) {
-                  return false;
-                }
-
-                return (
-                  created.getFullYear() ===
-                  year &&
-                  created.getMonth() ===
-                  month
-                );
-              }
-            ).length;
-
-          result.push({
-            name:
-              date.toLocaleString(
-                'en-IN',
-                {
+        result.push({
+          name:
+            period === '7days'
+              ? date.toLocaleDateString('en-IN', {
+                  weekday: 'short'
+                })
+              : date.toLocaleDateString('en-IN', {
+                  day: 'numeric',
                   month: 'short'
-                }
-              ),
-            customers: count
-          });
-        }
+                }),
+          customers: count
+        });
+      }
 
-        /*
-         * For 7 days / 30 days show
-         * actual period customer counts.
-         */
-        if (
-          period === '7days' ||
-          period === '30days'
-        ) {
-          const {
-            start,
-            end
-          } =
-            getPeriodDates(
-              period
-            );
+      return result;
+    }
 
-          const filtered =
-            customers.filter(
-              (customer) => {
-                const created =
-                  parseDate(
-                    customer.createdAt
-                  );
+    const months = period === '3months' ? 3 : 12;
+    const result: CustomerGrowthItem[] = [];
 
-                return (
-                  created !== null &&
-                  created >= start &&
-                  created <= end
-                );
-              }
-            ).length;
+    for (let i = months - 1; i >= 0; i--) {
+      const date = addMonths(now, -i);
+      const year = date.getFullYear();
+      const month = date.getMonth();
 
-          return [
-            {
-              name: 'Customers',
-              customers:
-                filtered
-            }
-          ];
-        }
+      const count = customers.filter(customer => {
+        const created = parseDate(customer.createdAt);
 
-        return result;
-      },
-      [
-        customers,
-        period
-      ]
-    );
+        return (
+          created !== null &&
+          created.getFullYear() === year &&
+          created.getMonth() === month
+        );
+      }).length;
+
+      result.push({
+        name: date.toLocaleString('en-IN', {
+          month: 'short',
+          year: period === '12months' ? '2-digit' : undefined
+        }),
+        customers: count
+      });
+    }
+
+    return result;
+  }, [customers, period]);
 
   // =======================================================
   // SERVICE PERFORMANCE
   // =======================================================
 
-  const servicePerformance =
-    useMemo<ServicePerformanceItem[]>(
-      () => {
-        const serviceMap =
-          new Map<
-            string,
-            ServicePerformanceItem
-          >();
+  const servicePerformance = useMemo<ServicePerformanceItem[]>(() => {
+    const serviceMap = new Map<string, ServicePerformanceItem>();
 
-        periodBookings.forEach(
-          (booking: Booking) => {
-            booking.services.forEach(
-              (service) => {
-                const serviceId =
-                  service.serviceId ||
-                  service.name;
+    periodBookings.forEach((booking: Booking) => {
+      // services can be undefined or null
+      (booking.services ?? []).forEach(service => {
+        const serviceName =
+          typeof service.name === 'string' && service.name.trim()
+            ? service.name.trim()
+            : 'Unnamed Service';
 
-                const existing =
-                  serviceMap.get(
-                    serviceId
-                  );
+        const serviceId =
+          service.serviceId || serviceName;
 
-                if (existing) {
-                  existing.bookings +=
-                    1;
+        const existing = serviceMap.get(serviceId);
 
-                  existing.revenue +=
-                    Number(
-                      service.price ||
-                      0
-                    );
-                } else {
-                  serviceMap.set(
-                    serviceId,
-                    {
-                      name:
-                        service.name,
-                      bookings: 1,
-                      revenue:
-                        Number(
-                          service.price ||
-                          0
-                        )
-                    }
-                  );
-                }
-              }
-            );
-          }
-        );
+        if (existing) {
+          existing.bookings += 1;
+          existing.revenue += Number(service.price ?? 0);
+        } else {
+          serviceMap.set(serviceId, {
+            id: serviceId,
+            name: serviceName,
+            bookings: 1,
+            // This is service value, not Clavata revenue.
+            revenue: Number(service.price ?? 0)
+          });
+        }
+      });
+    });
 
-        return Array.from(
-          serviceMap.values()
-        )
-          .sort(
-            (
-              a: ServicePerformanceItem,
-              b: ServicePerformanceItem
-            ) =>
-              b.bookings -
-              a.bookings
-          )
-          .slice(0, 10);
-      },
-      [
-        periodBookings
-      ]
-    );
+    return Array.from(serviceMap.values())
+      .sort((a, b) => b.bookings - a.bookings)
+      .slice(0, 10);
+  }, [periodBookings]);
 
   // =======================================================
   // SALON PERFORMANCE
   // =======================================================
 
-  const salonPerformance =
-    useMemo<SalonPerformanceItem[]>(
-      () => {
-        const salonMap =
-          new Map<
-            string,
-            SalonPerformanceItem
-          >();
+  const salonPerformance = useMemo<SalonPerformanceItem[]>(() => {
+    const salonMap = new Map<string, SalonPerformanceItem>();
 
-        periodBookings.forEach(
-          (booking: Booking) => {
-            const salonId =
-              booking.salonId;
+    periodBookings.forEach((booking: Booking) => {
+      const salonId = booking.salonId;
 
-            const existing =
-              salonMap.get(
-                salonId
-              );
+      if (!salonId) return;
 
-            if (existing) {
-              existing.bookings +=
-                1;
+      const existing = salonMap.get(salonId);
 
-              if (
-                booking.bookingStatus !==
-                'CANCELLED'
-              ) {
-                existing.revenue +=
-                  Number(
-                    booking.totalAmount ||
-                    0
-                  );
-              }
-            } else {
-              salonMap.set(
-                salonId,
-                {
-                  salon:
-                    booking.salonName ||
-                    'Unknown Salon',
-                  bookings: 1,
-                  revenue:
-                    booking.bookingStatus !==
-                      'CANCELLED'
-                      ? Number(
-                        booking.totalAmount ||
-                        0
-                      )
-                      : 0,
-                  rating: 0
-                }
-              );
-            }
-          }
-        );
+      if (existing) {
+        existing.bookings += 1;
 
-        const result =
-          Array.from(
-            salonMap.values()
-          );
+        if (booking.bookingStatus !== 'CANCELLED') {
+          existing.revenue += Number(booking.totalAmount ?? 0);
+        }
+      } else {
+        salonMap.set(salonId, {
+          id: salonId,
+          salon: booking.salonName || 'Unknown Salon',
+          bookings: 1,
+          // Service amount is paid to the salon directly.
+          revenue:
+            booking.bookingStatus !== 'CANCELLED'
+              ? Number(booking.totalAmount ?? 0)
+              : 0,
+          rating: 0
+        });
+      }
+    });
 
-        result.forEach(
-          (
-            salon: SalonPerformanceItem
-          ) => {
-            const matchingSalon =
-              salons.find(
-                (
-                  item: Salon
-                ) =>
-                  item.salonName ===
-                  salon.salon
-              );
+    const result = Array.from(salonMap.values());
 
-            salon.rating =
-              Number(
-                matchingSalon?.averageRating ||
-                0
-              );
-          }
-        );
+    result.forEach(salon => {
+      // Match by ID, not name, because salon names may repeat.
+      const matchingSalon = salons.find(
+        (item: Salon) => item.salonId === salon.id
+      );
 
-        return result
-          .sort(
-            (
-              a: SalonPerformanceItem,
-              b: SalonPerformanceItem
-            ) =>
-              b.revenue -
-              a.revenue
-          )
-          .slice(0, 10);
-      },
-      [
-        periodBookings,
-        salons
-      ]
-    );
+      salon.rating = Number(matchingSalon?.averageRating ?? 0);
+    });
+
+    return result
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+  }, [periodBookings, salons]);
 
   // =======================================================
   // KPI VALUES
   // =======================================================
 
-  const totalRevenue =
-    periodBookings
-      .filter(
-        (booking: Booking) =>
-          booking.bookingStatus !==
-          'CANCELLED'
-      )
-      .reduce(
-        (
-          sum: number,
-          booking: Booking
-        ) =>
-          sum +
-          Number(
-            booking.totalAmount ||
-            0
-          ),
+  const paidFeeBookings = useMemo(
+    () => periodBookings.filter(isPaidBookingFee),
+    [periodBookings]
+  );
+
+  const totalRevenue = useMemo(
+    () =>
+      paidFeeBookings.reduce(
+        (sum, booking) => sum + getPlatformRevenue(booking),
         0
-      );
+      ),
+    [paidFeeBookings]
+  );
 
-  const totalBookings =
-    periodBookings.length;
+  const totalBookings = periodBookings.length;
 
-  const completedBookings =
-    periodBookings.filter(
-      (booking: Booking) =>
-        booking.bookingStatus ===
-        'COMPLETED'
-    ).length;
+  const completedBookings = periodBookings.filter(
+    booking => booking.bookingStatus === 'COMPLETED'
+  ).length;
 
-  const activeSalons =
-    salons.filter(
-      (salon: Salon) =>
-        salon.isActive &&
-        salon.isVisible &&
-        !salon.isDeleted
-    ).length;
+  const activeSalons = salons.filter(
+    (salon: Salon) =>
+      salon.isActive &&
+      salon.isVisible &&
+      !salon.isDeleted
+  ).length;
 
   const averageBookingValue =
     totalBookings > 0
-      ? totalRevenue /
-      totalBookings
+      ? periodBookings.reduce(
+          (sum, booking) => sum + Number(booking.totalAmount ?? 0),
+          0
+        ) / totalBookings
       : 0;
 
   const averageRating =
     reviews.length > 0
       ? reviews.reduce(
-        (
-          sum: number,
-          review
-        ) =>
-          sum +
-          Number(
-            review.rating || 0
-          ),
-        0
-      ) /
-      reviews.length
+          (sum, review) => sum + Number(review.rating ?? 0),
+          0
+        ) / reviews.length
       : 0;
 
-  const cancelledBookings =
-    periodBookings.filter(
-      (booking: Booking) =>
-        booking.bookingStatus ===
-        'CANCELLED'
-    ).length;
+  const cancelledBookings = periodBookings.filter(
+    booking => booking.bookingStatus === 'CANCELLED'
+  ).length;
 
   const cancellationRate =
     totalBookings > 0
-      ? (
-        (cancelledBookings /
-          totalBookings) *
-        100
-      )
+      ? (cancelledBookings / totalBookings) * 100
       : 0;
-
-  // =======================================================
-  // PERIOD CHANGE
-  // =======================================================
 
   const changeLabel =
     period === '7days'
@@ -1082,15 +754,13 @@ export default function Analytics() {
           : 'Last 12 months';
 
   // =======================================================
-  // PERIOD CHANGE HANDLER
+  // PERIOD CHANGE
   // =======================================================
 
   const handlePeriodChange = (
-    event: SelectChangeEvent<Period>
+    event: { target: { value: unknown } }
   ): void => {
-    setPeriod(
-      event.target.value as Period
-    );
+    setPeriod(event.target.value as Period);
   };
 
   // =======================================================
@@ -1099,13 +769,7 @@ export default function Analytics() {
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          p: 3,
-          display: 'flex',
-          justifyContent: 'center'
-        }}
-      >
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center' }}>
         <Typography color="text.secondary">
           Loading analytics...
         </Typography>
@@ -1121,21 +785,13 @@ export default function Analytics() {
     return (
       <Box sx={{ p: 3 }}>
         <MainCard>
-          <Stack
-            spacing={2}
-            alignItems="center"
-          >
-            <Typography
-              color="error"
-              variant="h6"
-            >
+          <Stack spacing={2} alignItems="center">
+            <Typography color="error" variant="h6">
               Unable to load analytics
             </Typography>
 
-            <Typography
-              color="text.secondary"
-            >
-              {error}
+            <Typography color="text.secondary">
+              {String(error)}
             </Typography>
 
             <Chip
@@ -1158,8 +814,6 @@ export default function Analytics() {
 
   return (
     <Box>
-      {/* ============================== HEADER ============================== */}
-
       <Grid
         container
         alignItems="center"
@@ -1168,254 +822,134 @@ export default function Analytics() {
       >
         <Grid item>
           <Stack spacing={0.5}>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 700 }}
-            >
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
               Analytics
             </Typography>
 
-            <Typography
-              variant="body2"
-              color="text.secondary"
-            >
-              Monitor your salon platform
-              performance and business
-              insights.
+            <Typography variant="body2" color="text.secondary">
+              Monitor your salon platform performance and business insights.
             </Typography>
           </Stack>
         </Grid>
 
         <Grid item>
-          <FormControl
-            size="small"
-            sx={{ minWidth: 160 }}
-          >
-            <InputLabel>
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <InputLabel id="analytics-period-label">
               Period
             </InputLabel>
 
             <Select<Period>
+              labelId="analytics-period-label"
               value={period}
               label="Period"
-              onChange={
-                handlePeriodChange
-              }
+              onChange={handlePeriodChange}
             >
-              <MenuItem value="7days">
-                Last 7 days
-              </MenuItem>
-
-              <MenuItem value="30days">
-                Last 30 days
-              </MenuItem>
-
-              <MenuItem value="3months">
-                Last 3 months
-              </MenuItem>
-
-              <MenuItem value="12months">
-                Last 12 months
-              </MenuItem>
+              <MenuItem value="7days">Last 7 days</MenuItem>
+              <MenuItem value="30days">Last 30 days</MenuItem>
+              <MenuItem value="3months">Last 3 months</MenuItem>
+              <MenuItem value="12months">Last 12 months</MenuItem>
             </Select>
           </FormControl>
         </Grid>
       </Grid>
 
-      {/* ============================== KPI CARDS ============================== */}
+      {/* PRIMARY KPIs */}
 
-      <Grid
-        container
-        spacing={2.5}
-        sx={{ mb: 3 }}
-      >
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          lg={3}
-        >
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} lg={3}>
           <StatCard
-            title="Total Revenue"
-            value={formatCompactCurrency(
-              totalRevenue
-            )}
+            title="Clavata Booking Fee Revenue"
+            value={formatCompactCurrency(totalRevenue)}
             subtitle={changeLabel}
-            icon={
-              <DollarOutlined />
-            }
+            icon={<DollarOutlined />}
           />
         </Grid>
 
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          lg={3}
-        >
+        <Grid item xs={12} sm={6} lg={3}>
           <StatCard
             title="Total Bookings"
-            value={totalBookings.toLocaleString(
-              'en-IN'
-            )}
+            value={totalBookings.toLocaleString('en-IN')}
             subtitle={changeLabel}
-            icon={
-              <CalendarOutlined />
-            }
+            icon={<CalendarOutlined />}
           />
         </Grid>
 
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          lg={3}
-        >
+        <Grid item xs={12} sm={6} lg={3}>
           <StatCard
             title="Total Customers"
-            value={customers.length.toLocaleString(
-              'en-IN'
-            )}
+            value={customers.length.toLocaleString('en-IN')}
             subtitle="All customers"
-            icon={
-              <TeamOutlined />
-            }
+            icon={<TeamOutlined />}
           />
         </Grid>
 
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          lg={3}
-        >
+        <Grid item xs={12} sm={6} lg={3}>
           <StatCard
             title="Active Salons"
-            value={activeSalons.toLocaleString(
-              'en-IN'
-            )}
+            value={activeSalons.toLocaleString('en-IN')}
             subtitle="Currently active"
-            icon={
-              <ShopOutlined />
-            }
+            icon={<ShopOutlined />}
           />
         </Grid>
       </Grid>
 
-      {/* ============================== SECONDARY KPIs ============================== */}
+      {/* SECONDARY KPIs */}
 
-      <Grid
-        container
-        spacing={2.5}
-        sx={{ mb: 3 }}
-      >
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          lg={3}
-        >
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} lg={3}>
           <StatCard
             title="Completed Bookings"
-            value={completedBookings.toLocaleString(
-              'en-IN'
-            )}
-            icon={
-              <CheckCircleOutlined />
-            }
+            value={completedBookings.toLocaleString('en-IN')}
+            icon={<CheckCircleOutlined />}
           />
         </Grid>
 
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          lg={3}
-        >
+        <Grid item xs={12} sm={6} lg={3}>
           <StatCard
-            title="Average Booking Value"
-            value={formatCurrency(
-              Math.round(
-                averageBookingValue
-              )
-            )}
-            icon={
-              <ShoppingCartOutlined />
-            }
+            title="Average Service Booking Value"
+            value={formatCurrency(Math.round(averageBookingValue))}
+            icon={<ShoppingCartOutlined />}
           />
         </Grid>
 
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          lg={3}
-        >
+        <Grid item xs={12} sm={6} lg={3}>
           <StatCard
-            title="Average Rating"
-            value={averageRating.toFixed(
-              1
-            )}
-            icon={
-              <StarOutlined />
-            }
+            title="Average Review Rating"
+            value={averageRating.toFixed(1)}
+            icon={<StarOutlined />}
           />
         </Grid>
 
-        <Grid
-          item
-          xs={12}
-          sm={6}
-          lg={3}
-        >
+        <Grid item xs={12} sm={6} lg={3}>
           <StatCard
             title="Cancellation Rate"
-            value={`${cancellationRate.toFixed(
-              1
-            )}%`}
-            icon={
-              <ClockCircleOutlined />
-            }
+            value={`${cancellationRate.toFixed(1)}%`}
+            icon={<ClockCircleOutlined />}
           />
         </Grid>
       </Grid>
 
-      {/* ============================== REVENUE + BOOKINGS ============================== */}
+      {/* REVENUE & BOOKING STATUS */}
 
-      <Grid
-        container
-        spacing={2.5}
-        sx={{ mb: 3 }}
-      >
-        <Grid
-          item
-          xs={12}
-          lg={8}
-        >
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        <Grid item xs={12} lg={8}>
           <MainCard
-            title="Revenue & Bookings"
+            title="Clavata Booking Fee Revenue & Bookings"
             secondary={
               <Chip
-                label="Live data"
+                label="Based on loaded data"
                 size="small"
-                color="success"
+                color="primary"
                 variant="outlined"
               />
             }
           >
-            <Box
-              sx={{
-                width: '100%',
-                height: 360
-              }}
-            >
+            <Box sx={{ width: '100%', height: 360 }}>
               <ResponsiveContainer>
-                <AreaChart
-                  data={revenueData}
-                >
+                <AreaChart data={revenueData}>
                   <defs>
                     <linearGradient
-                      id="revenueGradient"
+                      id="clavataRevenueGradient"
                       x1="0"
                       y1="0"
                       x2="0"
@@ -1423,61 +957,40 @@ export default function Analytics() {
                     >
                       <stop
                         offset="5%"
+                        stopColor="#7C3AED"
                         stopOpacity={0.3}
                       />
-
                       <stop
                         offset="95%"
+                        stopColor="#7C3AED"
                         stopOpacity={0}
                       />
                     </linearGradient>
                   </defs>
 
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                  />
-
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" />
-
                   <YAxis
-                    tickFormatter={(
-                      value: number
-                    ) =>
-                      `₹${(
-                        value / 1000
-                      ).toFixed(0)}K`
+                    yAxisId="revenue"
+                    tickFormatter={(value: number) =>
+                      formatCompactCurrency(value)
                     }
+                  />
+                  <YAxis
+                    yAxisId="bookings"
+                    orientation="right"
                   />
 
                   <Tooltip
-                    formatter={(
-                      value: unknown,
-                      name: unknown
-                    ) => {
-                      const numericValue =
-                        Number(
-                          value || 0
-                        );
-
-                      const label =
-                        String(
-                          name || ''
-                        );
+                    formatter={(value: unknown, name: unknown) => {
+                      const numericValue = Number(value ?? 0);
+                      const label = String(name ?? '');
 
                       return [
-                        label ===
-                          'revenue'
-                          ? formatCurrency(
-                            numericValue
-                          )
-                          : numericValue.toLocaleString(
-                            'en-IN'
-                          ),
-                        label ===
-                          'revenue'
-                          ? 'Revenue'
-                          : 'Bookings'
+                        label === 'Revenue'
+                          ? formatCurrency(numericValue)
+                          : numericValue.toLocaleString('en-IN'),
+                        label
                       ];
                     }}
                   />
@@ -1485,19 +998,21 @@ export default function Analytics() {
                   <Legend />
 
                   <Area
+                    yAxisId="revenue"
                     type="monotone"
                     dataKey="revenue"
                     name="Revenue"
-                    stroke="#1677ff"
-                    fill="url(#revenueGradient)"
+                    stroke="#7C3AED"
+                    fill="url(#clavataRevenueGradient)"
                     strokeWidth={2}
                   />
 
                   <Line
+                    yAxisId="bookings"
                     type="monotone"
                     dataKey="bookings"
                     name="Bookings"
-                    stroke="#52c41a"
+                    stroke="#2563EB"
                     strokeWidth={2}
                   />
                 </AreaChart>
@@ -1506,24 +1021,13 @@ export default function Analytics() {
           </MainCard>
         </Grid>
 
-        <Grid
-          item
-          xs={12}
-          lg={4}
-        >
+        <Grid item xs={12} lg={4}>
           <MainCard title="Booking Status">
-            <Box
-              sx={{
-                width: '100%',
-                height: 360
-              }}
-            >
+            <Box sx={{ width: '100%', height: 360 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
-                    data={
-                      bookingStatusData
-                    }
+                    data={bookingStatusData}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
@@ -1532,30 +1036,16 @@ export default function Analytics() {
                     outerRadius={115}
                     paddingAngle={3}
                   >
-                    {bookingStatusData.map(
-                      (
-                        item: BookingStatusItem,
-                        index: number
-                      ) => (
-                        <Cell
-                          key={`${item.name}-${index}`}
-                          fill={
-                            COLORS[
-                            index %
-                            COLORS.length
-                            ]
-                          }
-                        />
-                      )
-                    )}
+                    {bookingStatusData.map((item, index) => (
+                      <Cell
+                        key={`${item.name}-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
                   </Pie>
 
                   <Tooltip />
-
-                  <Legend
-                    verticalAlign="bottom"
-                    height={36}
-                  />
+                  <Legend verticalAlign="bottom" height={36} />
                 </PieChart>
               </ResponsiveContainer>
             </Box>
@@ -1563,49 +1053,26 @@ export default function Analytics() {
         </Grid>
       </Grid>
 
-      {/* ============================== CUSTOMER GROWTH ============================== */}
+      {/* CUSTOMER GROWTH & TOP SERVICES */}
 
-      <Grid
-        container
-        spacing={2.5}
-        sx={{ mb: 3 }}
-      >
-        <Grid
-          item
-          xs={12}
-          lg={6}
-        >
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        <Grid item xs={12} lg={6}>
           <MainCard title="Customer Growth">
-            <Box
-              sx={{
-                width: '100%',
-                height: 320
-              }}
-            >
+            <Box sx={{ width: '100%', height: 320 }}>
               <ResponsiveContainer>
-                <LineChart
-                  data={
-                    customerGrowth
-                  }
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                  />
-
+                <LineChart data={customerGrowth}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" />
-
-                  <YAxis />
-
+                  <YAxis allowDecimals={false} />
                   <Tooltip />
 
                   <Line
                     type="monotone"
                     dataKey="customers"
-                    name="Customers"
-                    stroke="#722ed1"
+                    name="New Customers"
+                    stroke="#7C3AED"
                     strokeWidth={3}
-                    dot={{ r: 4 }}
+                    dot={{ r: 3 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -1613,54 +1080,29 @@ export default function Analytics() {
           </MainCard>
         </Grid>
 
-        <Grid
-          item
-          xs={12}
-          lg={6}
-        >
-          <MainCard title="Top Services">
-            <Box
-              sx={{
-                width: '100%',
-                height: 320
-              }}
-            >
+        <Grid item xs={12} lg={6}>
+          <MainCard title="Top Services by Bookings">
+            <Box sx={{ width: '100%', height: 320 }}>
               <ResponsiveContainer>
                 <BarChart
-                  data={
-                    servicePerformance
-                  }
+                  data={servicePerformance}
                   layout="vertical"
-                  margin={{
-                    left: 20,
-                    right: 20
-                  }}
+                  margin={{ left: 20, right: 20 }}
                 >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    horizontal={false}
-                  />
-
-                  <XAxis type="number" />
-
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" allowDecimals={false} />
                   <YAxis
                     type="category"
                     dataKey="name"
-                    width={100}
+                    width={110}
                   />
-
                   <Tooltip />
 
                   <Bar
                     dataKey="bookings"
                     name="Bookings"
-                    fill="#1677ff"
-                    radius={[
-                      0,
-                      6,
-                      6,
-                      0
-                    ]}
+                    fill="#7C3AED"
+                    radius={[0, 6, 6, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -1669,63 +1111,49 @@ export default function Analytics() {
         </Grid>
       </Grid>
 
-      {/* ============================== SERVICE PERFORMANCE ============================== */}
+      {/* SERVICE PERFORMANCE */}
 
-      <Grid
-        container
-        spacing={2.5}
-        sx={{ mb: 3 }}
-      >
-        <Grid
-          item
-          xs={12}
-        >
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        <Grid item xs={12}>
           <MainCard title="Service Performance">
-            <Box
-              sx={{
-                width: '100%',
-                height: 350
-              }}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mb: 1 }}
             >
+              Service value represents salon services, not Clavata booking-fee revenue.
+            </Typography>
+
+            <Box sx={{ width: '100%', height: 350 }}>
               <ResponsiveContainer>
-                <BarChart
-                  data={
-                    servicePerformance
-                  }
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
+                <BarChart data={servicePerformance}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    interval={0}
+                    angle={-15}
+                    textAnchor="end"
+                    height={65}
+                  />
+                  <YAxis
+                    yAxisId="bookings"
+                    allowDecimals={false}
+                  />
+                  <YAxis
+                    yAxisId="value"
+                    orientation="right"
+                    tickFormatter={formatCompactCurrency}
                   />
 
-                  <XAxis dataKey="name" />
-
-                  <YAxis />
-
                   <Tooltip
-                    formatter={(
-                      value: unknown,
-                      name: unknown
-                    ) => {
-                      const numericValue =
-                        Number(
-                          value || 0
-                        );
-
-                      const label =
-                        String(
-                          name || ''
-                        );
+                    formatter={(value: unknown, name: unknown) => {
+                      const numericValue = Number(value ?? 0);
+                      const label = String(name ?? '');
 
                       return [
-                        label ===
-                          'Revenue'
-                          ? formatCurrency(
-                            numericValue
-                          )
-                          : numericValue.toLocaleString(
-                            'en-IN'
-                          ),
+                        label === 'Service Value'
+                          ? formatCurrency(numericValue)
+                          : numericValue.toLocaleString('en-IN'),
                         label
                       ];
                     }}
@@ -1734,27 +1162,19 @@ export default function Analytics() {
                   <Legend />
 
                   <Bar
+                    yAxisId="bookings"
                     dataKey="bookings"
                     name="Bookings"
-                    fill="#1677ff"
-                    radius={[
-                      6,
-                      6,
-                      0,
-                      0
-                    ]}
+                    fill="#7C3AED"
+                    radius={[6, 6, 0, 0]}
                   />
 
                   <Bar
+                    yAxisId="value"
                     dataKey="revenue"
-                    name="Revenue"
-                    fill="#52c41a"
-                    radius={[
-                      6,
-                      6,
-                      0,
-                      0
-                    ]}
+                    name="Service Value"
+                    fill="#2563EB"
+                    radius={[6, 6, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -1763,229 +1183,150 @@ export default function Analytics() {
         </Grid>
       </Grid>
 
-      {/* ============================== TOP SALONS ============================== */}
+      {/* TOP SALONS */}
 
-      <Grid
-        container
-        spacing={2.5}
-      >
-        <Grid
-          item
-          xs={12}
-        >
+      <Grid container spacing={2.5}>
+        <Grid item xs={12}>
           <MainCard title="Top Performing Salons">
-            <Box
-              sx={{
-                overflowX: 'auto'
-              }}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mb: 1 }}
             >
+              Ranked by service booking value. Service payments go directly to salons.
+            </Typography>
+
+            <Box sx={{ overflowX: 'auto' }}>
               <Box
                 component="table"
                 sx={{
                   width: '100%',
-                  borderCollapse:
-                    'collapse',
-
+                  borderCollapse: 'collapse',
                   '& th': {
-                    textAlign:
-                      'left',
-                    padding:
-                      '14px 12px',
-                    color:
-                      'text.secondary',
-                    fontSize:
-                      '0.8rem',
+                    textAlign: 'left',
+                    padding: '14px 12px',
+                    color: 'text.secondary',
+                    fontSize: '0.8rem',
                     fontWeight: 600,
-                    borderBottom:
-                      '1px solid',
-                    borderColor:
-                      'divider'
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    whiteSpace: 'nowrap'
                   },
-
                   '& td': {
-                    padding:
-                      '16px 12px',
-                    borderBottom:
-                      '1px solid',
-                    borderColor:
-                      'divider'
+                    padding: '16px 12px',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider'
                   }
                 }}
               >
                 <thead>
                   <tr>
-                    <th>
-                      Salon
-                    </th>
-
-                    <th>
-                      Bookings
-                    </th>
-
-                    <th>
-                      Revenue
-                    </th>
-
-                    <th>
-                      Rating
-                    </th>
-
-                    <th>
-                      Performance
-                    </th>
+                    <th>Salon</th>
+                    <th>Bookings</th>
+                    <th>Service Value</th>
+                    <th>Rating</th>
+                    <th>Performance</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {salonPerformance.map(
-                    (
-                      salon: SalonPerformanceItem,
-                      index: number
-                    ) => (
-                      <tr
-                        key={
-                          salon.salon
-                        }
-                      >
-                        <td>
-                          <Stack
-                            direction="row"
-                            spacing={
-                              1.5
-                            }
-                            alignItems="center"
-                          >
-                            <Box
-                              sx={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 2,
-                                display:
-                                  'flex',
-                                alignItems:
-                                  'center',
-                                justifyContent:
-                                  'center',
-                                bgcolor:
-                                  'primary.lighter',
-                                color:
-                                  'primary.main'
-                              }}
-                            >
-                              <EnvironmentOutlined />
-                            </Box>
-
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontWeight: 600
-                                }}
-                              >
-                                {
-                                  salon.salon
-                                }
-                              </Typography>
-
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                Rank #
-                                {index +
-                                  1}
-                              </Typography>
-                            </Box>
-                          </Stack>
-                        </td>
-
-                        <td>
-                          <Typography variant="body2">
-                            {salon.bookings.toLocaleString(
-                              'en-IN'
-                            )}
-                          </Typography>
-                        </td>
-
-                        <td>
-                          <Typography
-                            variant="body2"
+                  {salonPerformance.map((salon, index) => (
+                    <tr key={salon.id}>
+                      <td>
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
+                        >
+                          <Box
                             sx={{
-                              fontWeight: 600
+                              width: 36,
+                              height: 36,
+                              flexShrink: 0,
+                              borderRadius: 2,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              bgcolor: 'primary.lighter',
+                              color: 'primary.main'
                             }}
                           >
-                            {formatCurrency(
-                              salon.revenue
-                            )}
-                          </Typography>
-                        </td>
+                            <EnvironmentOutlined />
+                          </Box>
 
-                        <td>
-                          <Stack
-                            direction="row"
-                            spacing={
-                              0.5
-                            }
-                            alignItems="center"
-                          >
-                            <StarOutlined
-                              style={{
-                                color:
-                                  '#faad14'
-                              }}
-                            />
-
-                            <Typography variant="body2">
-                              {salon.rating.toFixed(
-                                1
-                              )}
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {salon.salon}
                             </Typography>
-                          </Stack>
-                        </td>
 
-                        <td>
-                          <Chip
-                            label={
-                              index ===
-                                0
-                                ? 'Excellent'
-                                : index <
-                                  3
-                                  ? 'Very Good'
-                                  : 'Good'
-                            }
-                            size="small"
-                            color={
-                              index ===
-                                0
-                                ? 'success'
-                                : 'default'
-                            }
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              Rank #{index + 1}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </td>
+
+                      <td>
+                        {salon.bookings.toLocaleString('en-IN')}
+                      </td>
+
+                      <td>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          {formatCurrency(salon.revenue)}
+                        </Typography>
+                      </td>
+
+                      <td>
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          alignItems="center"
+                        >
+                          <StarOutlined
+                            style={{ color: '#F59E0B' }}
                           />
-                        </td>
-                      </tr>
-                    )
-                  )}
+
+                          <Typography variant="body2">
+                            {salon.rating.toFixed(1)}
+                          </Typography>
+                        </Stack>
+                      </td>
+
+                      <td>
+                        <Chip
+                          label={
+                            index === 0
+                              ? 'Top Performer'
+                              : index < 3
+                                ? 'Strong'
+                                : 'Growing'
+                          }
+                          size="small"
+                          color={index === 0 ? 'primary' : 'default'}
+                        />
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </Box>
             </Box>
 
-            {salonPerformance.length ===
-              0 && (
-                <Box
-                  sx={{
-                    py: 5,
-                    textAlign:
-                      'center'
-                  }}
-                >
-                  <Typography color="text.secondary">
-                    No salon booking
-                    data available
-                    for this period.
-                  </Typography>
-                </Box>
-              )}
+            {salonPerformance.length === 0 && (
+              <Box sx={{ py: 5, textAlign: 'center' }}>
+                <Typography color="text.secondary">
+                  No salon booking data available for this period.
+                </Typography>
+              </Box>
+            )}
           </MainCard>
         </Grid>
       </Grid>

@@ -12,24 +12,20 @@ export const ADMIN_CUSTOMERS = gql`
             success
             message
             totalCount
-
             customers {
                 userId
                 fullName
                 phoneNumber
                 email
-
-                activeRole
+                role
                 providerStatus
                 salonId
                 status
-
                 totalBookings
                 completedBookings
                 cancelledBookings
                 totalSpent
                 lastBooking
-
                 createdAt
                 updatedAt
             }
@@ -177,9 +173,6 @@ export const ADMIN_BOOKINGS = gql`
         startTime
         endTime
 
-        staffId
-        staffName
-
         services {
           serviceId
           name
@@ -241,9 +234,6 @@ const UPDATE_BOOKING_STATUS = gql`
         bookingDate
         startTime
         endTime
-
-        staffId
-        staffName
 
         services {
           serviceId
@@ -1324,7 +1314,6 @@ export const ADMIN_PROVIDERS = gql`
                 fullName
                 phoneNumber
                 email
-                activeRole
                 providerStatus
                 salonId
                 createdAt

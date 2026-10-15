@@ -14,85 +14,64 @@ import {
   fetchDashboardData
 } from './dashboardApi';
 
-// =========================================================
-// HOOK
-// =========================================================
-
-export const useDashboardData = (
+const useDashboardData = (
   period: DashboardPeriod
 ) => {
   const client = useApolloClient();
 
-  const [
-    data,
-    setData
-  ] = useState<DashboardData | null>(null);
+  const [data, setData] =
+    useState<DashboardData | null>(null);
 
-  const [
-    loading,
-    setLoading
-  ] = useState<boolean>(true);
+  const [loading, setLoading] =
+    useState<boolean>(true);
 
-  const [
-    error,
-    setError
-  ] = useState<string | null>(null);
-
-  // =======================================================
-  // LOAD DASHBOARD
-  // =======================================================
+  const [error, setError] =
+    useState<string | null>(null);
 
   const loadDashboard = useCallback(
     async (): Promise<void> => {
+      setLoading(true);
+      setError(null);
+
       try {
-        setLoading(true);
-        setError(null);
+        const result =
+          await fetchDashboardData(client);
 
-        const result = await fetchDashboardData(
-          client
-        );
-
-        const dashboard = buildDashboardData(
-          result.customers,
-          result.salons,
-          result.bookings,
-          result.reviews,
-          period
-        );
+        const dashboard =
+          buildDashboardData(
+            result.customers,
+            result.salons,
+            result.bookings,
+            result.reviews,
+            period,
+            {
+              customerCount: result.customerCount,
+              salonCount: result.salonCount
+            }
+          );
 
         setData(dashboard);
       } catch (err: unknown) {
         console.error(
-          'Dashboard loading error:',
+          '[Dashboard] Loading failed:',
           err
         );
 
         setError(
           err instanceof Error
             ? err.message
-            : 'Unable to load dashboard data'
+            : 'Unable to load dashboard data. Please try again.'
         );
       } finally {
         setLoading(false);
       }
     },
-    [
-      client,
-      period
-    ]
+    [client, period]
   );
-
-  // =======================================================
-  // LOAD ON MOUNT / PERIOD CHANGE
-  // =======================================================
 
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
-
-  // =======================================================
-  // RETURN
-  // =======================================================
 
   return {
     data,
@@ -103,4 +82,3 @@ export const useDashboardData = (
 };
 
 export default useDashboardData;
-

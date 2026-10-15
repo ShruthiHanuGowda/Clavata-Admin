@@ -86,10 +86,10 @@ export default function AccountSettings() {
     }
 
     if (
-      typeof userData?.activeRole === 'string' &&
-      userData.activeRole.trim()
+      typeof userData?.role === 'string' &&
+      userData.role.trim()
     ) {
-      return userData.activeRole;
+      return userData.role;
     }
 
     return 'Administrator';

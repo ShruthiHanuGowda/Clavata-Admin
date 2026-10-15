@@ -68,8 +68,8 @@ export default function Profile() {
       return userData.role;
     }
 
-    if (typeof userData?.activeRole === 'string') {
-      return userData.activeRole;
+    if (typeof userData?.role === 'string') {
+      return userData.role;
     }
 
     return 'Administrator';

@@ -1,21 +1,39 @@
 
-// =========================================================
-// TYPES
-// =========================================================
+import {
+  ADMIN_BOOKINGS,
+  ADMIN_CUSTOMERS,
+  ADMIN_REVIEWS,
+  ADMIN_SALONS
+} from 'graphql/queries';
 
-import { ADMIN_BOOKINGS, ADMIN_CUSTOMERS, ADMIN_REVIEWS, ADMIN_SALONS } from 'graphql/queries';
+import type {
+  DocumentNode,
+  FetchPolicy
+} from '@apollo/client';
+
+// =========================================================
+// ENUMS / TYPES
+// =========================================================
 
 export type BookingStatus =
   | 'PENDING'
   | 'CONFIRMED'
   | 'COMPLETED'
   | 'CANCELLED'
-  | 'NO_SHOW';
+  | 'NO_SHOW'
+  | 'EXPIRED';
 
 export type PaymentStatus =
   | 'PENDING'
   | 'PARTIALLY_PAID'
   | 'PAID'
+  | 'FAILED'
+  | 'REFUNDED';
+
+export type BookingFeeStatus =
+  | 'PENDING'
+  | 'PAID'
+  | 'EXPIRED'
   | 'FAILED'
   | 'REFUNDED';
 
@@ -29,6 +47,12 @@ export type ProviderApprovalStatus =
   | 'APPROVED'
   | 'REJECTED';
 
+export type DashboardPeriod =
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'year';
+
 // =========================================================
 // CUSTOMER
 // =========================================================
@@ -37,20 +61,16 @@ export interface Customer {
   userId: string;
   fullName: string;
   phoneNumber: string;
+  role?: string;
   email?: string | null;
-
-  activeRole: string;
-  providerStatus: string;
+  providerStatus?: string | null;
   salonId?: string | null;
   status: string;
-
   totalBookings: number;
   completedBookings: number;
   cancelledBookings: number;
   totalSpent: number;
-
   lastBooking?: string | null;
-
   createdAt: string;
   updatedAt: string;
 }
@@ -62,21 +82,18 @@ export interface Customer {
 export interface Salon {
   salonId: string;
   ownerUserId: string;
-
   salonName: string;
   ownerName: string;
-  businessType: string;
-
-  ownerPhoneNumber: string;
+  ownerPhoneNumber?: string | null;
   alternatePhone?: string | null;
-  email: string;
+  email?: string | null;
 
-  address: {
-    addressLine: string;
-    city: string;
-    state: string;
-    pincode: string;
-  };
+  address?: {
+    addressLine?: string | null;
+    city?: string | null;
+    state?: string | null;
+    pincode?: string | null;
+  } | null;
 
   latitude?: number | null;
   longitude?: number | null;
@@ -85,37 +102,34 @@ export interface Salon {
   panNumber?: string | null;
   aadhaarNumber?: string | null;
 
-  bankAccount?: string | null;
-  ifsc?: string | null;
-  accountHolderName: string;
-
   logoUrl?: string | null;
   coverImageUrl?: string | null;
-  galleryImages: string[];
+  galleryImages?: string[] | null;
 
-  kycStatus: string;
+  kycStatus?: string | null;
+  verificationStatus?: string | null;
+
   adminApprovalStatus: ProviderApprovalStatus;
-  salonStatus: string;
+  salonStatus?: string | null;
 
   isActive: boolean;
-  isVisible: boolean;
+  isVisible?: boolean;
   isDeleted: boolean;
 
-  averageRating: number;
-  totalReviews: number;
-  totalAppointments: number;
-  totalCompletedAppointments: number;
-  totalCancelledAppointments: number;
-  totalRevenue: number;
+  averageRating?: number | null;
+  totalReviews?: number | null;
+  totalAppointments?: number | null;
+  totalCompletedAppointments?: number | null;
+  totalCancelledAppointments?: number | null;
+
+  totalRevenue?: number | null;
 
   approvedBy?: string | null;
   approvedAt?: string | null;
-
   rejectedBy?: string | null;
   rejectedAt?: string | null;
   rejectionReason?: string | null;
-
-  lastUpdatedBy: string;
+  lastUpdatedBy?: string | null;
 
   createdAt: string;
   updatedAt: string;
@@ -126,11 +140,11 @@ export interface Salon {
 // =========================================================
 
 export interface BookingService {
-  serviceId: string;
+  serviceId?: string | null;
   name: string;
-  category: string;
-  duration: number;
-  price: number;
+  category?: string | null;
+  duration?: number | null;
+  price?: number | null;
 }
 
 // =========================================================
@@ -144,23 +158,23 @@ export interface Booking {
 
   salonName: string;
   customerName: string;
-  customerPhone: string;
+  customerPhone?: string | null;
 
   bookingDate: string;
   startTime: string;
-  endTime: string;
+  endTime?: string | null;
 
   staffId?: string | null;
   staffName?: string | null;
 
-  services: BookingService[];
+  services?: BookingService[] | null;
 
-  totalDuration: number;
-  subtotal: number;
-  discount: number;
+  totalDuration?: number | null;
+  subtotal?: number | null;
+  discount?: number | null;
   totalAmount: number;
 
-  paymentMethod: string;
+  paymentMethod?: string | null;
   paymentStatus: PaymentStatus;
   bookingStatus: BookingStatus;
 
@@ -168,10 +182,11 @@ export interface Booking {
   salonNote?: string | null;
 
   bookingFee: number;
-  bookingFeeStatus: PaymentStatus;
+  bookingFeeStatus: BookingFeeStatus;
   bookingFeePaidAt?: string | null;
+  bookingFeePaymentDeadline?: string | null;
 
-  remainingAmount: number;
+  remainingAmount?: number | null;
 
   razorpayOrderId?: string | null;
   razorpayPaymentId?: string | null;
@@ -194,15 +209,11 @@ export interface Review {
   reviewId: string;
   bookingId?: string | null;
   salonId: string;
-
   salonName: string;
-
   customerUserId: string;
   customerName?: string | null;
-
   rating: number;
   review: string;
-
   createdAt: string;
   status: ReviewStatus;
 }
@@ -214,8 +225,9 @@ export interface Review {
 export interface DashboardStats {
   totalCustomers: number;
   totalSalons: number;
-
   totalBookings: number;
+
+  // Clavata platform booking-fee revenue only.
   totalRevenue: number;
 
   pendingApplications: number;
@@ -236,68 +248,83 @@ export interface BookingSummary {
   pending: number;
   cancelled: number;
   noShow: number;
+  expired: number;
 }
 
 export interface DashboardData {
   stats: DashboardStats;
-
   revenue: RevenueData[];
-
   bookingSummary: BookingSummary;
 
   recentBookings: Booking[];
-
   pendingApplications: Salon[];
-
   recentReviews: Review[];
 
   customers: Customer[];
-
   salons: Salon[];
-
   bookings: Booking[];
-
   reviews: Review[];
 }
 
+export interface DashboardFetchResult {
+  customers: Customer[];
+  salons: Salon[];
+  bookings: Booking[];
+  reviews: Review[];
+
+  // Server-reported counts, where available.
+  customerCount: number;
+  salonCount: number;
+  bookingCount: number;
+  reviewCount: number;
+}
+
 // =========================================================
-// RAW API RESPONSE TYPES
+// API RESPONSE TYPES
 // =========================================================
 
+interface ListResponse<T> {
+  success?: boolean;
+  message?: string | null;
+  totalCount?: number | null;
+}
+
 interface AdminCustomersResponse {
-  adminCustomers: {
-    success: boolean;
-    message: string;
-    totalCount: number;
-    customers: Customer[];
+  adminCustomers?: ListResponse<Customer> & {
+    customers?: Customer[] | null;
   };
 }
 
 interface AdminSalonsResponse {
-  adminSalons: {
-    success: boolean;
-    message: string;
-    totalCount: number;
-    salons: Salon[];
+  adminSalons?: ListResponse<Salon> & {
+    salons?: Salon[] | null;
   };
 }
 
 interface AdminBookingsResponse {
-  adminBookings: {
-    success: boolean;
-    message: string;
-    totalCount: number;
-    bookings: Booking[];
+  adminBookings?: ListResponse<Booking> & {
+    bookings?: Booking[] | null;
   };
 }
 
 interface AdminReviewsResponse {
-  adminReviews: {
-    success: boolean;
-    message: string;
-    totalCount: number;
-    reviews: Review[];
+  adminReviews?: ListResponse<Review> & {
+    reviews?: Review[] | null;
   };
+}
+
+// =========================================================
+// APOLLO CLIENT INTERFACE
+// =========================================================
+
+interface DashboardApolloClient {
+  query: <TData = unknown>(options: {
+    query: DocumentNode;
+    variables?: Record<string, unknown>;
+    fetchPolicy?: FetchPolicy;
+  }) => Promise<{
+    data: TData;
+  }>;
 }
 
 // =========================================================
@@ -313,230 +340,150 @@ const parseDate = (
 
   const date = new Date(value);
 
-  if (!Number.isNaN(date.getTime())) {
-    return date;
-  }
-
-  return null;
+  return Number.isNaN(date.getTime())
+    ? null
+    : date;
 };
 
-const getBookingDate = (
+export const getBookingDate = (
   booking: Booking
 ): Date | null => {
-  const bookingDate =
-    booking.bookingDate || '';
+  const date = booking.bookingDate;
 
-  const startTime =
-    booking.startTime || '';
-
-  if (bookingDate && startTime) {
-    const combined =
-      `${bookingDate} ${startTime}`;
-
-    const date =
-      new Date(combined);
-
-    if (!Number.isNaN(date.getTime())) {
-      return date;
-    }
+  if (!date) {
+    return null;
   }
 
-  return parseDate(
-    booking.bookingDate
+  // ISO timestamps should be parsed as-is.
+  if (date.includes('T')) {
+    return parseDate(date);
+  }
+
+  const time = booking.startTime || '00:00';
+
+  return (
+    parseDate(`${date}T${time}`) ??
+    parseDate(date)
   );
 };
 
+const getRevenueDate = (
+  booking: Booking
+): Date | null => {
+  // Revenue is counted when the Clavata booking fee was paid,
+  // not when the customer visited the salon.
+  return (
+    parseDate(booking.bookingFeePaidAt) ??
+    (booking.bookingFeeStatus === 'PAID'
+      ? parseDate(booking.updatedAt)
+      : null)
+  );
+};
+
+const getMonthName = (
+  date: Date
+): string =>
+  date.toLocaleString('en-IN', {
+    month: 'short'
+  });
+
 // =========================================================
-// PERIOD
+// PERIOD HELPERS
 // =========================================================
 
-export type DashboardPeriod =
-  | 'day'
-  | 'week'
-  | 'month'
-  | 'year';
+export const getPeriodStart = (
+  period: DashboardPeriod,
+  now = new Date()
+): Date => {
+  const start = new Date(now);
 
-// =========================================================
-// PERIOD FILTER
-// =========================================================
+  start.setHours(0, 0, 0, 0);
+
+  switch (period) {
+    case 'day':
+      return start;
+
+    case 'week': {
+      const day = start.getDay() || 7;
+
+      start.setDate(start.getDate() - day + 1);
+
+      return start;
+    }
+
+    case 'month':
+      start.setDate(1);
+      return start;
+
+    case 'year':
+      start.setMonth(0, 1);
+      return start;
+
+    default:
+      return start;
+  }
+};
 
 const isWithinPeriod = (
   date: Date | null,
-  period: DashboardPeriod
+  period: DashboardPeriod,
+  now = new Date()
 ): boolean => {
   if (!date) {
     return false;
   }
 
-  const now = new Date();
+  const start = getPeriodStart(period, now);
 
-  // -------------------------------------------------------
-  // DAY
-  // -------------------------------------------------------
-
-  if (period === 'day') {
-    return (
-      date.getFullYear() ===
-        now.getFullYear() &&
-      date.getMonth() ===
-        now.getMonth() &&
-      date.getDate() ===
-        now.getDate()
-    );
-  }
-
-  // -------------------------------------------------------
-  // WEEK
-  // -------------------------------------------------------
-
-  if (period === 'week') {
-    const start =
-      new Date(now);
-
-    const day =
-      start.getDay() === 0
-        ? 7
-        : start.getDay();
-
-    start.setDate(
-      start.getDate() -
-        day +
-        1
-    );
-
-    start.setHours(
-      0,
-      0,
-      0,
-      0
-    );
-
-    return (
-      date >= start &&
-      date <= now
-    );
-  }
-
-  // -------------------------------------------------------
-  // MONTH
-  // -------------------------------------------------------
-
-  if (period === 'month') {
-    return (
-      date.getFullYear() ===
-        now.getFullYear() &&
-      date.getMonth() ===
-        now.getMonth()
-    );
-  }
-
-  // -------------------------------------------------------
-  // YEAR
-  // -------------------------------------------------------
-
-  if (period === 'year') {
-    return (
-      date.getFullYear() ===
-      now.getFullYear()
-    );
-  }
-
-  return true;
+  return date >= start && date <= now;
 };
 
 // =========================================================
-// MONTH NAME
-// =========================================================
-
-const getMonthName = (
-  monthIndex: number
-): string => {
-  return new Date(
-    2000,
-    monthIndex,
-    1
-  ).toLocaleString(
-    'en-IN',
-    {
-      month: 'short'
-    }
-  );
-};
-
-// =========================================================
-// REVENUE
+// REVENUE CHART
 // =========================================================
 
 const buildRevenueData = (
-  bookings: Booking[]
+  bookings: Booking[],
+  now = new Date()
 ): RevenueData[] => {
-  const now =
-    new Date();
+  const months: RevenueData[] = [];
 
-  const months:
-    RevenueData[] = [];
+  for (let i = 5; i >= 0; i -= 1) {
+    const monthDate = new Date(
+      now.getFullYear(),
+      now.getMonth() - i,
+      1
+    );
 
-  for (
-    let i = 5;
-    i >= 0;
-    i--
-  ) {
-    const date =
-      new Date(
-        now.getFullYear(),
-        now.getMonth() - i,
-        1
-      );
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
 
-    const year =
-      date.getFullYear();
+    const value = bookings.reduce(
+      (sum, booking) => {
+        if (booking.bookingFeeStatus !== 'PAID') {
+          return sum;
+        }
 
-    const month =
-      date.getMonth();
+        const revenueDate = getRevenueDate(booking);
 
-    const value =
-      bookings
-        .filter(
-          (
-            booking
-          ) => {
-            const bookingDate =
-              getBookingDate(
-                booking
-              );
+        if (!revenueDate) {
+          return sum;
+        }
 
-            if (!bookingDate) {
-              return false;
-            }
+        if (
+          revenueDate.getFullYear() !== year ||
+          revenueDate.getMonth() !== month
+        ) {
+          return sum;
+        }
 
-            return (
-              bookingDate.getFullYear() ===
-                year &&
-              bookingDate.getMonth() ===
-                month &&
-              booking.bookingStatus !==
-                'CANCELLED'
-            );
-          }
-        )
-        .reduce(
-          (
-            sum,
-            booking
-          ) =>
-            sum +
-            Number(
-              booking.totalAmount ||
-                0
-            ),
-          0
-        );
+        return sum + Number(booking.bookingFee || 0);
+      },
+      0
+    );
 
     months.push({
-      month:
-        getMonthName(
-          month
-        ),
+      month: getMonthName(monthDate),
       value
     });
   }
@@ -545,7 +492,7 @@ const buildRevenueData = (
 };
 
 // =========================================================
-// BUILD DASHBOARD
+// BUILD DASHBOARD DATA
 // =========================================================
 
 export const buildDashboardData = (
@@ -553,451 +500,302 @@ export const buildDashboardData = (
   salons: Salon[],
   bookings: Booking[],
   reviews: Review[],
-  period: DashboardPeriod
+  period: DashboardPeriod,
+  totals?: Partial<
+    Pick<
+      DashboardFetchResult,
+      | 'customerCount'
+      | 'salonCount'
+      | 'bookingCount'
+      | 'reviewCount'
+    >
+  >
 ): DashboardData => {
-  // -------------------------------------------------------
-  // PERIOD BOOKINGS
-  // -------------------------------------------------------
+  const now = new Date();
 
-  const periodBookings =
-    bookings.filter(
-      (
-        booking
-      ) =>
+  const periodBookings = bookings.filter(
+    booking =>
+      isWithinPeriod(
+        getBookingDate(booking),
+        period,
+        now
+      )
+  );
+
+  const periodRevenue = bookings
+    .filter(
+      booking =>
+        booking.bookingFeeStatus === 'PAID' &&
         isWithinPeriod(
-          getBookingDate(
-            booking
-          ),
-          period
+          getRevenueDate(booking),
+          period,
+          now
         )
+    )
+    .reduce(
+      (sum, booking) =>
+        sum + Number(booking.bookingFee || 0),
+      0
     );
 
-  // -------------------------------------------------------
-  // REVENUE
-  // -------------------------------------------------------
+  // A pending booking-fee payment is relevant after salon
+  // confirmation. Do not treat the salon's service balance
+  // as money owed to Clavata.
+  const pendingPayments = bookings
+    .filter(
+      booking =>
+        booking.bookingStatus === 'CONFIRMED' &&
+        booking.bookingFeeStatus === 'PENDING'
+    )
+    .reduce(
+      (sum, booking) =>
+        sum + Number(booking.bookingFee || 0),
+      0
+    );
 
-  const totalRevenue =
-    periodBookings
-      .filter(
-        (
-          booking
-        ) =>
-          booking.bookingStatus !==
-          'CANCELLED'
+  const todayBookings = bookings.filter(
+    booking =>
+      isWithinPeriod(
+        getBookingDate(booking),
+        'day',
+        now
       )
-      .reduce(
-        (
-          sum,
-          booking
-        ) =>
-          sum +
-          Number(
-            booking.totalAmount ||
-              0
-          ),
-        0
-      );
+  ).length;
 
-  // -------------------------------------------------------
-  // PENDING PAYMENTS
-  // -------------------------------------------------------
+  const bookingSummary: BookingSummary = {
+    confirmed: periodBookings.filter(
+      booking => booking.bookingStatus === 'CONFIRMED'
+    ).length,
 
-  const pendingPayments =
-    bookings
-      .filter(
-        (
-          booking
-        ) =>
-          booking.paymentStatus ===
-            'PENDING' ||
-          booking.paymentStatus ===
-            'PARTIALLY_PAID'
-      )
-      .reduce(
-        (
-          sum,
-          booking
-        ) =>
-          sum +
-          Number(
-            booking.remainingAmount ||
-              0
-          ),
-        0
-      );
+    completed: periodBookings.filter(
+      booking => booking.bookingStatus === 'COMPLETED'
+    ).length,
 
-  // -------------------------------------------------------
-  // TODAY BOOKINGS
-  // -------------------------------------------------------
+    pending: periodBookings.filter(
+      booking => booking.bookingStatus === 'PENDING'
+    ).length,
 
-  const todayBookings =
-    bookings.filter(
-      (
-        booking
-      ) =>
-        isWithinPeriod(
-          getBookingDate(
-            booking
-          ),
-          'day'
-        )
-    ).length;
+    cancelled: periodBookings.filter(
+      booking => booking.bookingStatus === 'CANCELLED'
+    ).length,
 
-  // -------------------------------------------------------
-  // BOOKING SUMMARY
-  // -------------------------------------------------------
+    noShow: periodBookings.filter(
+      booking => booking.bookingStatus === 'NO_SHOW'
+    ).length,
 
-  const bookingSummary:
-    BookingSummary = {
-    confirmed:
-      periodBookings.filter(
-        (
-          booking
-        ) =>
-          booking.bookingStatus ===
-          'CONFIRMED'
-      ).length,
-
-    completed:
-      periodBookings.filter(
-        (
-          booking
-        ) =>
-          booking.bookingStatus ===
-          'COMPLETED'
-      ).length,
-
-    pending:
-      periodBookings.filter(
-        (
-          booking
-        ) =>
-          booking.bookingStatus ===
-          'PENDING'
-      ).length,
-
-    cancelled:
-      periodBookings.filter(
-        (
-          booking
-        ) =>
-          booking.bookingStatus ===
-          'CANCELLED'
-      ).length,
-
-    noShow:
-      periodBookings.filter(
-        (
-          booking
-        ) =>
-          booking.bookingStatus ===
-          'NO_SHOW'
-      ).length
+    expired: periodBookings.filter(
+      booking => booking.bookingStatus === 'EXPIRED'
+    ).length
   };
 
-  // -------------------------------------------------------
-  // AVERAGE RATING
-  // -------------------------------------------------------
+  const publishedReviews = reviews.filter(
+    review => review.status === 'PUBLISHED'
+  );
 
   const averageRating =
-    reviews.length > 0
-      ? reviews.reduce(
-          (
-            sum,
-            review
-          ) =>
-            sum +
-            Number(
-              review.rating ||
-                0
-            ),
+    publishedReviews.length > 0
+      ? publishedReviews.reduce(
+          (sum, review) =>
+            sum + Number(review.rating || 0),
           0
-        ) /
-        reviews.length
+        ) / publishedReviews.length
       : 0;
 
-  // -------------------------------------------------------
-  // PENDING APPLICATIONS
-  // -------------------------------------------------------
-
-  const pendingApplications =
-    salons.filter(
-      (
-        salon
-      ) =>
-        salon.adminApprovalStatus ===
-          'PENDING' &&
+  const pendingApplications = salons
+    .filter(
+      salon =>
+        salon.adminApprovalStatus === 'PENDING' &&
         !salon.isDeleted
+    )
+    .sort(
+      (a, b) =>
+        String(b.createdAt || '').localeCompare(
+          String(a.createdAt || '')
+        )
     );
 
-  // -------------------------------------------------------
-  // RECENT BOOKINGS
-  // -------------------------------------------------------
-
-  const recentBookings =
-    [...bookings]
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          String(
-            b.createdAt ||
-              ''
-          ).localeCompare(
-            String(
-              a.createdAt ||
-                ''
-            )
-          )
-      )
-      .slice(
-        0,
-        5
-      );
-
-  // -------------------------------------------------------
-  // RECENT REVIEWS
-  // -------------------------------------------------------
-
-  const recentReviews =
-    [...reviews]
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          String(
-            b.createdAt ||
-              ''
-          ).localeCompare(
-            String(
-              a.createdAt ||
-                ''
-            )
-          )
-      )
-      .slice(
-        0,
-        5
-      );
-
-  // -------------------------------------------------------
-  // STATS
-  // -------------------------------------------------------
-
-  const stats:
-    DashboardStats = {
-    totalCustomers:
-      customers.length,
-
-    totalSalons:
-      salons.filter(
-        (
-          salon
-        ) =>
-          !salon.isDeleted
-      ).length,
-
-    totalBookings:
-      periodBookings.length,
-
-    totalRevenue,
-
-    pendingApplications:
-      pendingApplications.length,
-
-    pendingPayments,
-
-    averageRating:
-      Number(
-        averageRating.toFixed(
-          1
+  const recentBookings = [...bookings]
+    .sort(
+      (a, b) =>
+        String(b.createdAt || '').localeCompare(
+          String(a.createdAt || '')
         )
-      ),
+    )
+    .slice(0, 5);
 
-    todayBookings
-  };
+  const recentReviews = [...reviews]
+    .sort(
+      (a, b) =>
+        String(b.createdAt || '').localeCompare(
+          String(a.createdAt || '')
+        )
+    )
+    .slice(0, 5);
 
-  // -------------------------------------------------------
-  // RETURN
-  // -------------------------------------------------------
+  const activeSalons = salons.filter(
+    salon => !salon.isDeleted
+  );
 
   return {
-    stats,
+    stats: {
+      totalCustomers:
+        totals?.customerCount ?? customers.length,
 
-    revenue:
-      buildRevenueData(
-        bookings
+      totalSalons:
+        totals?.salonCount ??
+        activeSalons.length,
+
+      totalBookings:
+        periodBookings.length,
+
+      totalRevenue: periodRevenue,
+
+      pendingApplications:
+        pendingApplications.length,
+
+      pendingPayments,
+
+      averageRating: Number(
+        averageRating.toFixed(1)
       ),
+
+      todayBookings
+    },
+
+    revenue: buildRevenueData(bookings, now),
 
     bookingSummary,
 
     recentBookings,
-
     pendingApplications,
-
     recentReviews,
 
     customers,
-
     salons,
-
     bookings,
-
     reviews
   };
 };
 
 // =========================================================
-// FETCH RESULT
-// =========================================================
-
-export interface DashboardFetchResult {
-  customers: Customer[];
-  salons: Salon[];
-  bookings: Booking[];
-  reviews: Review[];
-}
-
-// =========================================================
-// APOLLO CLIENT QUERY INTERFACE
-// =========================================================
-//
-// IMPORTANT:
-// Do NOT use ApolloClient<NormalizedCacheObject> here.
-// useApolloClient() in your project returns
-// ApolloClient<object>.
-//
-// This interface only requires the query() method that
-// dashboardApi actually uses.
-// =========================================================
-
-interface DashboardApolloClient {
-  query: <TData = unknown>(
-    options: {
-      query: import('@apollo/client').DocumentNode;
-      variables?: Record<
-        string,
-        unknown
-      >;
-      fetchPolicy?: import('@apollo/client').FetchPolicy;
-    }
-  ) => Promise<{
-    data: TData;
-  }>;
-}
-
-// =========================================================
 // FETCH DASHBOARD DATA
 // =========================================================
 
-export const fetchDashboardData =
-  async (
-    client: DashboardApolloClient
-  ): Promise<DashboardFetchResult> => {
-    const [
-      customersResult,
-      salonsResult,
-      bookingsResult,
-      reviewsResult
-    ] = await Promise.all([
-      client.query<
-        AdminCustomersResponse
-      >({
-        query:
-          ADMIN_CUSTOMERS,
-        variables: {
-          search: null,
-          status: null
-        },
-        fetchPolicy:
-          'network-only'
-      }),
+export const fetchDashboardData = async (
+  client: DashboardApolloClient
+): Promise<DashboardFetchResult> => {
+  const [
+    customersResult,
+    salonsResult,
+    bookingsResult,
+    reviewsResult
+  ] = await Promise.all([
+    client.query<AdminCustomersResponse>({
+      query: ADMIN_CUSTOMERS,
+      variables: {
+        search: null,
+        status: null
+      },
+      fetchPolicy: 'network-only'
+    }),
 
-      client.query<
-        AdminSalonsResponse
-      >({
-        query:
-          ADMIN_SALONS,
-        variables: {
-          search: null,
-          kycStatus: null,
-          salonStatus: null,
-          isActive: null
-        },
-        fetchPolicy:
-          'network-only'
-      }),
+    client.query<AdminSalonsResponse>({
+      query: ADMIN_SALONS,
+      variables: {
+        search: null,
+        verificationStatus: null,
+        adminApprovalStatus: null,
+        salonStatus: null,
+        isActive: null
+      },
+      fetchPolicy: 'network-only'
+    }),
 
-      client.query<
-        AdminBookingsResponse
-      >({
-        query:
-          ADMIN_BOOKINGS,
-        variables: {
-          search: null,
-          bookingStatus: null,
-          paymentStatus: null,
-          salonId: null
-        },
-        fetchPolicy:
-          'network-only'
-      }),
+    client.query<AdminBookingsResponse>({
+      query: ADMIN_BOOKINGS,
+      variables: {
+        search: null,
+        bookingStatus: null,
+        paymentStatus: null,
+        salonId: null
+      },
+      fetchPolicy: 'network-only'
+    }),
 
-      client.query<
-        AdminReviewsResponse
-      >({
-        query:
-          ADMIN_REVIEWS,
-        variables: {
-          search: null,
-          rating: null,
-          status: null,
-          salonId: null
-        },
-        fetchPolicy:
-          'network-only'
-      })
-    ]);
+    client.query<AdminReviewsResponse>({
+      query: ADMIN_REVIEWS,
+      variables: {
+        search: null,
+        rating: null,
+        status: null,
+        salonId: null
+      },
+      fetchPolicy: 'network-only'
+    })
+  ]);
 
-    // -------------------------------------------------------
-    // EXTRACT DATA
-    // -------------------------------------------------------
+  const customerResponse =
+    customersResult.data?.adminCustomers;
 
-    const customers =
-      customersResult
-        .data
-        ?.adminCustomers
-        ?.customers ??
-      [];
+  const salonResponse =
+    salonsResult.data?.adminSalons;
 
-    const salons =
-      salonsResult
-        .data
-        ?.adminSalons
-        ?.salons ??
-      [];
+  const bookingResponse =
+    bookingsResult.data?.adminBookings;
 
-    const bookings =
-      bookingsResult
-        .data
-        ?.adminBookings
-        ?.bookings ??
-      [];
+  const reviewResponse =
+    reviewsResult.data?.adminReviews;
 
-    const reviews =
-      reviewsResult
-        .data
-        ?.adminReviews
-        ?.reviews ??
-      [];
+  // Surface resolver failures instead of silently displaying
+  // an apparently successful dashboard with empty lists.
+  const failedResponse = [
+    customerResponse,
+    salonResponse,
+    bookingResponse,
+    reviewResponse
+  ].find(
+    response => response?.success === false
+  );
 
-    return {
-      customers,
-      salons,
-      bookings,
-      reviews
-    };
+  if (failedResponse) {
+    throw new Error(
+      failedResponse.message ||
+        'The server could not load dashboard data.'
+    );
+  }
+
+  const customers =
+    customerResponse?.customers ?? [];
+
+  const salons =
+    salonResponse?.salons ?? [];
+
+  const bookings =
+    bookingResponse?.bookings ?? [];
+
+  const reviews =
+    reviewResponse?.reviews ?? [];
+
+  return {
+    customers,
+    salons,
+    bookings,
+    reviews,
+
+    customerCount:
+      customerResponse?.totalCount ??
+      customers.length,
+
+    salonCount:
+      salonResponse?.totalCount ??
+      salons.filter(salon => !salon.isDeleted).length,
+
+    bookingCount:
+      bookingResponse?.totalCount ??
+      bookings.length,
+
+    reviewCount:
+      reviewResponse?.totalCount ??
+      reviews.length
   };
-
+};

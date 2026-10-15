@@ -63,7 +63,7 @@ export interface Customer {
     phoneNumber: string;
     email?: string | null;
 
-    activeRole: 'CUSTOMER';
+    role: 'CUSTOMER';
 
     providerStatus: ProviderStatus;
 
