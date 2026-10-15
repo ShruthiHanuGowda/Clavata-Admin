@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
 
-// material-ui
+// Material UI
 import {
+    Alert,
     Avatar,
     Box,
+    Button,
     Card,
     CardContent,
     Chip,
@@ -27,27 +29,29 @@ import {
     TableRow,
     TextField,
     Tooltip,
-    Typography,
-    Alert
+    Typography
 } from '@mui/material';
 
-// icons
+// Ant Design icons
 import {
     CalendarOutlined,
+    CheckCircleOutlined,
+    CloseCircleOutlined,
     EyeOutlined,
     PhoneOutlined,
+    ReloadOutlined,
     SearchOutlined,
     UserOutlined,
-    UsergroupAddOutlined,
-    CheckCircleOutlined,
-    CloseCircleOutlined
+    UsergroupAddOutlined
 } from '@ant-design/icons';
 
-// project import
+// Project imports
 import { ADMIN_CUSTOMERS } from '../../graphql/queries';
 import CustomerDetails from './CustomerDetails';
 
-// ==============================|| TYPES ||============================== //
+// ============================================================
+// TYPES
+// ============================================================
 
 export type CustomerStatus = 'ACTIVE' | 'INACTIVE';
 
@@ -64,9 +68,7 @@ export interface Customer {
     email?: string | null;
 
     role: 'CUSTOMER';
-
     providerStatus: ProviderStatus;
-
     salonId?: string | null;
 
     status: CustomerStatus;
@@ -91,14 +93,16 @@ interface AdminCustomersResponse {
     };
 }
 
-// ==============================|| HELPERS ||============================== //
+// ============================================================
+// HELPERS
+// ============================================================
 
-const formatCurrency = (value: number) => {
+const formatCurrency = (value?: number | null) => {
     return new Intl.NumberFormat('en-IN', {
         style: 'currency',
         currency: 'INR',
         maximumFractionDigits: 0
-    }).format(value || 0);
+    }).format(Number(value) || 0);
 };
 
 const formatDate = (date?: string | null) => {
@@ -117,8 +121,8 @@ const formatDate = (date?: string | null) => {
     }).format(parsedDate);
 };
 
-const getInitials = (name: string) => {
-    if (!name) return 'CU';
+const getInitials = (name?: string | null) => {
+    if (!name?.trim()) return 'CU';
 
     return name
         .trim()
@@ -129,7 +133,9 @@ const getInitials = (name: string) => {
         .toUpperCase();
 };
 
-// ==============================|| STAT CARD ||============================== //
+// ============================================================
+// STAT CARD
+// ============================================================
 
 interface StatCardProps {
     title: string;
@@ -151,16 +157,22 @@ function StatCard({
                 height: '100%',
                 border: '1px solid',
                 borderColor: 'divider',
-                borderRadius: 2.5
+                borderRadius: 2.5,
+                transition: 'box-shadow 0.2s ease',
+                '&:hover': {
+                    boxShadow: (theme) =>
+                        theme.shadows[2]
+                }
             }}
         >
-            <CardContent>
+            <CardContent sx={{ p: 2.5 }}>
                 <Stack
                     direction="row"
                     justifyContent="space-between"
                     alignItems="flex-start"
+                    spacing={2}
                 >
-                    <Box>
+                    <Box sx={{ minWidth: 0 }}>
                         <Typography
                             variant="body2"
                             color="text.secondary"
@@ -175,7 +187,8 @@ function StatCard({
                         <Typography
                             variant="h4"
                             sx={{
-                                fontWeight: 700
+                                fontWeight: 700,
+                                letterSpacing: '-0.5px'
                             }}
                         >
                             {value}
@@ -197,6 +210,7 @@ function StatCard({
                         sx={{
                             width: 46,
                             height: 46,
+                            flexShrink: 0,
                             borderRadius: 2,
                             display: 'flex',
                             alignItems: 'center',
@@ -213,10 +227,14 @@ function StatCard({
     );
 }
 
-// ==============================|| CUSTOMERS PAGE ||============================== //
+// ============================================================
+// CUSTOMERS PAGE
+// ============================================================
 
 export default function Customers() {
-    // ==============================|| STATE ||============================== //
+    // --------------------------------------------------------
+    // STATE
+    // --------------------------------------------------------
 
     const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
@@ -225,7 +243,6 @@ export default function Customers() {
         useState<'ALL' | CustomerStatus>('ALL');
 
     const [page, setPage] = useState(0);
-
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
     const [selectedCustomer, setSelectedCustomer] =
@@ -233,7 +250,9 @@ export default function Customers() {
 
     const [detailsOpen, setDetailsOpen] = useState(false);
 
-    // ==============================|| SEARCH DEBOUNCE ||============================== //
+    // --------------------------------------------------------
+    // SEARCH DEBOUNCE
+    // --------------------------------------------------------
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -241,41 +260,52 @@ export default function Customers() {
             setPage(0);
         }, 400);
 
-        return () => {
-            window.clearTimeout(timer);
-        };
+        return () => window.clearTimeout(timer);
     }, [searchInput]);
 
-    // ==============================|| GRAPHQL QUERY ||============================== //
+    // --------------------------------------------------------
+    // GRAPHQL QUERY
+    // --------------------------------------------------------
 
     const {
         data,
         loading,
         error,
-        refetch
-    } = useQuery<AdminCustomersResponse>(ADMIN_CUSTOMERS, {
-        variables: {
-            search: search || undefined,
-            status:
-                statusFilter === 'ALL'
-                    ? undefined
-                    : statusFilter
-        },
-        fetchPolicy: 'cache-and-network',
-        notifyOnNetworkStatusChange: true
-    });
+        refetch,
+        networkStatus
+    } = useQuery<AdminCustomersResponse>(
+        ADMIN_CUSTOMERS,
+        {
+            variables: {
+                search: search || undefined,
+                status:
+                    statusFilter === 'ALL'
+                        ? undefined
+                        : statusFilter
+            },
+            fetchPolicy: 'cache-and-network',
+            notifyOnNetworkStatusChange: true
+        }
+    );
 
-    // ==============================|| DATA ||============================== //
+    const refreshing = loading && Boolean(data);
 
-    const customers = data?.adminCustomers?.customers ?? [];
+    // --------------------------------------------------------
+    // DATA
+    // --------------------------------------------------------
+
+    const customers = useMemo(
+        () => data?.adminCustomers?.customers ?? [],
+        [data?.adminCustomers?.customers]
+    );
 
     const totalCount =
         data?.adminCustomers?.totalCount ??
         customers.length;
 
-    // ==============================|| STATISTICS ||============================== //
-
-    const totalCustomers = totalCount;
+    // --------------------------------------------------------
+    // STATISTICS
+    // --------------------------------------------------------
 
     const activeCustomers = useMemo(
         () =>
@@ -297,13 +327,15 @@ export default function Customers() {
         () =>
             customers.reduce(
                 (sum, customer) =>
-                    sum + (customer.totalBookings || 0),
+                    sum + (Number(customer.totalBookings) || 0),
                 0
             ),
         [customers]
     );
 
-    // ==============================|| CLIENT PAGINATION ||============================== //
+    // --------------------------------------------------------
+    // CLIENT-SIDE PAGINATION
+    // --------------------------------------------------------
 
     const paginatedCustomers = useMemo(() => {
         const start = page * rowsPerPage;
@@ -314,7 +346,21 @@ export default function Customers() {
         );
     }, [customers, page, rowsPerPage]);
 
-    // ==============================|| HANDLERS ||============================== //
+    // Prevent an invalid page after filtering or refreshing.
+    useEffect(() => {
+        const maxPage = Math.max(
+            0,
+            Math.ceil(customers.length / rowsPerPage) - 1
+        );
+
+        if (page > maxPage) {
+            setPage(maxPage);
+        }
+    }, [customers.length, page, rowsPerPage]);
+
+    // --------------------------------------------------------
+    // HANDLERS
+    // --------------------------------------------------------
 
     const handleSearchChange = (
         event: React.ChangeEvent<HTMLInputElement>
@@ -325,11 +371,9 @@ export default function Customers() {
     const handleStatusChange = (
         event: SelectChangeEvent
     ) => {
-        const value = event.target.value as
-            | 'ALL'
-            | CustomerStatus;
-
-        setStatusFilter(value);
+        setStatusFilter(
+            event.target.value as 'ALL' | CustomerStatus
+        );
         setPage(0);
     };
 
@@ -343,13 +387,36 @@ export default function Customers() {
     const handleChangeRowsPerPage = (
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
-        const value = parseInt(
+        const value = Number.parseInt(
             event.target.value,
             10
         );
 
-        setRowsPerPage(value);
+        setRowsPerPage(
+            Number.isFinite(value) && value > 0
+                ? value
+                : 10
+        );
+
         setPage(0);
+    };
+
+    const handleRefresh = async () => {
+        try {
+            await refetch({
+                search: search || undefined,
+                status:
+                    statusFilter === 'ALL'
+                        ? undefined
+                        : statusFilter
+            });
+        } catch (refreshError) {
+            // Apollo exposes the query error in the UI.
+            console.error(
+                'Failed to refresh customers:',
+                refreshError
+            );
+        }
     };
 
     const handleViewCustomer = (
@@ -364,9 +431,11 @@ export default function Customers() {
         setSelectedCustomer(null);
     };
 
-    // ==============================|| ERROR ||============================== //
+    // --------------------------------------------------------
+    // ERROR STATE
+    // --------------------------------------------------------
 
-    if (error) {
+    if (error && !data) {
         return (
             <Box sx={{ width: '100%' }}>
                 <Stack
@@ -395,47 +464,61 @@ export default function Customers() {
                             color="text.secondary"
                             sx={{ mt: 0.5 }}
                         >
-                            Manage and monitor customers
-                            registered on your platform.
+                            Manage and monitor registered customers.
                         </Typography>
                     </Box>
+
+                    <Button
+                        variant="outlined"
+                        startIcon={
+                            loading
+                                ? <CircularProgress size={16} />
+                                : <ReloadOutlined />
+                        }
+                        onClick={handleRefresh}
+                        disabled={loading}
+                    >
+                        Retry
+                    </Button>
                 </Stack>
 
                 <Alert
                     severity="error"
-                    sx={{ mb: 2 }}
                     action={
-                        <Typography
-                            component="button"
-                            onClick={() => refetch()}
-                            sx={{
-                                border: 0,
-                                background: 'none',
-                                cursor: 'pointer',
-                                fontWeight: 600,
-                                color: 'inherit'
-                            }}
+                        <Button
+                            color="inherit"
+                            size="small"
+                            onClick={handleRefresh}
+                            disabled={loading}
                         >
                             Retry
-                        </Typography>
+                        </Button>
                     }
                 >
-                    Failed to load customers.
-                    {error.message
-                        ? ` ${error.message}`
-                        : ''}
+                    <Typography
+                        variant="subtitle2"
+                        sx={{ mb: 0.5 }}
+                    >
+                        Failed to load customers.
+                    </Typography>
+
+                    <Typography variant="body2">
+                        {error.message}
+                    </Typography>
                 </Alert>
             </Box>
         );
     }
 
-    // ==============================|| RENDER ||============================== //
+    // --------------------------------------------------------
+    // RENDER
+    // --------------------------------------------------------
 
     return (
         <Box sx={{ width: '100%' }}>
-            {/* ==============================|| PAGE HEADER ||============================== */}
+            {/* PAGE HEADER */}
 
-            {/* <Stack
+            <Stack
                 direction={{
                     xs: 'column',
                     sm: 'row'
@@ -451,7 +534,10 @@ export default function Customers() {
                 <Box>
                     <Typography
                         variant="h4"
-                        sx={{ fontWeight: 700 }}
+                        sx={{
+                            fontWeight: 700,
+                            letterSpacing: '-0.5px'
+                        }}
                     >
                         Customers
                     </Typography>
@@ -459,15 +545,69 @@ export default function Customers() {
                     <Typography
                         variant="body2"
                         color="text.secondary"
-                        sx={{ mt: 0.5 }}
+                        sx={{ mt: 0.75 }}
                     >
-                        Manage and monitor customers
-                        registered on your platform.
+                        Manage and monitor customers registered on your platform.
                     </Typography>
                 </Box>
-            </Stack> */}
 
-            {/* ==============================|| STATISTICS ||============================== */}
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={
+                        refreshing
+                            ? <CircularProgress size={16} />
+                            : <ReloadOutlined />
+                    }
+                    onClick={handleRefresh}
+                    disabled={loading}
+                    sx={{
+                        minWidth: 120,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontWeight: 600
+                    }}
+                >
+                    {refreshing ? 'Refreshing…' : 'Refresh'}
+                </Button>
+            </Stack>
+
+            {/* BACKEND ERROR WITH CACHED DATA */}
+
+            {error && (
+                <Alert
+                    severity="warning"
+                    sx={{ mb: 2 }}
+                    action={
+                        <Button
+                            color="inherit"
+                            size="small"
+                            onClick={handleRefresh}
+                        >
+                            Retry
+                        </Button>
+                    }
+                >
+                    Could not refresh the latest customer data.
+                    Previously loaded data may still be displayed.
+                    {' '}
+                    {error.message}
+                </Alert>
+            )}
+
+            {/* STATUS MESSAGE */}
+
+            {data?.adminCustomers?.success === false && (
+                <Alert
+                    severity="error"
+                    sx={{ mb: 2 }}
+                >
+                    {data.adminCustomers.message ||
+                        'The server could not retrieve customers.'}
+                </Alert>
+            )}
+
+            {/* STATISTICS */}
 
             <Grid
                 container
@@ -477,17 +617,11 @@ export default function Customers() {
                 <Grid item xs={12} sm={6} lg={3}>
                     <StatCard
                         title="Total Customers"
-                        value={
-                            loading
-                                ? '—'
-                                : totalCustomers
-                        }
-                        subtitle="All registered customers"
+                        value={loading && !data ? '—' : totalCount}
+                        subtitle="Customers matching current filters"
                         icon={
                             <UsergroupAddOutlined
-                                style={{
-                                    fontSize: 22
-                                }}
+                                style={{ fontSize: 22 }}
                             />
                         }
                     />
@@ -496,17 +630,11 @@ export default function Customers() {
                 <Grid item xs={12} sm={6} lg={3}>
                     <StatCard
                         title="Active Customers"
-                        value={
-                            loading
-                                ? '—'
-                                : activeCustomers
-                        }
-                        subtitle="Currently active"
+                        value={loading && !data ? '—' : activeCustomers}
+                        subtitle="Active on current result set"
                         icon={
                             <CheckCircleOutlined
-                                style={{
-                                    fontSize: 22
-                                }}
+                                style={{ fontSize: 22 }}
                             />
                         }
                     />
@@ -515,17 +643,11 @@ export default function Customers() {
                 <Grid item xs={12} sm={6} lg={3}>
                     <StatCard
                         title="Inactive Customers"
-                        value={
-                            loading
-                                ? '—'
-                                : inactiveCustomers
-                        }
-                        subtitle="Currently inactive"
+                        value={loading && !data ? '—' : inactiveCustomers}
+                        subtitle="Inactive on current result set"
                         icon={
                             <CloseCircleOutlined
-                                style={{
-                                    fontSize: 22
-                                }}
+                                style={{ fontSize: 22 }}
                             />
                         }
                     />
@@ -534,24 +656,18 @@ export default function Customers() {
                 <Grid item xs={12} sm={6} lg={3}>
                     <StatCard
                         title="Total Bookings"
-                        value={
-                            loading
-                                ? '—'
-                                : totalBookings
-                        }
-                        subtitle="Bookings made by customers"
+                        value={loading && !data ? '—' : totalBookings}
+                        subtitle="Bookings across displayed results"
                         icon={
                             <CalendarOutlined
-                                style={{
-                                    fontSize: 22
-                                }}
+                                style={{ fontSize: 22 }}
                             />
                         }
                     />
                 </Grid>
             </Grid>
 
-            {/* ==============================|| TABLE CARD ||============================== */}
+            {/* CUSTOMERS TABLE */}
 
             <Card
                 elevation={0}
@@ -562,7 +678,7 @@ export default function Customers() {
                     overflow: 'hidden'
                 }}
             >
-                {/* ==============================|| TOOLBAR ||============================== */}
+                {/* TOOLBAR */}
 
                 <Box sx={{ p: 2.5 }}>
                     <Stack
@@ -572,6 +688,10 @@ export default function Customers() {
                         }}
                         spacing={2}
                         justifyContent="space-between"
+                        alignItems={{
+                            xs: 'stretch',
+                            md: 'center'
+                        }}
                     >
                         <TextField
                             value={searchInput}
@@ -581,19 +701,35 @@ export default function Customers() {
                             fullWidth
                             sx={{
                                 maxWidth: {
-                                    md: 420
+                                    md: 460
+                                },
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: 2
                                 }
                             }}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
                                         <SearchOutlined
-                                            style={{
-                                                fontSize: 18
-                                            }}
+                                            style={{ fontSize: 18 }}
                                         />
                                     </InputAdornment>
-                                )
+                                ),
+                                endAdornment: searchInput ? (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            size="small"
+                                            aria-label="Clear search"
+                                            onClick={() => {
+                                                setSearchInput('');
+                                                setSearch('');
+                                                setPage(0);
+                                            }}
+                                        >
+                                            <CloseCircleOutlined />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ) : undefined
                             }}
                         />
 
@@ -601,15 +737,19 @@ export default function Customers() {
                             direction="row"
                             spacing={1.5}
                             alignItems="center"
+                            justifyContent="flex-end"
                         >
                             <Select
                                 value={statusFilter}
-                                onChange={
-                                    handleStatusChange
-                                }
+                                onChange={handleStatusChange}
                                 size="small"
+                                displayEmpty
                                 sx={{
-                                    minWidth: 140
+                                    minWidth: 145,
+                                    borderRadius: 2
+                                }}
+                                inputProps={{
+                                    'aria-label': 'Filter customers by status'
                                 }}
                             >
                                 <MenuItem value="ALL">
@@ -628,6 +768,7 @@ export default function Customers() {
                             {loading && (
                                 <CircularProgress
                                     size={22}
+                                    aria-label="Loading customers"
                                 />
                             )}
                         </Stack>
@@ -636,91 +777,45 @@ export default function Customers() {
 
                 <Divider />
 
-                {/* ==============================|| TABLE ||============================== */}
+                {/* TABLE */}
 
                 <TableContainer
                     component={Paper}
                     elevation={0}
+                    sx={{ position: 'relative' }}
                 >
                     <Table>
                         <TableHead>
-                            <TableRow>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 700
-                                    }}
-                                >
-                                    Customer
-                                </TableCell>
-
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 700
-                                    }}
-                                >
-                                    Phone
-                                </TableCell>
-
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 700
-                                    }}
-                                >
-                                    Bookings
-                                </TableCell>
-
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 700
-                                    }}
-                                >
-                                    Total Spent
-                                </TableCell>
-
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 700
-                                    }}
-                                >
-                                    Last Booking
-                                </TableCell>
-
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 700
-                                    }}
-                                >
-                                    Status
-                                </TableCell>
-
-                                <TableCell
-                                    align="right"
-                                    sx={{
-                                        fontWeight: 700
-                                    }}
-                                >
-                                    Action
-                                </TableCell>
+                            <TableRow
+                                sx={{
+                                    bgcolor: 'action.hover',
+                                    '& .MuiTableCell-root': {
+                                        fontWeight: 700,
+                                        whiteSpace: 'nowrap'
+                                    }
+                                }}
+                            >
+                                <TableCell>Customer</TableCell>
+                                <TableCell>Phone</TableCell>
+                                <TableCell>Bookings</TableCell>
+                                <TableCell>Total Spent</TableCell>
+                                <TableCell>Last Booking</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell align="right">Action</TableCell>
                             </TableRow>
                         </TableHead>
 
                         <TableBody>
-                            {loading &&
-                            customers.length === 0 ? (
+                            {loading && !data ? (
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={7}
-                                    >
+                                    <TableCell colSpan={7}>
                                         <Box
                                             sx={{
                                                 py: 8,
                                                 display: 'flex',
-                                                justifyContent:
-                                                    'center',
-                                                alignItems:
-                                                    'center',
-                                                flexDirection:
-                                                    'column',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                flexDirection: 'column',
                                                 gap: 2
                                             }}
                                         >
@@ -730,206 +825,172 @@ export default function Customers() {
                                                 variant="body2"
                                                 color="text.secondary"
                                             >
-                                                Loading customers...
+                                                Loading customers…
                                             </Typography>
                                         </Box>
                                     </TableCell>
                                 </TableRow>
-                            ) : paginatedCustomers.length >
-                              0 ? (
-                                paginatedCustomers.map(
-                                    (customer) => (
-                                        <TableRow
-                                            key={
-                                                customer.userId
+                            ) : paginatedCustomers.length > 0 ? (
+                                paginatedCustomers.map((customer) => (
+                                    <TableRow
+                                        key={customer.userId}
+                                        hover
+                                        sx={{
+                                            '&:last-child td, &:last-child th': {
+                                                border: 0
                                             }
-                                            hover
-                                            sx={{
-                                                '&:last-child td, &:last-child th':
-                                                    {
-                                                        border: 0
-                                                    }
-                                            }}
-                                        >
-                                            {/* CUSTOMER */}
+                                        }}
+                                    >
+                                        {/* CUSTOMER */}
 
-                                            <TableCell>
-                                                <Stack
-                                                    direction="row"
-                                                    spacing={1.5}
-                                                    alignItems="center"
+                                        <TableCell>
+                                            <Stack
+                                                direction="row"
+                                                spacing={1.5}
+                                                alignItems="center"
+                                            >
+                                                <Avatar
+                                                    sx={{
+                                                        width: 42,
+                                                        height: 42,
+                                                        bgcolor: 'primary.lighter',
+                                                        color: 'primary.main',
+                                                        fontSize: 14,
+                                                        fontWeight: 700
+                                                    }}
                                                 >
-                                                    <Avatar
+                                                    {getInitials(customer.fullName)}
+                                                </Avatar>
+
+                                                <Box sx={{ minWidth: 0 }}>
+                                                    <Typography
+                                                        variant="subtitle2"
                                                         sx={{
-                                                            width: 40,
-                                                            height: 40,
-                                                            bgcolor:
-                                                                'primary.lighter',
-                                                            color:
-                                                                'primary.main',
-                                                            fontSize: 14,
-                                                            fontWeight: 700
+                                                            fontWeight: 600,
+                                                            overflowWrap: 'anywhere'
                                                         }}
                                                     >
-                                                        {getInitials(
-                                                            customer.fullName
-                                                        )}
-                                                    </Avatar>
-
-                                                    <Box>
-                                                        <Typography
-                                                            variant="subtitle2"
-                                                            sx={{
-                                                                fontWeight: 600
-                                                            }}
-                                                        >
-                                                            {
-                                                                customer.fullName
-                                                            }
-                                                        </Typography>
-
-                                                        <Typography
-                                                            variant="caption"
-                                                            color="text.secondary"
-                                                        >
-                                                            {
-                                                                customer.userId
-                                                            }
-                                                        </Typography>
-                                                    </Box>
-                                                </Stack>
-                                            </TableCell>
-
-                                            {/* PHONE */}
-
-                                            <TableCell>
-                                                <Stack
-                                                    direction="row"
-                                                    spacing={1}
-                                                    alignItems="center"
-                                                >
-                                                    <PhoneOutlined
-                                                        style={{
-                                                            fontSize: 15
-                                                        }}
-                                                    />
-
-                                                    <Typography variant="body2">
-                                                        {
-                                                            customer.phoneNumber
-                                                        }
+                                                        {customer.fullName || 'Unnamed customer'}
                                                     </Typography>
-                                                </Stack>
-                                            </TableCell>
 
-                                            {/* BOOKINGS */}
-
-                                            <TableCell>
-                                                <Typography
-                                                    variant="body2"
-                                                    sx={{
-                                                        fontWeight: 600
-                                                    }}
-                                                >
-                                                    {
-                                                        customer.totalBookings
-                                                    }
-                                                </Typography>
-
-                                                <Typography
-                                                    variant="caption"
-                                                    color="text.secondary"
-                                                >
-                                                    {
-                                                        customer.completedBookings
-                                                    }{' '}
-                                                    completed
-                                                </Typography>
-                                            </TableCell>
-
-                                            {/* SPENDING */}
-
-                                            <TableCell>
-                                                <Typography
-                                                    variant="body2"
-                                                    sx={{
-                                                        fontWeight: 600
-                                                    }}
-                                                >
-                                                    {formatCurrency(
-                                                        customer.totalSpent
-                                                    )}
-                                                </Typography>
-                                            </TableCell>
-
-                                            {/* LAST BOOKING */}
-
-                                            <TableCell>
-                                                <Typography variant="body2">
-                                                    {formatDate(
-                                                        customer.lastBooking
-                                                    )}
-                                                </Typography>
-                                            </TableCell>
-
-                                            {/* STATUS */}
-
-                                            <TableCell>
-                                                <Chip
-                                                    size="small"
-                                                    label={
-                                                        customer.status
-                                                    }
-                                                    icon={
-                                                        customer.status ===
-                                                        'ACTIVE' ? (
-                                                            <CheckCircleOutlined />
-                                                        ) : (
-                                                            <CloseCircleOutlined />
-                                                        )
-                                                    }
-                                                    color={
-                                                        customer.status ===
-                                                        'ACTIVE'
-                                                            ? 'success'
-                                                            : 'default'
-                                                    }
-                                                    variant="outlined"
-                                                    sx={{
-                                                        fontWeight: 600
-                                                    }}
-                                                />
-                                            </TableCell>
-
-                                            {/* ACTION */}
-
-                                            <TableCell align="right">
-                                                <Tooltip title="View customer">
-                                                    <IconButton
-                                                        color="primary"
-                                                        onClick={() =>
-                                                            handleViewCustomer(
-                                                                customer
-                                                            )
-                                                        }
+                                                    <Typography
+                                                        variant="caption"
+                                                        color="text.secondary"
+                                                        sx={{
+                                                            display: 'block',
+                                                            overflowWrap: 'anywhere'
+                                                        }}
                                                     >
-                                                        <EyeOutlined />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </TableCell>
-                                        </TableRow>
-                                    )
-                                )
+                                                        {customer.userId}
+                                                    </Typography>
+                                                </Box>
+                                            </Stack>
+                                        </TableCell>
+
+                                        {/* PHONE */}
+
+                                        <TableCell>
+                                            <Stack
+                                                direction="row"
+                                                spacing={1}
+                                                alignItems="center"
+                                            >
+                                                <PhoneOutlined
+                                                    style={{ fontSize: 15 }}
+                                                />
+
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{ whiteSpace: 'nowrap' }}
+                                                >
+                                                    {customer.phoneNumber || '—'}
+                                                </Typography>
+                                            </Stack>
+                                        </TableCell>
+
+                                        {/* BOOKINGS */}
+
+                                        <TableCell>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{ fontWeight: 600 }}
+                                            >
+                                                {customer.totalBookings ?? 0}
+                                            </Typography>
+
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                            >
+                                                {customer.completedBookings ?? 0} completed
+                                            </Typography>
+                                        </TableCell>
+
+                                        {/* SPENDING */}
+
+                                        <TableCell>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{ fontWeight: 600 }}
+                                            >
+                                                {formatCurrency(customer.totalSpent)}
+                                            </Typography>
+                                        </TableCell>
+
+                                        {/* LAST BOOKING */}
+
+                                        <TableCell>
+                                            <Typography variant="body2">
+                                                {formatDate(customer.lastBooking)}
+                                            </Typography>
+                                        </TableCell>
+
+                                        {/* STATUS */}
+
+                                        <TableCell>
+                                            <Chip
+                                                size="small"
+                                                label={customer.status || 'INACTIVE'}
+                                                icon={
+                                                    customer.status === 'ACTIVE'
+                                                        ? <CheckCircleOutlined />
+                                                        : <CloseCircleOutlined />
+                                                }
+                                                color={
+                                                    customer.status === 'ACTIVE'
+                                                        ? 'success'
+                                                        : 'default'
+                                                }
+                                                variant="outlined"
+                                                sx={{ fontWeight: 600 }}
+                                            />
+                                        </TableCell>
+
+                                        {/* ACTION */}
+
+                                        <TableCell align="right">
+                                            <Tooltip title="View customer details">
+                                                <IconButton
+                                                    color="primary"
+                                                    aria-label={`View ${customer.fullName || 'customer'} details`}
+                                                    onClick={() =>
+                                                        handleViewCustomer(customer)
+                                                    }
+                                                >
+                                                    <EyeOutlined />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
                             ) : (
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={7}
-                                    >
+                                    <TableCell colSpan={7}>
                                         <Box
                                             sx={{
                                                 py: 8,
-                                                textAlign:
-                                                    'center'
+                                                px: 2,
+                                                textAlign: 'center'
                                             }}
                                         >
                                             <Avatar
@@ -938,37 +999,41 @@ export default function Customers() {
                                                     height: 60,
                                                     mx: 'auto',
                                                     mb: 2,
-                                                    bgcolor:
-                                                        'grey.100',
-                                                    color:
-                                                        'grey.500'
+                                                    bgcolor: 'action.hover',
+                                                    color: 'text.secondary'
                                                 }}
                                             >
                                                 <UserOutlined
-                                                    style={{
-                                                        fontSize: 25
-                                                    }}
+                                                    style={{ fontSize: 25 }}
                                                 />
                                             </Avatar>
 
                                             <Typography variant="h6">
-                                                No customers found
+                                                {loading
+                                                    ? 'Refreshing customers…'
+                                                    : 'No customers found'}
                                             </Typography>
 
                                             <Typography
                                                 variant="body2"
                                                 color="text.secondary"
-                                                sx={{
-                                                    mt: 0.5
-                                                }}
+                                                sx={{ mt: 0.75, mb: 2 }}
                                             >
                                                 {search
                                                     ? `No customers match "${search}".`
-                                                    : statusFilter !==
-                                                        'ALL'
-                                                      ? `There are no ${statusFilter.toLowerCase()} customers.`
-                                                      : 'No customers are registered yet.'}
+                                                    : statusFilter !== 'ALL'
+                                                      ? `There are no ${statusFilter.toLowerCase()} customers in this result set.`
+                                                      : 'No customers were returned by the server.'}
                                             </Typography>
+
+                                            <Button
+                                                variant="outlined"
+                                                startIcon={<ReloadOutlined />}
+                                                onClick={handleRefresh}
+                                                disabled={loading}
+                                            >
+                                                Refresh customers
+                                            </Button>
                                         </Box>
                                     </TableCell>
                                 </TableRow>
@@ -977,29 +1042,26 @@ export default function Customers() {
                     </Table>
                 </TableContainer>
 
-                {/* ==============================|| PAGINATION ||============================== */}
+                {/* PAGINATION */}
 
                 <TablePagination
                     component="div"
-                    count={totalCount}
+                    count={customers.length}
                     page={page}
-                    onPageChange={
-                        handleChangePage
-                    }
+                    onPageChange={handleChangePage}
                     rowsPerPage={rowsPerPage}
-                    onRowsPerPageChange={
-                        handleChangeRowsPerPage
-                    }
-                    rowsPerPageOptions={[
-                        5,
-                        10,
-                        25,
-                        50
-                    ]}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    showFirstButton
+                    showLastButton
+                    sx={{
+                        borderTop: '1px solid',
+                        borderColor: 'divider'
+                    }}
                 />
             </Card>
 
-            {/* ==============================|| CUSTOMER DETAILS ||============================== */}
+            {/* CUSTOMER DETAILS */}
 
             <CustomerDetails
                 customer={selectedCustomer}
