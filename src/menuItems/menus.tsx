@@ -342,18 +342,18 @@ const operationsMenu: NavItemType = {
       url: '/locations',
       icon: icons.EnvironmentOutlined
     },
-    {
-      id: 'businessType',
-      title: (
-        <FormattedMessage
-          id="BusinessType"
-          defaultMessage="BusinessType"
-        />
-      ),
-      type: 'item',
-      url: '/businessType',
-      icon: icons.EnvironmentOutlined
-    },
+    // {
+    //   id: 'businessType',
+    //   title: (
+    //     <FormattedMessage
+    //       id="BusinessType"
+    //       defaultMessage="BusinessType"
+    //     />
+    //   ),
+    //   type: 'item',
+    //   url: '/businessType',
+    //   icon: icons.EnvironmentOutlined
+    // },
     {
       id: 'categories',
       title: (
