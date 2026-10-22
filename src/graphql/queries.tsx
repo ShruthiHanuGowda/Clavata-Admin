@@ -216,66 +216,6 @@ export const ADMIN_BOOKINGS = gql`
   }
 `;
 
-const UPDATE_BOOKING_STATUS = gql`
-  mutation UpdateBookingStatus($input: UpdateBookingStatusInput!) {
-    updateBookingStatus(input: $input) {
-      success
-      message
-
-      booking {
-        bookingId
-        salonId
-        customerUserId
-
-        salonName
-        customerName
-        customerPhone
-
-        bookingDate
-        startTime
-        endTime
-
-        services {
-          serviceId
-          name
-          category
-          duration
-          price
-        }
-
-        totalDuration
-        subtotal
-        discount
-        totalAmount
-
-        paymentMethod
-        paymentStatus
-        bookingStatus
-
-        notes
-        salonNote
-
-        bookingFee
-        bookingFeeStatus
-        bookingFeePaidAt
-        remainingAmount
-
-        razorpayOrderId
-        razorpayPaymentId
-        paymentGateway
-
-        reviewSubmitted
-        rating
-        review
-        reviewedAt
-
-        createdAt
-        updatedAt
-      }
-    }
-  }
-`;
-
 export const ADMIN_REVIEWS = gql`
   query AdminReviews(
     $search: String
